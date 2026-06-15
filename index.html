@@ -12,7 +12,7 @@
     <div class="top-studio-bar">
         <div class="brand">
             <span class="logo-icon">📐</span>
-            <span class="logo-text">ARCH-ENGINE PRO</span>
+            <span class="logo-text">ArchCAD</span>
         </div>
         
         <div class="view-switcher">
@@ -241,9 +241,10 @@
         <div class="calc-panel">
             <label>📏 Quick Converter</label>
             <div class="calc-row">
-                <input type="number" id="calcFt" placeholder="Feet" oninput="calcInches()">
-                <span>→</span>
-                <input type="text" id="resIn" placeholder="Inches" readonly>
+                <input type="number" id="calcFt" placeholder="Ft" oninput="calcInches()" style="width: 30%;">
+                <input type="number" id="calcIn" placeholder="In" oninput="calcInches()" style="width: 30%;">
+                <span>=</span>
+                <input type="text" id="resIn" placeholder="Total" readonly style="width: 30%;">
             </div>
         </div>
     </div>

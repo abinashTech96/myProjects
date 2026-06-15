@@ -241,11 +241,11 @@ button:active {
     border: 1px solid #334155; 
     pointer-events: auto;
     z-index: 10; 
-    width: 200px !important; /* Reduced from 260px */
-    padding: 15px !important; /* Tighter padding to save space */
+    width: 240px !important; /* Reduced from 260px */
+    padding: 10px !important; /* Tighter padding to save space */
 }
 #area-overlay .calc-row input {
-    width: 40%; 
+    width: 50%; 
     padding: 6px 2px;
     font-size: 0.75rem;
 }
@@ -580,7 +580,7 @@ button:active {
 .calc-row {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 4px;
 }
 
 .calc-row input {
@@ -954,7 +954,10 @@ button:active {
     justify-content: center;
     margin: 0; padding: 0; box-shadow: none;
 }
-.add-floor-btn:hover { background: rgba(56, 189, 248, 0.1); border-color: #38bdf8; color: #38bdf8; }
+.add-floor-btn:hover { 
+    background: rgba(56, 189, 248, 0.1);
+     border-color: #38bdf8; color: #38bdf8;
+}
 
 
 

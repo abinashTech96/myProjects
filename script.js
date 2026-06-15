@@ -389,8 +389,11 @@ function generateBuilding() {
 
 const toInches = (val, unit) => unit === 'cm' ? parseFloat(val) / 2.54 : parseFloat(val);
 const getPolygonArea = (coords) => { let area = 0; for (let i = 0; i < coords.length; i++) { let j = (i + 1) % coords.length; area += coords[i].x * coords[j].y; area -= coords[j].x * coords[i].y; } return Math.abs(area) / 2; };
-const calcInches = () => { const ft = parseFloat(document.getElementById('calcFt').value) || 0; document.getElementById('resIn').value = (ft * 12) + " in"; };
-
+const calcInches = () => { 
+    const ft = parseFloat(document.getElementById('calcFt').value) || 0; 
+    const inc = parseFloat(document.getElementById('calcIn').value) || 0; 
+    document.getElementById('resIn').value = (ft * 12 + inc) + " in"; 
+};
 function checkCollision(el, index) { 
     return elements.some((other, i) => 
         i !== index && 
@@ -400,8 +403,8 @@ function checkCollision(el, index) {
 }
 
 function addManualFloor() {
-    // 1. THE FIX: Find the highest floor by counting the actual UI tabs
-    const existingTabs = document.querySelectorAll('#floor-tabs .floor-btn');
+    // 1. THE FIX: Find the highest floor by counting the actual UI tabs in the TOP BAR
+    const existingTabs = document.querySelectorAll('#top-floor-tabs .floor-btn');
     const maxFloor = existingTabs.length > 0 ? existingTabs.length - 1 : 0;
     
     const newFloorNum = maxFloor + 1;
@@ -414,10 +417,9 @@ function addManualFloor() {
         elements.push(clone);
     });
 
-    // 3. Generate the new tab button in the UI
-    const tabsContainer = document.getElementById('floor-tabs');
+    // 3. Generate the new tab button in the UI (Using top-floor-tabs!)
+    const tabsContainer = document.getElementById('top-floor-tabs');
     
-    // (Also fixed a small typo here so it says "3rd" instead of "3th"!)
     let label = newFloorNum === 1 ? "1st" : newFloorNum === 2 ? "2nd" : newFloorNum === 3 ? "3rd" : `${newFloorNum}th`;
     
     tabsContainer.innerHTML += `<button class="floor-btn" data-floor="${newFloorNum}" onclick="setFloor(${newFloorNum})">${label}</button>`;

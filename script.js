@@ -47,7 +47,11 @@ const UI = {
     // Stats Panels
     plotArea: null,
     buildArea: null,
-    stairWarning: null
+    stairWarning: null,
+    // --- NEW: App State Tracking ---
+    isSpacePanMode: false,
+    isSpacePanning: false,
+    spacePanStart: { x: 0, y: 0 }
 };
 
 function initDOMCache() {
@@ -134,6 +138,12 @@ function resetCamera() {
 
 // Click empty space to deselect rooms
 svg.addEventListener('mousedown', (e) => {
+    if (UI.isSpacePanMode) {
+        UI.isSpacePanning = true;
+        UI.spacePanStart = { x: e.clientX, y: e.clientY };
+        svg.style.cursor = 'grabbing'; 
+        return; 
+    }
     if (e.target === svg || e.target.id === 'inner-rect' || e.target.id === 'outer-poly') {
         selectedElIndex = -1; 
         updateCanvas();
@@ -157,6 +167,7 @@ function getMousePos(evt) {
 }
 
 function startDrag(evt, index) {
+    if (UI.isSpacePanMode) return; // Updated
     if (evt.button === 1 || evt.shiftKey) return; 
     if (elements[index].locked) return; // Prevent dragging locked rooms
     
@@ -168,6 +179,13 @@ function startDrag(evt, index) {
 }
 
 svg.addEventListener('mousemove', (e) => {
+    if (UI.isSpacePanning) {
+        const dx = e.clientX - UI.spacePanStart.x;
+        const dy = e.clientY - UI.spacePanStart.y;
+        panCamera(dx, dy); 
+        UI.spacePanStart = { x: e.clientX, y: e.clientY };
+        return;
+    }
     // Only proceed if one of the modes is active
     if ((!isDragging || dragElIndex === -1) && (!isDraggingFixture || dragFixtureIndex === -1)) return;
 
@@ -262,6 +280,8 @@ svg.addEventListener('mousemove', (e) => {
 });
 
 svg.addEventListener('mouseup', () => { 
+    UI.isSpacePanning = false; // Updated
+    if (UI.isSpacePanMode) svg.style.cursor = 'grab'; // Updated
     isDragging = false; 
     dragFixtureIndex = -1; 
     isDraggingFixture = false; 
@@ -1142,6 +1162,26 @@ function importJSON(event) {
     // Clear the input so you can load the exact same file again if you need to
     event.target.value = '';
 }
+
+// =========================================
+// --- SPACEBAR LISTENERS ---
+// =========================================
+document.addEventListener('keydown', (e) => {
+    if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'SELECT') return;
+    if (e.code === 'Space') {
+        e.preventDefault(); 
+        UI.isSpacePanMode = true; 
+        svg.style.cursor = 'grab'; 
+    }
+});
+
+document.addEventListener('keyup', (e) => {
+    if (e.code === 'Space') {
+        UI.isSpacePanMode = false; 
+        UI.isSpacePanning = false; 
+        svg.style.cursor = ''; 
+    }
+});
 
 // Keyboard Control Engine (Nudge & Hotkeys)
 document.addEventListener('keydown', (e) => {

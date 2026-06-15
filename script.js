@@ -12,6 +12,16 @@ const colors = {
     balcony: '20, 184, 166' // Our new teal color
 };
 
+const roomIcons = { 
+    living: '🛋️', 
+    bedroom: '🛏️', 
+    toilet: '🚽', 
+    kitchen: '🍳', 
+    puja: '🕉️', 
+    staircase: '🪜', 
+    balcony: '🪴' 
+};
+
 
 // --- HIGH PERFORMANCE DOM CACHE ---
 const UI = {
@@ -1047,9 +1057,12 @@ function updateCanvas() {
         }
 
         // Text & Data (Appended to gText layer to ensure it stays on top of fills)
-        const cx = rx + w / 2; const cy = ry + h / 2;
+        const cx = rx + w / 2; const cy = ry + h / 2;// --- NEW: Icon Logic ---
+        const icon = roomIcons[el.type] || '🏠';
         // Use the custom name if it exists, otherwise use the display name
         const labelText = elements[i].customName || getRoomDisplayName(i);
+        // Render icon slightly above title
+        createOrUpdateText(`txt-icon-${i}`, gText, cx, cy - 25, icon, '#ffffff', '16', false, -1, false);
         // 1. Title is editable (true)
         createOrUpdateText(`txt-title-${i}`, gText, cx, cy - 12, labelText, '#ffffff', '12', true, i, true);
         createOrUpdateText(`txt-dims-${i}`, gText, cx, cy + 4, `${Math.floor(el.w/12)}'${Math.round(el.w%12)}" × ${Math.floor(el.h/12)}'${Math.round(el.h%12)}"`, '#cbd5e1', '10', false, -1, false);

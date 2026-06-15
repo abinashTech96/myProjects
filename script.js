@@ -757,24 +757,103 @@ function drawProBadge(id, x, y, label, color, isVisible, currentZoom, container)
         <text x="0" y="4" fill="#f8fafc" font-size="11" font-weight="bold" text-anchor="middle" style="pointer-events: none;">${label}</text>
     `;
 }
-
-function createOrUpdateText(id, container, x, y, text, color, fontSize, isBold) {
+/*
+function createOrUpdateText(id, container, x, y, text, color, fontSize, isBold, elementIndex = -1) {
     let t = document.getElementById(id);
     if (!t) {
-        t = document.createElementNS("http://www.w3.org/2000/svg", "text"); 
-        t.id = id; 
-        t.setAttribute('text-anchor', 'middle'); 
-        t.setAttribute('pointer-events', 'none'); 
-        t.style.textShadow = "1px 1px 2px #000"; 
+        // We use a foreignObject to allow standard HTML input inside an SVG
+        t = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
+        t.id = id;
+        t.setAttribute('width', '200');
+        t.setAttribute('height', '30');
+        t.style.overflow = 'visible';
         container.appendChild(t);
+        
+        const input = document.createElementNS("http://www.w3.org/1999/xhtml", "input");
+        input.style.background = 'transparent';
+        input.style.border = 'none';
+        input.style.color = color;
+        input.style.textAlign = 'center';
+        input.style.width = '100%';
+        input.style.fontWeight = isBold ? 'bold' : 'normal';
+        input.style.fontSize = fontSize + 'px';
+        input.style.textShadow = "1px 1px 2px #000";
+        input.style.cursor = 'text';
+
+        // When user finishes typing, save to our elements array
+        input.onblur = (e) => {
+            if (elementIndex !== -1) {
+                elements[elementIndex].customName = e.target.value;
+                updateCanvas();
+            }
+        };
+        t.appendChild(input);
     }
-    t.setAttribute('x', x); 
-    t.setAttribute('y', y); 
-    t.setAttribute('fill', color); 
-    t.setAttribute('font-size', fontSize);
-    if (isBold) t.setAttribute('font-weight', 'bold');
-    t.textContent = text; 
+    
+    t.setAttribute('x', x - 100); // Center the foreignObject
+    t.setAttribute('y', y - 10);
+    const input = t.firstChild;
+    input.value = text;
     t.style.display = 'block';
+}
+*/
+
+function createOrUpdateText(id, container, x, y, text, color, fontSize, isBold, elementIndex = -1, isEditable = false) {
+    let t = document.getElementById(id);
+    
+    // If it's editable, we use foreignObject to hold an input
+    if (isEditable) {
+        if (!t) {
+            t = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
+            t.id = id;
+            t.setAttribute('width', '200');
+            t.setAttribute('height', '30');
+            t.style.overflow = 'visible';
+            container.appendChild(t);
+            
+            const input = document.createElementNS("http://www.w3.org/1999/xhtml", "input");
+            input.style.background = 'transparent';
+            input.style.border = 'none';
+            input.style.color = color;
+            input.style.textAlign = 'center';
+            input.style.width = '100%';
+            input.style.fontWeight = isBold ? 'bold' : 'normal';
+            input.style.fontSize = fontSize + 'px';
+            input.style.textShadow = "1px 1px 2px #000";
+            input.style.cursor = 'text';
+
+            input.onblur = (e) => {
+                if (elementIndex !== -1) {
+                    elements[elementIndex].customName = e.target.value;
+                    updateCanvas();
+                }
+            };
+            t.appendChild(input);
+        }
+        t.setAttribute('x', x - 100);
+        t.setAttribute('y', y - 10);
+        t.firstChild.value = text;
+        t.style.display = 'block';
+    } 
+    // If not editable, use standard SVG <text>
+    else {
+        if (!t || t.tagName !== 'text') {
+            if(t) t.remove(); // Remove if it was a foreignObject previously
+            t = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            t.id = id;
+            t.setAttribute('text-anchor', 'middle');
+            t.setAttribute('pointer-events', 'none');
+            t.style.textShadow = "1px 1px 2px #000";
+            container.appendChild(t);
+        }
+        t.setAttribute('x', x);
+        t.setAttribute('y', y);
+        t.setAttribute('fill', color);
+        t.setAttribute('font-size', fontSize);
+        if (isBold) t.setAttribute('font-weight', 'bold');
+        t.textContent = text;
+        t.style.display = 'block';
+    }
 }
 
 
@@ -969,10 +1048,12 @@ function updateCanvas() {
 
         // Text & Data (Appended to gText layer to ensure it stays on top of fills)
         const cx = rx + w / 2; const cy = ry + h / 2;
-        createOrUpdateText(`txt-title-${i}`, gText, cx, cy - 12, getRoomDisplayName(i), '#ffffff', '12', true);
-        createOrUpdateText(`txt-dims-${i}`, gText, cx, cy + 4, `${Math.floor(el.w/12)}'${Math.round(el.w%12)}" × ${Math.floor(el.h/12)}'${Math.round(el.h%12)}"`, '#cbd5e1', '10', false);
-        createOrUpdateText(`txt-area-${i}`, gText, cx, cy + 20, `${((el.w * el.h)/144).toFixed(1)} sq.ft`, '#94a3b8', '10', false);
-
+        // Use the custom name if it exists, otherwise use the display name
+        const labelText = elements[i].customName || getRoomDisplayName(i);
+        // 1. Title is editable (true)
+        createOrUpdateText(`txt-title-${i}`, gText, cx, cy - 12, labelText, '#ffffff', '12', true, i, true);
+        createOrUpdateText(`txt-dims-${i}`, gText, cx, cy + 4, `${Math.floor(el.w/12)}'${Math.round(el.w%12)}" × ${Math.floor(el.h/12)}'${Math.round(el.h%12)}"`, '#cbd5e1', '10', false, -1, false);
+        createOrUpdateText(`txt-area-${i}`, gText, cx, cy + 20, `${((el.w * el.h)/144).toFixed(1)} sq.ft`, '#94a3b8', '10', false, -1, false);
         // Grid Dimensions (Unchanged)
         const showDimsToggle = UI.showDims;
         let dimTop = document.getElementById(`dim-top-${i}`);

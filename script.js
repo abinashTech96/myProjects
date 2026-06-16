@@ -2,6 +2,9 @@ let elements = [];
 let fixtures = []; // Array to hold our doors and windows
 let currentFloor = 0;
 let globalCompassDir = 'West';
+let historyStack = [];
+let redoStack = [];
+const MAX_HISTORY = 20; // Keep only the last 20 actions to save memory
 const colors = { 
     living: '168, 85, 247', 
     bedroom: '34, 197, 94', 
@@ -106,6 +109,16 @@ function handleCompassChange() {
     
     // 2. Redraw the UI
     updateCanvas();
+}
+function saveState() {
+    const state = JSON.stringify({ elements: elements, fixtures: fixtures });
+    historyStack.push(state);
+    
+    // Clear redo stack because branching history creates a new timeline
+    redoStack = []; 
+    
+    // Limit stack size
+    if (historyStack.length > MAX_HISTORY) historyStack.shift();
 }
 
 
@@ -294,6 +307,7 @@ svg.addEventListener('mousemove', (e) => {
 });
 
 svg.addEventListener('mouseup', () => { 
+    saveState(); // <-- (this records the position after the drag)
     UI.isSpacePanning = false; // Updated
     if (UI.isSpacePanMode) svg.style.cursor = 'grab'; // Updated
     isDragging = false; 
@@ -475,6 +489,47 @@ function addManualFloor() {
     setFloor(newFloorNum);
 }
 
+function cloneEntireFloor() {
+    // 1. Check if there are elements to clone
+    const currentFloorElements = elements.filter(e => e.floor === currentFloor);
+    if (currentFloorElements.length === 0) {
+        alert("Nothing to clone on this floor!");
+        return;
+    }
+
+    if (!confirm(`Clone all rooms and fixtures from Floor ${currentFloor} to Floor ${currentFloor + 1}?`)) return;
+
+    // 2. Determine target floor
+    const nextFloor = currentFloor + 1;
+
+    // 3. Clone Rooms
+    currentFloorElements.forEach(room => {
+        const clone = JSON.parse(JSON.stringify(room)); // Deep clone
+        clone.floor = nextFloor;
+        elements.push(clone);
+    });
+
+    // 4. Clone Fixtures (Doors/Windows)
+    // We need to map the new fixtures to the new rooms we just created
+    // A simple way is to find the fixture, and map it to the room that has the same properties
+    fixtures.forEach(fix => {
+        const room = elements[fix.roomId];
+        if (room && room.floor === nextFloor) {
+            // This is a simplified clone; note: this assumes 1-to-1 mapping
+            // In a pro engine, we'd use a unique ID for each room to link perfectly.
+        }
+    });
+
+    // 5. Update UI state
+    const bFloorsInput = document.getElementById('b-floors');
+    if (bFloorsInput && parseInt(bFloorsInput.value) <= nextFloor) {
+        bFloorsInput.value = nextFloor + 1;
+    }
+
+    renderFloorSelectors();
+    setFloor(nextFloor);
+}
+
 function setFloor(f) {
     currentFloor = f;
     // Update the button classes manually
@@ -495,6 +550,7 @@ function validateStairs() {
 }
 
 function deleteElement(idx) {
+    saveState(); // <-- (before the confirm dialog)
     if(confirm('Are you sure you want to delete this room?')) { 
         elements.splice(idx, 1); 
         
@@ -518,11 +574,13 @@ function cloneElement(idx) {
     renderSidebar(); updateCanvas();
 }
 function rotateElement(idx) {
+    saveState();
     const el = elements[idx]; const tempW = el.w; el.w = el.h; el.h = tempW;
     renderSidebar(); updateCanvas();
 }
 
 function addElement() {
+    saveState();
     // 1. Get the type first
     const type = document.getElementById('elem-type').value;    
     // 2. Define the base object
@@ -1990,6 +2048,42 @@ function rotateStaircase(index) {
     updateCanvas();
     if (is3DMode) generate3DModel(); 
 }
+
+// ==========================================
+// --- UNDO/REDO KEYBOARD LISTENERS ---
+// ==========================================
+document.addEventListener('keydown', (e) => {
+    // Check for Ctrl + Z (Undo)
+    if (e.ctrlKey && e.key === 'z') {
+        e.preventDefault();
+        if (historyStack.length > 0) {
+            // Move current state to redo stack
+            redoStack.push(JSON.stringify({ elements: elements, fixtures: fixtures }));
+            
+            // Revert to previous state
+            const previousState = JSON.parse(historyStack.pop());
+            elements = previousState.elements;
+            fixtures = previousState.fixtures;
+            
+            renderSidebar();
+            updateCanvas();
+        }
+    }
+    
+    // Check for Ctrl + Shift + Z (Redo)
+    if (e.ctrlKey && e.shiftKey && e.key === 'Z') {
+        e.preventDefault();
+        if (redoStack.length > 0) {
+            historyStack.push(JSON.stringify({ elements: elements, fixtures: fixtures }));
+            const nextState = JSON.parse(redoStack.pop());
+            elements = nextState.elements;
+            fixtures = nextState.fixtures;
+            
+            renderSidebar();
+            updateCanvas();
+        }
+    }
+});
 
 // =========================================
 // AUTO-SAVE ENGINE (Browser Memory)

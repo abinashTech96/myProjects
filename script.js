@@ -255,8 +255,12 @@ svg.addEventListener('mousemove', (e) => {
             }
             // -----------------------------------------------
 
-            const SNAP = 12; const el = elements[dragElIndex];
-            if (Math.abs(newX) < SNAP) newX = 0;
+            // --- UPDATED: DYNAMIC SNAP ENGINE ---
+            const isStrictSnap = document.getElementById('gridSnapToggle').checked;
+            const SNAP = isStrictSnap ? 12 : 1;
+            const el = elements[dragElIndex];
+            
+             if (Math.abs(newX) < SNAP) newX = 0;
             if (Math.abs(newX + el.w - inW) < SNAP) newX = inW - el.w;
             if (Math.abs(newY) < SNAP) newY = 0;
             if (Math.abs(newY + el.h - inH) < SNAP) newY = inH - el.h;

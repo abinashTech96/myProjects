@@ -107,6 +107,15 @@
                     <input type="checkbox" id="showDims" onchange="updateCanvas()" checked>
                 </div>
             </div>
+            
+            <div class="field" style="margin-left:0px;">
+                <label>Units:</label>
+                <select id="unitSelect" onchange="updateCanvas()">
+                    <option value="in">Inches</option>
+                    <option value="cm">CM</option>
+                    <option value="ftin">Ft & Inches</option>
+                </select>
+            </div>
         </div>
         
         <div style="display:flex; align-items:center; gap: 8px; margin-bottom:10px;">
@@ -117,11 +126,22 @@
             <button class="action-btn" onclick="addManualFloor()" title="Add New Floor" style="padding: 4px 8px; font-weight: bold; background: rgba(56, 189, 248, 0.1); color: #38bdf8; border: 1px dashed #38bdf8;">
                 + ADD FLOOR
             </button>
+            
         </div>
         <div id="stair-warning">⚠ Staircases must match X, Y, Width, and Depth across floors!</div>
         <div class="input-grid">
             <div class="field"><button onclick="toggle3D()" style="background: linear-gradient(135deg, #10b981, #059669); color: white;">👁️ Toggle 3D View</button></div>
-            <div class="field" style="margin-left:30px;"><label>Units:</label><select id="unitSelect" onchange="updateCanvas()"><option value="in">Inches</option><option value="cm">CM</option><option value="ftin">Ft & Inches</option></select></div>
+                        
+        </div>
+
+        <div class="input-grid">
+            <div class="field">
+                <button onclick="cloneEntireFloor()" style="background: #6366f1;">🚀 Clone Entire Floor Up</button>
+            </div>
+            
+            <div class="field">
+                <button onclick="toggleTheme()">🎨 Toggle Theme (Dark/Classic)</button>
+            </div>
         </div>
 
 		<div class="input-grid">
@@ -134,6 +154,12 @@
         </div>        
         
         <input type="file" id="importFile" style="display:none" onchange="importJSON(event)">
+
+        <div class="input-grid" style="margin-top: 8px;">
+            <div class="field" style="grid-column: span 2;">
+                <button onclick="resetWorkspace()" style="background: linear-gradient(135deg, #ef4444, #b91c1c); color: white;">⚠️ Reset Workspace</button>
+            </div>
+        </div>
 
 		<div class="input-grid" style="margin-top: 8px;">
             <div class="field">
@@ -236,6 +262,11 @@
                 <input type="checkbox" id="showLabelsToggle" onchange="updateCanvas()" checked>
                 <div class="slider"></div>
             </label>
+                <label class="ui-toggle" style="margin-top: 10px;">
+                    <span>📐 Snap to 1ft Grid</span>
+                    <input type="checkbox" id="gridSnapToggle" checked>
+                    <div class="slider"></div>
+                </label>
         </div>
 
         <div class="calc-panel">

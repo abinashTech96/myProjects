@@ -2,6 +2,9 @@ let elements = [];
 let fixtures = []; // Array to hold our doors and windows
 let currentFloor = 0;
 let globalCompassDir = 'West';
+let historyStack = [];
+let redoStack = [];
+const MAX_HISTORY = 20; // Keep only the last 20 actions to save memory
 const colors = { 
     living: '168, 85, 247', 
     bedroom: '34, 197, 94', 
@@ -10,6 +13,16 @@ const colors = {
     puja: '236, 72, 153', 
     staircase: '156, 163, 175',
     balcony: '20, 184, 166' // Our new teal color
+};
+
+const roomIcons = { 
+    living: '🛋️', 
+    bedroom: '🛏️', 
+    toilet: '🚽', 
+    kitchen: '🍳', 
+    puja: '🕉️', 
+    staircase: '🪜', 
+    balcony: '🪴' 
 };
 
 
@@ -47,7 +60,11 @@ const UI = {
     // Stats Panels
     plotArea: null,
     buildArea: null,
-    stairWarning: null
+    stairWarning: null,
+    // --- NEW: App State Tracking ---
+    isSpacePanMode: false,
+    isSpacePanning: false,
+    spacePanStart: { x: 0, y: 0 }
 };
 
 function initDOMCache() {
@@ -93,6 +110,16 @@ function handleCompassChange() {
     // 2. Redraw the UI
     updateCanvas();
 }
+function saveState() {
+    const state = JSON.stringify({ elements: elements, fixtures: fixtures });
+    historyStack.push(state);
+    
+    // Clear redo stack because branching history creates a new timeline
+    redoStack = []; 
+    
+    // Limit stack size
+    if (historyStack.length > MAX_HISTORY) historyStack.shift();
+}
 
 
 const ctrl = document.getElementById('element-controls');
@@ -134,6 +161,12 @@ function resetCamera() {
 
 // Click empty space to deselect rooms
 svg.addEventListener('mousedown', (e) => {
+    if (UI.isSpacePanMode) {
+        UI.isSpacePanning = true;
+        UI.spacePanStart = { x: e.clientX, y: e.clientY };
+        svg.style.cursor = 'grabbing'; 
+        return; 
+    }
     if (e.target === svg || e.target.id === 'inner-rect' || e.target.id === 'outer-poly') {
         selectedElIndex = -1; 
         updateCanvas();
@@ -157,6 +190,7 @@ function getMousePos(evt) {
 }
 
 function startDrag(evt, index) {
+    if (UI.isSpacePanMode) return; // Updated
     if (evt.button === 1 || evt.shiftKey) return; 
     if (elements[index].locked) return; // Prevent dragging locked rooms
     
@@ -168,6 +202,13 @@ function startDrag(evt, index) {
 }
 
 svg.addEventListener('mousemove', (e) => {
+    if (UI.isSpacePanning) {
+        const dx = e.clientX - UI.spacePanStart.x;
+        const dy = e.clientY - UI.spacePanStart.y;
+        panCamera(dx, dy); 
+        UI.spacePanStart = { x: e.clientX, y: e.clientY };
+        return;
+    }
     // Only proceed if one of the modes is active
     if ((!isDragging || dragElIndex === -1) && (!isDraggingFixture || dragFixtureIndex === -1)) return;
 
@@ -216,8 +257,23 @@ svg.addEventListener('mousemove', (e) => {
             let newX = startElPos.x + (dx / SCALE);
             let newY = startElPos.y + (dy / SCALE);
             
-            const SNAP = 12; const el = elements[dragElIndex];
-            if (Math.abs(newX) < SNAP) newX = 0;
+            // --- NEW: ORTHOGONAL DRAGGING (SHIFT + DRAG) ---
+            if (e.shiftKey) {
+                // Determine which direction the user moved more: horizontal or vertical
+                if (Math.abs(dx) > Math.abs(dy)) {
+                    newY = startElPos.y; // Lock to horizontal movement
+                } else {
+                    newX = startElPos.x; // Lock to vertical movement
+                }
+            }
+            // -----------------------------------------------
+
+            // --- UPDATED: DYNAMIC SNAP ENGINE ---
+            const isStrictSnap = document.getElementById('gridSnapToggle').checked;
+            const SNAP = isStrictSnap ? 12 : 1;
+            const el = elements[dragElIndex];
+            
+             if (Math.abs(newX) < SNAP) newX = 0;
             if (Math.abs(newX + el.w - inW) < SNAP) newX = inW - el.w;
             if (Math.abs(newY) < SNAP) newY = 0;
             if (Math.abs(newY + el.h - inH) < SNAP) newY = inH - el.h;
@@ -251,6 +307,9 @@ svg.addEventListener('mousemove', (e) => {
 });
 
 svg.addEventListener('mouseup', () => { 
+    saveState(); // <-- (this records the position after the drag)
+    UI.isSpacePanning = false; // Updated
+    if (UI.isSpacePanMode) svg.style.cursor = 'grab'; // Updated
     isDragging = false; 
     dragFixtureIndex = -1; 
     isDraggingFixture = false; 
@@ -403,13 +462,13 @@ function checkCollision(el, index) {
 }
 
 function addManualFloor() {
-    // 1. THE FIX: Find the highest floor by counting the actual UI tabs in the TOP BAR
+    // 1. Find the highest floor by counting the actual UI tabs
     const existingTabs = document.querySelectorAll('#top-floor-tabs .floor-btn');
     const maxFloor = existingTabs.length > 0 ? existingTabs.length - 1 : 0;
     
     const newFloorNum = maxFloor + 1;
 
-    // 2. SMART FEATURE: Auto-clone staircases from the top floor to the new floor
+    // 2. Auto-clone staircases from the top floor to the new floor
     const stairsToClone = elements.filter(e => e.type === 'staircase' && e.floor === maxFloor);
     stairsToClone.forEach(stair => {
         const clone = JSON.parse(JSON.stringify(stair));
@@ -417,21 +476,58 @@ function addManualFloor() {
         elements.push(clone);
     });
 
-    // 3. Generate the new tab button in the UI (Using top-floor-tabs!)
-    const tabsContainer = document.getElementById('top-floor-tabs');
-    
-    let label = newFloorNum === 1 ? "1st" : newFloorNum === 2 ? "2nd" : newFloorNum === 3 ? "3rd" : `${newFloorNum}th`;
-    
-    tabsContainer.innerHTML += `<button class="floor-btn" data-floor="${newFloorNum}" onclick="setFloor(${newFloorNum})">${label}</button>`;
-
-    // 4. Update the Auto-Builder's hidden floor counter so they stay in sync
+    // 3. Update the Auto-Builder's hidden floor counter
     const bFloorsInput = document.getElementById('b-floors');
     if (bFloorsInput) {
         bFloorsInput.value = newFloorNum + 1; 
     }
 
+    // 4. THE FIX: Tell the engine to dynamically redraw BOTH the dropdowns and the top tabs!
+    renderFloorSelectors();
+
     // 5. Instantly switch the user to their newly created floor
     setFloor(newFloorNum);
+}
+
+function cloneEntireFloor() {
+    // 1. Check if there are elements to clone
+    const currentFloorElements = elements.filter(e => e.floor === currentFloor);
+    if (currentFloorElements.length === 0) {
+        alert("Nothing to clone on this floor!");
+        return;
+    }
+
+    if (!confirm(`Clone all rooms and fixtures from Floor ${currentFloor} to Floor ${currentFloor + 1}?`)) return;
+
+    // 2. Determine target floor
+    const nextFloor = currentFloor + 1;
+
+    // 3. Clone Rooms
+    currentFloorElements.forEach(room => {
+        const clone = JSON.parse(JSON.stringify(room)); // Deep clone
+        clone.floor = nextFloor;
+        elements.push(clone);
+    });
+
+    // 4. Clone Fixtures (Doors/Windows)
+    // We need to map the new fixtures to the new rooms we just created
+    // A simple way is to find the fixture, and map it to the room that has the same properties
+    fixtures.forEach(fix => {
+        const room = elements[fix.roomId];
+        if (room && room.floor === nextFloor) {
+            // This is a simplified clone; note: this assumes 1-to-1 mapping
+            // In a pro engine, we'd use a unique ID for each room to link perfectly.
+        }
+    });
+
+    // 5. Update UI state
+    const bFloorsInput = document.getElementById('b-floors');
+    if (bFloorsInput && parseInt(bFloorsInput.value) <= nextFloor) {
+        bFloorsInput.value = nextFloor + 1;
+    }
+
+    renderFloorSelectors();
+    setFloor(nextFloor);
 }
 
 function setFloor(f) {
@@ -454,7 +550,23 @@ function validateStairs() {
 }
 
 function deleteElement(idx) {
-    if(confirm('Are you sure you want to delete this room?')) { elements.splice(idx, 1); renderSidebar(); updateCanvas(); }
+    saveState(); // <-- (before the confirm dialog)
+    if(confirm('Are you sure you want to delete this room?')) { 
+        elements.splice(idx, 1); 
+        
+        // --- Safe Selection Management ---
+        // If we deleted the currently selected room, clear the selection
+        if (selectedElIndex === idx) {
+            selectedElIndex = -1;
+        } 
+        // If we deleted a room that came before the selected room in the array, shift the index down by 1
+        else if (selectedElIndex > idx) {
+            selectedElIndex--;
+        }
+
+        renderSidebar(); 
+        updateCanvas(); 
+    }
 }
 function cloneElement(idx) {
     const clone = JSON.parse(JSON.stringify(elements[idx]));
@@ -462,11 +574,13 @@ function cloneElement(idx) {
     renderSidebar(); updateCanvas();
 }
 function rotateElement(idx) {
+    saveState();
     const el = elements[idx]; const tempW = el.w; el.w = el.h; el.h = tempW;
     renderSidebar(); updateCanvas();
 }
 
 function addElement() {
+    saveState();
     // 1. Get the type first
     const type = document.getElementById('elem-type').value;    
     // 2. Define the base object
@@ -715,24 +829,103 @@ function drawProBadge(id, x, y, label, color, isVisible, currentZoom, container)
         <text x="0" y="4" fill="#f8fafc" font-size="11" font-weight="bold" text-anchor="middle" style="pointer-events: none;">${label}</text>
     `;
 }
-
-function createOrUpdateText(id, container, x, y, text, color, fontSize, isBold) {
+/*
+function createOrUpdateText(id, container, x, y, text, color, fontSize, isBold, elementIndex = -1) {
     let t = document.getElementById(id);
     if (!t) {
-        t = document.createElementNS("http://www.w3.org/2000/svg", "text"); 
-        t.id = id; 
-        t.setAttribute('text-anchor', 'middle'); 
-        t.setAttribute('pointer-events', 'none'); 
-        t.style.textShadow = "1px 1px 2px #000"; 
+        // We use a foreignObject to allow standard HTML input inside an SVG
+        t = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
+        t.id = id;
+        t.setAttribute('width', '200');
+        t.setAttribute('height', '30');
+        t.style.overflow = 'visible';
         container.appendChild(t);
+        
+        const input = document.createElementNS("http://www.w3.org/1999/xhtml", "input");
+        input.style.background = 'transparent';
+        input.style.border = 'none';
+        input.style.color = color;
+        input.style.textAlign = 'center';
+        input.style.width = '100%';
+        input.style.fontWeight = isBold ? 'bold' : 'normal';
+        input.style.fontSize = fontSize + 'px';
+        input.style.textShadow = "1px 1px 2px #000";
+        input.style.cursor = 'text';
+
+        // When user finishes typing, save to our elements array
+        input.onblur = (e) => {
+            if (elementIndex !== -1) {
+                elements[elementIndex].customName = e.target.value;
+                updateCanvas();
+            }
+        };
+        t.appendChild(input);
     }
-    t.setAttribute('x', x); 
-    t.setAttribute('y', y); 
-    t.setAttribute('fill', color); 
-    t.setAttribute('font-size', fontSize);
-    if (isBold) t.setAttribute('font-weight', 'bold');
-    t.textContent = text; 
+    
+    t.setAttribute('x', x - 100); // Center the foreignObject
+    t.setAttribute('y', y - 10);
+    const input = t.firstChild;
+    input.value = text;
     t.style.display = 'block';
+}
+*/
+
+function createOrUpdateText(id, container, x, y, text, color, fontSize, isBold, elementIndex = -1, isEditable = false) {
+    let t = document.getElementById(id);
+    
+    // If it's editable, we use foreignObject to hold an input
+    if (isEditable) {
+        if (!t) {
+            t = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
+            t.id = id;
+            t.setAttribute('width', '200');
+            t.setAttribute('height', '30');
+            t.style.overflow = 'visible';
+            container.appendChild(t);
+            
+            const input = document.createElementNS("http://www.w3.org/1999/xhtml", "input");
+            input.style.background = 'transparent';
+            input.style.border = 'none';
+            input.style.color = color;
+            input.style.textAlign = 'center';
+            input.style.width = '100%';
+            input.style.fontWeight = isBold ? 'bold' : 'normal';
+            input.style.fontSize = fontSize + 'px';
+            input.style.textShadow = "1px 1px 2px #000";
+            input.style.cursor = 'text';
+
+            input.onblur = (e) => {
+                if (elementIndex !== -1) {
+                    elements[elementIndex].customName = e.target.value;
+                    updateCanvas();
+                }
+            };
+            t.appendChild(input);
+        }
+        t.setAttribute('x', x - 100);
+        t.setAttribute('y', y - 10);
+        t.firstChild.value = text;
+        t.style.display = 'block';
+    } 
+    // If not editable, use standard SVG <text>
+    else {
+        if (!t || t.tagName !== 'text') {
+            if(t) t.remove(); // Remove if it was a foreignObject previously
+            t = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            t.id = id;
+            t.setAttribute('text-anchor', 'middle');
+            t.setAttribute('pointer-events', 'none');
+            t.style.textShadow = "1px 1px 2px #000";
+            container.appendChild(t);
+        }
+        t.setAttribute('x', x);
+        t.setAttribute('y', y);
+        t.setAttribute('fill', color);
+        t.setAttribute('font-size', fontSize);
+        if (isBold) t.setAttribute('font-weight', 'bold');
+        t.textContent = text;
+        t.style.display = 'block';
+    }
 }
 
 
@@ -896,7 +1089,8 @@ function updateCanvas() {
         rh.setAttribute('width', w - 3); rh.setAttribute('height', h - 3);
 
         // Drag Behavior
-        r.setAttribute('class', 'room-rect');
+        const isSelected = (i === selectedElIndex);
+        r.setAttribute('class', isSelected ? 'room-rect room-selected' : 'room-rect');
         r.onmousedown = function(e) { startDrag(e, i); };
 
         // Smart-Merge Exception: If ON, overlapping is "fusion", not an error!
@@ -904,7 +1098,6 @@ function updateCanvas() {
         const overlapText = document.getElementById(`overlap-${i}`);
         if (overlapText) overlapText.innerText = isColliding ? ' (Overlap!)' : '';
 
-        const isSelected = (i === selectedElIndex);
         const baseColor = colors[el.type] || '255,255,255';
         const strokeColor = isSelected ? '#ffffff' : (isColliding ? '#ef4444' : `rgb(${baseColor})`);
         const fillColor = isColliding ? 'rgba(239, 68, 68, 0.4)' : `rgba(${baseColor}, 0.2)`;
@@ -926,11 +1119,16 @@ function updateCanvas() {
         }
 
         // Text & Data (Appended to gText layer to ensure it stays on top of fills)
-        const cx = rx + w / 2; const cy = ry + h / 2;
-        createOrUpdateText(`txt-title-${i}`, gText, cx, cy - 12, getRoomDisplayName(i), '#ffffff', '12', true);
-        createOrUpdateText(`txt-dims-${i}`, gText, cx, cy + 4, `${Math.floor(el.w/12)}'${Math.round(el.w%12)}" × ${Math.floor(el.h/12)}'${Math.round(el.h%12)}"`, '#cbd5e1', '10', false);
-        createOrUpdateText(`txt-area-${i}`, gText, cx, cy + 20, `${((el.w * el.h)/144).toFixed(1)} sq.ft`, '#94a3b8', '10', false);
-
+        const cx = rx + w / 2; const cy = ry + h / 2;// --- NEW: Icon Logic ---
+        const icon = roomIcons[el.type] || '🏠';
+        // Use the custom name if it exists, otherwise use the display name
+        const labelText = elements[i].customName || getRoomDisplayName(i);
+        // Render icon slightly above title
+        createOrUpdateText(`txt-icon-${i}`, gText, cx, cy - 25, icon, '#ffffff', '16', false, -1, false);
+        // 1. Title is editable (true)
+        createOrUpdateText(`txt-title-${i}`, gText, cx, cy - 12, labelText, '#ffffff', '12', true, i, true);
+        createOrUpdateText(`txt-dims-${i}`, gText, cx, cy + 4, `${Math.floor(el.w/12)}'${Math.round(el.w%12)}" × ${Math.floor(el.h/12)}'${Math.round(el.h%12)}"`, '#cbd5e1', '10', false, -1, false);
+        createOrUpdateText(`txt-area-${i}`, gText, cx, cy + 20, `${((el.w * el.h)/144).toFixed(1)} sq.ft`, '#94a3b8', '10', false, -1, false);
         // Grid Dimensions (Unchanged)
         const showDimsToggle = UI.showDims;
         let dimTop = document.getElementById(`dim-top-${i}`);
@@ -1026,17 +1224,138 @@ function updateCanvas() {
     if (typeof is3DMode !== 'undefined' && is3DMode) {
         generate3DModel();
     } 
+    saveToMemory();
 }
 
 // Data Management
-function exportJSON() { const data = JSON.stringify({ elements, building: { w: document.getElementById('inW').value, h: document.getElementById('inH').value }, floors: parseInt(document.getElementById('b-floors').value) }); const a = document.createElement('a'); a.href = 'data:application/json,' + encodeURIComponent(data); a.download = 'design.json'; a.click(); }
-function importJSON(event) { const reader = new FileReader(); reader.onload = (e) => { const data = JSON.parse(e.target.result); elements = data.elements; elements.forEach(el => { if (el.floor === undefined) el.floor = 0; }); document.getElementById('inW').value = data.building.w || 600; document.getElementById('inH').value = data.building.h || 700; if(data.floors) { document.getElementById('b-floors').value = data.floors; renderFloorSelectors(); } setFloor(0); }; reader.readAsText(event.target.files[0]); }
+// Data Management (Upgraded Save/Load)
+function exportJSON() { 
+    // 1. Ask the user for a filename
+    let fileName = prompt("Enter a name for your design:", "My-ArchCAD-Design");
+    
+    // If they click Cancel, stop the export
+    if (fileName === null) return; 
+    
+    // If they leave it blank, default to something safe
+    if (fileName.trim() === "") fileName = "My-ArchCAD-Design";
+    
+    // Auto-append .json if they forgot to type it
+    if (!fileName.endsWith('.json')) fileName += '.json';
 
-// Keyboard Nudge Control
+    // 2. Bundle all the data (including FIXTURES!)
+    const data = JSON.stringify({ 
+        elements: elements, 
+        fixtures: fixtures, // <-- Bug Fixed: Now saves doors/windows
+        building: { 
+            w: document.getElementById('inW').value, 
+            h: document.getElementById('inH').value 
+        }, 
+        floors: parseInt(document.getElementById('b-floors').value) 
+    }); 
+    
+    // 3. Trigger the download
+    const a = document.createElement('a'); 
+    a.href = 'data:application/json,' + encodeURIComponent(data); 
+    a.download = fileName; 
+    a.click(); 
+}
+
+// Data Management (Upgraded Save/Load funcationality)
+function importJSON(event) { 
+    const reader = new FileReader(); 
+    reader.onload = (e) => { 
+        const data = JSON.parse(e.target.result); 
+        
+        elements = data.elements || []; 
+        fixtures = data.fixtures || []; 
+        
+        // --- BULLETPROOF MULTI-FLOOR FIX ---
+        let maxFloor = 0;
+        elements.forEach(el => { 
+            if (el.floor === undefined) el.floor = 0; 
+            if (el.floor > maxFloor) maxFloor = el.floor;
+        }); 
+        
+        document.getElementById('inW').value = data.building.w || 600; 
+        document.getElementById('inH').value = data.building.h || 700; 
+        
+        const bFloorsInput = document.getElementById('b-floors');
+        if (bFloorsInput) {
+            // Pick whichever is higher: the saved count or the highest actual room
+            bFloorsInput.value = Math.max(maxFloor + 1, data.floors || 1); 
+        }
+
+        renderFloorSelectors(); 
+        setFloor(0); 
+    }; 
+    reader.readAsText(event.target.files[0]); 
+    
+    // Clear the input so you can load the exact same file again if you need to
+    event.target.value = '';
+}
+
+function importJSON(event) { 
+    const reader = new FileReader(); 
+    reader.onload = (e) => { 
+        const data = JSON.parse(e.target.result); 
+        
+        elements = data.elements || []; 
+        fixtures = data.fixtures || []; // <-- Bug Fixed: Now loads doors/windows
+        
+        elements.forEach(el => { if (el.floor === undefined) el.floor = 0; }); 
+        
+        document.getElementById('inW').value = data.building.w || 600; 
+        document.getElementById('inH').value = data.building.h || 700; 
+        
+        if(data.floors) { 
+            document.getElementById('b-floors').value = data.floors; 
+            renderFloorSelectors(); 
+        } 
+        setFloor(0); 
+    }; 
+    reader.readAsText(event.target.files[0]); 
+    
+    // Clear the input so you can load the exact same file again if you need to
+    event.target.value = '';
+}
+
+// =========================================
+// --- SPACEBAR LISTENERS ---
+// =========================================
 document.addEventListener('keydown', (e) => {
-    if (selectedElIndex === -1 || isDragging || document.activeElement.tagName === 'INPUT') return;
+    if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'SELECT') return;
+    if (e.code === 'Space') {
+        e.preventDefault(); 
+        UI.isSpacePanMode = true; 
+        svg.style.cursor = 'grab'; 
+    }
+});
+
+document.addEventListener('keyup', (e) => {
+    if (e.code === 'Space') {
+        UI.isSpacePanMode = false; 
+        UI.isSpacePanning = false; 
+        svg.style.cursor = ''; 
+    }
+});
+
+// Keyboard Control Engine (Nudge & Hotkeys)
+document.addEventListener('keydown', (e) => {
+    // 1. Ignore keystrokes if typing in an input field or not selecting anything
+    if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'SELECT') return;
+    if (selectedElIndex === -1 || isDragging) return;
+
+    // --- NEW: DELETE HOTKEY ---
+    if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault(); // Stop Backspace from navigating the browser "Back"
+        deleteElement(selectedElIndex);
+        return; // Stop the rest of the function
+    }
+
+    // 2. Prevent moving locked rooms
     if (elements[selectedElIndex].locked) return;
 
+    // 3. Arrow Key Nudging
     if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
         e.preventDefault();
     }
@@ -1050,6 +1369,7 @@ document.addEventListener('keydown', (e) => {
 
     updateCanvas();
     
+    // Sync the sidebar sliders visually
     const rx = document.getElementById(`range-x-${selectedElIndex}`);
     const ry = document.getElementById(`range-y-${selectedElIndex}`);
     const nx = document.getElementById(`num-x-${selectedElIndex}`);
@@ -1729,8 +2049,131 @@ function rotateStaircase(index) {
     if (is3DMode) generate3DModel(); 
 }
 
+// ==========================================
+// --- UNDO/REDO KEYBOARD LISTENERS ---
+// ==========================================
+document.addEventListener('keydown', (e) => {
+    // Check for Ctrl + Z (Undo)
+    if (e.ctrlKey && e.key === 'z') {
+        e.preventDefault();
+        if (historyStack.length > 0) {
+            // Move current state to redo stack
+            redoStack.push(JSON.stringify({ elements: elements, fixtures: fixtures }));
+            
+            // Revert to previous state
+            const previousState = JSON.parse(historyStack.pop());
+            elements = previousState.elements;
+            fixtures = previousState.fixtures;
+            
+            renderSidebar();
+            updateCanvas();
+        }
+    }
+    
+    // Check for Ctrl + Shift + Z (Redo)
+    if (e.ctrlKey && e.shiftKey && e.key === 'Z') {
+        e.preventDefault();
+        if (redoStack.length > 0) {
+            historyStack.push(JSON.stringify({ elements: elements, fixtures: fixtures }));
+            const nextState = JSON.parse(redoStack.pop());
+            elements = nextState.elements;
+            fixtures = nextState.fixtures;
+            
+            renderSidebar();
+            updateCanvas();
+        }
+    }
+});
+
+// =========================================
+// AUTO-SAVE ENGINE (Browser Memory)
+// =========================================
+function saveToMemory() {
+    const data = {
+        elements: elements,
+        fixtures: fixtures,
+        inW: document.getElementById('inW').value,
+        inH: document.getElementById('inH').value,
+        floors: document.getElementById('b-floors').value
+    };
+    localStorage.setItem('ArchCAD_AutoSave', JSON.stringify(data));
+}
+
+function loadFromMemory() {
+    const saved = localStorage.getItem('ArchCAD_AutoSave');
+    if (saved) {
+        try {
+            const data = JSON.parse(saved);
+            if (data.elements && data.elements.length > 0) {
+                elements = data.elements;
+                fixtures = data.fixtures || [];
+                if (data.inW) document.getElementById('inW').value = data.inW;
+                if (data.inH) document.getElementById('inH').value = data.inH;
+                
+                // --- BULLETPROOF MULTI-FLOOR FIX ---
+                // Scan the saved memory to find the highest floor actually used
+                let maxFloor = 0;
+                elements.forEach(el => {
+                    if (el.floor > maxFloor) maxFloor = el.floor;
+                });
+
+                // Force the Auto-Builder input to match the actual floor count
+                const bFloorsInput = document.getElementById('b-floors');
+                if (bFloorsInput) {
+                    bFloorsInput.value = maxFloor + 1;
+                }
+            }
+        } catch (e) {
+            console.error("Auto-save load failed.", e);
+        }
+    }
+}
+
+// =========================================
+// RESET ENGINE
+// =========================================
+function resetWorkspace() {
+    // 1. Strong Confirmation Warning
+    if (confirm("⚠️ WARNING: This will completely erase your building and clear your saved memory. This cannot be undone.\n\nAre you sure you want to reset?")) {
+        
+        // 2. Clear all internal data arrays
+        elements = [];
+        fixtures = [];
+        currentFloor = 0;
+        
+        // 3. Reset Plot Dimensions to your original defaults
+        document.getElementById('inW').value = 272;
+        document.getElementById('inH').value = 400;
+        
+        // 4. Reset Floor Counts back to Ground Floor only
+        const bFloorsInput = document.getElementById('b-floors');
+        if (bFloorsInput) bFloorsInput.value = 1;
+        
+        // 5. THE MOST IMPORTANT PART: Nuke the browser's Auto-Save memory
+        localStorage.removeItem('ArchCAD_AutoSave');
+        
+        // 6. Reset the UI
+        renderFloorSelectors();
+        setFloor(0);
+        
+        // 7. Safety check: If they are in 3D mode, kick them back to 2D
+        if (typeof is3DMode !== 'undefined' && is3DMode) {
+            toggle3D();
+        }
+        
+        // 8. Force the canvas to redraw everything completely blank
+        updateCanvas();
+    }
+}
+
+function toggleTheme() {
+    const isClassic = document.body.classList.toggle('classic-theme');
+    updateCanvas(); 
+}
+
 
 // Initialization
 initDOMCache();
+loadFromMemory();
 renderFloorSelectors(); 
 updateCanvas();

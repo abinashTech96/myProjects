@@ -15,16 +15,6 @@ const colors = {
     balcony: '20, 184, 166' // Our new teal color
 };
 
-const roomIcons = { 
-    living: '🛋️', 
-    bedroom: '🛏️', 
-    toilet: '🚽', 
-    kitchen: '🍳', 
-    puja: '🕉️', 
-    staircase: '🪜', 
-    balcony: '🪴' 
-};
-
 
 // --- HIGH PERFORMANCE DOM CACHE ---
 const UI = {
@@ -192,7 +182,7 @@ function getMousePos(evt) {
 function startDrag(evt, index) {
     if (UI.isSpacePanMode) return; // Updated
     if (evt.button === 1 || evt.shiftKey) return; 
-    if (elements[index].locked) return; // Prevent dragging locked rooms
+    //if (elements[index].locked) return; // Prevent dragging locked rooms
     
     selectedElIndex = index;
     isDragging = true; dragElIndex = index;
@@ -438,7 +428,7 @@ function generateBuilding() {
                 x: Math.round(450 * scaleFactor), 
                 y: Math.round(20 * scaleFactor), 
                 floor: i,
-                locked: true,
+                locked: false,
                 dir: 'up' // <--- Now it's future-proofed!
             });
         }
@@ -502,21 +492,23 @@ function cloneEntireFloor() {
     // 2. Determine target floor
     const nextFloor = currentFloor + 1;
 
-    // 3. Clone Rooms
+    // 3. Clone Rooms (And track where the new rooms start in the array)
+    const newRoomStartIndex = elements.length;
     currentFloorElements.forEach(room => {
-        const clone = JSON.parse(JSON.stringify(room)); // Deep clone
+        const clone = JSON.parse(JSON.stringify(room)); 
         clone.floor = nextFloor;
         elements.push(clone);
     });
 
-    // 4. Clone Fixtures (Doors/Windows)
-    // We need to map the new fixtures to the new rooms we just created
-    // A simple way is to find the fixture, and map it to the room that has the same properties
+    // 4. Clone Fixtures (Safely map them to the new rooms)
     fixtures.forEach(fix => {
         const room = elements[fix.roomId];
-        if (room && room.floor === nextFloor) {
-            // This is a simplified clone; note: this assumes 1-to-1 mapping
-            // In a pro engine, we'd use a unique ID for each room to link perfectly.
+        if (room && room.floor === currentFloor) {
+            const cloneFix = JSON.parse(JSON.stringify(fix));
+            // Find which room this was on the current floor, and map it to the cloned room
+            const localIndex = currentFloorElements.indexOf(room);
+            cloneFix.roomId = newRoomStartIndex + localIndex;
+            fixtures.push(cloneFix);
         }
     });
 
@@ -550,17 +542,22 @@ function validateStairs() {
 }
 
 function deleteElement(idx) {
-    saveState(); // <-- (before the confirm dialog)
+    saveState(); 
     if(confirm('Are you sure you want to delete this room?')) { 
         elements.splice(idx, 1); 
         
+        // --- NEW: FIXTURE INDEX SHIFT REPAIR ---
+        // 1. Remove fixtures attached to the deleted room
+        fixtures = fixtures.filter(f => f.roomId !== idx);
+        // 2. Shift the roomId down for all fixtures attached to rooms that moved down
+        fixtures.forEach(f => {
+            if (f.roomId > idx) f.roomId--;
+        });
+        
         // --- Safe Selection Management ---
-        // If we deleted the currently selected room, clear the selection
         if (selectedElIndex === idx) {
             selectedElIndex = -1;
-        } 
-        // If we deleted a room that came before the selected room in the array, shift the index down by 1
-        else if (selectedElIndex > idx) {
+        } else if (selectedElIndex > idx) {
             selectedElIndex--;
         }
 
@@ -568,6 +565,7 @@ function deleteElement(idx) {
         updateCanvas(); 
     }
 }
+
 function cloneElement(idx) {
     const clone = JSON.parse(JSON.stringify(elements[idx]));
     clone.x += 20; clone.y += 20; elements.push(clone);
@@ -829,103 +827,26 @@ function drawProBadge(id, x, y, label, color, isVisible, currentZoom, container)
         <text x="0" y="4" fill="#f8fafc" font-size="11" font-weight="bold" text-anchor="middle" style="pointer-events: none;">${label}</text>
     `;
 }
-/*
-function createOrUpdateText(id, container, x, y, text, color, fontSize, isBold, elementIndex = -1) {
+
+
+function createOrUpdateText(id, container, x, y, text, color, fontSize, isBold) {
     let t = document.getElementById(id);
-    if (!t) {
-        // We use a foreignObject to allow standard HTML input inside an SVG
-        t = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
+    if (!t || t.tagName !== 'text') {
+        if(t) t.remove();
+        t = document.createElementNS("http://www.w3.org/2000/svg", "text");
         t.id = id;
-        t.setAttribute('width', '200');
-        t.setAttribute('height', '30');
-        t.style.overflow = 'visible';
+        t.setAttribute('text-anchor', 'middle');
+        t.setAttribute('pointer-events', 'none'); // Important: makes text non-interactive
+        t.style.textShadow = "1px 1px 2px #000";
         container.appendChild(t);
-        
-        const input = document.createElementNS("http://www.w3.org/1999/xhtml", "input");
-        input.style.background = 'transparent';
-        input.style.border = 'none';
-        input.style.color = color;
-        input.style.textAlign = 'center';
-        input.style.width = '100%';
-        input.style.fontWeight = isBold ? 'bold' : 'normal';
-        input.style.fontSize = fontSize + 'px';
-        input.style.textShadow = "1px 1px 2px #000";
-        input.style.cursor = 'text';
-
-        // When user finishes typing, save to our elements array
-        input.onblur = (e) => {
-            if (elementIndex !== -1) {
-                elements[elementIndex].customName = e.target.value;
-                updateCanvas();
-            }
-        };
-        t.appendChild(input);
     }
-    
-    t.setAttribute('x', x - 100); // Center the foreignObject
-    t.setAttribute('y', y - 10);
-    const input = t.firstChild;
-    input.value = text;
+    t.setAttribute('x', x);
+    t.setAttribute('y', y);
+    t.setAttribute('fill', color);
+    t.setAttribute('font-size', fontSize);
+    if (isBold) t.setAttribute('font-weight', 'bold');
+    t.textContent = text;
     t.style.display = 'block';
-}
-*/
-
-function createOrUpdateText(id, container, x, y, text, color, fontSize, isBold, elementIndex = -1, isEditable = false) {
-    let t = document.getElementById(id);
-    
-    // If it's editable, we use foreignObject to hold an input
-    if (isEditable) {
-        if (!t) {
-            t = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
-            t.id = id;
-            t.setAttribute('width', '200');
-            t.setAttribute('height', '30');
-            t.style.overflow = 'visible';
-            container.appendChild(t);
-            
-            const input = document.createElementNS("http://www.w3.org/1999/xhtml", "input");
-            input.style.background = 'transparent';
-            input.style.border = 'none';
-            input.style.color = color;
-            input.style.textAlign = 'center';
-            input.style.width = '100%';
-            input.style.fontWeight = isBold ? 'bold' : 'normal';
-            input.style.fontSize = fontSize + 'px';
-            input.style.textShadow = "1px 1px 2px #000";
-            input.style.cursor = 'text';
-
-            input.onblur = (e) => {
-                if (elementIndex !== -1) {
-                    elements[elementIndex].customName = e.target.value;
-                    updateCanvas();
-                }
-            };
-            t.appendChild(input);
-        }
-        t.setAttribute('x', x - 100);
-        t.setAttribute('y', y - 10);
-        t.firstChild.value = text;
-        t.style.display = 'block';
-    } 
-    // If not editable, use standard SVG <text>
-    else {
-        if (!t || t.tagName !== 'text') {
-            if(t) t.remove(); // Remove if it was a foreignObject previously
-            t = document.createElementNS("http://www.w3.org/2000/svg", "text");
-            t.id = id;
-            t.setAttribute('text-anchor', 'middle');
-            t.setAttribute('pointer-events', 'none');
-            t.style.textShadow = "1px 1px 2px #000";
-            container.appendChild(t);
-        }
-        t.setAttribute('x', x);
-        t.setAttribute('y', y);
-        t.setAttribute('fill', color);
-        t.setAttribute('font-size', fontSize);
-        if (isBold) t.setAttribute('font-weight', 'bold');
-        t.textContent = text;
-        t.style.display = 'block';
-    }
 }
 
 
@@ -1071,7 +992,7 @@ function updateCanvas() {
         if (!rh) { rh = document.createElementNS("http://www.w3.org/2000/svg", "rect"); rh.id = `rect-hollow-${i}`; gHollows.appendChild(rh); }
         
         if (el.floor !== currentFloor) {
-            r.style.display = 'none'; rb.style.display = 'none'; rh.style.display = 'none';
+            r.style.display = 'none'; rb.style.display = 'none'; rh.style.display = 'none';r.style.display = 'none'; rb.style.display = 'none'; rh.style.display = 'none';
             ['title', 'dims', 'area'].forEach(t => { let node = document.getElementById(`txt-${t}-${i}`); if(node) node.style.display = 'none'; });
             let dTop = document.getElementById(`dim-top-${i}`); let dLeft = document.getElementById(`dim-left-${i}`);
             if(dTop) dTop.style.display = 'none'; if(dLeft) dLeft.style.display = 'none';
@@ -1119,16 +1040,17 @@ function updateCanvas() {
         }
 
         // Text & Data (Appended to gText layer to ensure it stays on top of fills)
-        const cx = rx + w / 2; const cy = ry + h / 2;// --- NEW: Icon Logic ---
-        const icon = roomIcons[el.type] || '🏠';
-        // Use the custom name if it exists, otherwise use the display name
+        const cx = rx + w / 2; const cy = ry + h / 2;
+        
         const labelText = elements[i].customName || getRoomDisplayName(i);
-        // Render icon slightly above title
-        createOrUpdateText(`txt-icon-${i}`, gText, cx, cy - 25, icon, '#ffffff', '16', false, -1, false);
-        // 1. Title is editable (true)
-        createOrUpdateText(`txt-title-${i}`, gText, cx, cy - 12, labelText, '#ffffff', '12', true, i, true);
-        createOrUpdateText(`txt-dims-${i}`, gText, cx, cy + 4, `${Math.floor(el.w/12)}'${Math.round(el.w%12)}" × ${Math.floor(el.h/12)}'${Math.round(el.h%12)}"`, '#cbd5e1', '10', false, -1, false);
-        createOrUpdateText(`txt-area-${i}`, gText, cx, cy + 20, `${((el.w * el.h)/144).toFixed(1)} sq.ft`, '#94a3b8', '10', false, -1, false);
+        const dimsText = `${Math.floor(el.w/12)}'${Math.round(el.w%12)}" × ${Math.floor(el.h/12)}'${Math.round(el.h%12)}"`;
+        const areaText = `${((el.w * el.h)/144).toFixed(1)} sq.ft`;
+        
+        // Render standard text (Adjusted cy offsets to recenter the block)
+        createOrUpdateText(`txt-title-${i}`, gText, cx, cy - 8, labelText, '#ffffff', '12', true);
+        createOrUpdateText(`txt-dims-${i}`, gText, cx, cy + 6, dimsText, '#cbd5e1', '10', false);
+        createOrUpdateText(`txt-area-${i}`, gText, cx, cy + 20, areaText, '#94a3b8', '10', false);
+        
         // Grid Dimensions (Unchanged)
         const showDimsToggle = UI.showDims;
         let dimTop = document.getElementById(`dim-top-${i}`);
@@ -1147,7 +1069,9 @@ function updateCanvas() {
     });
 
     // --- 7. FIXTURES ---
-    let fixtureGroup = UI.fixtureContainer;
+    // THE FIX: Check the live DOM instead of the static cache
+    let fixtureGroup = document.getElementById('fixture-container'); 
+    
     if (!fixtureGroup) {
         fixtureGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
         fixtureGroup.id = 'fixture-container';
@@ -1196,7 +1120,6 @@ function updateCanvas() {
         }
     });
 
-    // --- 8. CLEANUP ---
     // --- 8. CLEANUP (Upgraded to handle the extra layers) ---
     let excessIndex = elements.length;
     while(document.getElementById(`rect-${excessIndex}`)) {
@@ -1204,6 +1127,7 @@ function updateCanvas() {
         let rb = document.getElementById(`rect-border-${excessIndex}`); if (rb) rb.remove();
         let rh = document.getElementById(`rect-hollow-${excessIndex}`); if (rh) rh.remove();
         ['title', 'dims', 'area'].forEach(t => { let n = document.getElementById(`txt-${t}-${excessIndex}`); if(n) n.remove(); });
+        //['icon', 'title', 'dims', 'area'].forEach(t => { let n = document.getElementById(`txt-${t}-${excessIndex}`); if(n) n.remove(); });
         let dt = document.getElementById(`dim-top-${excessIndex}`); if(dt) dt.remove();
         let dl = document.getElementById(`dim-left-${excessIndex}`); if(dl) dl.remove();
         excessIndex++;
@@ -1261,36 +1185,55 @@ function exportJSON() {
 }
 
 // Data Management (Upgraded Save/Load funcationality)
+// Data Management (Upgraded Save/Load functionality)
 function importJSON(event) { 
     const reader = new FileReader(); 
     reader.onload = (e) => { 
-        const data = JSON.parse(e.target.result); 
-        
-        elements = data.elements || []; 
-        fixtures = data.fixtures || []; 
-        
-        // --- BULLETPROOF MULTI-FLOOR FIX ---
-        let maxFloor = 0;
-        elements.forEach(el => { 
-            if (el.floor === undefined) el.floor = 0; 
-            if (el.floor > maxFloor) maxFloor = el.floor;
-        }); 
-        
-        document.getElementById('inW').value = data.building.w || 600; 
-        document.getElementById('inH').value = data.building.h || 700; 
-        
-        const bFloorsInput = document.getElementById('b-floors');
-        if (bFloorsInput) {
-            // Pick whichever is higher: the saved count or the highest actual room
-            bFloorsInput.value = Math.max(maxFloor + 1, data.floors || 1); 
-        }
+        try {
+            const data = JSON.parse(e.target.result); 
+            
+            // 1. Safely load arrays
+            elements = data.elements || []; 
+            // Nuke the old timeline so Undo doesn't break the new import
+            historyStack = [];
+            redoStack = [];
+            fixtures = data.fixtures || []; // Now loads doors/windows safely
+            
+            // 2. Bulletproof Multi-Floor & Data Integrity Fix
+            let maxFloor = 0;
+            elements.forEach(el => { 
+                if (el.floor === undefined) el.floor = 0; 
+                el.floor = parseInt(el.floor); // Force it to be a strict integer
+                if (el.floor > maxFloor) maxFloor = el.floor;
+                
+                // Fallback to prevent UI crashes if an imported room is missing a type
+                if (!el.type) el.type = 'living'; 
+            }); 
+            
+            // 3. Safely check for building dimensions before applying them
+            if (data.building) {
+                document.getElementById('inW').value = data.building.w || 600; 
+                document.getElementById('inH').value = data.building.h || 700; 
+            }
+            
+            // 4. Safely update the auto-builder floor tabs
+            const bFloorsInput = document.getElementById('b-floors');
+            if (bFloorsInput) {
+                bFloorsInput.value = Math.max(maxFloor + 1, data.floors || 1); 
+            }
 
-        renderFloorSelectors(); 
-        setFloor(0); 
+            // 5. Force the UI to rebuild from scratch
+            renderFloorSelectors(); 
+            setFloor(0); 
+
+        } catch (error) {
+            console.error("ArchCAD Import Error:", error);
+            alert("There was a problem reading this JSON file. It might be from an older version or corrupted.");
+        }
     }; 
     reader.readAsText(event.target.files[0]); 
     
-    // Clear the input so you can load the exact same file again if you need to
+    // Clear the input so you can load the exact same file again if needed
     event.target.value = '';
 }
 

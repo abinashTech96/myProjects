@@ -4,6 +4,7 @@ let currentFloor = 0;
 let globalCompassDir = 'West';
 let historyStack = [];
 let redoStack = [];
+let clipboard = null; // <-- ADD THIS LINE
 const MAX_HISTORY = 20; // Keep only the last 20 actions to save memory
 const colors = { 
     living: '168, 85, 247', 
@@ -159,6 +160,10 @@ svg.addEventListener('mousedown', (e) => {
     }
     if (e.target === svg || e.target.id === 'inner-rect' || e.target.id === 'outer-poly') {
         selectedElIndex = -1; 
+        
+        // --- THE FIX: Tell the sidebar to clear and show the empty state ---
+        renderSidebar(); 
+        
         updateCanvas();
     }
 });
@@ -167,6 +172,7 @@ svg.addEventListener('mousedown', (e) => {
 // --- HIGH PERFORMANCE DRAG & DROP ---
 let selectedElIndex = -1;
 let isDragging = false, dragElIndex = -1; 
+let hasDragged = false; // <-- ADD THIS
 let startMousePos, startElPos, animationFrameId = null;
 
 function getMousePos(evt) {
@@ -180,15 +186,25 @@ function getMousePos(evt) {
 }
 
 function startDrag(evt, index) {
-    if (UI.isSpacePanMode) return; // Updated
+    if (UI.isSpacePanMode) return; 
     if (evt.button === 1 || evt.shiftKey) return; 
-    //if (elements[index].locked) return; // Prevent dragging locked rooms
     
+    // 1. ALWAYS select the element when clicked
     selectedElIndex = index;
-    isDragging = true; dragElIndex = index;
+    
+    // 2. THE FIX: Immediately update the sidebar to show its properties!
+    renderSidebar();
+    updateCanvas(); 
+    
+    // 3. Stop here if it's locked (prevents dragging, but allows selection)
+    if (elements[index].locked) return; 
+    
+    // 4. If unlocked, proceed with drag setup
+    isDragging = true; 
+    dragElIndex = index;
+    hasDragged = false; 
     startMousePos = getMousePos(evt);
     startElPos = { x: elements[index].x, y: elements[index].y };
-    updateCanvas();
 }
 
 svg.addEventListener('mousemove', (e) => {
@@ -238,6 +254,7 @@ svg.addEventListener('mousemove', (e) => {
         } 
         
         // --- MODE 2: DRAGGING ROOMS (Existing Logic) ---
+        // --- MODE 2: DRAGGING ROOMS (Smart Alignment Engine) ---
         else if (isDragging && dragElIndex !== -1) {
             const dx = currentMouse.x - startMousePos.x;
             const dy = currentMouse.y - startMousePos.y;
@@ -247,64 +264,177 @@ svg.addEventListener('mousemove', (e) => {
             let newX = startElPos.x + (dx / SCALE);
             let newY = startElPos.y + (dy / SCALE);
             
-            // --- NEW: ORTHOGONAL DRAGGING (SHIFT + DRAG) ---
+            // Orthogonal Dragging (Shift + Drag)
             if (e.shiftKey) {
-                // Determine which direction the user moved more: horizontal or vertical
-                if (Math.abs(dx) > Math.abs(dy)) {
-                    newY = startElPos.y; // Lock to horizontal movement
-                } else {
-                    newX = startElPos.x; // Lock to vertical movement
-                }
+                if (Math.abs(dx) > Math.abs(dy)) newY = startElPos.y; 
+                else newX = startElPos.x; 
             }
-            // -----------------------------------------------
 
-            // --- UPDATED: DYNAMIC SNAP ENGINE ---
-            const isStrictSnap = document.getElementById('gridSnapToggle').checked;
-            const SNAP = isStrictSnap ? 12 : 1;
+            // --- THE FIGMA-STYLE SMART SNAPPING MATH ---
             const el = elements[dragElIndex];
-            
-             if (Math.abs(newX) < SNAP) newX = 0;
-            if (Math.abs(newX + el.w - inW) < SNAP) newX = inW - el.w;
-            if (Math.abs(newY) < SNAP) newY = 0;
-            if (Math.abs(newY + el.h - inH) < SNAP) newY = inH - el.h;
-            
+            const SNAP_DIST = 8 / SCALE; // Snap when within 8 scaled pixels
+            let snappedX = false;
+            let snappedY = false;
+            let guideLines = []; 
+
+            // Create/Clear the Guide SVG Layer
+            let guideLayer = document.getElementById('smart-guides');
+            if (!guideLayer) {
+                guideLayer = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                guideLayer.id = 'smart-guides';
+                svg.appendChild(guideLayer);
+            }
+            guideLayer.innerHTML = '';
+
+            // Calculate the edges and center of the room you are currently dragging
+            let dLeft = newX, dRight = newX + el.w, dCenter = newX + (el.w / 2);
+            let dTop = newY, dBottom = newY + el.h, dMiddle = newY + (el.h / 2);
+
+            // Compare against every other room on the floor
             elements.forEach((other, i) => {
                 if (i === dragElIndex || other.floor !== currentFloor) return;
-                if (Math.abs(newX - (other.x + other.w)) < SNAP) newX = other.x + other.w;
-                if (Math.abs((newX + el.w) - other.x) < SNAP) newX = other.x - el.w;
-                if (Math.abs(newX - other.x) < SNAP) newX = other.x;
-                if (Math.abs((newX + el.w) - (other.x + other.w)) < SNAP) newX = other.x + other.w - el.w;
-                if (Math.abs(newY - (other.y + other.h)) < SNAP) newY = other.y + other.h;
-                if (Math.abs((newY + el.h) - other.y) < SNAP) newY = other.y - el.h;
-                if (Math.abs(newY - other.y) < SNAP) newY = other.y;
-                if (Math.abs((newY + el.h) - (other.y + other.h)) < SNAP) newY = other.y + other.h - el.h;
+
+                let oLeft = other.x, oRight = other.x + other.w, oCenter = other.x + (other.w / 2);
+                let oTop = other.y, oBottom = other.y + other.h, oMiddle = other.y + (other.h / 2);
+
+                // Check X-Axis Alignments (Left, Right, and Center)
+                if (!snappedX) {
+                    const xChecks = [
+                        { d: dLeft, o: oLeft, offset: 0 }, { d: dLeft, o: oRight, offset: 0 },
+                        { d: dRight, o: oLeft, offset: -el.w }, { d: dRight, o: oRight, offset: -el.w },
+                        { d: dCenter, o: oCenter, offset: -el.w/2 }
+                    ];
+                    for (let check of xChecks) {
+                        if (Math.abs(check.d - check.o) < SNAP_DIST) {
+                            newX = check.o + check.offset;
+                            snappedX = true;
+                            guideLines.push({ type: 'x', pos: check.o }); // Store guide position
+                            break;
+                        }
+                    }
+                }
+
+                // Check Y-Axis Alignments (Top, Bottom, and Center)
+                if (!snappedY) {
+                    const yChecks = [
+                        { d: dTop, o: oTop, offset: 0 }, { d: dTop, o: oBottom, offset: 0 },
+                        { d: dBottom, o: oTop, offset: -el.h }, { d: dBottom, o: oBottom, offset: -el.h },
+                        { d: dMiddle, o: oMiddle, offset: -el.h/2 }
+                    ];
+                    for (let check of yChecks) {
+                        if (Math.abs(check.d - check.o) < SNAP_DIST) {
+                            newY = check.o + check.offset;
+                            snappedY = true;
+                            guideLines.push({ type: 'y', pos: check.o }); // Store guide position
+                            break;
+                        }
+                    }
+                }
             });
 
-            elements[dragElIndex].x = Math.round(newX); elements[dragElIndex].y = Math.round(newY);
+            // Standard grid snapping fallback (if smart alignment didn't find anything)
+            const isStrictSnap = document.getElementById('gridSnapToggle').checked;
+            if (!snappedX) newX = isStrictSnap ? Math.round(newX / 12) * 12 : Math.round(newX);
+            if (!snappedY) newY = isStrictSnap ? Math.round(newY / 12) * 12 : Math.round(newY);
+
+            // Boundary Plot Constraints (Don't let them drag off the blueprint)
+            if (newX < 0) newX = 0;
+            if (newX + el.w > inW) newX = inW - el.w;
+            if (newY < 0) newY = 0;
+            if (newY + el.h > inH) newY = inH - el.h;
+
+            elements[dragElIndex].x = newX; 
+            elements[dragElIndex].y = newY;
             updateCanvas(); 
             
-            // Sync Sidebar
-            const rangeX = document.getElementById(`range-x-${dragElIndex}`);
-            const rangeY = document.getElementById(`range-y-${dragElIndex}`);
-            const numX = document.getElementById(`num-x-${dragElIndex}`);
-            const numY = document.getElementById(`num-y-${dragElIndex}`);
-            if(rangeX) rangeX.value = elements[dragElIndex].x;
-            if(rangeY) rangeY.value = elements[dragElIndex].y;
-            if(numX) numX.value = elements[dragElIndex].x;
-            if(numY) numY.value = elements[dragElIndex].y;
+            // --- DRAW THE VISUAL GUIDES ON TOP ---
+            const Ix = 500 - ((inW * SCALE)/2);
+            const Iy = 500 - ((inH * SCALE)/2);
+
+            guideLines.forEach(line => {
+                const svgLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                svgLine.setAttribute('class', 'smart-guide');
+                
+                if (line.type === 'x') {
+                    // Draw a vertical line from top to bottom of the building plot
+                    const realX = Ix + (line.pos * SCALE);
+                    svgLine.setAttribute('x1', realX); svgLine.setAttribute('x2', realX);
+                    svgLine.setAttribute('y1', Iy - 50); svgLine.setAttribute('y2', Iy + (inH * SCALE) + 50);
+                } else {
+                    // Draw a horizontal line from left to right
+                    const realY = Iy + (line.pos * SCALE);
+                    svgLine.setAttribute('y1', realY); svgLine.setAttribute('y2', realY);
+                    svgLine.setAttribute('x1', Ix - 50); svgLine.setAttribute('x2', Ix + (inW * SCALE) + 50);
+                }
+                guideLayer.appendChild(svgLine);
+            });
+
+            // Sync Sidebar Form inputs
+            const rx = document.getElementById(`range-x-${dragElIndex}`);
+            const ry = document.getElementById(`range-y-${dragElIndex}`);
+            const nx = document.getElementById(`num-x-${dragElIndex}`);
+            const ny = document.getElementById(`num-y-${dragElIndex}`);
+            if(rx) rx.value = newX; if(ry) ry.value = newY;
+            if(nx) nx.value = newX; if(ny) ny.value = newY;
         }
+        hasDragged = true;
     });
 });
 
 svg.addEventListener('mouseup', () => { 
-    saveState(); // <-- (this records the position after the drag)
+    if (hasDragged) saveState(); // <-- (this records the position after the drag)
     UI.isSpacePanning = false; // Updated
     if (UI.isSpacePanMode) svg.style.cursor = 'grab'; // Updated
     isDragging = false; 
     dragFixtureIndex = -1; 
     isDraggingFixture = false; 
+
+    // --- NEW: Clear smart guides when you drop the room ---
+    const guideLayer = document.getElementById('smart-guides');
+    if (guideLayer) guideLayer.innerHTML = '';
 });
 svg.addEventListener('mouseleave', () => { isDragging = false; dragElIndex = -1; });
+
+// =========================================
+// --- IPAD / TOUCH SUPPORT ENGINE ---
+// =========================================
+function getTouchPos(evt) {
+    const pt = svg.createSVGPoint();
+    pt.x = evt.touches[0].clientX; pt.y = evt.touches[0].clientY;
+    const svgP = pt.matrixTransform(svg.getScreenCTM().inverse());
+    return { x: (svgP.x - panX) / zoomLvl, y: (svgP.y - panY) / zoomLvl };
+}
+
+svg.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 1 && e.target.id.startsWith('rect-')) {
+        const index = parseInt(e.target.id.split('-')[1]);
+        // Trick the engine into thinking a mouse clicked it
+        startDrag({ button: 0, shiftKey: false, clientX: e.touches[0].clientX, clientY: e.touches[0].clientY }, index);
+    }
+}, {passive: false});
+
+svg.addEventListener('touchmove', (e) => {
+    if (isDragging && e.touches.length === 1 && dragElIndex !== -1) {
+        e.preventDefault(); // Stop iPad screen from scrolling
+        const currentMouse = getTouchPos(e);
+        const SCALE = parseFloat(document.getElementById('scaleInput').value);
+        const dx = currentMouse.x - startMousePos.x;
+        const dy = currentMouse.y - startMousePos.y;
+        
+        elements[dragElIndex].x = Math.round(startElPos.x + (dx / SCALE));
+        elements[dragElIndex].y = Math.round(startElPos.y + (dy / SCALE));
+        
+        updateCanvas();
+        hasDragged = true;
+    }
+}, {passive: false});
+
+svg.addEventListener('touchend', () => {
+    if (hasDragged) saveState();
+    isDragging = false; 
+    dragElIndex = -1;
+});
+
 
 // --- UTILITIES & TEMPLATES ---
 function getRoomDisplayName(index) {
@@ -618,59 +748,6 @@ function addFixture(type) {
     updateCanvas();
 }
 
-// --- RENDERING ---
-/*
-function renderSidebar() {
-    ctrl.innerHTML = '';
-    for (let i = 0; i < elements.length; i++) {
-        const el = elements[i];
-        if (el.floor !== currentFloor) continue; 
-        
-        const div = document.createElement('div');
-        div.className = 'panel';
-        div.id = `panel-${i}`;
-        const displayName = getRoomDisplayName(i);
-        
-        div.innerHTML = `
-            <div class="action-bar">
-                <button class="action-btn" onclick="elements[${i}].locked = !elements[${i}].locked; renderSidebar(); updateCanvas();"
-                    style="border-color: ${el.locked ? '#fbbf24' : '#475569'}; color: ${el.locked ? '#fbbf24' : ''}"
-                    title="Lock/Unlock Room">
-                    ${el.locked ? '🔒' : '🔓'}
-                </button>
-                <button class="action-btn" onclick="rotateElement(${i})" title="Rotate Room">🔄</button>
-                <button class="action-btn" onclick="cloneElement(${i})" title="Duplicate Room">📋</button>
-                <button class="action-btn del" onclick="deleteElement(${i})" title="Delete Room">🗑️</button>
-            </div>
-            <b style="font-size:0.75rem">${displayName}</b>
-            
-            <div class="input-grid" style="margin-top: 10px;">
-                <input type="number" value="${el.w}" onchange="elements[${i}].w=parseInt(this.value);updateCanvas()"> 
-                <input type="number" value="${el.h}" onchange="elements[${i}].h=parseInt(this.value);updateCanvas()">
-            </div>
-
-            <div class="field">
-                <label>X-Position
-                    <input type="number" id="num-x-${i}" value="${el.x}" style="width: 60px; height: 20px;" 
-                        oninput="elements[${i}].x=parseInt(this.value); document.getElementById('range-x-${i}').value=this.value; updateCanvas()">
-                </label>
-                <input type="range" id="range-x-${i}" min="0" max="800" value="${el.x}" 
-                    oninput="elements[${i}].x=parseInt(this.value); document.getElementById('num-x-${i}').value=this.value; updateCanvas()">
-            </div>
-
-            <div class="field">
-                <label>Y-Position
-                    <input type="number" id="num-y-${i}" value="${el.y}" style="width: 60px; height: 20px;" 
-                        oninput="elements[${i}].y=parseInt(this.value); document.getElementById('range-y-${i}').value=this.value; updateCanvas()">
-                </label>
-                <input type="range" id="range-y-${i}" min="0" max="800" value="${el.y}" 
-                    oninput="elements[${i}].y=parseInt(this.value); document.getElementById('num-y-${i}').value=this.value; updateCanvas()">
-            </div>`;
-        ctrl.appendChild(div);
-    }
-}
-*/
-
 let isDraggingFixture = false;
 let dragFixtureIndex = -1;
 
@@ -703,102 +780,231 @@ function addWindow(roomId) {
 function startDragFixture(index) {
     isDraggingFixture = true;
     dragFixtureIndex = index;
+    hasDragged = false;
+}
+
+
+function renderSidebarOld() {
+    ctrl.innerHTML = '';
+    
+    // --- THE UPGRADE: Contextual Empty State ---
+    if (selectedElIndex === -1) {
+        ctrl.innerHTML = `
+            <div style="padding: 40px 20px; text-align: center; color: #64748b; font-size: 0.8rem; border: 1px dashed #334155; border-radius: 8px; margin-top: 10px; background: rgba(0,0,0,0.2);">
+                <div style="font-size: 1.5rem; margin-bottom: 10px;">🖱️</div>
+                Select any room on the blueprint to edit its dimensions, position, doors, and windows.
+            </div>`;
+        return;
+    }
+
+    // Only render the actively selected room
+    const i = selectedElIndex;
+    const el = elements[i];
+    if (el.floor !== currentFloor) return; 
+    
+    const div = document.createElement('div');
+    div.className = 'panel';
+    div.id = `panel-${i}`;
+    div.style.marginBottom = "20px";
+    div.style.border = "1px solid #38bdf8"; // Highlight that it's actively selected
+    div.style.boxShadow = "0 0 15px rgba(56, 189, 248, 0.15)";
+
+    // --- THE ROOM HEADER & CONTROLS ---
+    let staircaseControls = '';
+    if (el.type === 'staircase') {
+        staircaseControls = `
+            <button class="action-btn" onclick="rotateStaircase(${i})" title="Rotate Staircase">
+                🔄 ${el.dir ? el.dir.toUpperCase() : 'UP'}
+            </button>
+        `;
+    }
+    
+    div.innerHTML = `
+        <div class="room-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <span style="font-weight:bold; font-size: 0.8rem; color: #38bdf8;">📝 EDITING: ${getRoomDisplayName(i)}</span>
+            <div class="action-bar" style="display:flex; gap:2px;">
+                ${staircaseControls}
+                <button class="action-btn" onclick="addDoor(${i})" title="Add Door">🚪</button>
+                <button class="action-btn" onclick="addWindow(${i})" title="Add Window">🪟</button>
+                <button class="action-btn" onclick="rotateElement(${i})" title="Rotate">🔄</button>
+                <button class="action-btn" onclick="cloneElement(${i})" title="Duplicate">📋</button>
+                <button class="action-btn" onclick="elements[${i}].locked = !elements[${i}].locked; renderSidebar();" title="Lock">${el.locked ? '🔒' : '🔓'}</button>
+                <button class="action-btn del" onclick="deleteElement(${i})" title="Delete">🗑️</button>
+            </div>
+        </div>
+
+        <div class="dim-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-bottom:10px;">
+            <div><label style="font-size:0.65rem; color:#94a3b8;">WIDTH</label><input type="number" value="${el.w}" onchange="elements[${i}].w=parseInt(this.value);updateCanvas()"></div>
+            <div><label style="font-size:0.65rem; color:#94a3b8;">HEIGHT</label><input type="number" value="${el.h}" onchange="elements[${i}].h=parseInt(this.value);updateCanvas()"></div>
+        </div>
+
+        <div class="pos-group">
+            <div class="pos-row" style="display:flex; align-items:center; gap:8px; margin-bottom:5px;">
+                <label style="font-size:0.7rem; width:15px;">X</label>
+                <input type="number" id="num-x-${i}" value="${el.x}" oninput="elements[${i}].x=parseInt(this.value); document.getElementById('range-x-${i}').value=this.value; updateCanvas()">
+                <input type="range" id="range-x-${i}" min="0" max="800" value="${el.x}" oninput="elements[${i}].x=parseInt(this.value); document.getElementById('num-x-${i}').value=this.value; updateCanvas()">
+            </div>
+            <div class="pos-row" style="display:flex; align-items:center; gap:8px;">
+                <label style="font-size:0.7rem; width:15px;">Y</label>
+                <input type="number" id="num-y-${i}" value="${el.y}" oninput="elements[${i}].y=parseInt(this.value); document.getElementById('range-y-${i}').value=this.value; updateCanvas()">
+                <input type="range" id="range-y-${i}" min="0" max="800" value="${el.y}" oninput="elements[${i}].y=parseInt(this.value); document.getElementById('num-y-${i}').value=this.value; updateCanvas()">
+            </div>
+        </div>`;
+
+    // --- EXISTING FIXTURE CONTROLS ---
+    const roomFixtures = fixtures.filter(f => f.roomId === i);
+    if (roomFixtures.length > 0) {
+        div.innerHTML += `<div style="margin-top:15px; border-top:1px solid #334155; padding-top:10px; font-size:0.7rem; color:#94a3b8;">FIXTURES:</div>`;
+        
+        roomFixtures.forEach((fix) => {
+            const globalIdx = fixtures.indexOf(fix);
+            const maxOffset = (fix.edge === 'bottom' || fix.edge === 'top') ? (el.w - fix.size) : (el.h - fix.size);
+
+            div.innerHTML += `
+                <div style="font-size:0.75rem; margin-top:5px; background:rgba(0,0,0,0.2); padding:8px; border-radius:4px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                        <b>${fix.type.toUpperCase()}</b>
+                        <button class="action-btn" onclick="fixtures.splice(${globalIdx},1); renderSidebar(); updateCanvas()">🗑️</button>
+                    </div>
+                    
+                    <label style="font-size:0.6rem; color:#94a3b8;">SIZE</label>
+                    <input type="number" style="width:100%; margin-bottom:5px;" value="${fix.size}" onchange="fixtures[${globalIdx}].size=parseInt(this.value); renderSidebar(); updateCanvas()">
+                    
+                    <label style="font-size:0.6rem; color:#94a3b8;">POSITION (OFFSET)</label>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <input type="number" value="${fix.offset}" oninput="fixtures[${globalIdx}].offset=parseInt(this.value); document.getElementById('range-fix-${globalIdx}').value=this.value; updateCanvas()">
+                        <input type="range" id="range-fix-${globalIdx}" min="0" max="${maxOffset}" value="${fix.offset}" oninput="fixtures[${globalIdx}].offset=parseInt(this.value); document.getElementById('num-fix-${globalIdx}').value=this.value; updateCanvas()">
+                    </div>
+
+                    <select onchange="fixtures[${globalIdx}].edge=this.value; renderSidebar(); updateCanvas()" style="width:100%; margin-top:5px; background:#0f172a; color:white; border:none; padding:2px;">
+                        <option value="bottom" ${fix.edge==='bottom'?'selected':''}>Bottom</option>
+                        <option value="top" ${fix.edge==='top'?'selected':''}>Top</option>
+                        <option value="left" ${fix.edge==='left'?'selected':''}>Left</option>
+                        <option value="right" ${fix.edge==='right'?'selected':''}>Right</option>
+                    </select>
+                </div>`;
+        });
+    }
+    ctrl.appendChild(div);
 }
 
 
 function renderSidebar() {
     ctrl.innerHTML = '';
-    for (let i = 0; i < elements.length; i++) {
-        const el = elements[i];
-        if (el.floor !== currentFloor) continue; 
-        
-        const div = document.createElement('div');
-        div.className = 'panel';
-        div.id = `panel-${i}`;
-        div.style.marginBottom = "20px";
+    
+    // --- Contextual Empty State ---
+    if (selectedElIndex === -1) {
+        ctrl.innerHTML = `
+            <div style="padding: 40px 20px; text-align: center; color: #64748b; font-size: 0.8rem; border: 1px dashed #334155; border-radius: 8px; margin-top: 10px; background: rgba(0,0,0,0.2);">
+                <div style="font-size: 1.5rem; margin-bottom: 10px;">🖱️</div>
+                Select any room on the blueprint to edit its dimensions, position, doors, and windows.
+            </div>`;
+        return;
+    }
 
-        // --- 1. THE ROOM HEADER & CONTROLS ---
-        let staircaseControls = '';
-        if (el.type === 'staircase') {
-            staircaseControls = `
-                <button class="action-btn" onclick="rotateStaircase(${i})" title="Rotate Staircase">
-                    🔄 ${el.dir ? el.dir.toUpperCase() : 'UP'}
-                </button>
-            `;
-        }
-        
-        div.innerHTML = `
-            <div class="room-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                <span style="font-weight:bold; font-size: 0.8rem;">${getRoomDisplayName(i)}</span>
-                <div class="action-bar" style="display:flex; gap:2px;">
+    // Only render the actively selected room
+    const i = selectedElIndex;
+    const el = elements[i];
+    if (el.floor !== currentFloor) return; 
+    
+    const div = document.createElement('div');
+    div.className = 'panel';
+    div.id = `panel-${i}`;
+    div.style.marginBottom = "20px";
+    div.style.border = "1px solid #38bdf8"; 
+    div.style.boxShadow = "0 0 15px rgba(56, 189, 248, 0.15)";
+
+    let staircaseControls = '';
+    if (el.type === 'staircase') {
+        staircaseControls = `
+            <button class="action-btn" onclick="rotateStaircase(${i})" title="Rotate Staircase">
+                🔄 ${el.dir ? el.dir.toUpperCase() : 'UP'}
+            </button>
+        `;
+    }
+    
+    const defaultHex = "#38bdf8"; 
+    
+    div.innerHTML = `
+        <div class="room-header" style="display:flex; flex-direction:column; gap:8px; margin-bottom:15px;">
+            
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-weight:bold; font-size: 0.8rem; color: #38bdf8;">📝 EDITING</span>
+                <div class="action-bar" style="position:relative; right:0; top:0; display:flex; gap:2px;">
                     ${staircaseControls}
                     <button class="action-btn" onclick="addDoor(${i})" title="Add Door">🚪</button>
                     <button class="action-btn" onclick="addWindow(${i})" title="Add Window">🪟</button>
                     <button class="action-btn" onclick="rotateElement(${i})" title="Rotate">🔄</button>
                     <button class="action-btn" onclick="cloneElement(${i})" title="Duplicate">📋</button>
                     <button class="action-btn" onclick="elements[${i}].locked = !elements[${i}].locked; renderSidebar();" title="Lock">${el.locked ? '🔒' : '🔓'}</button>
-                    <button class="action-btn" onclick="deleteElement(${i})" title="Delete">🗑️</button>
+                    <button class="action-btn del" onclick="deleteElement(${i})" title="Delete">🗑️</button>
                 </div>
             </div>
-
-            <div class="dim-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-bottom:10px;">
-                <div><label style="font-size:0.65rem; color:#94a3b8;">WIDTH</label><input type="number" value="${el.w}" onchange="elements[${i}].w=parseInt(this.value);updateCanvas()"></div>
-                <div><label style="font-size:0.65rem; color:#94a3b8;">HEIGHT</label><input type="number" value="${el.h}" onchange="elements[${i}].h=parseInt(this.value);updateCanvas()"></div>
-            </div>
-
-            <div class="pos-group">
-                <div class="pos-row" style="display:flex; align-items:center; gap:8px; margin-bottom:5px;">
-                    <label style="font-size:0.7rem; width:15px;">X</label>
-                    <input type="number" id="num-x-${i}" value="${el.x}" oninput="elements[${i}].x=parseInt(this.value); document.getElementById('range-x-${i}').value=this.value; updateCanvas()">
-                    <input type="range" id="range-x-${i}" min="0" max="800" value="${el.x}" oninput="elements[${i}].x=parseInt(this.value); document.getElementById('num-x-${i}').value=this.value; updateCanvas()">
-                </div>
-                <div class="pos-row" style="display:flex; align-items:center; gap:8px;">
-                    <label style="font-size:0.7rem; width:15px;">Y</label>
-                    <input type="number" id="num-y-${i}" value="${el.y}" oninput="elements[${i}].y=parseInt(this.value); document.getElementById('range-y-${i}').value=this.value; updateCanvas()">
-                    <input type="range" id="range-y-${i}" min="0" max="800" value="${el.y}" oninput="elements[${i}].y=parseInt(this.value); document.getElementById('num-y-${i}').value=this.value; updateCanvas()">
-                </div>
-            </div>`;
-
-        // --- 2. EXISTING FIXTURE CONTROLS ---
-        const roomFixtures = fixtures.filter(f => f.roomId === i);
-        if (roomFixtures.length > 0) {
-            div.innerHTML += `<div style="margin-top:15px; border-top:1px solid #334155; padding-top:10px; font-size:0.7rem; color:#94a3b8;">FIXTURES:</div>`;
             
-            roomFixtures.forEach((fix) => {
-                const globalIdx = fixtures.indexOf(fix);
-                // Calculate the physical limit for the slider so it never leaves the room walls
-                const maxOffset = (fix.edge === 'bottom' || fix.edge === 'top') 
-                                ? (el.w - fix.size) : (el.h - fix.size);
+            <div style="display:flex; gap:8px;">
+                <input type="text" placeholder="${getRoomDisplayName(i)}" value="${el.customName || ''}" 
+                    onchange="elements[${i}].customName=this.value; updateCanvas();" 
+                    style="flex-grow: 1; padding: 6px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 4px;">
+                
+                <input type="color" value="${el.customColor || defaultHex}" 
+                    onchange="elements[${i}].customColor=this.value; updateCanvas();" 
+                    style="width: 36px; height: 32px; padding: 0; cursor: pointer; border-radius:4px; border:none; background: transparent;">
+            </div>
+        </div>
 
-                div.innerHTML += `
-                    <div style="font-size:0.75rem; margin-top:5px; background:rgba(0,0,0,0.2); padding:8px; border-radius:4px;">
-                        <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-                            <b>${fix.type.toUpperCase()}</b>
-                            <button class="action-btn" onclick="fixtures.splice(${globalIdx},1); renderSidebar(); updateCanvas()">🗑️</button>
-                        </div>
-                        
-                        <label style="font-size:0.6rem; color:#94a3b8;">SIZE</label>
-                        <input type="number" style="width:100%; margin-bottom:5px;" value="${fix.size}" onchange="fixtures[${globalIdx}].size=parseInt(this.value); renderSidebar(); updateCanvas()">
-                        
-                        <label style="font-size:0.6rem; color:#94a3b8;">POSITION (OFFSET)</label>
-                        <div style="display:flex; align-items:center; gap:8px;">
-                            <input type="number" value="${fix.offset}" 
-                                oninput="fixtures[${globalIdx}].offset=parseInt(this.value); document.getElementById('range-fix-${globalIdx}').value=this.value; updateCanvas()">
-                            <input type="range" id="range-fix-${globalIdx}" min="0" max="${maxOffset}" value="${fix.offset}" 
-                                oninput="fixtures[${globalIdx}].offset=parseInt(this.value); document.getElementById('num-fix-${globalIdx}').value=this.value; updateCanvas()">
-                        </div>
+        <div class="dim-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-bottom:10px;">
+            <div><label style="font-size:0.65rem; color:#94a3b8;">WIDTH</label><input type="number" value="${el.w}" onchange="elements[${i}].w=parseInt(this.value);updateCanvas()"></div>
+            <div><label style="font-size:0.65rem; color:#94a3b8;">HEIGHT</label><input type="number" value="${el.h}" onchange="elements[${i}].h=parseInt(this.value);updateCanvas()"></div>
+        </div>
 
-                        <select onchange="fixtures[${globalIdx}].edge=this.value; renderSidebar(); updateCanvas()" style="width:100%; margin-top:5px; background:#0f172a; color:white; border:none; padding:2px;">
-                            <option value="bottom" ${fix.edge==='bottom'?'selected':''}>Bottom</option>
-                            <option value="top" ${fix.edge==='top'?'selected':''}>Top</option>
-                            <option value="left" ${fix.edge==='left'?'selected':''}>Left</option>
-                            <option value="right" ${fix.edge==='right'?'selected':''}>Right</option>
-                        </select>
-                    </div>`;
-            });
-        }
-        ctrl.appendChild(div);
+        <div class="pos-group">
+            <div class="pos-row" style="display:flex; align-items:center; gap:8px; margin-bottom:5px;">
+                <label style="font-size:0.7rem; width:15px;">X</label>
+                <input type="number" id="num-x-${i}" value="${el.x}" oninput="elements[${i}].x=parseInt(this.value); document.getElementById('range-x-${i}').value=this.value; updateCanvas()">
+                <input type="range" id="range-x-${i}" min="0" max="800" value="${el.x}" oninput="elements[${i}].x=parseInt(this.value); document.getElementById('num-x-${i}').value=this.value; updateCanvas()">
+            </div>
+            <div class="pos-row" style="display:flex; align-items:center; gap:8px;">
+                <label style="font-size:0.7rem; width:15px;">Y</label>
+                <input type="number" id="num-y-${i}" value="${el.y}" oninput="elements[${i}].y=parseInt(this.value); document.getElementById('range-y-${i}').value=this.value; updateCanvas()">
+                <input type="range" id="range-y-${i}" min="0" max="800" value="${el.y}" oninput="elements[${i}].y=parseInt(this.value); document.getElementById('num-y-${i}').value=this.value; updateCanvas()">
+            </div>
+        </div>`;
+
+    // --- EXISTING FIXTURE CONTROLS ---
+    const roomFixtures = fixtures.filter(f => f.roomId === i);
+    if (roomFixtures.length > 0) {
+        div.innerHTML += `<div style="margin-top:15px; border-top:1px solid #334155; padding-top:10px; font-size:0.7rem; color:#94a3b8;">FIXTURES:</div>`;
+        
+        roomFixtures.forEach((fix) => {
+            const globalIdx = fixtures.indexOf(fix);
+            const maxOffset = (fix.edge === 'bottom' || fix.edge === 'top') ? (el.w - fix.size) : (el.h - fix.size);
+
+            div.innerHTML += `
+                <div style="font-size:0.75rem; margin-top:5px; background:rgba(0,0,0,0.2); padding:8px; border-radius:4px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                        <b>${fix.type.toUpperCase()}</b>
+                        <button class="action-btn" onclick="fixtures.splice(${globalIdx},1); renderSidebar(); updateCanvas()">🗑️</button>
+                    </div>
+                    
+                    <label style="font-size:0.6rem; color:#94a3b8;">SIZE</label>
+                    <input type="number" style="width:100%; margin-bottom:5px;" value="${fix.size}" onchange="fixtures[${globalIdx}].size=parseInt(this.value); renderSidebar(); updateCanvas()">
+                    
+                    <label style="font-size:0.6rem; color:#94a3b8;">POSITION (OFFSET)</label>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <input type="number" value="${fix.offset}" oninput="fixtures[${globalIdx}].offset=parseInt(this.value); document.getElementById('range-fix-${globalIdx}').value=this.value; updateCanvas()">
+                        <input type="range" id="range-fix-${globalIdx}" min="0" max="${maxOffset}" value="${fix.offset}" oninput="fixtures[${globalIdx}].offset=parseInt(this.value); document.getElementById('num-fix-${globalIdx}').value=this.value; updateCanvas()">
+                    </div>
+
+                    <select onchange="fixtures[${globalIdx}].edge=this.value; renderSidebar(); updateCanvas()" style="width:100%; margin-top:5px; background:#0f172a; color:white; border:none; padding:2px;">
+                        <option value="bottom" ${fix.edge==='bottom'?'selected':''}>Bottom</option>
+                        <option value="top" ${fix.edge==='top'?'selected':''}>Top</option>
+                        <option value="left" ${fix.edge==='left'?'selected':''}>Left</option>
+                        <option value="right" ${fix.edge==='right'?'selected':''}>Right</option>
+                    </select>
+                </div>`;
+        });
     }
+    ctrl.appendChild(div);
 }
 
 // ==========================================
@@ -1019,7 +1225,15 @@ function updateCanvas() {
         const overlapText = document.getElementById(`overlap-${i}`);
         if (overlapText) overlapText.innerText = isColliding ? ' (Overlap!)' : '';
 
-        const baseColor = colors[el.type] || '255,255,255';
+        let baseColor = colors[el.type] || '255,255,255';
+        if (el.customColor) {
+            // Convert Hex #RRGGBB to "R, G, B" for SVG drawing
+            const hex = el.customColor.replace('#', '');
+            const r = parseInt(hex.substring(0, 2), 16);
+            const g = parseInt(hex.substring(2, 4), 16);
+            const b = parseInt(hex.substring(4, 6), 16);
+            baseColor = `${r}, ${g}, ${b}`;
+        }
         const strokeColor = isSelected ? '#ffffff' : (isColliding ? '#ef4444' : `rgb(${baseColor})`);
         const fillColor = isColliding ? 'rgba(239, 68, 68, 0.4)' : `rgba(${baseColor}, 0.2)`;
 
@@ -1184,7 +1398,6 @@ function exportJSON() {
     a.click(); 
 }
 
-// Data Management (Upgraded Save/Load funcationality)
 // Data Management (Upgraded Save/Load functionality)
 function importJSON(event) { 
     const reader = new FileReader(); 
@@ -1237,6 +1450,7 @@ function importJSON(event) {
     event.target.value = '';
 }
 
+/*
 function importJSON(event) { 
     const reader = new FileReader(); 
     reader.onload = (e) => { 
@@ -1261,6 +1475,7 @@ function importJSON(event) {
     // Clear the input so you can load the exact same file again if you need to
     event.target.value = '';
 }
+*/
 
 // =========================================
 // --- SPACEBAR LISTENERS ---
@@ -1522,7 +1737,7 @@ function toggle3D() {
     if (is3DMode) {
         svg.style.display = 'none';
         container3D.style.display = 'block';
-        if (navPad) navPad.style.display = 'grid'; // <-- ADDED THIS (matches your grid CSS)
+        if (navPad) navPad.style.display = 'flex';
         
         if (!scene3D) init3D();
         generate3DModel();
@@ -1580,33 +1795,99 @@ function init3D() {
     dirLight.shadow.mapSize.height = 2048;
     scene3D.add(dirLight);
 
-    // 5. Floor/Grid setup
+    // 5. Floor/Grid setup (Keep this)
     const gridHelper = new THREE.GridHelper(3000, 100, 0x334155, 0x1e293b);
-    gridHelper.position.set(500, -1, 500); // Drop slightly to prevent Z-fighting with slabs
+    gridHelper.position.set(500, -1, 500); 
     scene3D.add(gridHelper);
 
-    // 6. Animation Loop
+    // --- 6. NEW: FPS PHYSICS & COLLISION SETUP ---
+    fpsControls = new THREE.PointerLockControls(camera3D, document.body);
+    
+    // When the user hits Escape on their keyboard, exit walkthrough mode
+    fpsControls.addEventListener('unlock', () => {
+        isWalkthrough = false;
+        controls3D.enabled = true; // Turn Bird's Eye Orbit back on
+        document.getElementById('nav-pad').style.display = 'flex'; // Show button again
+    });
+
+    scene3D.add(fpsControls.getObject());
+    
+    // Physics variables to track speed and direction
+    const velocity = new THREE.Vector3();
+    const direction = new THREE.Vector3();
+
+    let prevTime = performance.now();
+
+    // 7. Upgraded Animation Loop
     function animate() {
         requestAnimationFrame(animate);
-        
-        const speed = 15;
-        direction.z = Number(moveState.forward) - Number(moveState.backward);
-        direction.x = Number(moveState.left) - Number(moveState.right);
-        direction.normalize();
+        const time = performance.now();
+        const delta = (time - prevTime) / 1000;
 
-        if (moveState.forward || moveState.backward) camera3D.translateZ(-direction.z * speed);
-        if (moveState.left || moveState.right) camera3D.translateX(-direction.x * speed);
+        if (isWalkthrough) {
+            // --- FIRST PERSON MODE (Walking) ---
+            
+            // Apply friction (slow down when letting go of keys)
+            velocity.x -= velocity.x * 10.0 * delta;
+            velocity.z -= velocity.z * 10.0 * delta;
 
-        controls3D.update(); // Required for enableDamping
+            direction.z = Number(moveState.forward) - Number(moveState.backward);
+            direction.x = Number(moveState.right) - Number(moveState.left);
+            direction.normalize();
+
+            // Acceleration speed
+            const speedMultiplier = 600.0;
+            if (moveState.forward || moveState.backward) velocity.z -= direction.z * speedMultiplier * delta;
+            if (moveState.left || moveState.right) velocity.x -= direction.x * speedMultiplier * delta;
+
+            // Move the player's body
+            const controlObj = fpsControls.getObject();
+            controlObj.translateX(velocity.x * delta);
+            controlObj.translateZ(velocity.z * delta);
+
+            // --- COLLISION DETECTION (Stop walking through walls) ---
+            // Create a mathematical box around the camera
+            const camBox = new THREE.Box3().setFromCenterAndSize(controlObj.position, new THREE.Vector3(15, 60, 15));
+            let isColliding = false;
+
+            if (buildingGroup) {
+                buildingGroup.children.forEach(mesh => {
+                    // Ignore the floor, only bump into walls (boxes above ground)
+                    if (mesh.geometry && mesh.geometry.type === 'BoxGeometry' && mesh.position.y > 10) {
+                        const wallBox = new THREE.Box3().setFromObject(mesh);
+                        if (camBox.intersectsBox(wallBox)) isColliding = true;
+                    }
+                });
+            }
+
+            if (isColliding) {
+                // If you hit a wall, undo the movement immediately so you bounce off
+                controlObj.translateX(-velocity.x * delta);
+                controlObj.translateZ(-velocity.z * delta);
+                velocity.x = 0;
+                velocity.z = 0;
+            }
+
+            // Lock the camera to Eye-Level (approx 5.5 feet tall based on your scale)
+            const SCALE = parseFloat(UI.scaleInput.value) || 1.2;
+            controlObj.position.y = 66 * SCALE; 
+
+        } else {
+            // --- BIRD'S EYE MODE (Orbiting) ---
+            controls3D.update(); 
+        }
+
         renderer3D.render(scene3D, camera3D);
+        prevTime = time;
     }
     animate();
 
+    // Handle window resizing
     window.addEventListener('resize', () => {
         if (!is3DMode) return;
-        camera3D.aspect = container.clientWidth / container.clientHeight;
+        camera3D.aspect = document.getElementById('three-container').clientWidth / document.getElementById('three-container').clientHeight;
         camera3D.updateProjectionMatrix();
-        renderer3D.setSize(container.clientWidth, container.clientHeight);
+        renderer3D.setSize(document.getElementById('three-container').clientWidth, document.getElementById('three-container').clientHeight);
     });
 }
 
@@ -1639,7 +1920,11 @@ function generate3DModel() {
         // --- 3D Collision Warning Logic ---
         const smartMerge = UI.smartMergeToggle && UI.smartMergeToggle.checked;
         const isColliding = !smartMerge && checkCollision(el, i);
-        const roomColor = isColliding ? 0xef4444 : (colors3D[el.type] || 0xffffff);
+        let roomColor = isColliding ? 0xef4444 : (colors3D[el.type] || 0xffffff);
+        // Apply custom color if it exists
+        if (!isColliding && el.customColor) {
+            roomColor = parseInt(el.customColor.replace('#', '0x'));
+        }
 
         // --- NEW: Read the Real3D Toggle ---
         const useReal3D = UI.real3DToggle && UI.real3DToggle.checked;
@@ -1718,7 +2003,14 @@ function generate3DModel() {
             const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: edgeColor, linewidth: 2 }));
             mesh.add(line);
         }
-        
+        // --- NEW: INJECT DATA FOR 3D RAYCASTER ---
+        if (mesh.type === 'Group') {
+            // For complex items like U-Shaped staircases, attach data to every step
+            mesh.children.forEach(child => child.userData = { roomIndex: i, isRoom: true });
+        } else {
+            // For standard rooms, attach data to the box
+            mesh.userData = { roomIndex: i, isRoom: true };
+        }
         buildingGroup.add(mesh);
     });
 
@@ -1996,6 +2288,21 @@ function rotateStaircase(index) {
 // --- UNDO/REDO KEYBOARD LISTENERS ---
 // ==========================================
 document.addEventListener('keydown', (e) => {
+    // --- NEW: COPY & PASTE ---
+    if (e.ctrlKey && e.key === 'c' && selectedElIndex !== -1) {
+        clipboard = JSON.parse(JSON.stringify(elements[selectedElIndex]));
+    }
+    if (e.ctrlKey && e.key === 'v' && clipboard) {
+        saveState();
+        const clone = JSON.parse(JSON.stringify(clipboard));
+        clone.x += 20; // Offset so it doesn't drop exactly on top
+        clone.y += 20;
+        elements.push(clone);
+        selectedElIndex = elements.length - 1;
+        renderSidebar();
+        updateCanvas();
+    }
+
     // Check for Ctrl + Z (Undo)
     if (e.ctrlKey && e.key === 'z') {
         e.preventDefault();
@@ -2113,6 +2420,165 @@ function toggleTheme() {
     const isClassic = document.body.classList.toggle('classic-theme');
     updateCanvas(); 
 }
+
+
+let isMeasuringMode = false;
+let measureStart = null;
+let tempMeasureLine = null;
+let measureGroup = null;
+
+function toggleMeasureMode() {
+    isMeasuringMode = !isMeasuringMode;
+    svg.style.cursor = isMeasuringMode ? 'crosshair' : 'default';
+    measureStart = null;
+    
+    // Ensure layer exists
+    if (!measureGroup) {
+        measureGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        measureGroup.id = 'measure-group';
+        svg.appendChild(measureGroup);
+    }
+    if (!isMeasuringMode) measureGroup.innerHTML = ''; // Clear when turning off
+}
+
+svg.addEventListener('mousedown', (e) => {
+    if (!isMeasuringMode) return;
+    const pos = getMousePos(e);
+    
+    if (!measureStart) {
+        measureStart = pos;
+        tempMeasureLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        tempMeasureLine.setAttribute('class', 'measure-line');
+        measureGroup.appendChild(tempMeasureLine);
+    } else {
+        // Second click finishes the line and adds text
+        const SCALE = parseFloat(UI.scaleInput.value) || 1.2;
+        const dx = pos.x - measureStart.x;
+        const dy = pos.y - measureStart.y;
+        const distInches = Math.sqrt(dx*dx + dy*dy) / SCALE;
+        const ft = Math.floor(distInches / 12);
+        const inc = Math.round(distInches % 12);
+        
+        const txt = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        txt.setAttribute('x', measureStart.x + dx/2);
+        txt.setAttribute('y', measureStart.y + dy/2 - 10);
+        txt.setAttribute('class', 'measure-text');
+        txt.textContent = `${ft}' ${inc}"`;
+        measureGroup.appendChild(txt);
+        
+        measureStart = null; // Reset for next measurement
+    }
+});
+
+svg.addEventListener('mousemove', (e) => {
+    if (isMeasuringMode && measureStart && tempMeasureLine) {
+        const pos = getMousePos(e);
+        tempMeasureLine.setAttribute('x1', measureStart.x);
+        tempMeasureLine.setAttribute('y1', measureStart.y);
+        tempMeasureLine.setAttribute('x2', pos.x);
+        tempMeasureLine.setAttribute('y2', pos.y);
+    }
+});
+
+let fpsControls;
+let isWalkthrough = false;
+
+// =========================================
+// 3D RAYCASTER ENGINE (Selection)
+// =========================================
+let isRaycasterActive = false;
+const raycaster = new THREE.Raycaster();
+const mouse3D = new THREE.Vector2();
+
+function toggleRaycaster() {
+    isRaycasterActive = !isRaycasterActive;
+    const btn = document.getElementById('btn-raycaster');
+    
+    if (isRaycasterActive) {
+        btn.innerHTML = '🖱️ 3D SELECTION: ON';
+        btn.style.background = '#38bdf8';
+        btn.style.color = '#0f172a';
+    } else {
+        btn.innerHTML = '🖱️ 3D SELECTION: OFF';
+        btn.style.background = 'rgba(15, 23, 42, 0.8)';
+        btn.style.color = '#38bdf8';
+        
+        // When turning off, optionally deselect
+        selectedElIndex = -1;
+        renderSidebar();
+        updateCanvas();
+    }
+}
+
+// Listen for clicks on the 3D Canvas
+document.getElementById('three-container').addEventListener('click', (event) => {
+    // Abort if 3D is off, Selection is toggled off, or we are in First Person mode
+    if (!is3DMode || !isRaycasterActive || isWalkthrough) return;
+
+    // 1. Calculate mouse position in Normalized Device Coordinates (-1 to +1)
+    const rect = renderer3D.domElement.getBoundingClientRect();
+    mouse3D.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    mouse3D.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+    // 2. Shoot the mathematical laser from the camera
+    raycaster.setFromCamera(mouse3D, camera3D);
+
+    // 3. Get all objects that the laser intersected with
+    const intersects = raycaster.intersectObjects(buildingGroup.children, true);
+
+    let clickedRoomIndex = -1;
+
+    // 4. Find the first valid Room we hit
+    for (let i = 0; i < intersects.length; i++) {
+        const object = intersects[i].object;
+        if (object.userData && object.userData.isRoom) {
+            clickedRoomIndex = object.userData.roomIndex;
+            break; 
+        }
+    }
+
+    // 5. Trigger the exact same 2D Engine logic!
+    if (clickedRoomIndex !== -1) {
+        selectedElIndex = clickedRoomIndex;
+        renderSidebar(); // Pull up the sidebar properties
+        updateCanvas();  // This dynamically calls generate3DModel, giving us instant white borders!
+    } else {
+        // If they clicked the empty sky or ground
+        selectedElIndex = -1;
+        renderSidebar();
+        updateCanvas();
+    }
+});
+
+function startWalkthrough() {
+    if (!is3DMode) return;
+    
+    // Initialize FPS controls if they haven't been built yet
+    if (!fpsControls) {
+        fpsControls = new THREE.PointerLockControls(camera3D, document.body);
+        scene3D.add(fpsControls.getObject());
+        
+        fpsControls.addEventListener('unlock', () => {
+            isWalkthrough = false;
+            controls3D.enabled = true; // Turn Orbit back on
+            document.getElementById('nav-pad').style.display = 'flex'; 
+        });
+    }
+
+    isWalkthrough = true;
+    controls3D.enabled = false; 
+    document.getElementById('nav-pad').style.display = 'none';
+
+    // --- THE FIX: Pushed further back (Z: 1000) and locked to eye-level scale ---
+    const SCALE = parseFloat(document.getElementById('scaleInput').value) || 1.2;
+    camera3D.position.set(500, 66 * SCALE, 1000); 
+    
+    // Force the camera to look directly at the center of the building
+    camera3D.lookAt(500, 66 * SCALE, 500);
+    
+    fpsControls.lock();
+}
+
 
 
 // Initialization

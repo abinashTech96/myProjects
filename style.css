@@ -990,3 +990,164 @@ button:active {
 #blueprint {
     background-color: var(--bg-color);
 }
+
+/* =========================================
+   PRO ICON TOOLBAR
+========================================= */
+.global-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.4);
+    padding: 6px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+    gap: 4px;
+}
+
+.tool-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    box-shadow: none;
+    padding: 8px 0;
+    font-size: 1.1rem;
+    flex-grow: 1; /* Makes buttons stretch equally */
+    margin: 0;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.tool-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.tool-btn:active {
+    transform: translateY(1px);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.toolbar-divider {
+    width: 2px;
+    height: 24px;
+    background: rgba(255, 255, 255, 0.1);
+    margin: 0 4px;
+    border-radius: 2px;
+}
+
+/* --- TOOLBAR EXPANDING TEXT ANIMATION --- */
+.tool-btn {
+    overflow: hidden; /* Ensures text doesn't spill out while animating */
+}
+
+.tool-btn .btn-label {
+    max-width: 0;
+    opacity: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    color: #f8fafc;
+    /* The magic that makes it unroll smoothly */
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+}
+
+/* When you hover over the button, the label expands */
+.tool-btn:hover .btn-label {
+    max-width: 60px; /* Adjust this if you use longer words */
+    opacity: 1;
+    margin-left: 6px; /* Adds space between the icon and the text */
+}
+
+/* --- PRO ACCORDIONS (Smooth CSS Grid Version) --- */
+.pro-accordion .accordion-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+    transition: opacity 0.2s ease;
+}
+
+.pro-accordion .accordion-header:hover {
+    opacity: 0.8;
+}
+
+.pro-accordion h2 {
+    margin: 0 !important;
+    border-bottom: none !important;
+    padding-bottom: 0 !important;
+}
+
+.pro-accordion .chevron {
+    font-size: 0.75rem;
+    color: #38bdf8;
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.pro-accordion.active .chevron {
+    transform: rotate(180deg);
+}
+
+/* The Magic CSS Grid Height Animation */
+.pro-accordion .accordion-content {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.pro-accordion.active .accordion-content {
+    grid-template-rows: 1fr;
+}
+
+.pro-accordion .accordion-inner {
+    overflow: hidden;
+    padding-top: 0;
+    opacity: 0;
+    /* Fades in slightly after the slide begins for a premium feel */
+    transition: padding 0.4s ease, opacity 0.3s ease 0.1s; 
+}
+
+.pro-accordion.active .accordion-inner {
+    padding-top: 15px; 
+    opacity: 1;
+}
+
+/* --- CHEAT SHEET VISIBILITY --- */
+#cheat-sheet.active {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    transform: translateY(-5px);
+}
+
+/* --- TAPE MEASURE LINE --- */
+.measure-line {
+    stroke: #f43f5e;
+    stroke-width: 2;
+    stroke-dasharray: 6, 4;
+    pointer-events: none;
+}
+.measure-text {
+    fill: #f43f5e;
+    font-size: 14px;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px #000;
+    pointer-events: none;
+}
+
+/* --- SMART ALIGNMENT GUIDES --- */
+.smart-guide {
+    stroke: #fbbf24; /* A bright, professional amber/gold */
+    stroke-width: 1.5;
+    stroke-dasharray: 6, 6;
+    pointer-events: none; /* Crucial: stops the lines from blocking mouse clicks */
+    filter: drop-shadow(0 0 4px rgba(251, 191, 36, 0.6));
+    z-index: 100;
+}

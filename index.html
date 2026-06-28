@@ -5,6 +5,7 @@
     <title>Ultimate Architectural Engine Pro</title>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -70,111 +71,112 @@
 
 
 
-	<div class="panel">
-        <h2>BUILDING & PLOT</h2>
-        <div class="input-grid">
-            <div class="field"><label>Width:</label><input type="number" id="inW" value="272" oninput="updateCanvas()"></div>
-            <div class="field"><label>Depth:</label><input type="number" id="inH" value="400" oninput="updateCanvas()"></div>
-            
-			<div class="field" style="grid-column: span 2;">
-				<label>Main Road Placement:</label>
-				<select id="roadSide" onchange="updateCanvas()">
-					<option value="south">⬇ South (Bottom Edge)</option>
-					<option value="north">⬆ North (Top Edge)</option>
-					<option value="east">➡ East (Right Edge)</option>
-					<option value="west">⬅ West (Left Edge)</option>
-					<option value="none">None</option>
-				</select>
-			</div>
+	<div class="panel pro-accordion">
+        <div class="accordion-header" onclick="this.parentElement.classList.toggle('active')">
+            <h2>🏗️ BUILDING & PLOT SETTINGS</h2>
+            <span class="chevron">▼</span>
+        </div>
+        
+        <div class="accordion-content">
+            <div class="accordion-inner">
+                <div class="input-grid">
+                    <div class="field"><label>Width:</label><input type="number" id="inW" value="272" oninput="updateCanvas()"></div>
+                    <div class="field"><label>Depth:</label><input type="number" id="inH" value="400" oninput="updateCanvas()"></div>
+                    
+                    <div class="field" style="grid-column: span 2;">
+                        <label>Main Road Placement:</label>
+                        <select id="roadSide" onchange="updateCanvas()">
+                            <option value="south">⬇ South (Bottom Edge)</option>
+                            <option value="north">⬆ North (Top Edge)</option>
+                            <option value="east">➡ East (Right Edge)</option>
+                            <option value="west">⬅ West (Left Edge)</option>
+                            <option value="none">None</option>
+                        </select>
+                    </div>
 
-            <div class="field"><label>A(L/U):</label><input type="number" id="aL" value="26" oninput="updateCanvas()">
-				<input type="number" id="aU" value="28" oninput="updateCanvas()"></div>
-            <div class="field"><label>B(R/U):</label><input type="number" id="bR" value="75" oninput="updateCanvas()">
-				<input type="number" id="bU" value="35" oninput="updateCanvas()"></div>
-            <div class="field"><label>C(R/D):</label><input type="number" id="cR" value="22" oninput="updateCanvas()">
-				<input type="number" id="cD" value="33" oninput="updateCanvas()"></div>
-            <div class="field"><label>D(L/D):</label><input type="number" id="dL" value="51" oninput="updateCanvas()">
-				<input type="number" id="dD" value="41" oninput="updateCanvas()"></div>
+                    <div class="field"><label>A(L/U):</label><input type="number" id="aL" value="26" oninput="updateCanvas()"><input type="number" id="aU" value="28" oninput="updateCanvas()"></div>
+                    <div class="field"><label>B(R/U):</label><input type="number" id="bR" value="75" oninput="updateCanvas()"><input type="number" id="bU" value="35" oninput="updateCanvas()"></div>
+                    <div class="field"><label>C(R/D):</label><input type="number" id="cR" value="22" oninput="updateCanvas()"><input type="number" id="cD" value="33" oninput="updateCanvas()"></div>
+                    <div class="field"><label>D(L/D):</label><input type="number" id="dL" value="51" oninput="updateCanvas()"><input type="number" id="dD" value="41" oninput="updateCanvas()"></div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="panel">
-        <h2>FLOORS & DATA</h2>
-		<div class="input-grid" style="margin-top: 8px;">
-            <div class="field" style="grid-column: span 2;">
-                <div class="field" style="margin-left:0px; margin-top: 20px;">
-                    <label>Show Dimensions</label>
-                    <input type="checkbox" id="showDims" onchange="updateCanvas()" checked>
+
+    <div class="panel pro-accordion active">
+        <div class="accordion-header" onclick="this.parentElement.classList.toggle('active')">
+            <h2>🏢 FLOORS & DATA</h2>
+            <span class="chevron">▼</span>
+        </div>
+        
+        <div class="accordion-content">
+            <div class="accordion-inner">
+                <div class="input-grid">
+                    <div class="field" style="grid-column: span 2;">
+                        <div class="field" style="margin-left:0px;">
+                            <label>Show Dimensions</label>
+                            <input type="checkbox" id="showDims" onchange="updateCanvas()" checked>
+                        </div>
+                    </div>
+                    
+                    <div class="field" style="margin-left:0px;">
+                        <label>Units:</label>
+                        <select id="unitSelect" onchange="updateCanvas()">
+                            <option value="in">Inches</option>
+                            <option value="cm">CM</option>
+                            <option value="ftin">Ft & Inches</option>
+                        </select>
+                    </div>
                 </div>
-            </div>
-            
-            <div class="field" style="margin-left:0px;">
-                <label>Units:</label>
-                <select id="unitSelect" onchange="updateCanvas()">
-                    <option value="in">Inches</option>
-                    <option value="cm">CM</option>
-                    <option value="ftin">Ft & Inches</option>
-                </select>
-            </div>
-        </div>
-        
-        <div style="display:flex; align-items:center; gap: 8px; margin-bottom:10px;">
+                
+                <div style="display:flex; align-items:center; gap: 8px; margin-top:10px; margin-bottom:10px;">
+                    <div id="floor-tabs" style="display:flex; flex-wrap: wrap; gap:5px;">
+                        <button class="floor-btn active" data-floor="0" onclick="setFloor(0)">G</button>
+                    </div>
+                    <button class="action-btn" onclick="addManualFloor()" title="Add New Floor" style="padding: 4px 8px; font-weight: bold; background: rgba(56, 189, 248, 0.1); color: #38bdf8; border: 1px dashed #38bdf8;">
+                        + ADD FLOOR
+                    </button>
+                </div>
+                <div id="stair-warning">⚠ Staircases must match X, Y, Width, and Depth across floors!</div>
+                
+                <div class="input-grid">
+                    <div class="field"><button onclick="toggle3D()" style="background: linear-gradient(135deg, #10b981, #059669); color: white;">👁️ Toggle 3D View</button></div>
+                    <div class="field"><button onclick="cloneEntireFloor()" style="background: #6366f1;">🚀 Clone Floor Up</button></div>
+                    <div class="field" style="grid-column: span 2;"><button onclick="toggleTheme()">🎨 Toggle Theme (Dark/Classic)</button></div>
+                </div>
 
-        <div id="floor-tabs" style="display:flex; flex-wrap: wrap; gap:5px; margin-bottom:10px;">
-            <button class="floor-btn active" data-floor="0" onclick="setFloor(0)">G</button>
-        </div>
-            <button class="action-btn" onclick="addManualFloor()" title="Add New Floor" style="padding: 4px 8px; font-weight: bold; background: rgba(56, 189, 248, 0.1); color: #38bdf8; border: 1px dashed #38bdf8;">
-                + ADD FLOOR
+                <div class="input-grid" style="margin-top:10px;">  
+                    <div class="field"><label>Top Direction:</label><select id="compassDir" onchange="handleCompassChange()"><option>West</option><option>South</option><option>East</option><option>North</option></select></div>
+                    <div class="field"><label>Scale:</label><input type="number" id="scaleInput" value="1.2" step="0.1" oninput="updateCanvas()"></div>
+                </div>
+
+        <div class="global-toolbar" style="margin-top: 15px;">
+            <button class="tool-btn" onclick="toggleMeasureMode()" title="Tape Measure">
+                <span class="icon">📏</span><span class="btn-label">Measure</span>
             </button>
-            
+            <button class="tool-btn" onclick="exportJSON()" title="Save / Export JSON">
+                <span class="icon">💾</span><span class="btn-label">Save</span>
+            </button>
+            <button class="tool-btn" onclick="document.getElementById('importFile').click()" title="Open / Import JSON">
+                <span class="icon">📂</span><span class="btn-label">Load</span>
+            </button>
+            <button class="tool-btn" onclick="exportPNG()" title="Export PNG" style="border-bottom: 2px solid #a855f7;">
+                <span class="icon">🖼️</span><span class="btn-label">PNG</span>
+            </button>
+            <button class="tool-btn" onclick="exportPDF()" title="Export PDF" style="border-bottom: 2px solid #f43f5e;">
+                <span class="icon">📄</span><span class="btn-label">PDF</span>
+            </button>
+            <div class="toolbar-divider"></div>
+            <button class="tool-btn" onclick="resetWorkspace()" title="Danger: Reset Workspace" style="border-bottom: 2px solid #ef4444;">
+                <span class="icon">⚠️</span><span class="btn-label">Reset</span>
+            </button>
         </div>
-        <div id="stair-warning">⚠ Staircases must match X, Y, Width, and Depth across floors!</div>
-        <div class="input-grid">
-            <div class="field"><button onclick="toggle3D()" style="background: linear-gradient(135deg, #10b981, #059669); color: white;">👁️ Toggle 3D View</button></div>
-                        
-        </div>
-
-        <div class="input-grid">
-            <div class="field">
-                <button onclick="cloneEntireFloor()" style="background: #6366f1;">🚀 Clone Entire Floor Up</button>
-            </div>
-            
-            <div class="field">
-                <button onclick="toggleTheme()">🎨 Toggle Theme (Dark/Classic)</button>
-            </div>
-        </div>
-
-		<div class="input-grid">
-            <div class="field">
-				<button onclick="exportJSON()">💾 Export JSON</button>
-			</div>
-            <div class="field">
-				<button onclick="document.getElementById('importFile').click()">📂 Import JSON</button>
-			</div>
-        </div>        
-        
         <input type="file" id="importFile" style="display:none" onchange="importJSON(event)">
 
-        <div class="input-grid" style="margin-top: 8px;">
-            <div class="field" style="grid-column: span 2;">
-                <button onclick="resetWorkspace()" style="background: linear-gradient(135deg, #ef4444, #b91c1c); color: white;">⚠️ Reset Workspace</button>
+                <p style="font-size: 0.65rem; color: #10b981; margin-top: 15px; font-weight: bold; text-align: center;">🖱️ Scroll to Zoom | Middle-Click to Pan</p>
             </div>
         </div>
-
-		<div class="input-grid" style="margin-top: 8px;">
-            <div class="field">
-                <button onclick="exportPNG()" style="background: linear-gradient(135deg, #8b5cf6, #c084fc); color: white;">🖼️ Export PNG</button>
-            </div>
-            <div class="field">
-                <button onclick="exportPDF()" style="background: linear-gradient(135deg, #f43f5e, #fb7185); color: white;">📄 Export PDF</button>
-            </div>
-        </div>
-
-        <div class="input-grid" style="margin-top:10px;">  
-            <div class="field"><label>Top Direction:</label><select id="compassDir" onchange="handleCompassChange()"><option>West</option><option>South</option><option>East</option><option>North</option></select></div>
-            <div class="field"><label>Scale:</label><input type="number" id="scaleInput" value="1.2" step="0.1" oninput="updateCanvas()"></div>
-        </div>
-        <p style="font-size: 0.65rem; color: #10b981; margin-top: 10px; font-weight: bold;">🖱️ Scroll to Zoom | Middle-Click to Pan</p>
     </div>
     
     <div class="panel">
@@ -281,11 +283,15 @@
     </div>
 
 	<div id="three-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; z-index: 35; background: #0f172a;"></div>
+<!--    
     <div id="nav-pad" style="position: absolute; bottom: 20px; right: 20px; z-index: 100; display: none; grid-template-columns: 40px 40px 40px; gap: 5px;">
         <div></div><button onclick="pan('up')">▲</button><div></div>
         <button onclick="pan('left')">◀</button><button onclick="resetCamera3D()">●</button><button onclick="pan('right')">▶</button>
         <div></div><button onclick="pan('down')">▼</button><div></div>
     </div>
+
+-->
+
     <svg id="blueprint" viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid meet">
         <defs>
             <pattern id="smallGrid" width="12" height="12" patternUnits="userSpaceOnUse">
@@ -321,6 +327,30 @@
 
 
 </div>
+    <div id="nav-pad" style="position: absolute; bottom: 20px; right: 20px; z-index: 100; display: none;">
+        <button id="btn-raycaster" onclick="toggleRaycaster()" style="background: rgba(15, 23, 42, 0.8); border: 1px solid #38bdf8; padding: 10px 15px; border-radius: 8px; color: #38bdf8; font-weight: bold; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+            🖱️ 3D SELECTION: OFF
+        </button>
+        <button onclick="startWalkthrough()" style="background: linear-gradient(135deg, #f59e0b, #d97706); padding: 12px 20px; border-radius: 8px; border: none; color: white; font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
+            🚶 ENTER WALKTHROUGH
+        </button>
+    </div>
+
+    <button onclick="document.getElementById('cheat-sheet').classList.toggle('active')" style="position:fixed; bottom:20px; left:20px; z-index:100; border-radius:50%; width:40px; height:40px; background:rgba(15,23,42,0.8); border:1px solid #38bdf8; font-size:1.2rem; display:flex; align-items:center; justify-content:center; padding:0;">⌨️</button>
+    
+    <div id="cheat-sheet" class="glass-panel" style="position:fixed; bottom:70px; left:20px; width:250px; opacity:0; pointer-events:none; transition:0.3s ease;">
+        <h3 style="margin-top:0; color:#38bdf8; font-size:0.9rem;">⌨️ Keyboard Shortcuts</h3>
+        <ul style="list-style:none; padding:0; margin:0; font-size:0.75rem; color:#cbd5e1; line-height:1.8;">
+            <li><b>Spacebar</b> : Pan Canvas</li>
+            <li><b>Scroll</b> : Zoom In / Out</li>
+            <li><b>Shift + Drag</b> : Straight Line Drag</li>
+            <li><b>Ctrl + C</b> : Copy Selected Room</li>
+            <li><b>Ctrl + V</b> : Paste Room</li>
+            <li><b>Ctrl + Z</b> : Undo Action</li>
+            <li><b>Delete</b> : Delete Selected</li>
+            <li><b>W, A, S, D</b> : Walk (3D Mode)</li>
+        </ul>
+    </div>
 
 <script src="script.js"></script>
 </body>

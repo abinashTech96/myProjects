@@ -453,19 +453,7 @@ const floorLayouts = {
     '2bhk': [{ type: 'living', w: 192, h: 216, x: 20, y: 20 }, { type: 'kitchen', w: 120, h: 120, x: 230, y: 20 }, { type: 'bedroom', w: 144, h: 168, x: 20, y: 250 }, { type: 'toilet', w: 72, h: 96, x: 180, y: 250 }, { type: 'bedroom', w: 144, h: 144, x: 20, y: 440 }, { type: 'toilet', w: 72, h: 96, x: 180, y: 440 }],
     '3bhk': [{ type: 'living', w: 240, h: 240, x: 20, y: 20 }, { type: 'kitchen', w: 120, h: 144, x: 280, y: 20 }, { type: 'bedroom', w: 168, h: 168, x: 20, y: 280 }, { type: 'toilet', w: 72, h: 96, x: 200, y: 280 }, { type: 'bedroom', w: 144, h: 144, x: 20, y: 460 }, { type: 'toilet', w: 72, h: 96, x: 180, y: 460 }, { type: 'bedroom', w: 144, h: 144, x: 280, y: 460 }]
 };
-/*
-function renderFloorSelectors() {
-    let count = parseInt(document.getElementById('b-floors').value);
-    if (count < 1 || isNaN(count)) count = 1;
-    const container = document.getElementById('floor-layout-selectors');
-    container.innerHTML = '';
-    for(let i = 0; i < count; i++) {
-        let fName = i === 0 ? "Ground" : i === 1 ? "1st" : i === 2 ? "2nd" : `${i}th`;
-        container.innerHTML += `<div class="field"><label>${fName} Floor Layout:</label><select id="layout-f${i}"><option value="none">Empty / Open Terrace</option><option value="1bhk">1 BHK</option><option value="2bhk" ${i === 0 ? 'selected' : ''}>2 BHK</option><option value="3bhk">3 BHK</option></select></div>`;
-    }
-    applyCustomSelects();
-}
-*/
+
 function renderFloorSelectors() {
     let count = parseInt(document.getElementById('b-floors').value);
     if (count < 1 || isNaN(count)) count = 1;

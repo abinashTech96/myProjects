@@ -116,7 +116,7 @@
                     <div class="field" style="grid-column: span 2;">
                         <div class="field" style="margin-left:0px;">
                             <label>Show Dimensions</label>
-                            <input type="checkbox" id="showDims" onchange="updateCanvas()" checked>
+                            <input type="checkbox" id="showDims" onchange="updateCanvas()" unchecked>
                         </div>
                     </div>
                     
@@ -292,6 +292,7 @@
 
 -->
 
+    <div id="room-tooltip" style="position: absolute; display: none; background: rgba(15, 23, 42, 0.9); color: #f8fafc; padding: 8px; border-radius: 6px; border: 1px solid #38bdf8; pointer-events: none; z-index: 1000; font-size: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);"></div>
     <svg id="blueprint" viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid meet">
         <defs>
             <pattern id="smallGrid" width="12" height="12" patternUnits="userSpaceOnUse">
@@ -331,6 +332,9 @@
         <button id="btn-raycaster" onclick="toggleRaycaster()" style="background: rgba(15, 23, 42, 0.8); border: 1px solid #38bdf8; padding: 10px 15px; border-radius: 8px; color: #38bdf8; font-weight: bold; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
             🖱️ 3D SELECTION: OFF
         </button>
+        <button id="btn-performance" class="action-btn" style="width: auto; padding: 5px 15px; border-radius: 20px; font-weight: bold;" onclick="togglePerformanceMode()">
+            ⚡ PERF MODE: OFF
+        </button>
         <button onclick="startWalkthrough()" style="background: linear-gradient(135deg, #f59e0b, #d97706); padding: 12px 20px; border-radius: 8px; border: none; color: white; font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
             🚶 ENTER WALKTHROUGH
         </button>
@@ -348,10 +352,16 @@
             <li><b>Ctrl + V</b> : Paste Room</li>
             <li><b>Ctrl + Z</b> : Undo Action</li>
             <li><b>Delete</b> : Delete Selected</li>
-            <li><b>W, A, S, D</b> : Walk (3D Mode)</li>
+            <li><b>W, A, S, D</b> : Walk (3D Mode)</li>            
+            <li><b>E, Q</b> : Up/Down (3D Mode)</li>
         </ul>
     </div>
-
-<script src="script.js"></script>
+<!--
+    <script src="script.js"></script>
+-->
+    <script src="state.js"></script>
+    <script src="ui.js"></script>
+    <script src="engine3d.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>

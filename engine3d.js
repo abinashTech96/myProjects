@@ -5,6 +5,10 @@
 let is3DMode = false;
 let scene3D, camera3D, renderer3D, controls3D;
 let buildingGroup;
+// Phase 3 Variables
+let sunLight, hemiLight;
+let waypoints = [];
+let isPlayingTour = false;
 
 // --- FPS WALKTHROUGH STATE ---
 let fpsControls;
@@ -39,13 +43,23 @@ function toggle3D() {
         svg.style.display = 'block';
         container3D.style.display = 'none';
         if (navPad) navPad.style.display = 'none'; 
+        // 🌟 FIXED SCENARIO 2: Safely exit Drone mode if user clicks "2D PLAN" while flying
+        if (typeof fpsControls !== 'undefined' && fpsControls.isLocked) {
+            fpsControls.unlock();
+        }
+    }
+
+    // 🌟 FIXED SCENARIO 5 & 6: Make controls visible whenever 3D mode is active
+    const presControls = document.getElementById('presentation-controls');
+    if (presControls) {
+        presControls.style.display = is3DMode ? 'flex' : 'none';
     }
 }
 
 function init3D() {
     const container = document.getElementById('three-container');
     
-    // 1. Setup Scene & Camera (Now Theme-Aware!)
+    // 1. Setup Scene & Camera (Theme-Aware)
     const isClassic = document.body.classList.contains('classic-theme');
     const bgColor = isClassic ? 0xe2e8f0 : 0x0f172a;
     
@@ -70,28 +84,34 @@ function init3D() {
     controls3D.target.set(500, 0, 500);
     controls3D.maxPolarAngle = Math.PI / 2 - 0.05; 
 
-    // 4. Premium Lighting Setup
-    // Lower the ground ambient light (0x1e293b) so shadows become darker
-    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x1e293b, 0.4);
-    hemiLight.position.set(0, 1000, 0);
+
+    // 🌟 PHASE 3: Dynamic Global Lighting
+    hemiLight = new THREE.HemisphereLight(0xffffff, 0x444455, 0.6); // Sky color, Ground color, Intensity
+    hemiLight.position.set(0, 200, 0);
     scene3D.add(hemiLight);
 
-    // Increase the sun intensity from 0.8 to 1.2 to create sharp contrast
-    const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
-    dirLight.position.set(800, 1500, 500);
-    dirLight.castShadow = true;
-    dirLight.shadow.camera.top = 2000;
-    dirLight.shadow.camera.bottom = -2000;
-    dirLight.shadow.camera.left = -2000;
-    dirLight.shadow.camera.right = 2000;
-    dirLight.shadow.bias = -0.001; 
-    dirLight.shadow.mapSize.width = 2048; 
-    dirLight.shadow.mapSize.height = 2048;
+    sunLight = new THREE.DirectionalLight(0xffffff, 1.2);
+    sunLight.castShadow = true;
+    // High-res shadows
+    sunLight.shadow.mapSize.width = 2048; 
+    sunLight.shadow.mapSize.height = 2048;
+    // Large shadow camera bounds to cover the whole building
+    const d = 1500;
+    sunLight.shadow.camera.left = -d;
+    sunLight.shadow.camera.right = d;
+    sunLight.shadow.camera.top = d;
+    sunLight.shadow.camera.bottom = -d;
+    sunLight.shadow.camera.far = 3000;
+    
+    scene3D.add(sunLight);
+    
+    // Soft ambient backup
+    const ambientLight = new THREE.AmbientLight(0x404040, 0.3); 
+    scene3D.add(ambientLight);
 
-    dirLight.target.position.set(500, 0, 500); // Aim at the center of the building
-    scene3D.add(dirLight.target);              // Add the target to the world
+    // Initialize sun position to High Noon (12)
+    if (typeof updateSunlight === 'function') updateSunlight(12);
 
-    scene3D.add(dirLight);
 
     const gridHelper = new THREE.GridHelper(3000, 100, 0x334155, 0x1e293b);
     gridHelper.position.set(500, -1, 500); 
@@ -104,6 +124,12 @@ function init3D() {
         isWalkthrough = false;
         controls3D.enabled = true; 
         document.getElementById('nav-pad').style.display = 'flex'; 
+        
+        const hint = document.getElementById('fly-hint');
+        if(hint) hint.remove();
+
+        // Kill momentum instantly when exiting drone mode
+        moveState = { forward: false, backward: false, left: false, right: false, up: false, down: false };
     });
 
     scene3D.add(fpsControls.getObject());
@@ -118,7 +144,6 @@ function init3D() {
         const delta = (time - prevTime) / 1000;
 
         if (isWalkthrough) {
-            // Apply friction to all 3 axes (X, Y, Z)
             velocity.x -= velocity.x * 10.0 * delta;
             velocity.y -= velocity.y * 10.0 * delta; 
             velocity.z -= velocity.z * 10.0 * delta;
@@ -135,14 +160,10 @@ function init3D() {
 
             const controlObj = fpsControls.getObject();
             
-            // Move X & Z (Forward/Back/Left/Right)
             controlObj.translateX(velocity.x * delta);
             controlObj.translateZ(velocity.z * delta);
-            
-            // Move Y (Up/Down) vertically, independent of where you are looking
             controlObj.position.y += (velocity.y * delta);
 
-            // Wall Collision Check (So you don't fly out of the building horizontally)
             const camBox = new THREE.Box3().setFromCenterAndSize(controlObj.position, new THREE.Vector3(15, 60, 15));
             let isColliding = false;
 
@@ -162,7 +183,6 @@ function init3D() {
                 velocity.z = 0;
             }
 
-            // Floor constraint: Prevents you from flying underneath the grass
             const scaleInput = document.getElementById('scaleInput');
             const SCALE = scaleInput ? parseFloat(scaleInput.value) || 1.2 : 1.2;
             if (controlObj.position.y < 20 * SCALE) {
@@ -190,15 +210,30 @@ function init3D() {
 // 3D GEOMETRY GENERATOR
 // =========================================
 function generate3DModel() {
-    if (buildingGroup) scene3D.remove(buildingGroup);
+    // 🌟 FIXED: Tell the engine how to check if Real3D is active
+    const useReal3D = document.getElementById('real3D-toggle') ? document.getElementById('real3D-toggle').checked : false;
+
+    if (buildingGroup) {
+        function disposeNode(node) {
+            if (node.geometry) node.geometry.dispose();
+            if (node.material) {
+                if (Array.isArray(node.material)) node.material.forEach(m => m.dispose());
+                else node.material.dispose();
+            }
+            if (node.children) node.children.forEach(disposeNode);
+        }
+        buildingGroup.children.forEach(disposeNode);
+        scene3D.remove(buildingGroup);
+    }
     buildingGroup = new THREE.Group();
+
+
     
     const unitSelect = document.getElementById('unitSelect');
     const scaleInput = document.getElementById('scaleInput');
     const unit = unitSelect ? unitSelect.value : 'in';
     const SCALE = scaleInput ? parseFloat(scaleInput.value) || 1.2 : 1.2;
     
-    // Quick inline conversion to avoid dependency errors during modularization
     const toInches3D = (val, u) => u === 'cm' ? parseFloat(val) / 2.54 : parseFloat(val);
     const inW = toInches3D(document.getElementById('inW').value, unit) * SCALE;
     const inH = toInches3D(document.getElementById('inH').value, unit) * SCALE;
@@ -208,7 +243,6 @@ function generate3DModel() {
 
     // 1. Generate Rooms
     elements.forEach((el, i) => { 
-
         const width = el.w * SCALE;
         const depth = el.h * SCALE; 
         
@@ -216,7 +250,6 @@ function generate3DModel() {
         const centerZ = I.z + (el.y * SCALE) + (depth / 2);
         const centerY = (el.floor * WALL_HEIGHT) + (WALL_HEIGHT / 2);
 
-        // Simple inline collision check for the 3D module
         const smartMergeToggle = document.getElementById('smartMergeToggle');
         const smartMerge = smartMergeToggle && smartMergeToggle.checked;
         let isColliding = false;
@@ -236,6 +269,13 @@ function generate3DModel() {
         const useReal3D = real3DToggle && real3DToggle.checked;
 
         let mesh; 
+
+        // 👈 NEW: Render 3D Furniture Models
+        if (el.isFurniture) {
+            mesh = createFurniture3D(el.type, width, depth);
+            // Furniture sits on the floor, so Y = floor base height
+            mesh.position.set(centerX, el.floor * WALL_HEIGHT, centerZ); 
+        }else
 
         if (useReal3D && el.type === 'staircase') {
             const direction = el.dir || 'up'; 
@@ -263,24 +303,222 @@ function generate3DModel() {
                 case 'up':    mesh.rotation.y = Math.PI / 2; mesh.position.set(startX, baseY, startZ + depth); break;
                 case 'down':  mesh.rotation.y = -Math.PI / 2; mesh.position.set(startX + width, baseY, startZ); break;
             }
-        } else {
+        }
+        /*
+        else {
             const geometry = new THREE.BoxGeometry(width, WALL_HEIGHT, depth);
-            const material = new THREE.MeshStandardMaterial({ 
-                color: roomColor, transparent: true, opacity: isColliding ? 0.95 : 0.85 
-            });
+            
+            // Default 2D Draft Material
+            let materialProps = { 
+                color: roomColor, 
+                transparent: true, 
+                opacity: isColliding ? 0.95 : 0.85 
+            };
+
+            // 🌟 THE UPGRADE: Apply Textures if Real3D is ON and no collisions
+            if (useReal3D && !isColliding) {
+                const texType = getTextureForRoom(el.type);
+                const baseTexture = getProceduralTexture(texType);
+                
+                // Clone texture so we can scale it to match the specific room's size
+                const roomTex = baseTexture.clone();
+                roomTex.needsUpdate = true;
+                // Scale the texture mapping based on room dimensions so tiles/wood don't stretch!
+                roomTex.repeat.set(width / 60, depth / 60); 
+
+                materialProps.map = roomTex;
+                materialProps.color = 0xffffff; // Reset base color so texture shows properly
+                materialProps.opacity = 1.0;    // Make walls solid in Real3D
+                materialProps.roughness = texType === 'tile' ? 0.2 : 0.8; // Tiles are shiny, wood is matte!
+            }
+
+            const material = new THREE.MeshStandardMaterial(materialProps);
             
             mesh = new THREE.Mesh(geometry, material);
             mesh.castShadow = true;
             mesh.receiveShadow = true; 
             mesh.position.set(centerX, centerY, centerZ);
+
+            // 🌿 NEW: Populate the Balcony with props
+            if (el.type === 'balcony' && showBalconyExtras && useReal3D && !isColliding) {
+                // Since the balcony mesh center is now the floor, Y=0 is the floor level
+                const surfaceY = 0; 
+
+                const chair1 = createBalconyChair();
+                chair1.position.set(-width/4, surfaceY, 0); 
+                chair1.rotation.y = Math.PI / 4; 
+                mesh.add(chair1);
+
+                const chair2 = createBalconyChair();
+                chair2.position.set(width/4, surfaceY, 0); 
+                chair2.rotation.y = -Math.PI / 4; 
+                mesh.add(chair2);
+
+                const plant = createBalconyPlant();
+                plant.position.set(0, surfaceY, -depth/4 + 5); 
+                mesh.add(plant);
+            }
             
-            const edges = new THREE.EdgesGeometry(geometry);
-            const edgeColor = isColliding ? 0x991b1b : 0xffffff;
-            const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: edgeColor, linewidth: 2 }));
-            mesh.add(line);
+            // Only show glowing wireframe outlines in standard draft mode
+            if (!useReal3D || isColliding) {
+                const edges = new THREE.EdgesGeometry(geometry);
+                const edgeColor = isColliding ? 0x991b1b : 0xffffff;
+                const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: edgeColor, linewidth: 2 }));
+                mesh.add(line);
+            }
         }
+        */
+
+        else {
+            // 🌟 NEW: Custom Balcony Logic
+            if (el.type === 'balcony' && useReal3D && !isColliding) {
+                mesh = new THREE.Group();
+                
+                // 1. Create Balcony Floor Plane (Greenish tint)
+                const floorMat = new THREE.MeshStandardMaterial({ color: 0x10b981, side: THREE.DoubleSide, transparent: true, opacity: 0.6 });
+                const floor = new THREE.Mesh(new THREE.PlaneGeometry(width, depth), floorMat);
+                floor.rotation.x = -Math.PI / 2; // Lay flat
+                mesh.add(floor);
+                
+                // 2. Add Railings
+                const railMat = new THREE.MeshStandardMaterial({ color: 0x64748b });
+                const railH = 30 * SCALE;
+                const thickness = 4 * SCALE;
+                
+                // North, South, East, West railings
+                const rails = [
+                    { w: width, h: railH, d: thickness, x: 0, z: -depth/2 },
+                    { w: width, h: railH, d: thickness, x: 0, z: depth/2 },
+                    { w: thickness, h: railH, d: depth, x: width/2, z: 0 },
+                    { w: thickness, h: railH, d: depth, x: -width/2, z: 0 }
+                ];
+
+                rails.forEach(r => {
+                    const rail = new THREE.Mesh(new THREE.BoxGeometry(r.w, r.h, r.d), railMat);
+                    rail.position.set(r.x, railH/2, r.z);
+                    mesh.add(rail);
+                });
+                //Balcony Glass Pane Block
+                // 🌟 UPDATED: Subtle Greenish Architectural Glass
+                const glassMat = new THREE.MeshStandardMaterial({ 
+                    color: 0x98d8c8,    // Icy greenish-blue tint
+                    transparent: true, 
+                    opacity: 0.25,      // Increased slightly to catch more light
+                    side: THREE.DoubleSide,
+                    roughness: 0.1,     // Glass is smooth
+                    metalness: 0.1      // Glass has a tiny bit of reflection
+                });
+                const glassH = (WALL_HEIGHT - railH); // The "rest space" from railing to roof
+                
+                const glassPanes = [
+                    { w: width, h: glassH, d: 2, x: 0, z: -depth/2 }, // North
+                    { w: width, h: glassH, d: 2, x: 0, z: depth/2 },  // South
+                    { w: 2, h: glassH, d: depth, x: width/2, z: 0 },  // East
+                    { w: 2, h: glassH, d: depth, x: -width/2, z: 0 }  // West
+                ];
+
+                glassPanes.forEach(p => {
+                    const glass = new THREE.Mesh(new THREE.BoxGeometry(p.w, p.h, p.d), glassMat);
+                    // Positioned at railH + half the remaining height
+                    glass.position.set(p.x, railH + (glassH/2), p.z);
+                    mesh.add(glass);
+                });
+                //Balcony Glass Pane Block
+
+                // Position the Balcony Group
+                mesh.position.set(centerX, (el.floor * WALL_HEIGHT) + 2, centerZ);
+
+                // 3. Populate Balcony with Furniture (Local coordinates)
+                if (showBalconyExtras) {
+                    const surfaceY = 0; // Relative to the balcony floor
+
+                    const chair1 = createBalconyChair();
+                    chair1.position.set(-width/4, surfaceY, 0); 
+                    chair1.rotation.y = Math.PI / 4; 
+                    mesh.add(chair1);
+
+                    const chair2 = createBalconyChair();
+                    chair2.position.set(width/4, surfaceY, 0); 
+                    chair2.rotation.y = -Math.PI / 4; 
+                    mesh.add(chair2);
+
+                    const plant = createBalconyPlant();
+                    plant.position.set(0, surfaceY, -depth/4 + 5); 
+                    mesh.add(plant);
+                }
+            } 
+            // ----------------------------------------------------
+            // STANDARD ROOM LOGIC (Solid Box)
+            // ----------------------------------------------------
+            // ----------------------------------------------------
+            // STANDARD ROOM LOGIC (Hollow Walkthrough Walls)
+            // ----------------------------------------------------
+            else {
+                mesh = new THREE.Group();
+                const t = 4 * SCALE; // 4 inch wall thickness
+                
+                let materialProps = { color: roomColor, transparent: true, opacity: isColliding ? 0.95 : 0.85 };
+                
+                if (useReal3D && !isColliding) {
+                    const texType = getTextureForRoom(el.type);
+                    const baseTexture = getProceduralTexture(texType);
+                    const roomTex = baseTexture.clone();
+                    roomTex.needsUpdate = true;
+                    roomTex.repeat.set(width / 60, depth / 60); 
+
+                    materialProps.map = roomTex;
+                    materialProps.color = 0xffffff;
+                    materialProps.opacity = 1.0;
+                    materialProps.roughness = texType === 'tile' ? 0.2 : 0.8;
+                }
+
+                const material = new THREE.MeshStandardMaterial(materialProps);
+                
+                if (useReal3D && !isColliding) {
+                    // Real3D: Build 4 hollow walls and an inner floor
+                    const wN = new THREE.Mesh(new THREE.BoxGeometry(width, WALL_HEIGHT, t), material);
+                    wN.position.set(0, WALL_HEIGHT/2, -depth/2 + t/2);
+                    wN.castShadow = true; wN.receiveShadow = true;
+                    
+                    const wS = new THREE.Mesh(new THREE.BoxGeometry(width, WALL_HEIGHT, t), material);
+                    wS.position.set(0, WALL_HEIGHT/2, depth/2 - t/2);
+                    wS.castShadow = true; wS.receiveShadow = true;
+                    
+                    const wE = new THREE.Mesh(new THREE.BoxGeometry(t, WALL_HEIGHT, depth - t*2), material);
+                    wE.position.set(width/2 - t/2, WALL_HEIGHT/2, 0);
+                    wE.castShadow = true; wE.receiveShadow = true;
+                    
+                    const wW = new THREE.Mesh(new THREE.BoxGeometry(t, WALL_HEIGHT, depth - t*2), material);
+                    wW.position.set(-width/2 + t/2, WALL_HEIGHT/2, 0);
+                    wW.castShadow = true; wW.receiveShadow = true;
+                    
+                    const floor = new THREE.Mesh(new THREE.PlaneGeometry(width - t*2, depth - t*2), material);
+                    floor.rotation.x = -Math.PI / 2;
+                    floor.position.y = 1; // Prevents z-fighting with main slab
+                    floor.receiveShadow = true;
+                    
+                    mesh.add(wN, wS, wE, wW, floor);
+                } else {
+                    // Draft Mode: Keep the classic translucent solid block
+                    const solid = new THREE.Mesh(new THREE.BoxGeometry(width, WALL_HEIGHT, depth), material);
+                    solid.position.y = WALL_HEIGHT/2;
+                    const edges = new THREE.EdgesGeometry(solid.geometry);
+                    const edgeColor = isColliding ? 0x991b1b : 0xffffff;
+                    const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: edgeColor, linewidth: 2 }));
+                    solid.add(line);
+                    mesh.add(solid);
+                }
+                
+                // Position Group at base floor level
+                mesh.position.set(centerX, el.floor * WALL_HEIGHT, centerZ);
+            }
+        }
+
+
+
+
+
         
-        // --- 3D RAYCASTER DATA BINDING ---
         if (mesh.type === 'Group') {
             mesh.children.forEach(child => child.userData = { roomIndex: i, isRoom: true });
         } else {
@@ -293,11 +531,30 @@ function generate3DModel() {
     // 2. Generate Slabs
     const floors = elements.map(e => e.floor);
     const maxFloor = floors.length > 0 ? Math.max(...floors) : 0;
+    
     for (let f = 0; f <= maxFloor; f++) {
         const slabY = ((f + 1) * WALL_HEIGHT);
         const slabGeometry = new THREE.BoxGeometry(inW, 10 * SCALE, inH);
-        // ---> CHANGE THE COLOR HERE to 0x94a3b8 (Lighter Grey) <---
-        const slabMaterial = new THREE.MeshStandardMaterial({ color: 0x94a3b8 });
+        
+        // 🌟 THE UPGRADE: Switch between Draft gray and Real3D Concrete Texture
+        let slabMaterial;
+        
+        // Check if useReal3D is active (defined earlier in generate3DModel)
+        if (typeof useReal3D !== 'undefined' && useReal3D) {
+            const slabTex = getProceduralTexture('concrete').clone();
+            slabTex.needsUpdate = true;
+            // Scale the texture wrapping so it looks realistic, not stretched
+            slabTex.repeat.set(inW / 100, inH / 100); 
+            slabMaterial = new THREE.MeshStandardMaterial({ 
+                map: slabTex, 
+                color: 0xffffff, 
+                roughness: 0.9 
+            });
+        } else {
+            // Default Draft Mode Material
+            slabMaterial = new THREE.MeshStandardMaterial({ color: 0x94a3b8 });
+        }
+
         const slab = new THREE.Mesh(slabGeometry, slabMaterial);
         slab.castShadow = true;
         slab.receiveShadow = true;
@@ -305,7 +562,7 @@ function generate3DModel() {
         buildingGroup.add(slab);
     }
 
-    // 3. Render Doors and Windows
+    // 3. Render Advanced Fixtures (Doors/Windows with Frames)
     fixtures.forEach(fix => {
         const el = elements[fix.roomId];
         if (!el || el.floor !== currentFloor) return;
@@ -313,21 +570,63 @@ function generate3DModel() {
         const isDoor = fix.type === 'door';
         const width = fix.size * SCALE;
         const height = isDoor ? (80 * SCALE) : (40 * SCALE);
-        const depth = 6 * SCALE; 
+        const depth = 8 * SCALE; // Frame is thicker than the wall
         
-        const geometry = new THREE.BoxGeometry(
-            (isDoor || fix.edge === 'top' || fix.edge === 'bottom') ? width : depth,
-            height,
-            (isDoor || fix.edge === 'top' || fix.edge === 'bottom') ? depth : width
-        );
-        const material = new THREE.MeshStandardMaterial({ color: isDoor ? 0x8b4513 : 0x38bdf8 });
-        const fixMesh = new THREE.Mesh(geometry, material);
+        const group = new THREE.Group();
+        
+        // Premium Materials
+        const frameMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.5 });
+        const panelMat = isDoor 
+            ? new THREE.MeshStandardMaterial({ color: 0x8b4513, roughness: 0.9 }) // Solid Wood
+            : new THREE.MeshStandardMaterial({ color: 0xbae6fd, transparent: true, opacity: 0.4, roughness: 0.1 }); // Glass
+            
+        const ft = 3 * SCALE; // Frame border thickness
+        const isHoriz = (fix.edge === 'top' || fix.edge === 'bottom');
+        const fw = isHoriz ? width : depth;
+        const fd = isHoriz ? depth : width;
 
-        fixMesh.castShadow = true;
-        fixMesh.receiveShadow = true;
+        if (isHoriz) {
+            // Horizontal Wall Frame
+            const fL = new THREE.Mesh(new THREE.BoxGeometry(ft, height, fd), frameMat); fL.position.set(-fw/2 + ft/2, 0, 0);
+            const fR = new THREE.Mesh(new THREE.BoxGeometry(ft, height, fd), frameMat); fR.position.set(fw/2 - ft/2, 0, 0);
+            const fT = new THREE.Mesh(new THREE.BoxGeometry(fw, ft, fd), frameMat); fT.position.set(0, height/2 - ft/2, 0);
+            group.add(fL, fR, fT);
+            if (!isDoor) { const fB = new THREE.Mesh(new THREE.BoxGeometry(fw, ft, fd), frameMat); fB.position.set(0, -height/2 + ft/2, 0); group.add(fB); }
+            
+            // Panel (The actual door or glass window)
+            const pW = fw - (ft * 2);
+            const pH = isDoor ? height - ft : height - (ft * 2);
+            const panel = new THREE.Mesh(new THREE.BoxGeometry(pW, pH, 2 * SCALE), panelMat);
+            panel.position.set(0, isDoor ? -ft/2 : 0, 0);
+            
+            // 🚪 Open the door in Real3D!
+            if (isDoor && useReal3D) {
+                panel.position.set(-pW/2 + ft, -ft/2, -pW/2);
+                panel.rotation.y = Math.PI / 3; // 60-degree swing
+            }
+            group.add(panel);
+        } else {
+            // Vertical Wall Frame
+            const fN = new THREE.Mesh(new THREE.BoxGeometry(fw, height, ft), frameMat); fN.position.set(0, 0, -fd/2 + ft/2);
+            const fS = new THREE.Mesh(new THREE.BoxGeometry(fw, height, ft), frameMat); fS.position.set(0, 0, fd/2 - ft/2);
+            const fT = new THREE.Mesh(new THREE.BoxGeometry(fw, ft, fd), frameMat); fT.position.set(0, height/2 - ft/2, 0);
+            group.add(fN, fS, fT);
+            if (!isDoor) { const fB = new THREE.Mesh(new THREE.BoxGeometry(fw, ft, fd), frameMat); fB.position.set(0, -height/2 + ft/2, 0); group.add(fB); }
+            
+            const pD = fd - (ft * 2);
+            const pH = isDoor ? height - ft : height - (ft * 2);
+            const panel = new THREE.Mesh(new THREE.BoxGeometry(2 * SCALE, pH, pD), panelMat);
+            panel.position.set(0, isDoor ? -ft/2 : 0, 0);
+            
+            if (isDoor && useReal3D) {
+                panel.position.set(pD/2, -ft/2, -pD/2 + ft);
+                panel.rotation.y = Math.PI / 3;
+            }
+            group.add(panel);
+        }
 
+        // Global Positioning
         const yPos = (el.floor * WALL_HEIGHT) + (height / 2) + (isDoor ? 0 : 40 * SCALE);
-        
         let xPos = I.x + (el.x * SCALE);
         let zPos = I.z + (el.y * SCALE);
 
@@ -336,8 +635,8 @@ function generate3DModel() {
         else if (fix.edge === 'left') { xPos = I.x + (el.x * SCALE); zPos = I.z + (el.y + fix.offset) * SCALE; }
         else if (fix.edge === 'right') { xPos = I.x + (el.x + el.w) * SCALE; zPos = I.z + (el.y + fix.offset) * SCALE; }
 
-        fixMesh.position.set(xPos, yPos, zPos);
-        buildingGroup.add(fixMesh);
+        group.position.set(xPos, yPos, zPos);
+        buildingGroup.add(group);
     });
 
     // 4. Plot/Building Boundaries
@@ -365,7 +664,7 @@ function generate3DModel() {
 }
 
 // =========================================
-// 3D UTILITIES (Stairs, Pan, Walkthrough, Raycaster)
+// 3D UTILITIES 
 // =========================================
 function createUShapedGroup(run, height, extWidth, material) {
     const group = new THREE.Group();
@@ -436,9 +735,11 @@ function startWalkthrough() {
             controls3D.enabled = true; 
             document.getElementById('nav-pad').style.display = 'flex'; 
             
-            // Remove the flying hint when exiting
             const hint = document.getElementById('fly-hint');
             if(hint) hint.remove();
+
+            // Kill momentum instantly when exiting drone mode
+            moveState = { forward: false, backward: false, left: false, right: false, up: false, down: false };
         });
     }
 
@@ -446,7 +747,6 @@ function startWalkthrough() {
     controls3D.enabled = false; 
     document.getElementById('nav-pad').style.display = 'none';
 
-    // Inject sleek on-screen instructions
     if (!document.getElementById('fly-hint')) {
         const hint = document.createElement('div');
         hint.id = 'fly-hint';
@@ -466,14 +766,15 @@ function startWalkthrough() {
 function toggleRaycaster() {
     isRaycasterActive = !isRaycasterActive;
     const btn = document.getElementById('btn-raycaster');
+    const textSpan = btn.querySelector('.text'); // Safely target just the text
     
     if (isRaycasterActive) {
-        btn.innerHTML = '🖱️ 3D SELECTION: ON';
+        if(textSpan) textSpan.innerHTML = '3D SELECTION: ON';
         btn.style.background = '#38bdf8';
         btn.style.color = '#0f172a';
     } else {
-        btn.innerHTML = '🖱️ 3D SELECTION: OFF';
-        btn.style.background = 'rgba(15, 23, 42, 0.8)';
+        if(textSpan) textSpan.innerHTML = '3D SELECTION: OFF';
+        btn.style.background = 'rgba(15, 23, 42, 0.85)';
         btn.style.color = '#38bdf8';
         
         if (typeof selectedElIndex !== 'undefined') selectedElIndex = -1;
@@ -483,18 +784,27 @@ function toggleRaycaster() {
 }
 
 // =========================================
-// 3D EVENT LISTENERS
+// 3D EVENT LISTENERS (Keyboard Safety Fixed)
 // =========================================
 document.addEventListener('keydown', (e) => {
+    if (!isWalkthrough) return;
+    
+    // Ignore input if user is typing in a text box
+    if (document.activeElement.tagName === 'INPUT' || 
+        document.activeElement.tagName === 'SELECT' || 
+        document.activeElement.tagName === 'TEXTAREA') return;
+
     if (e.key.toLowerCase() === 'w') moveState.forward = true;
     if (e.key.toLowerCase() === 's') moveState.backward = true;
     if (e.key.toLowerCase() === 'a') moveState.left = true;
     if (e.key.toLowerCase() === 'd') moveState.right = true;
-    if (e.key.toLowerCase() === 'e') moveState.up = true;   // Fly Up
-    if (e.key.toLowerCase() === 'q') moveState.down = true; // Fly Down
+    if (e.key.toLowerCase() === 'e') moveState.up = true;   
+    if (e.key.toLowerCase() === 'q') moveState.down = true; 
 });
 
 document.addEventListener('keyup', (e) => {
+    if (!isWalkthrough) return;
+    
     if (e.key.toLowerCase() === 'w') moveState.forward = false;
     if (e.key.toLowerCase() === 's') moveState.backward = false;
     if (e.key.toLowerCase() === 'a') moveState.left = false;
@@ -544,19 +854,16 @@ function togglePerformanceMode() {
     const btn = document.getElementById('btn-performance');
     
     if (btn) {
-        btn.innerHTML = isPerformanceMode ? '⚡ PERF MODE: ON' : '⚡ PERF MODE: OFF';
-        btn.style.background = isPerformanceMode ? 'rgba(234, 179, 8, 0.2)' : 'rgba(15, 23, 42, 0.8)';
-        btn.style.color = isPerformanceMode ? '#facc15' : '#38bdf8';
+        const textSpan = btn.querySelector('.text'); // Target the text span
+        if(textSpan) textSpan.innerHTML = isPerformanceMode ? 'PERF MODE: ON' : 'PERF MODE: OFF';
+        btn.style.background = isPerformanceMode ? 'rgba(234, 179, 8, 0.2)' : 'rgba(15, 23, 42, 0.85)';
+        btn.style.color = isPerformanceMode ? '#facc15' : '#facc15';
     }
 
     if (!scene3D || !renderer3D) return;
 
-    // 1. Toggle High-DPI Rendering
-    // Standard screens use 1. Retina screens (MacBooks/Phones) use 2 or 3. 
-    // Forcing 1 instantly halves the rendering workload.
     renderer3D.setPixelRatio(isPerformanceMode ? 1 : window.devicePixelRatio);
 
-    // 2. Traverse the entire 3D world and turn off shadow calculations
     scene3D.traverse((object) => {
         if (object.isDirectionalLight) {
             object.castShadow = !isPerformanceMode;
@@ -568,9 +875,315 @@ function togglePerformanceMode() {
         }
     });
 
-    // 3. Force a frame re-render if the user is currently standing still
     if (is3DMode && !isWalkthrough) {
         controls3D.update();
         renderer3D.render(scene3D, camera3D);
     }
+}
+
+
+// =========================================
+// 3D FURNITURE GENERATOR
+// =========================================
+function createFurniture3D(type, w, d) {
+    const group = new THREE.Group();
+    // A clean, soft gray material for all furniture
+    const mat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.9 });
+
+    if (type === 'bed') {
+        // Mattress
+        const bed = new THREE.Mesh(new THREE.BoxGeometry(w, 18, d), mat);
+        bed.position.y = 9; // Sit on floor
+        bed.castShadow = true; bed.receiveShadow = true;
+        group.add(bed);
+        
+        // Headboard (Sticks to the "top" edge of the drag box)
+        const head = new THREE.Mesh(new THREE.BoxGeometry(w, 40, 6), mat);
+        head.position.set(0, 20, -d/2 + 3);
+        group.add(head);
+    } 
+    else if (type === 'sofa') {
+        // Seat
+        const seat = new THREE.Mesh(new THREE.BoxGeometry(w, 15, d), mat);
+        seat.position.y = 7.5;
+        group.add(seat);
+        // Backrest
+        const back = new THREE.Mesh(new THREE.BoxGeometry(w, 30, 8), mat);
+        back.position.set(0, 15, -d/2 + 4);
+        group.add(back);
+        // Armrests
+        const armGeom = new THREE.BoxGeometry(8, 22, d);
+        const armL = new THREE.Mesh(armGeom, mat); armL.position.set(-w/2 + 4, 11, 0);
+        const armR = new THREE.Mesh(armGeom, mat); armR.position.set(w/2 - 4, 11, 0);
+        group.add(armL); group.add(armR);
+    } 
+    else if (type === 'dining') {
+        // Table Top
+        const top = new THREE.Mesh(new THREE.BoxGeometry(w, 2, d), mat);
+        top.position.y = 30;
+        group.add(top);
+        // Legs
+        const legGeom = new THREE.BoxGeometry(4, 29, 4);
+        [[-1,-1], [1,-1], [-1,1], [1,1]].forEach(pos => {
+            const leg = new THREE.Mesh(legGeom, mat);
+            leg.position.set(pos[0] * (w/2 - 4), 14.5, pos[1] * (d/2 - 4));
+            group.add(leg);
+        });
+    } 
+    else if (type === 'counter') {
+        // Basic Kitchen Counter / Island
+        const counter = new THREE.Mesh(new THREE.BoxGeometry(w, 36, d), mat);
+        counter.position.y = 18;
+        counter.castShadow = true;
+        group.add(counter);
+    }
+    
+    return group;
+}
+
+
+// =========================================
+// PROCEDURAL TEXTURE GENERATOR (Real3D)
+// =========================================
+const textureCache = {};
+
+function getProceduralTexture(type) {
+    if (textureCache[type]) return textureCache[type];
+
+    const canvas = document.createElement('canvas');
+    canvas.width = 256; 
+    canvas.height = 256;
+    const ctx = canvas.getContext('2d');
+
+    if (type === 'wood') {
+        // Hardwood Floor Pattern
+        ctx.fillStyle = '#8b5a2b';
+        ctx.fillRect(0, 0, 256, 256);
+        ctx.fillStyle = '#6b4226';
+        for(let i=0; i<256; i+=32) {
+            ctx.fillRect(0, i, 256, 2); // Planks
+            for(let j=0; j<5; j++) {
+                ctx.fillRect(Math.random()*256, i+Math.random()*32, Math.random()*40+20, 1); // Wood grain
+            }
+        }
+    } else if (type === 'bathroom-tile') {
+        // Light Blue/Cyan water-resistant tile for Toilets
+        ctx.fillStyle = '#e0f2fe';
+        ctx.fillRect(0, 0, 256, 256);
+        ctx.strokeStyle = '#bae6fd';
+        ctx.lineWidth = 4;
+        for(let i=0; i<=256; i+=32) { // Smaller 32px grids
+            ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 256); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(256, i); ctx.stroke();
+        }
+    } else if (type === 'kitchen-tile') {
+        // Classic Black & White checkered tile for Kitchens
+        for(let i=0; i<256; i+=64) {
+            for(let j=0; j<256; j+=64) {
+                ctx.fillStyle = ((i/64 + j/64) % 2 === 0) ? '#f8fafc' : '#334155';
+                ctx.fillRect(i, j, 64, 64);
+            }
+        }
+    } else if (type === 'grass') {
+        // Lawn / Balcony Turf Pattern
+        ctx.fillStyle = '#22c55e';
+        ctx.fillRect(0, 0, 256, 256);
+        ctx.fillStyle = '#16a34a';
+        for(let i=0; i<2000; i++) {
+            ctx.fillRect(Math.random()*256, Math.random()*256, 2, 6); // Grass blades
+        }
+    } else {
+        // Default Concrete/Plaster
+        ctx.fillStyle = '#e2e8f0';
+        ctx.fillRect(0, 0, 256, 256);
+        ctx.fillStyle = '#cbd5e1';
+        for(let i=0; i<1000; i++) {
+            ctx.fillRect(Math.random()*256, Math.random()*256, 2, 2); // Concrete speckles
+        }
+    }
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    textureCache[type] = texture;
+    return texture;
+}
+
+function getTextureForRoom(roomType) {
+    if (['living', 'bedroom'].includes(roomType)) return 'wood';
+    if (['toilet'].includes(roomType)) return 'bathroom-tile';
+    if (['kitchen'].includes(roomType)) return 'kitchen-tile';
+    if (['balcony'].includes(roomType)) return 'grass';
+    return 'concrete';
+}
+
+
+// =========================================
+// BALCONY DETAILS (Chairs & Plants)
+// =========================================
+// The flag to toggle balcony furniture visibility
+let showBalconyExtras = true; 
+
+function createBalconyChair() {
+    const group = new THREE.Group();
+    const mat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.8 }); // Slate gray metal
+    
+    // Seat
+    const seat = new THREE.Mesh(new THREE.BoxGeometry(16, 2, 16), mat);
+    seat.position.y = 10;
+    group.add(seat);
+    
+    // Backrest
+    const back = new THREE.Mesh(new THREE.BoxGeometry(16, 16, 2), mat);
+    back.position.set(0, 18, -7);
+    group.add(back);
+    
+    // Legs
+    const legGeom = new THREE.BoxGeometry(2, 10, 2);
+    [[-7,-7], [7,-7], [-7,7], [7,7]].forEach(pos => {
+        const leg = new THREE.Mesh(legGeom, mat);
+        leg.position.set(pos[0], 5, pos[1]);
+        group.add(leg);
+    });
+    
+    return group;
+}
+
+function createBalconyPlant() {
+    const group = new THREE.Group();
+    
+    // Terracotta Pot
+    const potMat = new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.9 }); 
+    const pot = new THREE.Mesh(new THREE.CylinderGeometry(6, 4, 12, 8), potMat);
+    pot.position.y = 6;
+    group.add(pot);
+    
+    // Plant/Leaves (A simple low-poly organic shape)
+    const plantMat = new THREE.MeshStandardMaterial({ color: 0x22c55e, roughness: 0.6 });
+    const leaves = new THREE.Mesh(new THREE.IcosahedronGeometry(10, 0), plantMat);
+    leaves.position.y = 16;
+    group.add(leaves);
+    
+    return group;
+}
+
+
+//Phase - 3
+// --- DYNAMIC SUNLIGHT CONTROLLER ---
+function updateSunlight(hour) {
+    // 🌟 FIXED: Changed 'scene' to 'scene3D'
+    if (!sunLight || !scene3D) return; 
+    
+    // Map hour (6 to 18) to an angle in radians (0 to PI)
+    const normalizedTime = (hour - 6) / 12; 
+    const angle = normalizedTime * Math.PI;
+    
+    const radius = 1000;
+    
+    // Calculate sun position in an arc
+    const x = Math.cos(angle) * -radius; 
+    const y = Math.sin(angle) * radius;
+    const z = 300; 
+    
+    sunLight.position.set(x, y, z);
+    
+    // Update visual aesthetics based on time
+    const timeDisplay = document.getElementById('time-display');
+    if (timeDisplay) {
+        if (hour < 8) {
+            timeDisplay.innerText = "Morning Glow";
+            timeDisplay.style.color = "#fb923c"; 
+            sunLight.color.setHex(0xffedd5); 
+        } else if (hour > 16) {
+            timeDisplay.innerText = "Golden Hour";
+            timeDisplay.style.color = "#f59e0b";
+            sunLight.color.setHex(0xfef3c7);
+        } else {
+            timeDisplay.innerText = "Midday";
+            timeDisplay.style.color = "#38bdf8";
+            sunLight.color.setHex(0xffffff); 
+        }
+    }
+}
+
+// =========================================
+// PHASE 3: CINEMATIC TOUR ENGINE
+// =========================================
+
+function captureWaypoint() {
+    // 🌟 FIXED: Use camera3D and controls3D
+    if (!camera3D || !controls3D) return; 
+    
+    waypoints.push({
+        position: camera3D.position.clone(),
+        target: controls3D.target.clone()
+    });
+    
+    const countEl = document.getElementById('wp-count');
+    if (countEl) countEl.innerText = waypoints.length;
+}
+
+function clearTour() {
+    waypoints = [];
+    const countEl = document.getElementById('wp-count');
+    if (countEl) countEl.innerText = '0';
+}
+
+function playCinematicTour() {
+    if (waypoints.length < 2) {
+        alert("Please set at least 2 waypoints using the camera first!");
+        return;
+    }
+    if (isPlayingTour) return;
+    
+    isPlayingTour = true;
+    controls3D.enabled = false; // Disable mouse orbit while touring
+    
+    let currentWpIndex = 0;
+    const durationPerPoint = 3000; // 3 seconds per transition
+    let startTime = performance.now();
+    
+    function animateTour(time) {
+        if (!isPlayingTour) return;
+        
+        const elapsed = time - startTime;
+        let rawProgress = elapsed / durationPerPoint;
+        
+        const startWp = waypoints[currentWpIndex];
+        const endWp = waypoints[currentWpIndex + 1];
+        
+        // 🌟 FIXED: Strictly check raw elapsed time so it NEVER goes over 100%
+        if (rawProgress < 1) {
+            // Easing function (Smoothstep) applied safely
+            let progress = rawProgress * rawProgress * (3 - 2 * rawProgress); 
+            
+            // Interpolate Camera Position
+            camera3D.position.lerpVectors(startWp.position, endWp.position, progress);
+            // Interpolate Camera Look Target
+            controls3D.target.lerpVectors(startWp.target, endWp.target, progress);
+            controls3D.update(); 
+            
+            requestAnimationFrame(animateTour);
+        } else {
+            // 🌟 FIXED: Snap exactly to the target to prevent micro-drifting
+            camera3D.position.copy(endWp.position);
+            controls3D.target.copy(endWp.target);
+            controls3D.update();
+
+            // Move to next waypoint leg
+            currentWpIndex++;
+            
+            if (currentWpIndex >= waypoints.length - 1) {
+                // Tour Finished safely
+                isPlayingTour = false;
+                controls3D.enabled = true; 
+            } else {
+                // 🌟 FIXED: Continue to next point using exact frame time
+                startTime = time; 
+                requestAnimationFrame(animateTour);
+            }
+        }
+    }
+    
+    requestAnimationFrame(animateTour);
 }

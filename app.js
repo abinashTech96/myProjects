@@ -4,12 +4,24 @@
 
 // --- CAMERA & VIEWPORT ---
 let panX = 0, panY = 0, zoomLvl = 1; 
+let snapLines = []; // 🌟 MOVED HERE: Ensures it loads before updateCanvas tries to use it!
 
 function updateViewport() {
     if (UI.viewport) UI.viewport.setAttribute('transform', `matrix(${zoomLvl}, 0, 0, ${zoomLvl}, ${panX}, ${panY})`);
 }
 
 function panCamera(dx, dy) {
+    // If in 3D Mode, route the UI buttons to the 3D pan() function
+    if (typeof is3DMode !== 'undefined' && is3DMode) {
+        if (typeof pan === 'function') {
+            if (dy > 0) pan('up');
+            if (dy < 0) pan('down');
+            if (dx > 0) pan('left');
+            if (dx < 0) pan('right');
+        }
+        return;
+    }
+    // Default 2D Mode behavior
     panX += dx; panY += dy;
     updateViewport();
 }
@@ -50,6 +62,7 @@ const getPolygonArea = (coords) => {
 };
 
 function checkCollision(el, index) { 
+    if (el.isFurniture) return false;
     return elements.some((other, i) => 
         i !== index && other.floor === el.floor && 
         !(el.x + el.w <= other.x || el.x >= other.x + other.w || el.y + el.h <= other.y || el.y >= other.y + other.h)
@@ -205,7 +218,7 @@ function updateCanvas() {
         if(UI.siteOffsets) UI.siteOffsets.innerHTML = html;
     }
 
-    // Road Logic
+    // Road Logic - UPDATED ORIENTATION
     const road = UI.roadSide ? UI.roadSide.value : 'none';
     if (road === 'none') {
         if (UI.roadPoly) UI.roadPoly.style.display = 'none';
@@ -214,8 +227,10 @@ function updateCanvas() {
         if (UI.roadPoly) UI.roadPoly.style.display = 'block';
         if (UI.roadText) UI.roadText.style.display = 'block';
         let P1, P2;
-        if (road === 'north') { P1 = A; P2 = B; } else if (road === 'east') { P1 = B; P2 = C; }
-        else if (road === 'south') { P1 = C; P2 = D; } else if (road === 'west') { P1 = D; P2 = A; }
+        if (road === 'west') { P1 = A; P2 = B; } 
+        else if (road === 'north') { P1 = B; P2 = C; }
+        else if (road === 'east') { P1 = C; P2 = D; } 
+        else if (road === 'south') { P1 = D; P2 = A; }
         
         const dx = P2.x - P1.x, dy = P2.y - P1.y;
         const len = Math.sqrt(dx*dx + dy*dy);
@@ -291,7 +306,12 @@ function updateCanvas() {
         const strokeColor = isSelected ? '#ffffff' : (isColliding ? '#ef4444' : `rgb(${baseColor})`);
         const fillColor = isColliding ? 'rgba(239, 68, 68, 0.4)' : `rgba(${baseColor}, 0.2)`;
 
-        if (smartMerge) {
+        if (el.isFurniture) {
+            // Furniture styling: Clean dashed lines, transparent fill
+            r.style.display = 'block'; rb.style.display = 'none'; rh.style.display = 'none';
+            r.setAttribute('style', `fill: rgba(148, 163, 184, 0.2); stroke: #cbd5e1; stroke-width: 2; stroke-dasharray: 4, 4;`);
+            if (isSelected) r.setAttribute('style', `fill: rgba(56,189,248,0.3); stroke: #38bdf8; stroke-width: 3; stroke-dasharray: none;`);
+        } else if (smartMerge) {
             r.style.display = 'block'; rb.style.display = 'block'; rh.style.display = 'block';
             rb.setAttribute('style', `fill: ${strokeColor}; stroke: none;`);
             rh.setAttribute('style', `fill: #0f172a; stroke: none;`); 
@@ -301,29 +321,26 @@ function updateCanvas() {
             r.setAttribute('style', `fill: ${fillColor}; stroke: ${strokeColor}; stroke-width: ${isSelected ? '3' : '1.5'}; ${el.type === 'balcony' ? 'stroke-dasharray: 6, 4;' : ''}`);
         }
 
-// ... after you set the attributes for r (the rect) ...
-r.onmouseover = function(e) {
-    const tooltip = document.getElementById('room-tooltip');
-    tooltip.style.display = 'block';
-    // Format the tooltip content
-    const area = ((el.w * el.h)/144).toFixed(1);
-    tooltip.innerHTML = `
-        <div style="font-weight:bold; color:#38bdf8;">${el.customName || el.type.toUpperCase()}</div>
-        <div>${Math.floor(el.w/12)}'${Math.round(el.w%12)}" × ${Math.floor(el.h/12)}'${Math.round(el.h%12)}"</div>
-        <div>${area} sq.ft</div>
-    `;
-};
+        r.onmouseover = function(e) {
+            const tooltip = document.getElementById('room-tooltip');
+            tooltip.style.display = 'block';
+            const area = ((el.w * el.h)/144).toFixed(1);
+            tooltip.innerHTML = `
+                <div style="font-weight:bold; color:#38bdf8;">${el.customName || el.type.toUpperCase()}</div>
+                <div>${Math.floor(el.w/12)}'${Math.round(el.w%12)}" × ${Math.floor(el.h/12)}'${Math.round(el.h%12)}"</div>
+                <div>${area} sq.ft</div>
+            `;
+        };
 
-r.onmousemove = function(e) {
-    const tooltip = document.getElementById('room-tooltip');
-    // Position the tooltip near the mouse cursor
-    tooltip.style.left = (e.clientX + 15) + 'px';
-    tooltip.style.top = (e.clientY + 15) + 'px';
-};
+        r.onmousemove = function(e) {
+            const tooltip = document.getElementById('room-tooltip');
+            tooltip.style.left = (e.clientX + 15) + 'px';
+            tooltip.style.top = (e.clientY + 15) + 'px';
+        };
 
-r.onmouseout = function(e) {
-    document.getElementById('room-tooltip').style.display = 'none';
-};
+        r.onmouseout = function(e) {
+            document.getElementById('room-tooltip').style.display = 'none';
+        };
 
         // Text & Data
         const cx = rx + w / 2; const cy = ry + h / 2;
@@ -335,15 +352,11 @@ r.onmouseout = function(e) {
         createOrUpdateText(`txt-dims-${i}`, gText, cx, cy + 6, dimsText, '#cbd5e1', '10', false);
         createOrUpdateText(`txt-area-${i}`, gText, cx, cy + 20, areaText, '#94a3b8', '10', false);
     
-        // ==========================================
-        // 🎯 PASTE THE MISSING DIMENSIONS CODE HERE:
-        // ==========================================
         const showDimsToggle = UI.showDims || document.getElementById('showDims');
         let dimTop = document.getElementById(`dim-top-${i}`);
         let dimLeft = document.getElementById(`dim-left-${i}`);
         
         if (showDimsToggle && showDimsToggle.checked) {
-            // Force the dimensions into the top border layer so they are never hidden
             let dimContainer = UI.dimContainer || document.getElementById('dim-container') || document.getElementById('group-borders');
             
             if (!dimTop) { 
@@ -362,7 +375,6 @@ r.onmouseout = function(e) {
             dimLeft.setAttribute('x1', rx); dimLeft.setAttribute('y1', ry); 
             dimLeft.setAttribute('x2', I.x); dimLeft.setAttribute('y2', ry);
             
-            // Force explicit styling to guarantee visibility
             dimTop.setAttribute('style', 'stroke: #cbd5e1; stroke-width: 1.5; stroke-dasharray: 4,4; pointer-events: none;');
             dimLeft.setAttribute('style', 'stroke: #cbd5e1; stroke-width: 1.5; stroke-dasharray: 4,4; pointer-events: none;');
             
@@ -371,7 +383,6 @@ r.onmouseout = function(e) {
             if (dimTop) dimTop.style.display = 'none';
             if (dimLeft) dimLeft.style.display = 'none';
         }
-        // ==========================================
 
     });
 
@@ -441,8 +452,22 @@ r.onmouseout = function(e) {
     if (UI.buildArea) UI.buildArea.innerText = `Build Area: ${buildAreaSqFt.toFixed(2)} sq.ft (${coverage}% Coverage)`;
 
     renderAutoDimensions();
+
+    // Draw Smart Alignment Guides
+    snapLines.forEach(line => {
+        const l = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        if (line.type === 'v') { l.setAttribute("x1", line.x); l.setAttribute("x2", line.x); l.setAttribute("y1", 0); l.setAttribute("y2", 1000); }
+        else { l.setAttribute("y1", line.y); l.setAttribute("y2", line.y); l.setAttribute("x1", 0); l.setAttribute("x2", 1000); }
+        l.setAttribute("style", "stroke: #fbbf24; stroke-width: 1.5; stroke-dasharray: 6,4;");
+        svg.appendChild(l);
+    });
+
     if (is3DMode && typeof generate3DModel === 'function') generate3DModel();
     if (typeof saveToMemory === 'function') saveToMemory();
+
+
+    // 🌟 ADD THIS HERE: Trigger the stats recalculation
+    updateAreaDashboard();
 }
 
 
@@ -470,7 +495,6 @@ function startDragFixture(evt, index) {
 }
 
 const handleMove = (currentMouse, e) => {
-    // --- UNDO BUG FIX: Save state BEFORE the room moves ---
     if (!hasDragged) {
         if (typeof saveState === 'function') saveState();
         hasDragged = true;
@@ -480,7 +504,6 @@ const handleMove = (currentMouse, e) => {
     animationFrameId = requestAnimationFrame(() => {
         const SCALE = parseFloat(UI.scaleInput.value) || 1.2;
         
-        // Mode 1: Fixtures
         if (isDraggingFixture && dragFixtureIndex !== -1) {
             const fix = fixtures[dragFixtureIndex];
             const el = elements[fix.roomId];
@@ -495,7 +518,6 @@ const handleMove = (currentMouse, e) => {
             fix.offset = Math.max(0, Math.min(fix.offset, limit - fix.size));
             updateCanvas(); if(typeof renderSidebar === 'function') renderSidebar(); 
         } 
-        // Mode 2: Rooms (Smart Snapping)
         else if (isDragging && dragElIndex !== -1) {
             const dx = currentMouse.x - startMousePos.x;
             const dy = currentMouse.y - startMousePos.y;
@@ -537,7 +559,6 @@ const handleMove = (currentMouse, e) => {
                 }
             });
 
-            //const isStrictSnap = document.getElementById('gridSnapToggle') ? document.getElementById('gridSnapToggle').checked : false;
             const isStrictSnap = UI.gridSnapToggle ? UI.gridSnapToggle.checked : false;
             if (!snappedX) newX = isStrictSnap ? Math.round(newX / 12) * 12 : Math.round(newX);
             if (!snappedY) newY = isStrictSnap ? Math.round(newY / 12) * 12 : Math.round(newY);
@@ -546,6 +567,8 @@ const handleMove = (currentMouse, e) => {
             newY = Math.max(0, Math.min(newY, inH - el.h));
 
             el.x = newX; el.y = newY;
+            //🌟Calculate the snap lines right before drawing!
+            applySmartSnap(el, dragElIndex);
             updateCanvas(); 
 
             // Render Guides
@@ -572,12 +595,15 @@ const handleMove = (currentMouse, e) => {
 };
 
 const endDrag = () => {
-    // --- UNDO BUG FIX: Removed saveState from here so it doesn't overwrite history ---
     UI.isSpacePanning = false; 
     if (UI.isSpacePanMode) UI.blueprint.style.cursor = 'grab'; 
     isDragging = false; dragFixtureIndex = -1; isDraggingFixture = false; dragElIndex = -1;
     const guideLayer = document.getElementById('smart-guides');
     if (guideLayer) guideLayer.innerHTML = '';
+
+    // 🌟 FIXED: Clears the memory leak instantly
+    snapLines = [];
+    updateCanvas();
 };
 
 // Event Listeners (Mouse & Touch)
@@ -586,7 +612,6 @@ if (!UI.blueprint) return;
     UI.blueprint.addEventListener('mousemove', (e) => {
         if (UI.isSpacePanning) { panCamera(e.clientX - UI.spacePanStart.x, e.clientY - UI.spacePanStart.y); UI.spacePanStart = { x: e.clientX, y: e.clientY }; return; }
         
-        // Measuring Mode logic during mousemove
         if (isMeasuringMode && measureStart && tempMeasureLine) {
             const pos = getMousePos(e);
             tempMeasureLine.setAttribute('x1', measureStart.x); tempMeasureLine.setAttribute('y1', measureStart.y);
@@ -618,7 +643,6 @@ if (!UI.blueprint) return;
     UI.blueprint.addEventListener('mouseleave', endDrag);
     UI.blueprint.addEventListener('touchend', endDrag);
 
-    // Click / Tape Measure / Deselect
     UI.blueprint.addEventListener('mousedown', (e) => {
         if (UI.isSpacePanMode) {
             UI.isSpacePanning = true; UI.spacePanStart = { x: e.clientX, y: e.clientY }; UI.blueprint.style.cursor = 'grabbing'; 
@@ -666,9 +690,7 @@ if (!UI.blueprint) return;
 // =========================================
 
 function resetCamera() {
-    panX = 0; 
-    panY = 0; 
-    zoomLvl = 1;
+    panX = 0; panY = 0; zoomLvl = 1;
     updateViewport();
 }
 
@@ -676,7 +698,7 @@ function centerOnSelection() {
     if (typeof selectedElIndex === 'undefined' || selectedElIndex === -1) return;
     
     const el = elements[selectedElIndex];
-    if (el.floor !== currentFloor) return; // Don't jump if it's on a hidden floor
+    if (!el || el.locked) return; // 🌟 FIXED: Added !el to check if the room actually exists first 
 
     const SCALE = parseFloat(UI.scaleInput.value) || 1.2;
     const unit = UI.unitSelect.value;
@@ -685,11 +707,9 @@ function centerOnSelection() {
     const inH = toInches(UI.inH.value, unit) * SCALE;
     const I = { x: 500 - (inW/2), y: 500 - (inH/2) };
 
-    // Find the mathematical center of the selected room
     const roomCenterX = I.x + (el.x * SCALE) + ((el.w * SCALE) / 2);
     const roomCenterY = I.y + (el.y * SCALE) + ((el.h * SCALE) / 2);
 
-    // Pan the camera so this exact point aligns with the 500x500 center of the SVG
     panX = 500 - (roomCenterX * zoomLvl);
     panY = 500 - (roomCenterY * zoomLvl);
     
@@ -701,7 +721,6 @@ function exportPNG() {
     const serializer = new XMLSerializer();
     let svgString = serializer.serializeToString(svgElement);
 
-    // Ensure the SVG namespace is present for the canvas renderer
     if (!svgString.match(/^<svg[^>]+xmlns="http\:\/\/www\.w3\.org\/2000\/svg"/)) {
         svgString = svgString.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
     }
@@ -712,20 +731,15 @@ function exportPNG() {
 
     img.onload = function() {
         const canvas = document.createElement('canvas');
-        // High-resolution export (2000x2000)
         canvas.width = 2000;
         canvas.height = 2000;
         const ctx = canvas.getContext('2d');
         
-        // Fill the background with the app's dark mode color
         ctx.fillStyle = '#0f172a';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        // Draw the blueprint
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        URL.revokeObjectURL(url); // Free up memory
+        URL.revokeObjectURL(url); 
 
-        // Trigger automatic download
         const downloadLink = document.createElement('a');
         downloadLink.href = canvas.toDataURL('image/png', 1.0);
         downloadLink.download = 'Architectural-Blueprint.png';
@@ -737,7 +751,6 @@ function exportPNG() {
 }
 
 function exportPDF() {
-    // Triggers the browser's native print-to-PDF engine.
     window.print();
 }
 
@@ -758,10 +771,27 @@ function toggleMeasureMode() {
 
 
 // --- DATA & ELEMENT BINDINGS ---
-function addElement() {
+function addElement(overrideType = null) {
     if(typeof saveState === 'function') saveState();
-    const type = document.getElementById('elem-type').value;
-    elements.push({ type: type, w: 120, h: 120, x: 20, y: 20, floor: currentFloor, locked: false, dir: type === 'staircase' ? 'up' : null });
+    // Check if we passed a furniture type, if not, fallback to the Rooms dropdown
+    const type = overrideType || document.getElementById('elem-type').value;
+    
+    // Default Room Sizes
+    let w = 120, h = 120, isFurniture = false;
+
+    // Detect Furniture and apply realistic real-world sizes (in inches)
+    if (type === 'bed') { w = 72; h = 84; isFurniture = true; }
+    else if (type === 'sofa') { w = 84; h = 36; isFurniture = true; }
+    else if (type === 'dining') { w = 72; h = 48; isFurniture = true; }
+    else if (type === 'counter') { w = 96; h = 24; isFurniture = true; }
+
+    elements.push({ 
+        type: type, w: w, h: h, x: 20, y: 20, 
+        floor: currentFloor, locked: false, 
+        dir: type === 'staircase' ? 'up' : null,
+        isFurniture: isFurniture // 👈 Flags this so the engine treats it differently
+    });
+    
     if(typeof renderSidebar === 'function') renderSidebar(); 
     updateCanvas();
 }
@@ -793,8 +823,27 @@ function rotateElement(idx) {
 }
 
 function addFixture(type) {
-    if (selectedElIndex === -1) { alert("Please click on a room first to select it!"); return; }
-    fixtures.push({ type: type, roomId: selectedElIndex, edge: 'bottom', offset: 36, size: 36 });
+    // 1. Ensure a room is actually selected
+    if (typeof selectedElIndex === 'undefined' || selectedElIndex === -1) {
+        alert("Please click on a room first to select it!");
+        return; 
+    }
+
+    // 2. 🛑 GUARD CLAUSE: Prevent fixtures on Furniture
+    if (elements[selectedElIndex].isFurniture) {
+        alert("Cannot add doors or windows to furniture. Please select a structural room like a Bedroom or Living Room.");
+        return; 
+    }
+
+    fixtures.push({ 
+        type: type, 
+        roomId: selectedElIndex, 
+        edge: 'bottom', 
+        offset: 36, 
+        size: 36 
+    });
+    
+    if (typeof renderSidebar === 'function') renderSidebar();
     updateCanvas();
 }
 
@@ -814,49 +863,107 @@ function rotateStaircase(index) {
 // --- FLOOR MANAGEMENT ---
 function setFloor(f) {
     currentFloor = f;
+    selectedElIndex = -1;
     if (typeof renderFloorSelectors === 'function') renderFloorSelectors();
     if (typeof renderSidebar === 'function') renderSidebar(); 
     updateCanvas();
 }
 
+// THE UPDATED FLOOR ADDITION LOGIC
 function addManualFloor() {
-    const maxFloor = document.querySelectorAll('.floor-btn').length - 1;
-    const newFloorNum = maxFloor + 1;
+    const bFloorsInput = document.getElementById('b-floors');
+    let currentCount = parseInt(bFloorsInput.value) || 1;
     
-    // Copy staircases up to the new floor automatically
-    elements.filter(e => e.type === 'staircase' && e.floor === maxFloor).forEach(stair => {
+    const newFloorNum = currentCount; 
+    bFloorsInput.value = currentCount + 1; 
+
+    elements.filter(e => e.type === 'staircase' && e.floor === newFloorNum - 1).forEach(stair => {
         const clone = JSON.parse(JSON.stringify(stair));
-        clone.floor = newFloorNum; elements.push(clone);
+        clone.floor = newFloorNum; 
+        elements.push(clone);
     });
     
     if (typeof renderFloorSelectors === 'function') renderFloorSelectors();
     setFloor(newFloorNum);
 }
 
+function deleteCurrentFloor() {
+    if (currentFloor === 0) {
+        alert("You cannot delete the Ground Floor. Delete the individual rooms instead.");
+        return;
+    }
+    
+    if (!confirm(`⚠️ Are you sure you want to completely delete the ${currentFloor === 1 ? '1st' : currentFloor + 'th'} floor and all its rooms?`)) return;
+
+    if (typeof saveState === 'function') saveState();
+
+    // 1. Find all rooms on the current floor (Reverse order to prevent array shifting bugs)
+    const indicesToDelete = [];
+    elements.forEach((el, index) => {
+        if (el.floor === currentFloor) indicesToDelete.push(index);
+    });
+    indicesToDelete.reverse();
+
+    // 2. Safely delete them and update fixture IDs
+    indicesToDelete.forEach(idx => {
+        elements.splice(idx, 1);
+        fixtures = fixtures.filter(f => f.roomId !== idx);
+        fixtures.forEach(f => { if (f.roomId > idx) f.roomId--; });
+    });
+
+    // 3. Shift all upper floors down by 1
+    elements.forEach(el => {
+        if (el.floor > currentFloor) el.floor -= 1;
+    });
+
+    // 4. Update the Master UI Counter
+    const bFloorsInput = document.getElementById('b-floors');
+    let currentCount = parseInt(bFloorsInput.value) || 1;
+    bFloorsInput.value = Math.max(1, currentCount - 1);
+
+    // 5. Jump to the floor below and refresh the UI
+    if (typeof renderFloorSelectors === 'function') renderFloorSelectors();
+    setFloor(currentFloor - 1);
+}
+
 function cloneEntireFloor() {
     const currentElements = elements.filter(e => e.floor === currentFloor);
     if (currentElements.length === 0) return alert("Nothing to clone!");
-    if (!confirm("Clone this entire floor to the next level?")) return;
     
-    const nextFloor = currentFloor + 1;
+    // 1. Check the system for how many floors currently exist
+    const bFloorsInput = document.getElementById('b-floors');
+    let currentCount = parseInt(bFloorsInput.value) || 1;
+    
+    // Customize the popup to tell the user exactly where the clone is going
+    let targetName = currentCount === 1 ? "1st" : currentCount === 2 ? "2nd" : `${currentCount}th`;
+    if (!confirm(`Clone this floor to a new ${targetName} Floor level?`)) return;
+    
+    // 2. Set the target floor to be a brand new level at the top of the building
+    const targetFloor = currentCount; 
     const newRoomStartIndex = elements.length;
     
+    // 3. Update the master floor counter so the UI knows the new floor exists
+    bFloorsInput.value = targetFloor + 1;
+
+    // 4. Clone the rooms and assign them to the new target floor
     currentElements.forEach(room => {
         const clone = JSON.parse(JSON.stringify(room)); 
-        clone.floor = nextFloor; elements.push(clone);
+        clone.floor = targetFloor; 
+        elements.push(clone);
     });
     
-    fixtures.forEach(fix => {
+    // 5. Clone the fixtures (Doors/Windows)
+    const currentFixtures = fixtures.filter(f => elements[f.roomId] && elements[f.roomId].floor === currentFloor);
+    
+    currentFixtures.forEach(fix => {
         const room = elements[fix.roomId];
-        if (room && room.floor === currentFloor) {
-            const cloneFix = JSON.parse(JSON.stringify(fix));
-            cloneFix.roomId = newRoomStartIndex + currentElements.indexOf(room);
-            fixtures.push(cloneFix);
-        }
+        const cloneFix = JSON.parse(JSON.stringify(fix));
+        cloneFix.roomId = newRoomStartIndex + currentElements.indexOf(room);
+        fixtures.push(cloneFix);
     });
     
     if (typeof renderFloorSelectors === 'function') renderFloorSelectors();
-    setFloor(nextFloor);
+    setFloor(targetFloor); // Jump the user's view to the newly created floor
 }
 
 function generateBuilding() {
@@ -892,7 +999,6 @@ function generateBuilding() {
 
     elements = []; 
     
-    // --- SAFE TABS CLEARING ---
     const tabsContainer = document.getElementById('top-floor-tabs');
     if (tabsContainer) tabsContainer.innerHTML = '';
     
@@ -951,7 +1057,6 @@ function renderAutoDimensions() {
         const w = el.w * SCALE;
         const h = el.h * SCALE;
 
-        // 1. WIDTH DIMENSION (Top)
         const lineTop = document.createElementNS("http://www.w3.org/2000/svg", "line");
         lineTop.setAttribute('x1', rx); lineTop.setAttribute('y1', ry - 10);
         lineTop.setAttribute('x2', rx + w); lineTop.setAttribute('y2', ry - 10);
@@ -965,7 +1070,6 @@ function renderAutoDimensions() {
         textWidth.textContent = `${Math.floor(el.w/12)}'${Math.round(el.w%12)}"`;
         dimGroup.appendChild(textWidth);
 
-        // 2. HEIGHT DIMENSION (Left)
         const lineLeft = document.createElementNS("http://www.w3.org/2000/svg", "line");
         lineLeft.setAttribute('x1', rx - 10); lineLeft.setAttribute('y1', ry);
         lineLeft.setAttribute('x2', rx - 10); lineLeft.setAttribute('y2', ry + h);
@@ -975,18 +1079,67 @@ function renderAutoDimensions() {
         const textHeight = document.createElementNS("http://www.w3.org/2000/svg", "text");
         textHeight.setAttribute('x', rx - 15); textHeight.setAttribute('y', ry + h/2);
         textHeight.setAttribute('fill', '#38bdf8'); textHeight.setAttribute('font-size', '10');
-        textHeight.setAttribute('text-anchor', 'end'); // Align to the left
-        textHeight.setAttribute('alignment-baseline', 'middle'); // Vertically center
+        textHeight.setAttribute('text-anchor', 'end'); 
+        textHeight.setAttribute('alignment-baseline', 'middle'); 
         textHeight.textContent = `${Math.floor(el.h/12)}'${Math.round(el.h%12)}"`;
         dimGroup.appendChild(textHeight);
     });
 }
 
+// =========================================
+// AI AGENT BRIDGE API
+// =========================================
 
-// --- SPACEBAR PANNING LISTENERS ---
-// --- ARROW KEY NUDGING ---
+window.addRoom = function(x, y, w, h, type) {
+    if(typeof saveState === 'function') saveState();
+    
+    // Ensure all variables exist, fallback to defaults
+    const safeType = type || 'living';
+    const safeW = w || 120;
+    const safeH = h || 120;
+    const safeX = x || 20;
+    const safeY = y || 20;
+
+    elements.push({ 
+        type: safeType, 
+        w: safeW, 
+        h: safeH, 
+        x: safeX, 
+        y: safeY, 
+        floor: currentFloor, 
+        locked: false, 
+        dir: safeType === 'staircase' ? 'up' : null 
+    });
+    
+    if(typeof renderSidebar === 'function') renderSidebar();
+    updateCanvas();
+};
+
+window.moveElement = function(id, newX, newY) {
+    if (!elements[id]) return; 
+    if(typeof saveState === 'function') saveState();
+    
+    elements[id].x = newX;
+    elements[id].y = newY;
+    
+    if(typeof renderSidebar === 'function') renderSidebar();
+    updateCanvas();
+};
+
+window.deleteElementAI = function(idx) {
+    if (!elements[idx]) return;
+    if(typeof saveState === 'function') saveState(); 
+    
+    elements.splice(idx, 1); 
+    fixtures = fixtures.filter(f => f.roomId !== idx);
+    fixtures.forEach(f => { if (f.roomId > idx) f.roomId--; });
+    
+    selectedElIndex = (selectedElIndex === idx) ? -1 : (selectedElIndex > idx ? selectedElIndex - 1 : selectedElIndex);
+    if(typeof renderSidebar === 'function') renderSidebar(); 
+    updateCanvas(); 
+};
+
 document.addEventListener('keydown', (e) => {
-    // Ignore if typing in an input, or if 3D mode is active, or if nothing is selected
     if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'SELECT') return;
     if (typeof is3DMode !== 'undefined' && is3DMode) return;
     if (typeof selectedElIndex === 'undefined' || selectedElIndex === -1) return;
@@ -994,7 +1147,7 @@ document.addEventListener('keydown', (e) => {
     const el = elements[selectedElIndex];
     if (el.locked) return;
 
-    const step = e.shiftKey ? 12 : 1; // Shift moves 1 foot, normal moves 1 inch
+    const step = e.shiftKey ? 12 : 1; 
     let moved = false;
 
     if (e.key === 'ArrowUp') { el.y -= step; moved = true; }
@@ -1003,7 +1156,7 @@ document.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowRight') { el.x += step; moved = true; }
 
     if (moved) {
-        e.preventDefault(); // Stop the webpage from scrolling
+        e.preventDefault(); 
         updateCanvas();
         if(typeof renderSidebar === 'function') renderSidebar();
     }
@@ -1017,11 +1170,203 @@ document.addEventListener('keyup', (e) => {
     if (e.code === 'Space') { UI.isSpacePanMode = false; UI.isSpacePanning = false; if(UI.blueprint) UI.blueprint.style.cursor = ''; }
 });
 
-// --- BOOTSTRAP INITIALIZATION ---
 if (typeof initDOMCache === 'function') {
     initDOMCache();
-    initInteractions(); // <--- ADD THIS LINE TO ACTIVATE THE MOUSE
+    initInteractions(); 
     if(typeof loadFromMemory === 'function') loadFromMemory();
     if(typeof renderFloorSelectors === 'function') renderFloorSelectors(); 
     updateCanvas();
+}
+
+
+// =========================================
+// KEYBOARD & CONTEXT MENU LOGIC
+// =========================================
+document.addEventListener('keydown', (e) => {
+    // Ignore if typing in a text input (like custom room names)
+    if (e.target.tagName === 'INPUT' || typeof selectedElIndex === 'undefined' || selectedElIndex === -1) return; 
+
+    if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
+        e.preventDefault();
+        cloneElement(selectedElIndex);
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'l') {
+        e.preventDefault();
+        elements[selectedElIndex].locked = !elements[selectedElIndex].locked;
+        if(typeof renderSidebar === 'function') renderSidebar();
+    }
+    if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault();
+        deleteElement(selectedElIndex);
+    }
+});
+
+// Context Menu Listener
+document.getElementById('svg-canvas').addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    if (typeof selectedElIndex !== 'undefined' && selectedElIndex !== -1) {
+        const ctx = document.getElementById('context-menu');
+        ctx.style.display = 'block';
+        ctx.style.left = e.pageX + 'px';
+        ctx.style.top = e.pageY + 'px';
+    }
+});
+
+// Hide menu on normal click
+document.addEventListener('click', (e) => {
+    const ctx = document.getElementById('context-menu');
+    if (ctx && e.target.closest('#context-menu') === null) {
+        ctx.style.display = 'none';
+    }
+});
+
+
+//The "Precision" Upgrade (Smart Alignment Guides)
+function applySmartSnap(el, index) {
+    snapLines = [];
+    const TOLERANCE = 5; // Will snap if within 5 pixels
+    
+    elements.forEach((other, i) => {
+        if (i === index || other.floor !== el.floor) return;
+        
+        // Vertical Snapping (X-axis)
+        if (Math.abs(el.x - other.x) < TOLERANCE) { el.x = other.x; snapLines.push({x: el.x, type: 'v'}); }
+        else if (Math.abs((el.x + el.w) - (other.x + other.w)) < TOLERANCE) { el.x = other.x + other.w - el.w; snapLines.push({x: el.x + el.w, type: 'v'}); }
+        
+        // Horizontal Snapping (Y-axis)
+        if (Math.abs(el.y - other.y) < TOLERANCE) { el.y = other.y; snapLines.push({y: el.y, type: 'h'}); }
+        else if (Math.abs((el.y + el.h) - (other.y + other.h)) < TOLERANCE) { el.y = other.y + other.h - el.h; snapLines.push({y: el.y + el.h, type: 'h'}); }
+    });
+}
+
+
+// =========================================
+// PHASE 2: PERSISTENCE & REPORTING
+// =========================================
+
+
+// --- 3. Auto-Area Calculation Dashboard ---
+function updateAreaDashboard2() {
+    const dash = document.getElementById('area-dashboard');
+    if (!dash) return;
+
+    if (elements.length === 0) {
+        dash.innerHTML = '<div style="color: #94a3b8; text-align: center;">Add rooms to see calculations...</div>';
+        return;
+    }
+
+    // Tally up square footage by room type
+    let totals = {};
+    let grandTotal = 0;
+
+    elements.forEach(el => {
+        // Skip furniture and staircases in the square footage calc
+        if (el.isFurniture || el.type === 'staircase') return; 
+        
+        const sqft = (el.w * el.h) / 144; // w and h are in inches
+        grandTotal += sqft;
+        
+        // Group by type (Living, Bedroom, etc.)
+        const typeName = el.customName || el.type.toUpperCase();
+        if (!totals[typeName]) totals[typeName] = 0;
+        totals[typeName] += sqft;
+    });
+
+    // Build the UI HTML
+    let html = '';
+    
+    // Sort rooms from largest to smallest area
+    const sortedRooms = Object.keys(totals).sort((a, b) => totals[b] - totals[a]);
+    
+    sortedRooms.forEach(room => {
+        html += `
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 4px;">
+                <span style="color: #cbd5e1;">${room}</span>
+                <span style="color: #38bdf8; font-weight: bold; font-family: monospace;">${totals[room].toFixed(1)} sqft</span>
+            </div>
+        `;
+    });
+
+    html += `
+        <div style="display: flex; justify-content: space-between; margin-top: 6px; padding-top: 6px; border-top: 1px solid #38bdf8;">
+            <span style="color: #f8fafc; font-weight: 900;">TOTAL BUILD AREA</span>
+            <span style="color: #10b981; font-weight: 900; font-family: monospace; font-size: 0.85rem;">${grandTotal.toFixed(1)} sqft</span>
+        </div>
+    `;
+
+    dash.innerHTML = html;
+}
+
+
+// --- 3. Auto-Area Calculation Dashboard ---
+function updateAreaDashboard() {
+    const dash = document.getElementById('area-dashboard');
+    const totalBuiltAreaUI = document.getElementById('total-built-area'); // Target the new div
+
+    if (!dash) return;
+
+    if (elements.length === 0) {
+        dash.innerHTML = '<div style="color: #94a3b8; text-align: center;">Add rooms to see calculations...</div>';
+        if (totalBuiltAreaUI) totalBuiltAreaUI.innerText = `Built-Up Area: 0 sq.ft`;
+        return;
+    }
+
+    let currentFloorTotals = {};
+    let currentFloorGrandTotal = 0;
+    let totalBuiltUpAreaAllFloors = 0;
+
+    elements.forEach(el => {
+        // Skip furniture and staircases in the square footage calc
+        if (el.isFurniture || el.type === 'staircase') return; 
+        
+        const sqft = (el.w * el.h) / 144; // w and h are in inches
+        
+        // 1. Add to the GLOBAL Built-Up Area (All Floors)
+        totalBuiltUpAreaAllFloors += sqft;
+        
+        // 2. Add to the Local Breakdown ONLY if on the current floor
+        if (el.floor === currentFloor) {
+            currentFloorGrandTotal += sqft;
+            
+            // Group by type (Living, Bedroom, etc.)
+            const typeName = el.customName || el.type.toUpperCase();
+            if (!currentFloorTotals[typeName]) currentFloorTotals[typeName] = 0;
+            currentFloorTotals[typeName] += sqft;
+        }
+    });
+
+    // Update the New UI Element
+    if (totalBuiltAreaUI) {
+        totalBuiltAreaUI.innerText = `Built-Up Area: ${totalBuiltUpAreaAllFloors.toFixed(1)} sq.ft`;
+    }
+
+    // Handle empty current floor
+    if (Object.keys(currentFloorTotals).length === 0) {
+        dash.innerHTML = '<div style="color: #94a3b8; text-align: center;">No rooms on this floor...</div>';
+        return;
+    }
+
+    // Build the UI HTML for the Current Floor
+    let html = '';
+    
+    // Sort rooms from largest to smallest area
+    const sortedRooms = Object.keys(currentFloorTotals).sort((a, b) => currentFloorTotals[b] - currentFloorTotals[a]);
+    
+    sortedRooms.forEach(room => {
+        html += `
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 4px;">
+                <span style="color: #cbd5e1;">${room}</span>
+                <span style="color: #38bdf8; font-weight: bold; font-family: monospace;">${currentFloorTotals[room].toFixed(1)} sqft</span>
+            </div>
+        `;
+    });
+
+    html += `
+        <div style="display: flex; justify-content: space-between; margin-top: 6px; padding-top: 6px; border-top: 1px solid #38bdf8;">
+            <span style="color: #f8fafc; font-weight: 900;">THIS FLOOR TOTAL</span>
+            <span style="color: #10b981; font-weight: 900; font-family: monospace; font-size: 0.85rem;">${currentFloorGrandTotal.toFixed(1)} sqft</span>
+        </div>
+    `;
+
+    dash.innerHTML = html;
 }

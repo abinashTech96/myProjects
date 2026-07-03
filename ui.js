@@ -62,6 +62,8 @@ function initDOMCache() {
     dimContainer = document.getElementById('dim-container');
 
     UI.gridSnapToggle = document.getElementById('gridSnapToggle');
+
+    initAnimatedDropdowns();
 }
 
 // =========================================
@@ -89,6 +91,168 @@ function getRoomDisplayName(index) {
     if (el.type === 'toilet' || el.type === 'staircase') return `${el.type.toUpperCase()} ${count}`;
     return el.type.toUpperCase();
 }
+
+function renderSidebarBackup() {
+    if (!ctrl) return;
+    ctrl.innerHTML = '';
+    
+    if (typeof selectedElIndex === 'undefined' || selectedElIndex === -1) {
+        ctrl.innerHTML = `
+            <div style="padding: 40px 20px; text-align: center; color: #64748b; font-size: 0.8rem; border: 1px dashed #334155; border-radius: 8px; margin-top: 10px; background: rgba(0,0,0,0.2);">
+                <div style="font-size: 1.5rem; margin-bottom: 10px;">🖱️</div>
+                Select any room on the blueprint to edit its dimensions, position, doors, and windows.
+            </div>`;
+        return;
+    }
+
+    const i = selectedElIndex;
+    const el = elements[i];
+    if (!el || el.floor !== currentFloor) return; 
+    
+    const div = document.createElement('div');
+    div.className = 'panel';
+    div.id = `panel-${i}`;
+    div.style.marginBottom = "20px";
+    div.style.border = "1px solid #38bdf8"; 
+    div.style.boxShadow = "0 0 15px rgba(56, 189, 248, 0.15)";
+
+    let staircaseControls = '';
+    if (el.type === 'staircase') {
+        staircaseControls = `
+            <button class="action-btn" onclick="rotateStaircase(${i})" title="Rotate Staircase">
+                🔄 ${el.dir ? el.dir.toUpperCase() : 'UP'}
+            </button>
+        `;
+    }
+    
+    const defaultHex = "#38bdf8"; 
+
+    div.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px;">
+            <span style="font-weight: 800; font-size: 0.75rem; color: #38bdf8; letter-spacing: 1px; text-transform: uppercase;">
+                📐 ${getRoomDisplayName(i)}
+            </span>
+            <div style="display: flex; gap: 6px; align-items: center;">
+                <input type="text" placeholder="Custom Name" value="${el.customName || ''}" 
+                    onchange="elements[${i}].customName=this.value; updateCanvas();" 
+                    style="width: 110px; padding: 4px 8px; font-size: 0.75rem; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 4px;">
+                <input type="color" value="${el.customColor || defaultHex}" 
+                    onchange="elements[${i}].customColor=this.value; updateCanvas();" 
+                    style="width: 26px; height: 26px; padding: 0; cursor: pointer; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); background: transparent;">
+            </div>
+        </div>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; background: rgba(0,0,0,0.2); padding: 6px; border-radius: 6px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.05);">
+            ${typeof staircaseControls !== 'undefined' ? staircaseControls : ''}
+            <button class="action-btn" onclick="centerOnSelection()" title="Center View" style="padding: 6px 8px;">🎯</button>
+            <button class="action-btn" onclick="addDoor(${i})" title="Add Door" style="padding: 6px 8px;">🚪</button>
+            <button class="action-btn" onclick="addWindow(${i})" title="Add Window" style="padding: 6px 8px;">🪟</button>
+            
+            <div style="width: 1px; background: rgba(255,255,255,0.1); margin: 0 2px;"></div> <button class="action-btn" onclick="rotateElement(${i})" title="Rotate" style="padding: 6px 8px;">🔄</button>
+            <button class="action-btn" onclick="cloneElement(${i})" title="Duplicate" style="padding: 6px 8px;">📋</button>
+            <button class="action-btn" onclick="elements[${i}].locked = !elements[${i}].locked; renderSidebar();" title="Lock" style="padding: 6px 8px;">${el.locked ? '🔒' : '🔓'}</button>
+            <button class="action-btn del" onclick="deleteElement(${i})" title="Delete" style="padding: 6px 8px; background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3);">🗑️</button>
+        </div>  
+
+        <div style="background: rgba(0,0,0,0.15); padding: 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);">
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <label style="font-size: 0.65rem; color: #94a3b8; font-weight: bold; letter-spacing: 0.5px;">WIDTH</label>
+                    <input type="number" value="${el.w}" onchange="elements[${i}].w=parseInt(this.value); updateCanvas()" style="text-align: center; font-family: monospace;">
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <label style="font-size: 0.65rem; color: #94a3b8; font-weight: bold; letter-spacing: 0.5px;">HEIGHT</label>
+                    <input type="number" value="${el.h}" onchange="elements[${i}].h=parseInt(this.value); updateCanvas()" style="text-align: center; font-family: monospace;">
+                </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <label style="font-size: 0.7rem; color: #94a3b8; width: 12px; font-weight: bold;">X</label>
+                    <input type="number" id="num-x-${i}" value="${el.x}" oninput="elements[${i}].x=parseInt(this.value); document.getElementById('range-x-${i}').value=this.value; updateCanvas()" style="width: 55px; text-align: center; padding: 4px; font-family: monospace;">
+                    <input type="range" id="range-x-${i}" min="0" max="800" value="${el.x}" oninput="elements[${i}].x=parseInt(this.value); document.getElementById('num-x-${i}').value=this.value; updateCanvas()" style="flex-grow: 1; accent-color: #38bdf8; height: 4px;">
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <label style="font-size: 0.7rem; color: #94a3b8; width: 12px; font-weight: bold;">Y</label>
+                    <input type="number" id="num-y-${i}" value="${el.y}" oninput="elements[${i}].y=parseInt(this.value); document.getElementById('range-y-${i}').value=this.value; updateCanvas()" style="width: 55px; text-align: center; padding: 4px; font-family: monospace;">
+                    <input type="range" id="range-y-${i}" min="0" max="800" value="${el.y}" oninput="elements[${i}].y=parseInt(this.value); document.getElementById('num-y-${i}').value=this.value; updateCanvas()" style="flex-grow: 1; accent-color: #38bdf8; height: 4px;">
+                </div>
+            </div>
+
+        </div>
+    `;
+   
+    const roomFixtures = fixtures.filter(f => f.roomId === i);
+    if (roomFixtures.length > 0) {
+        // Main Fixtures Header
+        div.innerHTML += `
+            <div style="display: flex; align-items: center; gap: 6px; margin-top: 20px; margin-bottom: 10px;">
+                <div style="height: 1px; flex-grow: 1; background: rgba(255,255,255,0.1);"></div>
+                <span style="font-size: 0.65rem; font-weight: 800; color: #94a3b8; letter-spacing: 1px;">ATTACHED FIXTURES</span>
+                <div style="height: 1px; flex-grow: 1; background: rgba(255,255,255,0.1);"></div>
+            </div>`;
+        
+        roomFixtures.forEach((fix) => {
+            const globalIdx = fixtures.indexOf(fix);
+            const maxOffset = (fix.edge === 'bottom' || fix.edge === 'top') ? (el.w - fix.size) : (el.h - fix.size);
+            
+            const emoji = fix.type === 'door' ? '🚪' : '🪟';
+            const accentColor = fix.type === 'door' ? '#fbbf24' : '#cbd5e1'; 
+
+            div.innerHTML += `
+                <div class="fixture-card" style="background: rgba(0,0,0,0.15); border: 1px solid rgba(255,255,255,0.05); border-left: 3px solid ${accentColor}; border-radius: 6px; padding: 10px; margin-bottom: 8px;">
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <span style="font-weight: 800; font-size: 0.7rem; color: ${accentColor}; letter-spacing: 0.5px;">
+                            ${emoji} ${fix.type.toUpperCase()}
+                        </span>
+                        <button class="action-btn del" onclick="fixtures.splice(${globalIdx},1); renderSidebar(); updateCanvas()" title="Remove ${fix.type}" style="padding: 4px 8px; font-size: 0.65rem; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); color: #ef4444; border-radius: 4px; box-shadow: none; transition: all 0.3s ease;">
+                            ✕ Remove
+                        </button>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+                        <div style="display: flex; flex-direction: column; gap: 4px;">
+                            <label style="font-size: 0.65rem; color: #94a3b8; font-weight: bold; letter-spacing: 0.5px;">SIZE</label>
+                            <input type="number" class="pro-input" value="${fix.size}" 
+                                oninput="fixtures[${globalIdx}].size=parseInt(this.value); document.getElementById('range-fix-${globalIdx}').max = (fixtures[${globalIdx}].edge === 'bottom' || fixtures[${globalIdx}].edge === 'top') ? (${el.w} - this.value) : (${el.h} - this.value); updateCanvas();" 
+                                style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 4px; text-align: center; font-family: monospace; width: 100%; padding: 6px;">
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 4px;">
+                            <label style="font-size: 0.65rem; color: #94a3b8; font-weight: bold; letter-spacing: 0.5px;">WALL EDGE</label>
+                            
+                            <select class="fixture-select" onchange="fixtures[${globalIdx}].edge=this.value; renderSidebar(); updateCanvas()" style="width: 100%; font-size: 0.75rem;">
+                                <option value="bottom" ${fix.edge==='bottom'?'selected':''}>Bottom</option>
+                                <option value="top" ${fix.edge==='top'?'selected':''}>Top</option>
+                                <option value="left" ${fix.edge==='left'?'selected':''}>Left</option>
+                                <option value="right" ${fix.edge==='right'?'selected':''}>Right</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <label style="font-size: 0.65rem; color: #94a3b8; font-weight: bold; letter-spacing: 0.5px;">WALL OFFSET</label>
+                            <input type="number" id="num-fix-${globalIdx}" class="pro-input" value="${fix.offset}" 
+                                oninput="fixtures[${globalIdx}].offset=parseInt(this.value); document.getElementById('range-fix-${globalIdx}').value=this.value; updateCanvas()" 
+                                style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 4px; width: 60px; text-align: center; padding: 6px; font-family: monospace; font-size: 0.75rem;">
+                        </div>
+                        <input type="range" id="range-fix-${globalIdx}" min="0" max="${maxOffset}" value="${fix.offset}" 
+                            oninput="fixtures[${globalIdx}].offset=parseInt(this.value); document.getElementById('num-fix-${globalIdx}').value=this.value; updateCanvas()" 
+                            style="--thumb-color: ${accentColor}; width: 100%; margin-top: 4px;">
+                    </div>
+
+                </div>`;
+        });
+    }
+    ctrl.appendChild(div);
+    if (typeof initAnimatedDropdowns === 'function') {
+        initAnimatedDropdowns();
+    }
+}
+
+
 
 function renderSidebar() {
     if (!ctrl) return;
@@ -124,91 +288,193 @@ function renderSidebar() {
     }
     
     const defaultHex = "#38bdf8"; 
-    
+
     div.innerHTML = `
-        <div class="room-header" style="display:flex; flex-direction:column; gap:8px; margin-bottom:15px;">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <span style="font-weight:bold; font-size: 0.8rem; color: #38bdf8;">📝 EDITING</span>
-                <div class="action-bar" style="position:relative; right:0; top:0; display:flex; gap:2px;">
-                    ${staircaseControls}
-                    <button class="action-btn" onclick="centerOnSelection()" title="Center View">🎯</button>
-                    <button class="action-btn" onclick="addDoor(${i})" title="Add Door">🚪</button>
-                    <button class="action-btn" onclick="addWindow(${i})" title="Add Window">🪟</button>
-                    <button class="action-btn" onclick="rotateElement(${i})" title="Rotate">🔄</button>
-                    <button class="action-btn" onclick="cloneElement(${i})" title="Duplicate">📋</button>
-                    <button class="action-btn" onclick="elements[${i}].locked = !elements[${i}].locked; renderSidebar();" title="Lock">${el.locked ? '🔒' : '🔓'}</button>
-                    <button class="action-btn del" onclick="deleteElement(${i})" title="Delete">🗑️</button>
-                </div>
-            </div>
-            
-            <div style="display:flex; gap:8px;">
-                <input type="text" placeholder="${getRoomDisplayName(i)}" value="${el.customName || ''}" 
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px;">
+            <span style="font-weight: 800; font-size: 0.75rem; color: #38bdf8; letter-spacing: 1px; text-transform: uppercase;">
+                📐 ${getRoomDisplayName(i)}
+            </span>
+            <div style="display: flex; gap: 6px; align-items: center;">
+                <input type="text" placeholder="Custom Name" value="${el.customName || ''}" 
                     onchange="elements[${i}].customName=this.value; updateCanvas();" 
-                    style="flex-grow: 1; padding: 6px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 4px;">
+                    style="width: 110px; padding: 4px 8px; font-size: 0.75rem; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 4px;">
                 <input type="color" value="${el.customColor || defaultHex}" 
                     onchange="elements[${i}].customColor=this.value; updateCanvas();" 
-                    style="width: 36px; height: 32px; padding: 0; cursor: pointer; border-radius:4px; border:none; background: transparent;">
+                    style="width: 26px; height: 26px; padding: 0; cursor: pointer; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); background: transparent;">
             </div>
         </div>
 
-        <div class="dim-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-bottom:10px;">
-            <div><label style="font-size:0.65rem; color:#94a3b8;">WIDTH</label><input type="number" value="${el.w}" onchange="elements[${i}].w=parseInt(this.value);updateCanvas()"></div>
-            <div><label style="font-size:0.65rem; color:#94a3b8;">HEIGHT</label><input type="number" value="${el.h}" onchange="elements[${i}].h=parseInt(this.value);updateCanvas()"></div>
+        <div style="display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; background: rgba(0,0,0,0.2); padding: 6px; border-radius: 6px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.05);">
+            ${typeof staircaseControls !== 'undefined' ? staircaseControls : ''}
+            <button class="action-btn" onclick="centerOnSelection()" title="Center View" style="padding: 6px 8px;">🎯</button>
+            
+            ${!el.isFurniture ? `
+                <button class="action-btn" onclick="addDoor(${i})" title="Add Door" style="padding: 6px 8px;">🚪</button>
+                <button class="action-btn" onclick="addWindow(${i})" title="Add Window" style="padding: 6px 8px;">🪟</button>
+            ` : ''}
+            
+            <div style="width: 1px; background: rgba(255,255,255,0.1); margin: 0 2px;"></div> 
+            <button class="action-btn" onclick="rotateElement(${i})" title="Rotate" style="padding: 6px 8px;">🔄</button>
+            <button class="action-btn" onclick="cloneElement(${i})" title="Duplicate" style="padding: 6px 8px;">📋</button>
+            <button class="action-btn" onclick="elements[${i}].locked = !elements[${i}].locked; renderSidebar();" title="Lock" style="padding: 6px 8px;">${el.locked ? '🔒' : '🔓'}</button>
+            <button class="action-btn del" onclick="deleteElement(${i})" title="Delete" style="padding: 6px 8px; background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3);">🗑️</button>
+        </div>  
+
+        <div style="background: rgba(0,0,0,0.15); padding: 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);">
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <label style="font-size: 0.65rem; color: #94a3b8; font-weight: bold; letter-spacing: 0.5px;">WIDTH</label>
+                    <input type="number" value="${el.w}" onchange="elements[${i}].w=parseInt(this.value); updateCanvas()" style="text-align: center; font-family: monospace;">
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <label style="font-size: 0.65rem; color: #94a3b8; font-weight: bold; letter-spacing: 0.5px;">HEIGHT</label>
+                    <input type="number" value="${el.h}" onchange="elements[${i}].h=parseInt(this.value); updateCanvas()" style="text-align: center; font-family: monospace;">
+                </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <label style="font-size: 0.7rem; color: #94a3b8; width: 12px; font-weight: bold;">X</label>
+                    <input type="number" id="num-x-${i}" value="${el.x}" oninput="elements[${i}].x=parseInt(this.value); document.getElementById('range-x-${i}').value=this.value; updateCanvas()" style="width: 55px; text-align: center; padding: 4px; font-family: monospace;">
+                    <input type="range" id="range-x-${i}" min="0" max="800" value="${el.x}" oninput="elements[${i}].x=parseInt(this.value); document.getElementById('num-x-${i}').value=this.value; updateCanvas()" style="flex-grow: 1; accent-color: #38bdf8; height: 4px;">
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <label style="font-size: 0.7rem; color: #94a3b8; width: 12px; font-weight: bold;">Y</label>
+                    <input type="number" id="num-y-${i}" value="${el.y}" oninput="elements[${i}].y=parseInt(this.value); document.getElementById('range-y-${i}').value=this.value; updateCanvas()" style="width: 55px; text-align: center; padding: 4px; font-family: monospace;">
+                    <input type="range" id="range-y-${i}" min="0" max="800" value="${el.y}" oninput="elements[${i}].y=parseInt(this.value); document.getElementById('num-y-${i}').value=this.value; updateCanvas()" style="flex-grow: 1; accent-color: #38bdf8; height: 4px;">
+                </div>
+            </div>
+
         </div>
-
-        <div class="pos-group">
-            <div class="pos-row" style="display:flex; align-items:center; gap:8px; margin-bottom:5px;">
-                <label style="font-size:0.7rem; width:15px;">X</label>
-                <input type="number" id="num-x-${i}" value="${el.x}" oninput="elements[${i}].x=parseInt(this.value); document.getElementById('range-x-${i}').value=this.value; updateCanvas()">
-                <input type="range" id="range-x-${i}" min="0" max="800" value="${el.x}" oninput="elements[${i}].x=parseInt(this.value); document.getElementById('num-x-${i}').value=this.value; updateCanvas()">
-            </div>
-            <div class="pos-row" style="display:flex; align-items:center; gap:8px;">
-                <label style="font-size:0.7rem; width:15px;">Y</label>
-                <input type="number" id="num-y-${i}" value="${el.y}" oninput="elements[${i}].y=parseInt(this.value); document.getElementById('range-y-${i}').value=this.value; updateCanvas()">
-                <input type="range" id="range-y-${i}" min="0" max="800" value="${el.y}" oninput="elements[${i}].y=parseInt(this.value); document.getElementById('num-y-${i}').value=this.value; updateCanvas()">
-            </div>
-        </div>`;
-
+    `;
+   
     const roomFixtures = fixtures.filter(f => f.roomId === i);
     if (roomFixtures.length > 0) {
-        div.innerHTML += `<div style="margin-top:15px; border-top:1px solid #334155; padding-top:10px; font-size:0.7rem; color:#94a3b8;">FIXTURES:</div>`;
+        // Main Fixtures Header
+        div.innerHTML += `
+            <div style="display: flex; align-items: center; gap: 6px; margin-top: 20px; margin-bottom: 10px;">
+                <div style="height: 1px; flex-grow: 1; background: rgba(255,255,255,0.1);"></div>
+                <span style="font-size: 0.65rem; font-weight: 800; color: #94a3b8; letter-spacing: 1px;">ATTACHED FIXTURES</span>
+                <div style="height: 1px; flex-grow: 1; background: rgba(255,255,255,0.1);"></div>
+            </div>`;
         
         roomFixtures.forEach((fix) => {
             const globalIdx = fixtures.indexOf(fix);
             const maxOffset = (fix.edge === 'bottom' || fix.edge === 'top') ? (el.w - fix.size) : (el.h - fix.size);
+            
+            const emoji = fix.type === 'door' ? '🚪' : '🪟';
+            const accentColor = fix.type === 'door' ? '#fbbf24' : '#cbd5e1'; 
 
             div.innerHTML += `
-                <div style="font-size:0.75rem; margin-top:5px; background:rgba(0,0,0,0.2); padding:8px; border-radius:4px;">
-                    <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-                        <b>${fix.type.toUpperCase()}</b>
-                        <button class="action-btn" onclick="fixtures.splice(${globalIdx},1); renderSidebar(); updateCanvas()">🗑️</button>
-                    </div>
-                    
-                    <label style="font-size:0.6rem; color:#94a3b8;">SIZE</label>
-                    <input type="number" style="width:100%; margin-bottom:5px;" value="${fix.size}" onchange="fixtures[${globalIdx}].size=parseInt(this.value); renderSidebar(); updateCanvas()">
-                    
-                    <label style="font-size:0.6rem; color:#94a3b8;">POSITION (OFFSET)</label>
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <input type="number" value="${fix.offset}" oninput="fixtures[${globalIdx}].offset=parseInt(this.value); document.getElementById('range-fix-${globalIdx}').value=this.value; updateCanvas()">
-                        <input type="range" id="range-fix-${globalIdx}" min="0" max="${maxOffset}" value="${fix.offset}" oninput="fixtures[${globalIdx}].offset=parseInt(this.value); document.getElementById('num-fix-${globalIdx}').value=this.value; updateCanvas()">
+                <div class="fixture-card" style="background: rgba(0,0,0,0.15); border: 1px solid rgba(255,255,255,0.05); border-left: 3px solid ${accentColor}; border-radius: 6px; padding: 10px; margin-bottom: 8px;">
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <span style="font-weight: 800; font-size: 0.7rem; color: ${accentColor}; letter-spacing: 0.5px;">
+                            ${emoji} ${fix.type.toUpperCase()}
+                        </span>
+                        <button class="action-btn del" onclick="fixtures.splice(${globalIdx},1); renderSidebar(); updateCanvas()" title="Remove ${fix.type}" style="padding: 4px 8px; font-size: 0.65rem; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); color: #ef4444; border-radius: 4px; box-shadow: none; transition: all 0.3s ease;">
+                            ✕ Remove
+                        </button>
                     </div>
 
-                    <select onchange="fixtures[${globalIdx}].edge=this.value; renderSidebar(); updateCanvas()" style="width:100%; margin-top:5px; background:#0f172a; color:white; border:none; padding:2px;">
-                        <option value="bottom" ${fix.edge==='bottom'?'selected':''}>Bottom</option>
-                        <option value="top" ${fix.edge==='top'?'selected':''}>Top</option>
-                        <option value="left" ${fix.edge==='left'?'selected':''}>Left</option>
-                        <option value="right" ${fix.edge==='right'?'selected':''}>Right</option>
-                    </select>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+                        <div style="display: flex; flex-direction: column; gap: 4px;">
+                            <label style="font-size: 0.65rem; color: #94a3b8; font-weight: bold; letter-spacing: 0.5px;">SIZE</label>
+                            <input type="number" class="pro-input" value="${fix.size}" 
+                                oninput="fixtures[${globalIdx}].size=parseInt(this.value); document.getElementById('range-fix-${globalIdx}').max = (fixtures[${globalIdx}].edge === 'bottom' || fixtures[${globalIdx}].edge === 'top') ? (${el.w} - this.value) : (${el.h} - this.value); updateCanvas();" 
+                                style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 4px; text-align: center; font-family: monospace; width: 100%; padding: 6px;">
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 4px;">
+                            <label style="font-size: 0.65rem; color: #94a3b8; font-weight: bold; letter-spacing: 0.5px;">WALL EDGE</label>
+                            
+                            <select class="fixture-select" onchange="fixtures[${globalIdx}].edge=this.value; renderSidebar(); updateCanvas()" style="width: 100%; font-size: 0.75rem;">
+                                <option value="bottom" ${fix.edge==='bottom'?'selected':''}>Bottom</option>
+                                <option value="top" ${fix.edge==='top'?'selected':''}>Top</option>
+                                <option value="left" ${fix.edge==='left'?'selected':''}>Left</option>
+                                <option value="right" ${fix.edge==='right'?'selected':''}>Right</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <label style="font-size: 0.65rem; color: #94a3b8; font-weight: bold; letter-spacing: 0.5px;">WALL OFFSET</label>
+                            <input type="number" id="num-fix-${globalIdx}" class="pro-input" value="${fix.offset}" 
+                                oninput="fixtures[${globalIdx}].offset=parseInt(this.value); document.getElementById('range-fix-${globalIdx}').value=this.value; updateCanvas()" 
+                                style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 4px; width: 60px; text-align: center; padding: 6px; font-family: monospace; font-size: 0.75rem;">
+                        </div>
+                        <input type="range" id="range-fix-${globalIdx}" min="0" max="${maxOffset}" value="${fix.offset}" 
+                            oninput="fixtures[${globalIdx}].offset=parseInt(this.value); document.getElementById('num-fix-${globalIdx}').value=this.value; updateCanvas()" 
+                            style="--thumb-color: ${accentColor}; width: 100%; margin-top: 4px;">
+                    </div>
+
                 </div>`;
         });
     }
     ctrl.appendChild(div);
+    if (typeof initAnimatedDropdowns === 'function') {
+        initAnimatedDropdowns();
+    }
 }
+
+
+
 
 function renderFloorSelectors() {
     let count = parseInt(document.getElementById('b-floors').value);
     if (count < 1 || isNaN(count)) count = 1;
 
+    // 1. Update Auto-Builder Dropdowns
+    const container = document.getElementById('floor-layout-selectors');
+    if (container) {
+        container.innerHTML = '';
+        for(let i = 0; i < count; i++) {
+            let fName = i === 0 ? "Ground" : i === 1 ? "1st" : i === 2 ? "2nd" : `${i}th`;
+            container.innerHTML += `
+                <div class="field">
+                    <label>${fName} Floor Layout:</label>
+                    <select id="layout-f${i}" class="modern-select">
+                        <option value="none">Empty / Open Terrace</option>
+                        <option value="1bhk">1 BHK</option>
+                        <option value="2bhk" ${i === 0 ? 'selected' : ''}>2 BHK</option>
+                        <option value="3bhk">3 BHK</option>
+                    </select>
+                </div>`;
+        }
+    }
+
+    // 2. Update Top Bar Tabs
+    const tabsContainer = document.getElementById('top-floor-tabs');
+    if (tabsContainer) {
+        tabsContainer.innerHTML = ''; 
+        for(let i = 0; i < count; i++) {
+            let label = i === 0 ? "G" : i === 1 ? "1st" : i === 2 ? "2nd" : `${i}th`;
+            tabsContainer.innerHTML += `<button class="floor-btn ${i === currentFloor ? 'active' : ''}" data-floor="${i}" onclick="setFloor(${i})">${label}</button>`;
+        }
+    }
+
+    // 3. Update Sidebar Tabs
+    const sidebarTabs = document.getElementById('floor-tabs');
+    if (sidebarTabs) {
+        sidebarTabs.innerHTML = '';
+        for(let i = 0; i < count; i++) {
+            let label = i === 0 ? "G" : i === 1 ? "1st" : i === 2 ? "2nd" : `${i}th`;
+            sidebarTabs.innerHTML += `<button class="floor-btn ${i === currentFloor ? 'active' : ''}" data-floor="${i}" onclick="setFloor(${i})">${label}</button>`;
+        }
+    }
+
+    // 4. THE FIX: Apply the new animated dropdown script to the newly created HTML
+    if (typeof initAnimatedDropdowns === 'function') {
+        initAnimatedDropdowns(); 
+    }
+}
+
+function renderFloorSelectorsBkup() {
+    let count = parseInt(document.getElementById('b-floors').value);
+    if (count < 1 || isNaN(count)) count = 1;
+
+    // 1. Update Auto-Builder Dropdowns
     const container = document.getElementById('floor-layout-selectors');
     if (container) {
         container.innerHTML = '';
@@ -227,6 +493,7 @@ function renderFloorSelectors() {
         }
     }
 
+    // 2. Update Top Bar Tabs
     const tabsContainer = document.getElementById('top-floor-tabs');
     if (tabsContainer) {
         tabsContainer.innerHTML = ''; 
@@ -235,7 +502,18 @@ function renderFloorSelectors() {
             tabsContainer.innerHTML += `<button class="floor-btn ${i === currentFloor ? 'active' : ''}" data-floor="${i}" onclick="setFloor(${i})">${label}</button>`;
         }
     }
-    applyCustomSelects(); 
+
+    // 3. Update Sidebar Tabs
+    const sidebarTabs = document.getElementById('floor-tabs');
+    if (sidebarTabs) {
+        sidebarTabs.innerHTML = '';
+        for(let i = 0; i < count; i++) {
+            let label = i === 0 ? "G" : i === 1 ? "1st" : i === 2 ? "2nd" : `${i}th`;
+            sidebarTabs.innerHTML += `<button class="floor-btn ${i === currentFloor ? 'active' : ''}" data-floor="${i}" onclick="setFloor(${i})">${label}</button>`;
+        }
+    }
+    //commented for DropDown Glitch
+    //if (typeof applyCustomSelects === 'function') applyCustomSelects(); 
 }
 
 // =========================================
@@ -262,17 +540,10 @@ function toggleSidebar() {
 }
 
 function toggleTheme() {
-    // 1. Toggle the 2D UI class
     const isClassic = document.body.classList.toggle('classic-theme');
-    
-    // 2. Redraw the 2D canvas
     if (typeof updateCanvas === 'function') updateCanvas(); 
-
-    // 3. INSTANTLY sync the 3D world if it has been loaded!
     if (typeof scene3D !== 'undefined' && scene3D) {
-        // 0xe2e8f0 is a perfect, professional "Matte Grey" (Tailwind slate-200)
         const bgColor = isClassic ? 0xe2e8f0 : 0x0f172a; 
-        
         scene3D.background.setHex(bgColor);
         if (scene3D.fog) scene3D.fog.color.setHex(bgColor);
     }
@@ -281,7 +552,7 @@ function toggleTheme() {
 // =========================================
 // CUSTOM DROPDOWN ENGINE
 // =========================================
-
+/* //commented for DropDown Glitch
 function applyCustomSelects() {
     const selects = document.querySelectorAll('select');
     selects.forEach(sel => {
@@ -331,6 +602,7 @@ function applyCustomSelects() {
     });
 }
 
+
 function closeAllSelect(elmnt) {
     const items = document.querySelectorAll('.select-items');
     const selected = document.querySelectorAll('.select-selected');
@@ -342,3 +614,85 @@ function closeAllSelect(elmnt) {
     }
 }
 document.addEventListener('click', closeAllSelect);
+*/
+
+document.addEventListener('DOMContentLoaded', () => {
+    const btn = document.getElementById('ai-generate-btn');
+    if (btn) btn.addEventListener('click', handleAICommand);
+});
+
+// =========================================
+// PRO ANIMATED DROPDOWNS ENGINE
+// =========================================
+function initAnimatedDropdowns() {
+    const selects = document.querySelectorAll('select:not([data-customized])');
+    
+    selects.forEach(select => {
+        select.style.display = 'none'; // Hide native select
+        select.setAttribute('data-customized', 'true');
+        
+        // Create Wrapper
+        const wrapper = document.createElement('div');
+        wrapper.className = 'pro-dropdown-wrapper';
+        select.parentNode.insertBefore(wrapper, select);
+        wrapper.appendChild(select); 
+        
+        // Create Header (Visible Button)
+        const header = document.createElement('div');
+        header.className = 'pro-dropdown-header';
+        
+        const selectedText = document.createElement('span');
+        selectedText.className = 'pro-dropdown-value';
+        selectedText.textContent = select.options[select.selectedIndex]?.text || '';
+        
+        const arrow = document.createElement('span');
+        arrow.className = 'pro-dropdown-arrow';
+        arrow.textContent = '▼';
+        
+        header.appendChild(selectedText);
+        header.appendChild(arrow);
+        wrapper.appendChild(header);
+        
+        // Create Options List
+        const list = document.createElement('div');
+        list.className = 'pro-dropdown-list';
+        
+        Array.from(select.options).forEach((option, index) => {
+            const item = document.createElement('div');
+            item.className = 'pro-dropdown-item';
+            if (index === select.selectedIndex) item.classList.add('selected');
+            item.textContent = option.text;
+            
+            // Handle Click
+            item.addEventListener('click', (e) => {
+                e.stopPropagation();
+                select.selectedIndex = index;
+                selectedText.textContent = option.text;
+                
+                select.dispatchEvent(new Event('change')); // Trigger app.js logic
+                
+                list.querySelectorAll('.pro-dropdown-item').forEach(el => el.classList.remove('selected'));
+                item.classList.add('selected');
+                wrapper.classList.remove('open');
+            });
+            
+            list.appendChild(item);
+        });
+        
+        wrapper.appendChild(list);
+        
+        // Handle Opening/Closing
+        header.addEventListener('click', (e) => {
+            e.stopPropagation();
+            document.querySelectorAll('.pro-dropdown-wrapper').forEach(w => {
+                if (w !== wrapper) w.classList.remove('open');
+            });
+            wrapper.classList.toggle('open');
+        });
+    });
+}
+
+// Close dropdowns if clicking anywhere else on the screen
+document.addEventListener('click', () => {
+    document.querySelectorAll('.pro-dropdown-wrapper').forEach(w => w.classList.remove('open'));
+});

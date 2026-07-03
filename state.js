@@ -69,6 +69,7 @@ function loadFromMemory() {
 }
 
 // --- IMPORT / EXPORT ---
+/*
 function exportJSON() { 
     let fileName = prompt("Enter a name for your design:", "My-ArchCAD-Design");
     if (fileName === null) return; 
@@ -116,6 +117,68 @@ function importJSON(event) {
     }; 
     reader.readAsText(event.target.files[0]); 
     event.target.value = '';
+}
+*/
+
+// --- Upgraded JSON Export ---
+function exportJSON() {
+    const projectData = {
+        version: "1.0",
+        timestamp: new Date().toISOString(),
+        floorCount: parseInt(document.getElementById('b-floors').value) || 1,
+        elements: elements,
+        fixtures: fixtures
+    };
+
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(projectData, null, 2));
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", "ArchCAD_Project_" + Math.floor(Date.now() / 1000) + ".json");
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+}
+
+// --- Upgraded JSON Import ---
+function importJSON(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const importedData = JSON.parse(e.target.result);
+            
+            if (!importedData.elements || !importedData.fixtures) {
+                alert("Invalid project file format.");
+                return;
+            }
+
+            elements = importedData.elements;
+            fixtures = importedData.fixtures;
+            
+            if (importedData.floorCount) {
+                const bFloors = document.getElementById('b-floors');
+                if (bFloors) bFloors.value = importedData.floorCount;
+            }
+
+            setFloor(0);
+            selectedElIndex = -1;
+            
+            if (typeof renderFloorSelectors === 'function') renderFloorSelectors();
+            if (typeof renderSidebar === 'function') renderSidebar();
+            updateCanvas();
+            
+            // Clear the input so you can load the same file again if needed
+            document.getElementById('importFile').value = ''; 
+            
+            alert("✅ Project loaded successfully!");
+            
+        } catch (error) {
+            alert("Error parsing the project file: " + error.message);
+        }
+    };
+    reader.readAsText(file);
 }
 
 function resetWorkspace() {
@@ -189,3 +252,26 @@ document.addEventListener('keydown', (e) => {
         }
     }
 });
+
+// --- STANDALONE UNDO/REDO FUNCTIONS FOR UI BUTTONS ---
+function undoAction() {
+    if (historyStack.length > 0) {
+        redoStack.push(JSON.stringify({ elements: elements, fixtures: fixtures }));
+        const previousState = JSON.parse(historyStack.pop());
+        elements = previousState.elements; 
+        fixtures = previousState.fixtures;
+        if (typeof renderSidebar === 'function') renderSidebar();
+        if (typeof updateCanvas === 'function') updateCanvas();
+    }
+}
+
+function redoAction() {
+    if (redoStack.length > 0) {
+        historyStack.push(JSON.stringify({ elements: elements, fixtures: fixtures }));
+        const nextState = JSON.parse(redoStack.pop());
+        elements = nextState.elements; 
+        fixtures = nextState.fixtures;
+        if (typeof renderSidebar === 'function') renderSidebar();
+        if (typeof updateCanvas === 'function') updateCanvas();
+    }
+}

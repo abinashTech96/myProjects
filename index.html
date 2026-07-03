@@ -29,6 +29,20 @@
     </div>
 
 <div class="sidebar">
+<!--
+    <div class="panel" style="background: rgba(15, 23, 42, 0.8); border: 1px solid #38bdf8; margin-bottom: 15px;">
+        <h2 style="color: #38bdf8; margin-bottom: 10px; font-size: 0.9rem;">📊 PROJECT STATS</h2>
+        <div id="area-dashboard" style="display: flex; flex-direction: column; gap: 8px; font-size: 0.75rem;">
+            <div style="color: #94a3b8; text-align: center;">Add rooms to see calculations...</div>
+        </div>
+    </div>
+-->
+
+    <div id="ai-command-bar" style="display: flex; gap: 10px; margin-bottom: 10px; padding: 10px; background: #0f172a; border-radius: 8px; border: 1px solid #38bdf8;">
+        <input type="text" id="ai-input" placeholder="e.g., Add a 10x12 master bedroom on the left..." style="flex-grow: 1; padding: 8px; border-radius: 4px; border: none;">
+        <button id="ai-generate-btn" style="background: #38bdf8; border: none; padding: 8px 16px; border-radius: 4px; font-weight: bold; cursor: pointer;">Generate</button>
+    </div>
+    
 
 	<div class="panel" style="border-color: #38bdf8;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
@@ -80,16 +94,16 @@
         <div class="accordion-content">
             <div class="accordion-inner">
                 <div class="input-grid">
-                    <div class="field"><label>Width:</label><input type="number" id="inW" value="272" oninput="updateCanvas()"></div>
-                    <div class="field"><label>Depth:</label><input type="number" id="inH" value="400" oninput="updateCanvas()"></div>
+                    <div class="field"><label>Width:</label><input type="number" id="inW" value="278" oninput="updateCanvas()"></div>
+                    <div class="field"><label>Depth:</label><input type="number" id="inH" value="417" oninput="updateCanvas()"></div>
                     
                     <div class="field" style="grid-column: span 2;">
                         <label>Main Road Placement:</label>
                         <select id="roadSide" onchange="updateCanvas()">
-                            <option value="south">⬇ South (Bottom Edge)</option>
-                            <option value="north">⬆ North (Top Edge)</option>
-                            <option value="east">➡ East (Right Edge)</option>
-                            <option value="west">⬅ West (Left Edge)</option>
+                            <option value="east">⬇ East (Bottom Edge)</option>
+                            <option value="west">⬆ West (Top Edge)</option>
+                            <option value="north">➡ North (Right Edge)</option>
+                            <option value="south">⬅ South (Left Edge)</option>
                             <option value="none">None</option>
                         </select>
                     </div>
@@ -103,7 +117,7 @@
         </div>
     </div>
 
-
+<!--
     <div class="panel pro-accordion active">
         <div class="accordion-header" onclick="this.parentElement.classList.toggle('active')">
             <h2>🏢 FLOORS & DATA</h2>
@@ -112,22 +126,25 @@
         
         <div class="accordion-content">
             <div class="accordion-inner">
-                <div class="input-grid">
-                    <div class="field" style="grid-column: span 2;">
-                        <div class="field" style="margin-left:0px;">
-                            <label>Show Dimensions</label>
-                            <input type="checkbox" id="showDims" onchange="updateCanvas()" unchecked>
-                        </div>
+                <div class="setting-card">
+
+                    <div class="setting-group toggle-group">
+                        <label class="setting-label">Show Dims</label>
+                        <label class="modern-toggle">
+                            <input type="checkbox" id="showDims" onchange="updateCanvas()">
+                            <span class="toggle-slider"></span>
+                        </label>                        
                     </div>
                     
-                    <div class="field" style="margin-left:0px;">
-                        <label>Units:</label>
-                        <select id="unitSelect" onchange="updateCanvas()">
+                    <div class="setting-group">
+                        <label class="setting-label">Measurement</label>
+                        <select id="unitSelect" class="modern-select" onchange="updateCanvas()">
                             <option value="in">Inches</option>
-                            <option value="cm">CM</option>
-                            <option value="ftin">Ft & Inches</option>
+                            <option value="cm">Centimeters</option>
+                            <option value="ftin">Feet & Inches</option>
                         </select>
                     </div>
+
                 </div>
                 
                 <div style="display:flex; align-items:center; gap: 8px; margin-top:10px; margin-bottom:10px;">
@@ -136,6 +153,9 @@
                     </div>
                     <button class="action-btn" onclick="addManualFloor()" title="Add New Floor" style="padding: 4px 8px; font-weight: bold; background: rgba(56, 189, 248, 0.1); color: #38bdf8; border: 1px dashed #38bdf8;">
                         + ADD FLOOR
+                    </button>
+                    <button class="action-btn" onclick="deleteCurrentFloor()" title="Delete Current Floor" style="padding: 4px 8px; font-weight: bold; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px dashed #ef4444;">
+                        🗑️ DEL FLOOR
                     </button>
                 </div>
                 <div id="stair-warning">⚠ Staircases must match X, Y, Width, and Depth across floors!</div>
@@ -151,26 +171,38 @@
                     <div class="field"><label>Scale:</label><input type="number" id="scaleInput" value="1.2" step="0.1" oninput="updateCanvas()"></div>
                 </div>
 
-        <div class="global-toolbar" style="margin-top: 15px;">
-            <button class="tool-btn" onclick="toggleMeasureMode()" title="Tape Measure">
-                <span class="icon">📏</span><span class="btn-label">Measure</span>
-            </button>
-            <button class="tool-btn" onclick="exportJSON()" title="Save / Export JSON">
-                <span class="icon">💾</span><span class="btn-label">Save</span>
-            </button>
-            <button class="tool-btn" onclick="document.getElementById('importFile').click()" title="Open / Import JSON">
-                <span class="icon">📂</span><span class="btn-label">Load</span>
-            </button>
-            <button class="tool-btn" onclick="exportPNG()" title="Export PNG" style="border-bottom: 2px solid #a855f7;">
-                <span class="icon">🖼️</span><span class="btn-label">PNG</span>
-            </button>
-            <button class="tool-btn" onclick="exportPDF()" title="Export PDF" style="border-bottom: 2px solid #f43f5e;">
-                <span class="icon">📄</span><span class="btn-label">PDF</span>
-            </button>
-            <div class="toolbar-divider"></div>
-            <button class="tool-btn" onclick="resetWorkspace()" title="Danger: Reset Workspace" style="border-bottom: 2px solid #ef4444;">
-                <span class="icon">⚠️</span><span class="btn-label">Reset</span>
-            </button>
+        <div class="global-toolbar" style="margin-top: 15px; display: flex; flex-direction: column; gap: 6px; padding: 8px;">
+            
+            <div style="display: flex; gap: 6px; width: 100%;">
+                <button class="tool-btn" onclick="undoAction()" title="Undo">
+                    <span class="icon">⏪</span><span class="btn-label">Undo</span>
+                </button>
+                <button class="tool-btn" onclick="redoAction()" title="Redo">
+                    <span class="icon">⏩</span><span class="btn-label">Redo</span>
+                </button>
+                <button class="tool-btn" onclick="toggleMeasureMode()" title="Tape Measure">
+                    <span class="icon">📏</span><span class="btn-label">Measure</span>
+                </button>
+                <button class="tool-btn" onclick="resetWorkspace()" title="Danger: Reset Workspace" style="border-bottom: 2px solid #ef4444;">
+                    <span class="icon">⚠️</span><span class="btn-label">Reset</span>
+                </button>
+            </div>
+
+            <div style="display: flex; gap: 6px; width: 100%;">
+                <button class="tool-btn" onclick="exportJSON()" title="Save / Export JSON">
+                    <span class="icon">💾</span><span class="btn-label">Save</span>
+                </button>
+                <button class="tool-btn" onclick="document.getElementById('importFile').click()" title="Open / Import JSON">
+                    <span class="icon">📂</span><span class="btn-label">Load</span>
+                </button>
+                <button class="tool-btn" onclick="exportPNG()" title="Export PNG" style="border-bottom: 2px solid #a855f7;">
+                    <span class="icon">🖼️</span><span class="btn-label">PNG</span>
+                </button>
+                <button class="tool-btn" onclick="exportPDF()" title="Export PDF" style="border-bottom: 2px solid #f43f5e;">
+                    <span class="icon">📄</span><span class="btn-label">PDF</span>
+                </button>
+            </div>
+            
         </div>
         <input type="file" id="importFile" style="display:none" onchange="importJSON(event)">
 
@@ -178,29 +210,141 @@
             </div>
         </div>
     </div>
+-->
+
+<div class="panel pro-accordion active">
+        <div class="accordion-header" onclick="this.parentElement.classList.toggle('active')">
+            <h2>🏢 FLOORS & DATA</h2>
+            <span class="chevron">▼</span>
+        </div>
+    
+
+    <div class="accordion-content">
+        <div class="accordion-inner">
+            <div class="setting-card">
+                <div class="setting-group">
+                    <label class="setting-label">Measurement</label>
+                    <select id="unitSelect" class="modern-select" onchange="updateCanvas()">
+                        <option value="in">Inches</option>
+                        <option value="cm">Centimeters</option>
+                        <option value="ftin">Feet & Inches</option>
+                    </select>
+                    
+                </div>
+                <div class="setting-group toggle-group">
+                    <label class="setting-label">Show Dims</label>
+                    <label class="modern-toggle">
+                        <input type="checkbox" id="showDims" onchange="updateCanvas()">
+                        <span class="toggle-slider"></span>
+                    </label>                        
+                </div>
+            </div>
+            
+            <div style="display:flex; align-items:center; gap: 8px; margin-top:10px; margin-bottom:10px;">
+                <div id="floor-tabs" style="display:flex; flex-wrap: wrap; gap:5px;">
+                    <button class="floor-btn active" data-floor="0" onclick="setFloor(0)">G</button>
+                </div>
+                <button class="action-btn" onclick="addManualFloor()" title="Add New Floor" style="padding: 4px 8px; font-weight: bold; background: rgba(56, 189, 248, 0.1); color: #38bdf8; border: 1px dashed #38bdf8;">
+                    + ADD FLOOR
+                </button>
+                <button class="action-btn" onclick="deleteCurrentFloor()" title="Delete Current Floor" style="padding: 4px 8px; font-weight: bold; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px dashed #ef4444;">
+                    🗑️ DEL FLOOR
+                </button>
+            </div>
+            <div id="stair-warning">⚠ Staircases must match X, Y, Width, and Depth across floors!</div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 15px;">
+                <button class="action-btn" onclick="toggle3D()" style="grid-column: span 2; background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 10px;">
+                    👁️ Toggle 3D View
+                </button>
+                <button class="action-btn" onclick="cloneEntireFloor()" style="background: #6366f1; color: white;">
+                    🚀 Clone Floor Up
+                </button>
+                <button class="action-btn" onclick="toggleTheme()" style="background: #6366f1; color: white;">
+                    🎨 Toggle Theme
+                </button>
+            </div>
+
+            <div class="input-grid" style="margin-top:15px;">  
+                <div class="field"><label>Top Direction:</label><select id="compassDir" onchange="handleCompassChange()"><option>West</option><option>South</option><option>East</option><option>North</option></select></div>
+                <div class="field"><label>Scale:</label><input type="number" id="scaleInput" value="1.2" step="0.1" oninput="updateCanvas()"></div>
+            </div>
+
+            <div class="global-toolbar" style="margin-top: 15px; display: flex; flex-direction: column; gap: 6px; padding: 8px;">
+                <div style="display: flex; gap: 6px; width: 100%;">
+                    <button class="tool-btn" onclick="undoAction()" title="Undo"><span class="icon">⏪</span><span class="btn-label">Undo</span></button>
+                    <button class="tool-btn" onclick="redoAction()" title="Redo"><span class="icon">⏩</span><span class="btn-label">Redo</span></button>
+                    <button class="tool-btn" onclick="toggleMeasureMode()" title="Tape Measure"><span class="icon">📏</span><span class="btn-label">Measure</span></button>
+                    <button class="tool-btn" onclick="resetWorkspace()" title="Danger: Reset Workspace" style="border-bottom: 2px solid #ef4444;"><span class="icon">⚠️</span><span class="btn-label">Reset</span></button>
+                </div>
+                <div style="display: flex; gap: 6px; width: 100%;">
+                    <button class="tool-btn" onclick="exportJSON()" title="Save / Export JSON"><span class="icon">💾</span><span class="btn-label">Save</span></button>
+                    <button class="tool-btn" onclick="document.getElementById('importFile').click()" title="Open / Import JSON"><span class="icon">📂</span><span class="btn-label">Load</span></button>
+                    <button class="tool-btn" onclick="exportPNG()" title="Export PNG" style="border-bottom: 2px solid #a855f7;"><span class="icon">🖼️</span><span class="btn-label">PNG</span></button>
+                    <button class="tool-btn" onclick="exportPDF()" title="Export PDF" style="border-bottom: 2px solid #f43f5e;"><span class="icon">📄</span><span class="btn-label">PDF</span></button>
+                </div>
+            </div>
+            <input type="file" id="importFile" style="display:none" onchange="importJSON(event)">
+
+            <p style="font-size: 0.65rem; color: #10b981; margin-top: 15px; font-weight: bold; text-align: center;">🖱️ Scroll to Zoom | Middle-Click to Pan</p>
+        </div>
+    </div>
+
+
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
     
     <div class="panel">
         <h2>INTERIORS</h2>
-        <div class="input-grid">
-            <div class="field"  style="width: 75%;">
-                <select id="elem-type">
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+                <label style="font-size: 0.65rem; color: #94a3b8; font-weight: bold; letter-spacing: 0.5px;">ARCHITECTURE</label>
+                <select id="elem-type" class="modern-select">
                     <option value="living">Living Room</option>
                     <option value="bedroom">Bedroom</option>
                     <option value="toilet">Toilet</option>
                     <option value="kitchen">Kitchen</option>
                     <option value="puja">Puja Room</option>
                     <option value="staircase">Staircase</option>
-					<option value="balcony">Balcony</option>
+                    <option value="balcony">Balcony</option>
                 </select>
+                <button onclick="addElement()" style="margin-top: 0; padding: 8px;">+ ADD ROOM</button>
             </div>
-            <div class="field" style="margin-top: -10px;width: 130%;margin-left:-25%">
-				<button onclick="addElement()">+ ADD ROOM</button>
-			</div>
+
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+                <label style="font-size: 0.65rem; color: #94a3b8; font-weight: bold; letter-spacing: 0.5px;">INTERIOR SCALE</label>
+                <select id="furn-type" class="modern-select">
+                    <option value="bed">🛏️ King Bed (6'x7')</option>
+                    <option value="sofa">🛋️ 3-Seater Sofa (7'x3')</option>
+                    <option value="dining">🍽️ Dining Table (6'x4')</option>
+                    <option value="counter">🍳 Kitchen Counter (8'x2')</option>
+                </select>
+                <button onclick="addElement(document.getElementById('furn-type').value)" style="margin-top: 0; padding: 8px; background: linear-gradient(135deg, #059669, #10b981);">+ FURNITURE</button>
+            </div>
+            
         </div>
-		<div class="input-grid" style="margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
+
+        <div class="input-grid" style="margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
             <div class="field" style="grid-column: span 2;"><label>Add to Selected Room:</label></div>
-            <div class="field"><button onclick="addFixture('door')" style="background: transparent; border: 1px dashed #fbbf24; color: #fbbf24;">🚪 Door</button></div>
-            <div class="field"><button onclick="addFixture('window')" style="background: transparent; border: 1px dashed #06b6d4; color: #06b6d4;">🪟 Window</button></div>
+            <div class="field"><button onclick="addFixture('door')" style="background: transparent; border: 1px dashed #fbbf24; color: #fbbf24; margin-top: 0;">🚪 Door</button></div>
+            <div class="field"><button onclick="addFixture('window')" style="background: transparent; border: 1px dashed #06b6d4; color: #06b6d4; margin-top: 0;">🪟 Window</button></div>
         </div>
 
         <div id="element-controls" style="margin-top:10px;"></div>
@@ -252,7 +396,12 @@
         
         <div id="plot-area" class="stat-box plot-stat">Plot Area: 0</div>
         <div id="build-area" class="stat-box build-stat">Build Area: 0</div>
-        
+        <div id="total-built-area" class="stat-box" style="color: #a855f7; border-left: 3px solid #a855f7;">Built-Up Area: 0</div>
+
+        <div id="area-dashboard" style="display: flex; flex-direction: column; gap: 6px; font-size: 0.75rem; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+            <div style="color: #94a3b8; text-align: center;">Add rooms to see calculations...</div>
+        </div>
+
 		<div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
             <label class="ui-toggle">
                 <span>📏 Show Site Offsets</span>
@@ -292,6 +441,29 @@
 
 -->
 
+    <div id="presentation-controls" style="display: none; position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(15, 23, 42, 0.85); border: 1px solid #38bdf8; border-radius: 50px; padding: 10px 25px; z-index: 100; backdrop-filter: blur(8px); align-items: center; gap: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.6);">    
+        
+        <div style="display: flex; align-items: center; gap: 10px; width: 180px;">
+            <span style="font-size: 1rem; filter: grayscale(100%); transition: 0.2s;" title="Dawn">🌅</span>
+            <input type="range" id="sun-slider" min="6" max="18" step="0.1" value="12" style="flex-grow: 1; height: 4px; margin: 0; accent-color: #fbbf24;" oninput="updateSunlight(this.value)">
+            <span style="font-size: 1rem;" title="Dusk">🌇</span>
+        </div>
+
+        <div style="width: 1px; height: 24px; background: rgba(255,255,255,0.2);"></div>
+
+        <div style="display: flex; gap: 8px;">
+            <button class="action-btn" onclick="captureWaypoint()" style="padding: 6px 14px; border-radius: 20px; border-color: #a855f7; font-size: 0.75rem; margin: 0;">
+                📷 Set (<span id="wp-count" style="color: #a855f7;">0</span>)
+            </button>
+            <button class="action-btn" onclick="playCinematicTour()" style="padding: 6px 14px; border-radius: 20px; background: rgba(16, 185, 129, 0.2); border-color: #10b981; font-size: 0.75rem; margin: 0;">
+                ▶️ Play
+            </button>
+            <button class="action-btn" onclick="clearTour()" style="padding: 6px 12px; border-radius: 20px; border-color: #ef4444; font-size: 0.75rem; margin: 0;" title="Clear All Waypoints">
+                🗑️
+            </button>
+        </div>
+    </div>
+
     <div id="room-tooltip" style="position: absolute; display: none; background: rgba(15, 23, 42, 0.9); color: #f8fafc; padding: 8px; border-radius: 6px; border: 1px solid #38bdf8; pointer-events: none; z-index: 1000; font-size: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);"></div>
     <svg id="blueprint" viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid meet">
         <defs>
@@ -328,16 +500,20 @@
 
 
 </div>
-    <div id="nav-pad" style="position: absolute; bottom: 20px; right: 20px; z-index: 100; display: none;">
-        <button id="btn-raycaster" onclick="toggleRaycaster()" style="background: rgba(15, 23, 42, 0.8); border: 1px solid #38bdf8; padding: 10px 15px; border-radius: 8px; color: #38bdf8; font-weight: bold; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
-            🖱️ 3D SELECTION: OFF
+    <div id="nav-pad" style="position: absolute; bottom: 20px; right: 20px; z-index: 100; display: none; flex-direction: column; align-items: flex-end; gap: 12px;">
+        
+        <button id="btn-raycaster" class="float-action-btn" onclick="toggleRaycaster()">
+            <span class="icon">🖱️</span><span class="text">3D SELECTION: OFF</span>
         </button>
-        <button id="btn-performance" class="action-btn" style="width: auto; padding: 5px 15px; border-radius: 20px; font-weight: bold;" onclick="togglePerformanceMode()">
-            ⚡ PERF MODE: OFF
+        
+        <button id="btn-performance" class="float-action-btn perf-btn" onclick="togglePerformanceMode()">
+            <span class="icon">⚡</span><span class="text">PERF MODE: OFF</span>
         </button>
-        <button onclick="startWalkthrough()" style="background: linear-gradient(135deg, #f59e0b, #d97706); padding: 12px 20px; border-radius: 8px; border: none; color: white; font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
-            🚶 ENTER WALKTHROUGH
+        
+        <button class="float-action-btn walk-btn" onclick="startWalkthrough()">
+            <span class="icon">🚶</span><span class="text">ENTER WALKTHROUGH</span>
         </button>
+
     </div>
 
     <button onclick="document.getElementById('cheat-sheet').classList.toggle('active')" style="position:fixed; bottom:20px; left:20px; z-index:100; border-radius:50%; width:40px; height:40px; background:rgba(15,23,42,0.8); border:1px solid #38bdf8; font-size:1.2rem; display:flex; align-items:center; justify-content:center; padding:0;">⌨️</button>
@@ -356,6 +532,14 @@
             <li><b>E, Q</b> : Up/Down (3D Mode)</li>
         </ul>
     </div>
+
+    <div id="context-menu">
+        <div class="ctx-item" onclick="if(selectedElIndex !== -1) cloneElement(selectedElIndex)"><span>📋 Duplicate</span><span class="ctx-shortcut">Ctrl+D</span></div>
+        <div class="ctx-item" onclick="if(selectedElIndex !== -1) { elements[selectedElIndex].locked = !elements[selectedElIndex].locked; renderSidebar(); }"><span>🔒 Lock/Unlock</span><span class="ctx-shortcut">Ctrl+L</span></div>
+        <div class="ctx-item" onclick="if(selectedElIndex !== -1) rotateElement(selectedElIndex)"><span>🔄 Rotate</span></div>
+        <div style="height:1px; background:rgba(255,255,255,0.1); margin:4px 0;"></div>
+        <div class="ctx-item" onclick="if(selectedElIndex !== -1) deleteElement(selectedElIndex)" style="color:#ef4444;"><span>🗑️ Delete</span><span class="ctx-shortcut">Del</span></div>
+    </div>
 <!--
     <script src="script.js"></script>
 -->
@@ -363,5 +547,7 @@
     <script src="ui.js"></script>
     <script src="engine3d.js"></script>
     <script src="app.js"></script>
+    <script src="config.js"></script>
+    <script src="ai-agent.js"></script>
 </body>
 </html>

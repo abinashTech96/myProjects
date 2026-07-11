@@ -1,10 +1,12 @@
 // =================================================================
 // APP.JS - CORE 2D ENGINE (Unabridged)
 // =================================================================
+let cachedSnapBoundaries = [];
+
 
 // --- CAMERA & VIEWPORT ---
-let panX = 0, panY = 0, zoomLvl = 1; 
-let snapLines = []; // 🌟 MOVED HERE: Ensures it loads before updateCanvas tries to use it!
+var panX = 0, panY = 0, zoomLvl = 1;
+var snapLines = []; // 🌟 MOVED HERE: Ensures it loads before updateCanvas tries to use it!
 
 function updateViewport() {
     if (UI.viewport) UI.viewport.setAttribute('transform', `matrix(${zoomLvl}, 0, 0, ${zoomLvl}, ${panX}, ${panY})`);
@@ -34,39 +36,6 @@ function zoomCamera(factor) {
     panY = cy - (cy - panY) * factor;
     zoomLvl = newZoom;
     updateViewport();
-}
-
-// --- MATH & UTILITIES ---
-function getMousePos(evt) {
-    const pt = UI.blueprint.createSVGPoint();
-    pt.x = evt.clientX; pt.y = evt.clientY;
-    const svgP = pt.matrixTransform(UI.blueprint.getScreenCTM().inverse());
-    return { x: (svgP.x - panX) / zoomLvl, y: (svgP.y - panY) / zoomLvl };
-}
-
-function getTouchPos(evt) {
-    const pt = UI.blueprint.createSVGPoint();
-    pt.x = evt.touches[0].clientX; pt.y = evt.touches[0].clientY;
-    const svgP = pt.matrixTransform(UI.blueprint.getScreenCTM().inverse());
-    return { x: (svgP.x - panX) / zoomLvl, y: (svgP.y - panY) / zoomLvl };
-}
-
-const toInches = (val, unit) => unit === 'cm' ? parseFloat(val) / 2.54 : parseFloat(val);
-const getPolygonArea = (coords) => { 
-    let area = 0; 
-    for (let i = 0; i < coords.length; i++) { 
-        let j = (i + 1) % coords.length; 
-        area += coords[i].x * coords[j].y; area -= coords[j].x * coords[i].y; 
-    } 
-    return Math.abs(area) / 2; 
-};
-
-function checkCollision(el, index) { 
-    if (el.isFurniture) return false;
-    return elements.some((other, i) => 
-        i !== index && other.floor === el.floor && 
-        !(el.x + el.w <= other.x || el.x >= other.x + other.w || el.y + el.h <= other.y || el.y >= other.y + other.h)
-    ); 
 }
 
 // --- SVG DRAWING HELPERS ---
@@ -110,55 +79,95 @@ function createOrUpdateText(id, container, x, y, text, color, fontSize, isBold) 
 
 function drawColumns() {
     const toggle = document.getElementById('showColsToggle');
+    // If toggle doesn't exist, we can't show/hide, so exit early
+    if (!toggle) return; 
+
     let group = document.getElementById('column-container');
-    
-    if (toggle && !toggle.checked) { if (group) group.innerHTML = ''; return; }
     if (!group) {
         group = document.createElementNS("http://www.w3.org/2000/svg", "g");
         group.id = 'column-container';
         if (UI.elementContainer) UI.elementContainer.appendChild(group);
     }
-    group.innerHTML = ''; 
+    
+    // Clear and exit if toggle is off
+    if (!toggle.checked) { 
+        group.innerHTML = ''; 
+        return; 
+    }
 
+    group.innerHTML = ''; 
     const SCALE = parseFloat(UI.scaleInput.value) || 1.2;
     const inW = toInches(UI.inW.value, UI.unitSelect.value);
     const inH = toInches(UI.inH.value, UI.unitSelect.value);
-    const I = { x: 500 - (inW/2), y: 500 - (inH/2) };
-    const placedColumns = new Map();
+    
+    // Center logic
+    const I = { x: 500 - (inW * SCALE / 2), y: 500 - (inH * SCALE / 2) };
+    const placedColumns = new Set();
 
     elements.forEach(el => {
-        if (el.floor !== currentFloor) return;
-        const corners = [{ x: el.x, y: el.y }, { x: el.x + el.w, y: el.y }, { x: el.x, y: el.y + el.h }, { x: el.x + el.w, y: el.y + el.h }];
+        if (el.floor !== currentFloor || el.isFurniture) return;
+        
+        // Define corner points for every room
+        const corners = [
+            { x: el.x, y: el.y }, 
+            { x: el.x + el.w, y: el.y }, 
+            { x: el.x, y: el.y + el.h }, 
+            { x: el.x + el.w, y: el.y + el.h }
+        ];
+
         corners.forEach(pos => {
             const key = `${Math.round(pos.x)}_${Math.round(pos.y)}`;
             if (!placedColumns.has(key)) {
                 const col = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-                col.setAttribute('cx', I.x + (pos.x * SCALE)); col.setAttribute('cy', I.y + (pos.y * SCALE));
-                col.setAttribute('r', 6 * SCALE); col.setAttribute('fill', '#94a3b8');
-                col.setAttribute('stroke', '#1e293b'); col.setAttribute('stroke-width', '1');
+                col.setAttribute('cx', I.x + (pos.x * SCALE)); 
+                col.setAttribute('cy', I.y + (pos.y * SCALE));
+                col.setAttribute('r', 6 * SCALE); 
+                col.setAttribute('fill', '#94a3b8');
                 group.appendChild(col);
-                placedColumns.set(key, true);
+                placedColumns.add(key);
             }
         });
     });
 }
 
 // =========================================
-// FULL RENDERING ENGINE (updateCanvas)
+// FULL RENDERING ENGINE (Modularized)
 // =========================================
-function updateCanvas() {
-    const unit = UI.unitSelect.value;
-    const SCALE = parseFloat(UI.scaleInput.value) || 1.2;
-    
-    // Compass
-    if (UI.dirTop && UI.dirRight) {
-        if (globalCompassDir === 'North') { UI.dirTop.textContent = 'N'; UI.dirRight.textContent = 'E'; }
-        else if (globalCompassDir === 'East') { UI.dirTop.textContent = 'E'; UI.dirRight.textContent = 'S'; }
-        else if (globalCompassDir === 'South') { UI.dirTop.textContent = 'S'; UI.dirRight.textContent = 'W'; }
-        else if (globalCompassDir === 'West') { UI.dirTop.textContent = 'W'; UI.dirRight.textContent = 'N'; }
-    }
 
-    // Geometry
+// 🌟 1. The Main Orchestrator
+function updateCanvas(force3D = true) {
+    syncStaircasesIfNeeded();
+
+    const unit = UI.unitSelect ? UI.unitSelect.value : 'in';
+    const SCALE = parseFloat(UI.scaleInput ? UI.scaleInput.value : 1.2) || 1.2;
+    
+    updateCompass();
+    
+    // Calculate core math once, pass it to all rendering modules
+    const geom = calculateGeometry(SCALE, unit); 
+
+    // Render Layers Pipeline
+    renderPlotBoundaries(geom);
+    renderSiteOffsets(geom);
+    renderRoad(geom);
+    renderRooms(geom);
+    renderFixtures(geom);
+    
+    // Utilities & Cleanup
+    cleanupExcessSVG();
+    handleColumnToggle(); // <-- ShowCols logic applied here
+    renderOverlaysAndStats(geom);
+
+    // External Triggers
+    if (typeof request3DUpdate === 'function') request3DUpdate();
+    if (typeof saveToMemory === 'function') saveToMemory();
+    if (typeof updateAreaDashboard === 'function') updateAreaDashboard();
+}
+
+// -----------------------------------------
+// 🛠️ 2. Core Math & Geometry Module
+// -----------------------------------------
+function calculateGeometry(SCALE, unit) {
     const inW = toInches(UI.inW.value, unit) * SCALE;
     const inH = toInches(UI.inH.value, unit) * SCALE;
     const val = (id) => toInches(document.getElementById(id)?.value || 0, unit) * SCALE;
@@ -168,118 +177,130 @@ function updateCanvas() {
     const K = { x: 500 + (inW/2), y: 500 + (inH/2) };
     const L = { x: 500 - (inW/2), y: 500 + (inH/2) };
 
-    const A = { x: I.x - val('aL'), y: I.y - val('aU') };
-    const B = { x: J.x + val('bR'), y: J.y - val('bU') };
-    const C = { x: K.x + val('cR'), y: K.y + val('cD') };
-    const D = { x: L.x - val('dL'), y: L.y + val('dD') };
+    return {
+        SCALE, inW, inH, I, J, K, L,
+        A: { x: I.x - val('aL'), y: I.y - val('aU') },
+        B: { x: J.x + val('bR'), y: J.y - val('bU') },
+        C: { x: K.x + val('cR'), y: K.y + val('cD') },
+        D: { x: L.x - val('dL'), y: L.y + val('dD') }
+    };
+}
 
-    // Core Boundaries
+// -----------------------------------------
+// 🏗️ 3. Environment & Plot Modules
+// -----------------------------------------
+function renderPlotBoundaries(geom) {
+    const { I, inW, inH, A, B, C, D } = geom;
+    
     if (UI.innerRect) {
         UI.innerRect.setAttribute('x', I.x); UI.innerRect.setAttribute('y', I.y);
         UI.innerRect.setAttribute('width', inW); UI.innerRect.setAttribute('height', inH);
     }
     if (UI.outerPoly) UI.outerPoly.setAttribute('points', `${A.x},${A.y} ${B.x},${B.y} ${C.x},${C.y} ${D.x},${D.y}`);
 
-    // Labels & Badges
     const showLabels = UI.showLabelsToggle ? UI.showLabelsToggle.checked : true;
-    updateSVGPosition('labI', I.x + 5, I.y - 5, 'I', showLabels); updateSVGPosition('labJ', J.x + 5, J.y - 5, 'J', showLabels);
-    updateSVGPosition('labK', K.x + 5, K.y - 5, 'K', showLabels); updateSVGPosition('labL', L.x + 5, L.y - 5, 'L', showLabels);
-    updateSVGPosition('labA', A.x - 20, A.y - 10, null, showLabels); updateSVGPosition('labB', B.x + 15, B.y - 10, null, showLabels); 
-    updateSVGPosition('labC', C.x + 15, C.y + 35, null, showLabels); updateSVGPosition('labD', D.x - 20, D.y + 35, null, showLabels);
-
-    drawProBadge('A', A.x - 15, A.y - 15, 'A', '#94a3b8', showLabels, zoomLvl, UI.viewport);
-    drawProBadge('B', B.x + 15, B.y - 15, 'B', '#94a3b8', showLabels, zoomLvl, UI.viewport);
-    drawProBadge('C', C.x + 15, C.y + 15, 'C', '#94a3b8', showLabels, zoomLvl, UI.viewport);
-    drawProBadge('D', D.x - 15, D.y + 15, 'D', '#94a3b8', showLabels, zoomLvl, UI.viewport);
-    drawProBadge('I', I.x - 15, I.y - 15, 'I', '#38bdf8', showLabels, zoomLvl, UI.viewport);
-    drawProBadge('J', J.x + 15, J.y - 15, 'J', '#38bdf8', showLabels, zoomLvl, UI.viewport);
-    drawProBadge('K', K.x + 15, K.y + 15, 'K', '#38bdf8', showLabels, zoomLvl, UI.viewport);
-    drawProBadge('L', L.x - 15, L.y + 15, 'L', '#38bdf8', showLabels, zoomLvl, UI.viewport);
-
-    // Site Offsets
-    const showOffsets = UI.showOffsetsToggle && UI.showOffsetsToggle.checked;
-    if (!showOffsets) { if(UI.siteOffsets) UI.siteOffsets.innerHTML = ''; } 
-    else {
-        let html = '';
-        const addDim = (x1, y1, x2, y2, v, label, isVert) => {
-            if (v <= 0) return;
-            const cx = (x1 + x2) / 2; const cy = (y1 + y2) / 2;
-            const ft = Math.floor(v / 12); const inch = Math.round(v % 12);
-            const text = ft > 0 ? `${ft}'${inch}"` : `${inch}"`;
-            html += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#10b981" stroke-width="1.5" stroke-dasharray="3,3" />`;
-            html += `<circle cx="${x1}" cy="${y1}" r="2" fill="#10b981" /><circle cx="${x2}" cy="${y2}" r="2" fill="#10b981" />`;
-            if (isVert) html += `<text x="${cx + 6}" y="${cy + 3}" fill="#10b981" font-size="11" font-weight="bold">${label}: ${text}</text>`;
-            else html += `<text x="${cx}" y="${cy - 6}" fill="#10b981" font-size="11" font-weight="bold" text-anchor="middle">${label}: ${text}</text>`;
-        };
-        addDim(I.x, I.y, I.x, A.y, val('aU'), 'U', true); addDim(I.x, I.y, A.x, I.y, val('aL'), 'L', false);
-        addDim(J.x, J.y, J.x, B.y, val('bU'), 'U', true); addDim(J.x, J.y, B.x, J.y, val('bR'), 'R', false);
-        addDim(K.x, K.y, K.x, C.y, val('cD'), 'D', true); addDim(K.x, K.y, C.x, K.y, val('cR'), 'R', false);
-        addDim(L.x, L.y, L.x, D.y, val('dD'), 'D', true); addDim(L.x, L.y, D.x, L.y, val('dL'), 'L', false);
-        if(UI.siteOffsets) UI.siteOffsets.innerHTML = html;
+    
+    // Safe updates using your existing badge/label functions
+    if (typeof drawProBadge === 'function') {
+        drawProBadge('A', A.x - 15, A.y - 15, 'A', '#94a3b8', showLabels, zoomLvl, UI.viewport);
+        drawProBadge('B', B.x + 15, B.y - 15, 'B', '#94a3b8', showLabels, zoomLvl, UI.viewport);
+        drawProBadge('C', C.x + 15, C.y + 15, 'C', '#94a3b8', showLabels, zoomLvl, UI.viewport);
+        drawProBadge('D', D.x - 15, D.y + 15, 'D', '#94a3b8', showLabels, zoomLvl, UI.viewport);
+        drawProBadge('I', I.x - 15, I.y - 15, 'I', '#38bdf8', showLabels, zoomLvl, UI.viewport);
+        drawProBadge('J', geom.J.x + 15, geom.J.y - 15, 'J', '#38bdf8', showLabels, zoomLvl, UI.viewport);
+        drawProBadge('K', geom.K.x + 15, geom.K.y + 15, 'K', '#38bdf8', showLabels, zoomLvl, UI.viewport);
+        drawProBadge('L', geom.L.x - 15, geom.L.y + 15, 'L', '#38bdf8', showLabels, zoomLvl, UI.viewport);
     }
+}
 
-    // Road Logic - UPDATED ORIENTATION
+function renderSiteOffsets(geom) {
+    const showOffsets = UI.showOffsetsToggle && UI.showOffsetsToggle.checked;
+    if (!UI.siteOffsets) return;
+    
+    if (!showOffsets) { 
+        UI.siteOffsets.innerHTML = ''; 
+        return; 
+    } 
+
+    const { SCALE, I, J, K, L, A, B, C, D } = geom;
+    const unit = UI.unitSelect ? UI.unitSelect.value : 'in';
+    const val = (id) => toInches(document.getElementById(id)?.value || 0, unit) * SCALE;
+
+    let html = '';
+    const addDim = (x1, y1, x2, y2, v, label, isVert) => {
+        if (v <= 0) return;
+        const cx = (x1 + x2) / 2; const cy = (y1 + y2) / 2;
+        const ft = Math.floor(v / 12); const inch = Math.round(v % 12);
+        const text = ft > 0 ? `${ft}'${inch}"` : `${inch}"`;
+        html += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#10b981" stroke-width="1.5" stroke-dasharray="3,3" />`;
+        html += `<circle cx="${x1}" cy="${y1}" r="2" fill="#10b981" /><circle cx="${x2}" cy="${y2}" r="2" fill="#10b981" />`;
+        if (isVert) html += `<text x="${cx + 6}" y="${cy + 3}" fill="#10b981" font-size="11" font-weight="bold">${label}: ${text}</text>`;
+        else html += `<text x="${cx}" y="${cy - 6}" fill="#10b981" font-size="11" font-weight="bold" text-anchor="middle">${label}: ${text}</text>`;
+    };
+
+    addDim(I.x, I.y, I.x, A.y, val('aU'), 'U', true); addDim(I.x, I.y, A.x, I.y, val('aL'), 'L', false);
+    addDim(J.x, J.y, J.x, B.y, val('bU'), 'U', true); addDim(J.x, J.y, B.x, J.y, val('bR'), 'R', false);
+    addDim(K.x, K.y, K.x, C.y, val('cD'), 'D', true); addDim(K.x, K.y, C.x, K.y, val('cR'), 'R', false);
+    addDim(L.x, L.y, L.x, D.y, val('dD'), 'D', true); addDim(L.x, L.y, D.x, L.y, val('dL'), 'L', false);
+    
+    UI.siteOffsets.innerHTML = html;
+}
+
+function renderRoad(geom) {
     const road = UI.roadSide ? UI.roadSide.value : 'none';
     if (road === 'none') {
         if (UI.roadPoly) UI.roadPoly.style.display = 'none';
         if (UI.roadText) UI.roadText.style.display = 'none';
-    } else {
-        if (UI.roadPoly) UI.roadPoly.style.display = 'block';
-        if (UI.roadText) UI.roadText.style.display = 'block';
-        let P1, P2;
-        if (road === 'west') { P1 = A; P2 = B; } 
-        else if (road === 'north') { P1 = B; P2 = C; }
-        else if (road === 'east') { P1 = C; P2 = D; } 
-        else if (road === 'south') { P1 = D; P2 = A; }
-        
-        const dx = P2.x - P1.x, dy = P2.y - P1.y;
-        const len = Math.sqrt(dx*dx + dy*dy);
-        const ux = dy / len, uy = -dx / len;
-        const P1_out = { x: P1.x + ux * 120, y: P1.y + uy * 120 };
-        const P2_out = { x: P2.x + ux * 120, y: P2.y + uy * 120 };
-        
-        if (UI.roadPoly) UI.roadPoly.setAttribute('points', `${P1.x},${P1.y} ${P2.x},${P2.y} ${P2_out.x},${P2_out.y} ${P1_out.x},${P1_out.y}`);
-        
-        const cx = (P1.x + P2.x) / 2 + (ux * 60); const cy = (P1.y + P2.y) / 2 + (uy * 60);
-        let angle = Math.atan2(dy, dx) * (180 / Math.PI);
-        if (angle > 90 || angle < -90) angle += 180; 
-        if (UI.roadText) {
-            UI.roadText.setAttribute('x', cx); UI.roadText.setAttribute('y', cy + 6);
-            UI.roadText.setAttribute('transform', `rotate(${angle}, ${cx}, ${cy})`);
-        }
+        return;
+    } 
+
+    if (UI.roadPoly) UI.roadPoly.style.display = 'block';
+    if (UI.roadText) UI.roadText.style.display = 'block';
+    
+    const { A, B, C, D } = geom;
+    let P1, P2;
+    if (road === 'west') { P1 = A; P2 = B; } 
+    else if (road === 'north') { P1 = B; P2 = C; }
+    else if (road === 'east') { P1 = C; P2 = D; } 
+    else if (road === 'south') { P1 = D; P2 = A; }
+    
+    const dx = P2.x - P1.x, dy = P2.y - P1.y;
+    const len = Math.sqrt(dx*dx + dy*dy);
+    const ux = dy / len, uy = -dx / len;
+    const P1_out = { x: P1.x + ux * 120, y: P1.y + uy * 120 };
+    const P2_out = { x: P2.x + ux * 120, y: P2.y + uy * 120 };
+    
+    if (UI.roadPoly) UI.roadPoly.setAttribute('points', `${P1.x},${P1.y} ${P2.x},${P2.y} ${P2_out.x},${P2_out.y} ${P1_out.x},${P1_out.y}`);
+    
+    const cx = (P1.x + P2.x) / 2 + (ux * 60); const cy = (P1.y + P2.y) / 2 + (uy * 60);
+    let angle = Math.atan2(dy, dx) * (180 / Math.PI);
+    if (angle > 90 || angle < -90) angle += 180; 
+    
+    if (UI.roadText) {
+        UI.roadText.setAttribute('x', cx); UI.roadText.setAttribute('y', cy + 6);
+        UI.roadText.setAttribute('transform', `rotate(${angle}, ${cx}, ${cy})`);
     }
+}
 
-    // Room Rendering & Layering
-    let gBorders = document.getElementById('group-borders');
-    let gHollows = document.getElementById('group-hollows');
-    let gRooms = document.getElementById('group-rooms');
-    let gText = document.getElementById('group-text');
-    let fixtureGroup = document.getElementById('fixture-container'); 
+// -----------------------------------------
+// 🚪 4. Architecture & SmartMerge Module
+// -----------------------------------------
+function renderRooms(geom) {
+    const { I, SCALE } = geom;
+    
+    let gBorders = document.getElementById('group-borders') || createSVGGroup('group-borders');
+    let gHollows = document.getElementById('group-hollows') || createSVGGroup('group-hollows');
+    let gRooms = document.getElementById('group-rooms') || createSVGGroup('group-rooms');
+    let gText = document.getElementById('group-text') || createSVGGroup('group-text');
 
-    if (!gBorders) {
-        gBorders = document.createElementNS("http://www.w3.org/2000/svg", "g"); gBorders.id = 'group-borders';
-        gHollows = document.createElementNS("http://www.w3.org/2000/svg", "g"); gHollows.id = 'group-hollows';
-        gRooms = document.createElementNS("http://www.w3.org/2000/svg", "g"); gRooms.id = 'group-rooms';
-        gText = document.createElementNS("http://www.w3.org/2000/svg", "g"); gText.id = 'group-text';
-        if (UI.elementContainer) {
-            UI.elementContainer.appendChild(gBorders);
-            UI.elementContainer.appendChild(gHollows);
-            UI.elementContainer.appendChild(gRooms);
-            UI.elementContainer.appendChild(gText);
-        }
-    }
-
+    // 🌟 SMART MERGE LOGIC CAPTURED HERE
     const smartMerge = UI.smartMergeToggle && UI.smartMergeToggle.checked;
 
     elements.forEach((el, i) => {
-        let r = document.getElementById(`rect-${i}`);
-        let rb = document.getElementById(`rect-border-${i}`);
-        let rh = document.getElementById(`rect-hollow-${i}`);
+        let r = document.getElementById(`rect-${i}`) || createSVGRect(`rect-${i}`, gRooms);
+        let rb = document.getElementById(`rect-border-${i}`) || createSVGRect(`rect-border-${i}`, gBorders);
+        let rh = document.getElementById(`rect-hollow-${i}`) || createSVGRect(`rect-hollow-${i}`, gHollows);
 
-        if (!r) { r = document.createElementNS("http://www.w3.org/2000/svg", "rect"); r.id = `rect-${i}`; gRooms.appendChild(r); }
-        if (!rb) { rb = document.createElementNS("http://www.w3.org/2000/svg", "rect"); rb.id = `rect-border-${i}`; gBorders.appendChild(rb); }
-        if (!rh) { rh = document.createElementNS("http://www.w3.org/2000/svg", "rect"); rh.id = `rect-hollow-${i}`; gHollows.appendChild(rh); }
-        
         if (el.floor !== currentFloor) {
             r.style.display = 'none'; rb.style.display = 'none'; rh.style.display = 'none';
             ['title', 'dims', 'area'].forEach(t => { let node = document.getElementById(`txt-${t}-${i}`); if(node) node.style.display = 'none'; });
@@ -296,8 +317,8 @@ function updateCanvas() {
         r.setAttribute('class', isSelected ? 'room-rect room-selected' : 'room-rect');
         r.onmousedown = function(e) { startDrag(e, i); };
 
-        const isColliding = smartMerge ? false : checkCollision(el, i);
-        let baseColor = colors[el.type] || '255,255,255';
+        const isColliding = smartMerge ? false : (typeof checkCollision === 'function' ? checkCollision(el, i) : false);
+        let baseColor = ARCH_CONFIG?.COLORS[el.type]?.rgb || '255,255,255';
         if (el.customColor) {
             const hex = el.customColor.replace('#', '');
             baseColor = `${parseInt(hex.substring(0,2),16)}, ${parseInt(hex.substring(2,4),16)}, ${parseInt(hex.substring(4,6),16)}`;
@@ -306,92 +327,29 @@ function updateCanvas() {
         const strokeColor = isSelected ? '#ffffff' : (isColliding ? '#ef4444' : `rgb(${baseColor})`);
         const fillColor = isColliding ? 'rgba(239, 68, 68, 0.4)' : `rgba(${baseColor}, 0.2)`;
 
+        // SMART MERGE STYLING APPLIED
         if (el.isFurniture) {
-            // Furniture styling: Clean dashed lines, transparent fill
             r.style.display = 'block'; rb.style.display = 'none'; rh.style.display = 'none';
             r.setAttribute('style', `fill: rgba(148, 163, 184, 0.2); stroke: #cbd5e1; stroke-width: 2; stroke-dasharray: 4, 4;`);
             if (isSelected) r.setAttribute('style', `fill: rgba(56,189,248,0.3); stroke: #38bdf8; stroke-width: 3; stroke-dasharray: none;`);
         } else if (smartMerge) {
             r.style.display = 'block'; rb.style.display = 'block'; rh.style.display = 'block';
             rb.setAttribute('style', `fill: ${strokeColor}; stroke: none;`);
-            rh.setAttribute('style', `fill: #0f172a; stroke: none;`); 
+            rh.setAttribute('style', `fill: #0f172a; stroke: none;`); // Hollows mask overlapping borders!
             r.setAttribute('style', `fill: ${fillColor}; stroke: none;`);
         } else {
             r.style.display = 'block'; rb.style.display = 'none'; rh.style.display = 'none';
             r.setAttribute('style', `fill: ${fillColor}; stroke: ${strokeColor}; stroke-width: ${isSelected ? '3' : '1.5'}; ${el.type === 'balcony' ? 'stroke-dasharray: 6, 4;' : ''}`);
         }
 
-        r.onmouseover = function(e) {
-            const tooltip = document.getElementById('room-tooltip');
-            tooltip.style.display = 'block';
-            const area = ((el.w * el.h)/144).toFixed(1);
-            tooltip.innerHTML = `
-                <div style="font-weight:bold; color:#38bdf8;">${el.customName || el.type.toUpperCase()}</div>
-                <div>${Math.floor(el.w/12)}'${Math.round(el.w%12)}" × ${Math.floor(el.h/12)}'${Math.round(el.h%12)}"</div>
-                <div>${area} sq.ft</div>
-            `;
-        };
-
-        r.onmousemove = function(e) {
-            const tooltip = document.getElementById('room-tooltip');
-            tooltip.style.left = (e.clientX + 15) + 'px';
-            tooltip.style.top = (e.clientY + 15) + 'px';
-        };
-
-        r.onmouseout = function(e) {
-            document.getElementById('room-tooltip').style.display = 'none';
-        };
-
-        // Text & Data
-        const cx = rx + w / 2; const cy = ry + h / 2;
-        const labelText = el.customName || (typeof getRoomDisplayName === 'function' ? getRoomDisplayName(i) : el.type.toUpperCase());
-        const dimsText = `${Math.floor(el.w/12)}'${Math.round(el.w%12)}" × ${Math.floor(el.h/12)}'${Math.round(el.h%12)}"`;
-        const areaText = `${((el.w * el.h)/144).toFixed(1)} sq.ft`;
-        
-        createOrUpdateText(`txt-title-${i}`, gText, cx, cy - 8, labelText, '#ffffff', '12', true);
-        createOrUpdateText(`txt-dims-${i}`, gText, cx, cy + 6, dimsText, '#cbd5e1', '10', false);
-        createOrUpdateText(`txt-area-${i}`, gText, cx, cy + 20, areaText, '#94a3b8', '10', false);
-    
-        const showDimsToggle = UI.showDims || document.getElementById('showDims');
-        let dimTop = document.getElementById(`dim-top-${i}`);
-        let dimLeft = document.getElementById(`dim-left-${i}`);
-        
-        if (showDimsToggle && showDimsToggle.checked) {
-            let dimContainer = UI.dimContainer || document.getElementById('dim-container') || document.getElementById('group-borders');
-            
-            if (!dimTop) { 
-                dimTop = document.createElementNS("http://www.w3.org/2000/svg", "line"); 
-                dimTop.id = `dim-top-${i}`; 
-                dimContainer.appendChild(dimTop); 
-            }
-            if (!dimLeft) { 
-                dimLeft = document.createElementNS("http://www.w3.org/2000/svg", "line"); 
-                dimLeft.id = `dim-left-${i}`; 
-                dimContainer.appendChild(dimLeft); 
-            }
-            
-            dimTop.setAttribute('x1', rx); dimTop.setAttribute('y1', ry); 
-            dimTop.setAttribute('x2', rx); dimTop.setAttribute('y2', I.y);
-            dimLeft.setAttribute('x1', rx); dimLeft.setAttribute('y1', ry); 
-            dimLeft.setAttribute('x2', I.x); dimLeft.setAttribute('y2', ry);
-            
-            dimTop.setAttribute('style', 'stroke: #cbd5e1; stroke-width: 1.5; stroke-dasharray: 4,4; pointer-events: none;');
-            dimLeft.setAttribute('style', 'stroke: #cbd5e1; stroke-width: 1.5; stroke-dasharray: 4,4; pointer-events: none;');
-            
-            dimTop.style.display = 'block'; dimLeft.style.display = 'block';
-        } else {
-            if (dimTop) dimTop.style.display = 'none';
-            if (dimLeft) dimLeft.style.display = 'none';
-        }
-
+        applyRoomTooltips(r, el);
+        renderRoomText(i, el, rx, ry, w, h, I.x, I.y);
     });
+}
 
-    // Fixtures Rendering
-    if (!fixtureGroup) {
-        fixtureGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
-        fixtureGroup.id = 'fixture-container';
-        if(UI.elementContainer) UI.elementContainer.appendChild(fixtureGroup);
-    }
+function renderFixtures(geom) {
+    const { I, SCALE } = geom;
+    let fixtureGroup = document.getElementById('fixture-container') || createSVGGroup('fixture-container');
     fixtureGroup.innerHTML = ''; 
 
     fixtures.forEach((fix, i) => {
@@ -410,7 +368,8 @@ function updateCanvas() {
         if (fix.type === 'window') {
             const wRect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
             wRect.setAttribute('x', fx); wRect.setAttribute('y', fy); wRect.setAttribute('width', fw); wRect.setAttribute('height', fh);
-            wRect.setAttribute('fill', '#06b6d4');
+            wRect.setAttribute('fill', 'rgba(251, 191, 36, 0.2)');
+            wRect.setAttribute('stroke', '#fbbf24'); wRect.setAttribute('stroke-width', '1.5');
             wRect.onmousedown = (e) => { e.stopPropagation(); startDragFixture(e, i); }; 
             fixtureGroup.appendChild(wRect);
         } else if (fix.type === 'door') {
@@ -426,13 +385,56 @@ function updateCanvas() {
             else if (fix.edge === 'top') d = `M ${fx} ${fy+3} L ${fx} ${fy+3 + fixSize} A ${fixSize} ${fixSize} 0 0 0 ${fx + fixSize} ${fy+3}`;
             else if (fix.edge === 'left') d = `M ${fx+3} ${fy} L ${fx+3 + fixSize} ${fy} A ${fixSize} ${fixSize} 0 0 1 ${fx+3} ${fy + fixSize}`;
             else if (fix.edge === 'right') d = `M ${fx+3} ${fy} L ${fx+3 - fixSize} ${fy} A ${fixSize} ${fixSize} 0 0 0 ${fx+3} ${fy + fixSize}`;
+            
             swing.setAttribute('d', d); swing.setAttribute('fill', 'rgba(251, 191, 36, 0.1)'); 
             swing.setAttribute('stroke', '#fbbf24'); swing.setAttribute('stroke-width', '1.5');
             fixtureGroup.appendChild(swing);
         }
     });
+}
 
-    // Cleanup & Stats
+// -----------------------------------------
+// 📊 5. Overlays, Stats & Toggles
+// -----------------------------------------
+function handleColumnToggle() {
+    const showCols = UI.showColsToggle && UI.showColsToggle.checked;
+    
+    // 🌟 SHOW COLS LOGIC ENFORCED HERE
+    if (showCols && typeof drawColumns === 'function') {
+        drawColumns();
+    } else {
+        const colContainer = document.getElementById('column-container');
+        if (colContainer) colContainer.innerHTML = '';
+    }
+}
+
+function renderOverlaysAndStats(geom) {
+    if(typeof validateStairs === 'function') validateStairs();
+    if(typeof renderAutoDimensions === 'function') renderAutoDimensions();
+
+    const { SCALE, inW, inH, A, B, C, D } = geom;
+    const plotAreaSqFt = getPolygonArea([A, B, C, D]) / (SCALE * SCALE) / 144;
+    const buildAreaSqFt = (inW * inH / (SCALE * SCALE) / 144);
+    const coverage = plotAreaSqFt > 0 ? ((buildAreaSqFt / plotAreaSqFt) * 100).toFixed(1) : 0;
+    
+    if (UI.plotArea) UI.plotArea.innerText = `Plot Area: ${plotAreaSqFt.toFixed(2)} sq.ft`;
+    if (UI.buildArea) UI.buildArea.innerText = `Build Area: ${buildAreaSqFt.toFixed(2)} sq.ft (${coverage}% Coverage)`;
+
+    // Draw Smart Alignment Guides
+    const svg = document.getElementById('blueprint');
+    snapLines.forEach(line => {
+        const l = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        if (line.type === 'v') { l.setAttribute("x1", line.x); l.setAttribute("x2", line.x); l.setAttribute("y1", 0); l.setAttribute("y2", 1000); }
+        else { l.setAttribute("y1", line.y); l.setAttribute("y2", line.y); l.setAttribute("x1", 0); l.setAttribute("x2", 1000); }
+        l.setAttribute("style", "stroke: #fbbf24; stroke-width: 1.5; stroke-dasharray: 6,4;");
+        if(svg) svg.appendChild(l);
+    });
+}
+
+// -----------------------------------------
+// 🧹 6. Helpers
+// -----------------------------------------
+function cleanupExcessSVG() {
     let excessIndex = elements.length;
     while(document.getElementById(`rect-${excessIndex}`)) {
         document.getElementById(`rect-${excessIndex}`).remove();
@@ -441,33 +443,138 @@ function updateCanvas() {
         ['title', 'dims', 'area'].forEach(t => { let n = document.getElementById(`txt-${t}-${excessIndex}`); if(n) n.remove(); });
         excessIndex++;
     }
+}
+
+function createSVGGroup(id) {
+    const g = document.createElementNS("http://www.w3.org/2000/svg", "g"); g.id = id;
+    if (UI.elementContainer) UI.elementContainer.appendChild(g);
+    return g;
+}
+
+function createSVGRect(id, parentGroup) {
+    const r = document.createElementNS("http://www.w3.org/2000/svg", "rect"); r.id = id;
+    parentGroup.appendChild(r);
+    return r;
+}
+
+function syncStaircasesIfNeeded() {
+    if (typeof selectedElIndex !== 'undefined' && selectedElIndex !== -1) {
+        const activeRoom = elements[selectedElIndex];
+        if (activeRoom && activeRoom.type === 'staircase' && typeof syncStaircases === 'function') {
+            syncStaircases(selectedElIndex);
+        }
+    }
+}
+
+function updateCompass() {
+    if (UI.dirTop && UI.dirRight) {
+        if (globalCompassDir === 'North') { UI.dirTop.textContent = 'N'; UI.dirRight.textContent = 'E'; }
+        else if (globalCompassDir === 'East') { UI.dirTop.textContent = 'E'; UI.dirRight.textContent = 'S'; }
+        else if (globalCompassDir === 'South') { UI.dirTop.textContent = 'S'; UI.dirRight.textContent = 'W'; }
+        else if (globalCompassDir === 'West') { UI.dirTop.textContent = 'W'; UI.dirRight.textContent = 'N'; }
+    }
+}
+
+function applyRoomTooltips(r, el) {
+    r.onmouseover = function(e) {
+        const tooltip = document.getElementById('room-tooltip');
+        tooltip.style.display = 'block';
+        const area = ((el.w * el.h)/144).toFixed(1);
+        // 🌟 UPDATED TOOLTIP HTML
+        tooltip.innerHTML = `
+            <div class="tooltip-header">${el.customName || el.type.toUpperCase()}</div>
+            <div class="tooltip-body">
+                <span>📐 ${Math.floor(el.w/12)}'${Math.round(el.w%12)}" × ${Math.floor(el.h/12)}'${Math.round(el.h%12)}"</span>
+                <span>📏 ${area} sq.ft</span>
+            </div>
+        `;
+    };
+    r.onmousemove = function(e) {
+        const tooltip = document.getElementById('room-tooltip');
+        tooltip.style.left = (e.clientX + 15) + 'px';
+        tooltip.style.top = (e.clientY + 15) + 'px';
+    };
+    r.onmouseout = function() { document.getElementById('room-tooltip').style.display = 'none'; };
+}
+
+function renderRoomText(i, el, rx, ry, w, h, IX, IY) {
+    let gText = document.getElementById('group-text');
+    const cx = rx + w / 2; const cy = ry + h / 2;
+    const labelText = el.customName || (typeof getRoomDisplayName === 'function' ? getRoomDisplayName(i) : el.type.toUpperCase());
+    const dimsText = `${Math.floor(el.w/12)}'${Math.round(el.w%12)}" × ${Math.floor(el.h/12)}'${Math.round(el.h%12)}"`;
+    const areaText = `${((el.w * el.h)/144).toFixed(1)} sq.ft`;
     
-    drawColumns();
-    if(typeof validateStairs === 'function') validateStairs();
+    if (typeof createOrUpdateText === 'function') {
+        createOrUpdateText(`txt-title-${i}`, gText, cx, cy - 8, labelText, '#ffffff', '12', true);
+        createOrUpdateText(`txt-dims-${i}`, gText, cx, cy + 6, dimsText, '#cbd5e1', '10', false);
+        createOrUpdateText(`txt-area-${i}`, gText, cx, cy + 20, areaText, '#94a3b8', '10', false);
+    }
 
-    const plotAreaSqFt = getPolygonArea([A, B, C, D]) / (SCALE * SCALE) / 144;
-    const buildAreaSqFt = (inW * inH / (SCALE * SCALE) / 144);
-    const coverage = plotAreaSqFt > 0 ? ((buildAreaSqFt / plotAreaSqFt) * 100).toFixed(1) : 0;
-    if (UI.plotArea) UI.plotArea.innerText = `Plot Area: ${plotAreaSqFt.toFixed(2)} sq.ft`;
-    if (UI.buildArea) UI.buildArea.innerText = `Build Area: ${buildAreaSqFt.toFixed(2)} sq.ft (${coverage}% Coverage)`;
+    const showDimsToggle = UI.showDims || document.getElementById('showDims');
+    let dimTop = document.getElementById(`dim-top-${i}`);
+    let dimLeft = document.getElementById(`dim-left-${i}`);
+    
+    if (showDimsToggle && showDimsToggle.checked) {
+        let dimContainer = UI.dimContainer || document.getElementById('dim-container');
+        
+        if (!dimTop) { dimTop = document.createElementNS("http://www.w3.org/2000/svg", "line"); dimTop.id = `dim-top-${i}`; dimContainer.appendChild(dimTop); }
+        if (!dimLeft) { dimLeft = document.createElementNS("http://www.w3.org/2000/svg", "line"); dimLeft.id = `dim-left-${i}`; dimContainer.appendChild(dimLeft); }
+        
+        dimTop.setAttribute('x1', rx); dimTop.setAttribute('y1', ry); dimTop.setAttribute('x2', rx); dimTop.setAttribute('y2', IY);
+        dimLeft.setAttribute('x1', rx); dimLeft.setAttribute('y1', ry); dimLeft.setAttribute('x2', IX); dimLeft.setAttribute('y2', ry);
+        
+        dimTop.setAttribute('style', 'stroke: #cbd5e1; stroke-width: 1.5; stroke-dasharray: 4,4; pointer-events: none;');
+        dimLeft.setAttribute('style', 'stroke: #cbd5e1; stroke-width: 1.5; stroke-dasharray: 4,4; pointer-events: none;');
+        dimTop.style.display = 'block'; dimLeft.style.display = 'block';
+    } else {
+        if (dimTop) dimTop.style.display = 'none';
+        if (dimLeft) dimLeft.style.display = 'none';
+    }
+}
 
-    renderAutoDimensions();
 
-    // Draw Smart Alignment Guides
-    snapLines.forEach(line => {
-        const l = document.createElementNS("http://www.w3.org/2000/svg", "line");
-        if (line.type === 'v') { l.setAttribute("x1", line.x); l.setAttribute("x2", line.x); l.setAttribute("y1", 0); l.setAttribute("y2", 1000); }
-        else { l.setAttribute("y1", line.y); l.setAttribute("y2", line.y); l.setAttribute("x1", 0); l.setAttribute("x2", 1000); }
-        l.setAttribute("style", "stroke: #fbbf24; stroke-width: 1.5; stroke-dasharray: 6,4;");
-        svg.appendChild(l);
-    });
+function fastUpdateDrag(index) {
+    const el = elements[index];
+    const SCALE = parseFloat(UI.scaleInput.value) || 1.2;
+    const inW = toInches(UI.inW.value, UI.unitSelect.value) * SCALE;
+    const inH = toInches(UI.inH.value, UI.unitSelect.value) * SCALE;
+    
+    const I = { x: 500 - (inW/2), y: 500 - (inH/2) };
+    const rx = I.x + (el.x * SCALE); 
+    const ry = I.y + (el.y * SCALE);
 
-    if (is3DMode && typeof generate3DModel === 'function') generate3DModel();
-    if (typeof saveToMemory === 'function') saveToMemory();
+    // 1. Update the Main Room Rectangles
+    const r = document.getElementById(`rect-${index}`);
+    const rb = document.getElementById(`rect-border-${index}`);
+    const rh = document.getElementById(`rect-hollow-${index}`);
 
+    if (r) { r.setAttribute('x', rx); r.setAttribute('y', ry); }
+    if (rb) { rb.setAttribute('x', rx); rb.setAttribute('y', ry); }
+    if (rh) { rh.setAttribute('x', rx + 1.5); rh.setAttribute('y', ry + 1.5); }
 
-    // 🌟 ADD THIS HERE: Trigger the stats recalculation
-    updateAreaDashboard();
+    // 2. Update Text Labels (Title, Dims, Area)
+    const cx = rx + (el.w * SCALE) / 2; 
+    const cy = ry + (el.h * SCALE) / 2;
+    
+    const titleText = document.getElementById(`txt-title-${index}`);
+    const dimsText = document.getElementById(`txt-dims-${index}`);
+    const areaText = document.getElementById(`txt-area-${index}`);
+    
+    if (titleText) { titleText.setAttribute('x', cx); titleText.setAttribute('y', cy - 8); }
+    if (dimsText) { dimsText.setAttribute('x', cx); dimsText.setAttribute('y', cy + 6); }
+    if (areaText) { areaText.setAttribute('x', cx); areaText.setAttribute('y', cy + 20); }
+
+    // 3. Update Dimension Lines (if active)
+    const dimTop = document.getElementById(`dim-top-${index}`);
+    const dimLeft = document.getElementById(`dim-left-${index}`);
+    if (dimTop) {
+        dimTop.setAttribute('x1', rx); dimTop.setAttribute('x2', rx);
+        dimTop.setAttribute('y1', ry); dimTop.setAttribute('y2', I.y);
+    }
+    if (dimLeft) {
+        dimLeft.setAttribute('x1', rx); dimLeft.setAttribute('x2', I.x);
+        dimLeft.setAttribute('y1', ry); dimLeft.setAttribute('y2', ry);
+    }
 }
 
 
@@ -488,6 +595,15 @@ function startDrag(evt, index) {
     isDragging = true; dragElIndex = index; hasDragged = false; 
     startMousePos = getMousePos(evt);
     startElPos = { x: elements[index].x, y: elements[index].y };
+
+    // --- NEW: Cache boundaries for fast snapping ---
+    cachedSnapBoundaries = elements.map((other, i) => {
+        if (i === index || other.floor !== elements[index].floor) return null;
+        return {
+            left: other.x, right: other.x + other.w, center: other.x + (other.w / 2),
+            top: other.y, bottom: other.y + other.h, middle: other.y + (other.h / 2)
+        };
+    });
 }
 
 function startDragFixture(evt, index) {
@@ -540,10 +656,12 @@ const handleMove = (currentMouse, e) => {
             let dLeft = newX, dRight = newX + el.w, dCenter = newX + (el.w / 2);
             let dTop = newY, dBottom = newY + el.h, dMiddle = newY + (el.h / 2);
 
-            elements.forEach((other, i) => {
-                if (i === dragElIndex || other.floor !== currentFloor) return;
-                let oLeft = other.x, oRight = other.x + other.w, oCenter = other.x + (other.w / 2);
-                let oTop = other.y, oBottom = other.y + other.h, oMiddle = other.y + (other.h / 2);
+            // 🚀 FAST ALIGNMENT: Iterate over the cached boundaries instead of recalculating
+            cachedSnapBoundaries.forEach((boundary, i) => {
+                if (!boundary) return; // Skips null entries (the active room or rooms on other floors)
+
+                let oLeft = boundary.left, oRight = boundary.right, oCenter = boundary.center;
+                let oTop = boundary.top, oBottom = boundary.bottom, oMiddle = boundary.middle;
 
                 if (!snappedX) {
                     const xChecks = [{d: dLeft, o: oLeft, off: 0}, {d: dLeft, o: oRight, off: 0}, {d: dRight, o: oLeft, off: -el.w}, {d: dRight, o: oRight, off: -el.w}, {d: dCenter, o: oCenter, off: -el.w/2}];
@@ -567,9 +685,25 @@ const handleMove = (currentMouse, e) => {
             newY = Math.max(0, Math.min(newY, inH - el.h));
 
             el.x = newX; el.y = newY;
+            if (el.type === 'staircase') syncStaircases(dragElIndex);
             //🌟Calculate the snap lines right before drawing!
             applySmartSnap(el, dragElIndex);
-            updateCanvas(); 
+            // 🚀 THE FIX: Sync while dragging so ghost floors follow along perfectly
+            if (el.type === 'staircase' && typeof syncStaircases === 'function') {
+                syncStaircases(dragElIndex);
+            }
+            // 🚀 THE NEW FAST RENDER PIPELINE:
+            // 1. Fast 2D SVG Update (Avoids full DOM rebuild)
+            if (typeof fastUpdateDrag === 'function') {
+                fastUpdateDrag(dragElIndex);
+            } else {
+                updateCanvas(); // Fallback
+            }
+            
+            // 2. Fast 3D Mesh Transform (Avoids destroying/rebuilding Three.js geometries)
+            if (typeof update3DTransforms === 'function') {
+                update3DTransforms();
+            }
 
             // Render Guides
             const Ix = 500 - ((inW * SCALE)/2); const Iy = 500 - ((inH * SCALE)/2);
@@ -608,7 +742,7 @@ const endDrag = () => {
 
 // Event Listeners (Mouse & Touch)
 function initInteractions() {
-if (!UI.blueprint) return;
+    if (!UI.blueprint) return;
     UI.blueprint.addEventListener('mousemove', (e) => {
         if (UI.isSpacePanning) { panCamera(e.clientX - UI.spacePanStart.x, e.clientY - UI.spacePanStart.y); UI.spacePanStart = { x: e.clientX, y: e.clientY }; return; }
         
@@ -630,18 +764,22 @@ if (!UI.blueprint) return;
         }
     }, {passive: false});
 
-    const endDrag = () => {
+    // 🌟 FIXED: Made endDrag a true global function to prevent memory leaks
+    window.endDrag = (e) => {
         if (hasDragged && typeof saveState === 'function') saveState();
         UI.isSpacePanning = false; 
-        if (UI.isSpacePanMode) UI.blueprint.style.cursor = 'grab'; 
+        if (UI.isSpacePanMode && UI.blueprint) UI.blueprint.style.cursor = 'grab'; 
         isDragging = false; dragFixtureIndex = -1; isDraggingFixture = false; dragElIndex = -1;
         const guideLayer = document.getElementById('smart-guides');
         if (guideLayer) guideLayer.innerHTML = '';
+        
+        snapLines = [];
+        updateCanvas(false); // Rebuild 3D once mouse is released!
     };
 
-    UI.blueprint.addEventListener('mouseup', endDrag);
-    UI.blueprint.addEventListener('mouseleave', endDrag);
-    UI.blueprint.addEventListener('touchend', endDrag);
+    UI.blueprint.addEventListener('mouseup', window.endDrag);
+    UI.blueprint.addEventListener('mouseleave', window.endDrag);
+    UI.blueprint.addEventListener('touchend', window.endDrag);
 
     UI.blueprint.addEventListener('mousedown', (e) => {
         if (UI.isSpacePanMode) {
@@ -682,6 +820,57 @@ if (!UI.blueprint) return;
             startDrag({ button: 0, shiftKey: false, clientX: e.touches[0].clientX, clientY: e.touches[0].clientY }, index);
         }
     }, {passive: false});
+
+
+    // ==========================================
+    // 🌟 NATIVE DRAG AND DROP RECEIVER
+    // ==========================================
+    UI.blueprint.addEventListener('dragover', (e) => {
+        e.preventDefault(); // Required to allow dropping
+        e.dataTransfer.dropEffect = 'copy';
+    });
+
+    UI.blueprint.addEventListener('drop', (e) => {
+        e.preventDefault();
+        
+        // 1. Get the dragged item type (e.g., 'sofa', 'bed')
+        const type = e.dataTransfer.getData('text/plain');
+        if (!type || !ARCH_CONFIG.DEFAULTS.FURNITURE[type]) return;
+
+        if (typeof saveState === 'function') saveState();
+
+        // 2. Get exact mouse coordinates accounting for Pan & Zoom
+        const pos = getMousePos(e); 
+        const w = ARCH_CONFIG.DEFAULTS.FURNITURE[type].w;
+        const h = ARCH_CONFIG.DEFAULTS.FURNITURE[type].h;
+
+        // 3. Mathematical conversion: SVG Screen to Blueprint Inches
+        const SCALE = parseFloat(UI.scaleInput.value) || 1.2;
+        const unit = UI.unitSelect.value;
+        const inW = toInches(UI.inW.value, unit) * SCALE;
+        const inH = toInches(UI.inH.value, unit) * SCALE;
+        const I = { x: 500 - (inW/2), y: 500 - (inH/2) };
+        
+        // Inverse calculation of your drawing logic
+        const elementX = (pos.x - I.x) / SCALE;
+        const elementY = (pos.y - I.y) / SCALE;
+
+        // 4. Instantiate the furniture centered exactly on the cursor
+        elements.push({ 
+            type: type, 
+            w: w, h: h, 
+            x: elementX - (w / 2), 
+            y: elementY - (h / 2), 
+            floor: currentFloor, 
+            locked: false, 
+            isFurniture: true 
+        });
+
+        // 5. Auto-select the newly dropped item and update UI
+        selectedElIndex = elements.length - 1;
+        if (typeof renderSidebar === 'function') renderSidebar(); 
+        updateCanvas();
+    });
 
 }
 
@@ -750,9 +939,9 @@ function exportPNG() {
     img.src = url;
 }
 
-function exportPDF() {
-    window.print();
-}
+// function exportPDF() {
+//     window.print();
+// }
 
 // --- MEASUREMENT TOOL ---
 let isMeasuringMode = false, measureStart = null, tempMeasureLine = null, measureGroup = null;
@@ -769,95 +958,35 @@ function toggleMeasureMode() {
     if (!isMeasuringMode) measureGroup.innerHTML = ''; 
 }
 
+function syncStaircases(sourceIndex) {
+    const source = elements[sourceIndex];
+    if (!source || source.type !== 'staircase') return;
 
-// --- DATA & ELEMENT BINDINGS ---
-function addElement(overrideType = null) {
-    if(typeof saveState === 'function') saveState();
-    // Check if we passed a furniture type, if not, fallback to the Rooms dropdown
-    const type = overrideType || document.getElementById('elem-type').value;
-    
-    // Default Room Sizes
-    let w = 120, h = 120, isFurniture = false;
-
-    // Detect Furniture and apply realistic real-world sizes (in inches)
-    if (type === 'bed') { w = 72; h = 84; isFurniture = true; }
-    else if (type === 'sofa') { w = 84; h = 36; isFurniture = true; }
-    else if (type === 'dining') { w = 72; h = 48; isFurniture = true; }
-    else if (type === 'counter') { w = 96; h = 24; isFurniture = true; }
-
-    elements.push({ 
-        type: type, w: w, h: h, x: 20, y: 20, 
-        floor: currentFloor, locked: false, 
-        dir: type === 'staircase' ? 'up' : null,
-        isFurniture: isFurniture // 👈 Flags this so the engine treats it differently
+    elements.forEach((el, index) => {
+        if (el.type === 'staircase' && index !== sourceIndex) {
+            el.x = source.x;
+            el.y = source.y;
+            el.w = source.w;
+            el.h = source.h;
+            el.dir = source.dir;
+        }
     });
-    
-    if(typeof renderSidebar === 'function') renderSidebar(); 
-    updateCanvas();
 }
-
-function deleteElement(idx) {
-    if(typeof saveState === 'function') saveState(); 
-    if(confirm('Are you sure you want to delete this room?')) { 
-        elements.splice(idx, 1); 
-        fixtures = fixtures.filter(f => f.roomId !== idx);
-        fixtures.forEach(f => { if (f.roomId > idx) f.roomId--; });
-        selectedElIndex = (selectedElIndex === idx) ? -1 : (selectedElIndex > idx ? selectedElIndex - 1 : selectedElIndex);
-        if(typeof renderSidebar === 'function') renderSidebar(); 
-        updateCanvas(); 
-    }
-}
-
-function cloneElement(idx) {
-    const clone = JSON.parse(JSON.stringify(elements[idx]));
-    clone.x += 20; clone.y += 20; elements.push(clone);
-    if(typeof renderSidebar === 'function') renderSidebar(); 
-    updateCanvas();
-}
-
-function rotateElement(idx) {
-    if(typeof saveState === 'function') saveState();
-    const el = elements[idx]; const tempW = el.w; el.w = el.h; el.h = tempW;
-    if(typeof renderSidebar === 'function') renderSidebar(); 
-    updateCanvas();
-}
-
-function addFixture(type) {
-    // 1. Ensure a room is actually selected
-    if (typeof selectedElIndex === 'undefined' || selectedElIndex === -1) {
-        alert("Please click on a room first to select it!");
-        return; 
-    }
-
-    // 2. 🛑 GUARD CLAUSE: Prevent fixtures on Furniture
-    if (elements[selectedElIndex].isFurniture) {
-        alert("Cannot add doors or windows to furniture. Please select a structural room like a Bedroom or Living Room.");
-        return; 
-    }
-
-    fixtures.push({ 
-        type: type, 
-        roomId: selectedElIndex, 
-        edge: 'bottom', 
-        offset: 36, 
-        size: 36 
-    });
-    
-    if (typeof renderSidebar === 'function') renderSidebar();
-    updateCanvas();
-}
-
-function addDoor(roomId) { fixtures.push({ type: 'door', roomId: roomId, size: 30, offset: 0, edge: 'bottom' }); if(typeof renderSidebar === 'function') renderSidebar(); updateCanvas(); }
-function addWindow(roomId) { fixtures.push({ type: 'window', roomId: roomId, size: 15, offset: 15, edge: 'bottom' }); if(typeof renderSidebar === 'function') renderSidebar(); updateCanvas(); }
 
 function rotateStaircase(index) {
+    if(typeof saveState === 'function') saveState();
     const el = elements[index];
     if (el.type !== 'staircase') return;
+
+    // Cycle through entry orientations
     const directions = ['up', 'right', 'down', 'left'];
-    const newDirection = directions[(directions.indexOf(el.dir || 'up') + 1) % 4];
-    elements.forEach(room => { if (room.type === 'staircase') room.dir = newDirection; });
+    el.dir = directions[(directions.indexOf(el.dir || 'up') + 1) % 4];
+
     if(typeof renderSidebar === 'function') renderSidebar(); 
     updateCanvas();
+    
+    // Force an immediate 3D rebuild so you can see the stairs turn!
+    if (typeof request3DUpdate === 'function') request3DUpdate();
 }
 
 // --- FLOOR MANAGEMENT ---
@@ -867,168 +996,6 @@ function setFloor(f) {
     if (typeof renderFloorSelectors === 'function') renderFloorSelectors();
     if (typeof renderSidebar === 'function') renderSidebar(); 
     updateCanvas();
-}
-
-// THE UPDATED FLOOR ADDITION LOGIC
-function addManualFloor() {
-    const bFloorsInput = document.getElementById('b-floors');
-    let currentCount = parseInt(bFloorsInput.value) || 1;
-    
-    const newFloorNum = currentCount; 
-    bFloorsInput.value = currentCount + 1; 
-
-    elements.filter(e => e.type === 'staircase' && e.floor === newFloorNum - 1).forEach(stair => {
-        const clone = JSON.parse(JSON.stringify(stair));
-        clone.floor = newFloorNum; 
-        elements.push(clone);
-    });
-    
-    if (typeof renderFloorSelectors === 'function') renderFloorSelectors();
-    setFloor(newFloorNum);
-}
-
-function deleteCurrentFloor() {
-    if (currentFloor === 0) {
-        alert("You cannot delete the Ground Floor. Delete the individual rooms instead.");
-        return;
-    }
-    
-    if (!confirm(`⚠️ Are you sure you want to completely delete the ${currentFloor === 1 ? '1st' : currentFloor + 'th'} floor and all its rooms?`)) return;
-
-    if (typeof saveState === 'function') saveState();
-
-    // 1. Find all rooms on the current floor (Reverse order to prevent array shifting bugs)
-    const indicesToDelete = [];
-    elements.forEach((el, index) => {
-        if (el.floor === currentFloor) indicesToDelete.push(index);
-    });
-    indicesToDelete.reverse();
-
-    // 2. Safely delete them and update fixture IDs
-    indicesToDelete.forEach(idx => {
-        elements.splice(idx, 1);
-        fixtures = fixtures.filter(f => f.roomId !== idx);
-        fixtures.forEach(f => { if (f.roomId > idx) f.roomId--; });
-    });
-
-    // 3. Shift all upper floors down by 1
-    elements.forEach(el => {
-        if (el.floor > currentFloor) el.floor -= 1;
-    });
-
-    // 4. Update the Master UI Counter
-    const bFloorsInput = document.getElementById('b-floors');
-    let currentCount = parseInt(bFloorsInput.value) || 1;
-    bFloorsInput.value = Math.max(1, currentCount - 1);
-
-    // 5. Jump to the floor below and refresh the UI
-    if (typeof renderFloorSelectors === 'function') renderFloorSelectors();
-    setFloor(currentFloor - 1);
-}
-
-function cloneEntireFloor() {
-    const currentElements = elements.filter(e => e.floor === currentFloor);
-    if (currentElements.length === 0) return alert("Nothing to clone!");
-    
-    // 1. Check the system for how many floors currently exist
-    const bFloorsInput = document.getElementById('b-floors');
-    let currentCount = parseInt(bFloorsInput.value) || 1;
-    
-    // Customize the popup to tell the user exactly where the clone is going
-    let targetName = currentCount === 1 ? "1st" : currentCount === 2 ? "2nd" : `${currentCount}th`;
-    if (!confirm(`Clone this floor to a new ${targetName} Floor level?`)) return;
-    
-    // 2. Set the target floor to be a brand new level at the top of the building
-    const targetFloor = currentCount; 
-    const newRoomStartIndex = elements.length;
-    
-    // 3. Update the master floor counter so the UI knows the new floor exists
-    bFloorsInput.value = targetFloor + 1;
-
-    // 4. Clone the rooms and assign them to the new target floor
-    currentElements.forEach(room => {
-        const clone = JSON.parse(JSON.stringify(room)); 
-        clone.floor = targetFloor; 
-        elements.push(clone);
-    });
-    
-    // 5. Clone the fixtures (Doors/Windows)
-    const currentFixtures = fixtures.filter(f => elements[f.roomId] && elements[f.roomId].floor === currentFloor);
-    
-    currentFixtures.forEach(fix => {
-        const room = elements[fix.roomId];
-        const cloneFix = JSON.parse(JSON.stringify(fix));
-        cloneFix.roomId = newRoomStartIndex + currentElements.indexOf(room);
-        fixtures.push(cloneFix);
-    });
-    
-    if (typeof renderFloorSelectors === 'function') renderFloorSelectors();
-    setFloor(targetFloor); // Jump the user's view to the newly created floor
-}
-
-function generateBuilding() {
-    if (elements.length > 0 && !confirm("Generating a new building will clear your current rooms. Continue?")) return;
-    let floorCount = parseInt(document.getElementById('b-floors').value);
-    if (floorCount < 1 || isNaN(floorCount)) floorCount = 1;
-    
-    let maxReqW = 0; let maxReqH = 0;
-    for(let i = 0; i < floorCount; i++) {
-        const layoutKey = document.getElementById(`layout-f${i}`).value;
-        if(layoutKey !== 'none' && floorLayouts[layoutKey]) {
-            floorLayouts[layoutKey].forEach(room => {
-                if (room.x + room.w > maxReqW) maxReqW = room.x + room.w;
-                if (room.y + room.h > maxReqH) maxReqH = room.y + room.h;
-            });
-        }
-        if (floorCount > 1) {
-            if (450 + 96 > maxReqW) maxReqW = 450 + 96;
-            if (20 + 144 > maxReqH) maxReqH = 20 + 144;
-        }
-    }
-    
-    maxReqW += 20; maxReqH += 20;
-    let currentInW = parseInt(document.getElementById('inW').value) || 0;
-    let currentInH = parseInt(document.getElementById('inH').value) || 0;
-    let scaleFactor = 1;
-
-    if (maxReqW > currentInW || maxReqH > currentInH) {
-        const shrink = confirm(`⛔ Boundary Warning\n\nThe selected layout requires a ${Math.ceil(maxReqW/12)}ft × ${Math.ceil(maxReqH/12)}ft plot.\nYour current plot is only ${Math.floor(currentInW/12)}ft × ${Math.floor(currentInH/12)}ft.\n\nDo you want the engine to automatically shrink and fit the layout into your plot?`);
-        if (shrink) scaleFactor = Math.min(currentInW / maxReqW, currentInH / maxReqH);
-        else return; 
-    }
-
-    elements = []; 
-    
-    const tabsContainer = document.getElementById('top-floor-tabs');
-    if (tabsContainer) tabsContainer.innerHTML = '';
-    
-    for(let i = 0; i < floorCount; i++) {
-        let label = i === 0 ? "G" : i === 1 ? "1st" : i === 2 ? "2nd" : `${i}th`;
-        if (tabsContainer) tabsContainer.innerHTML += `<button class="floor-btn" data-floor="${i}" onclick="setFloor(${i})">${label}</button>`;
-        
-        const layoutKey = document.getElementById(`layout-f${i}`).value;
-        if(layoutKey !== 'none' && floorLayouts[layoutKey]) {
-            const layoutData = JSON.parse(JSON.stringify(floorLayouts[layoutKey]));
-            layoutData.forEach(room => { 
-                room.w = Math.round(room.w * scaleFactor); room.h = Math.round(room.h * scaleFactor);
-                room.x = Math.round(room.x * scaleFactor); room.y = Math.round(room.y * scaleFactor);
-                room.floor = i; elements.push(room); 
-            });
-        }
-        if (floorCount > 1) {
-            elements.push({ 
-                type: 'staircase', 
-                w: Math.round(96 * scaleFactor), 
-                h: Math.round(144 * scaleFactor), 
-                x: Math.round(450 * scaleFactor), 
-                y: Math.round(20 * scaleFactor), 
-                floor: i,
-                locked: false,
-                dir: 'up' 
-            });
-        }
-    }
-    setFloor(0); 
 }
 
 function renderAutoDimensions() {
@@ -1202,7 +1169,7 @@ document.addEventListener('keydown', (e) => {
 });
 
 // Context Menu Listener
-document.getElementById('svg-canvas').addEventListener('contextmenu', (e) => {
+document.getElementById('blueprint').addEventListener('contextmenu', (e) => {
     e.preventDefault();
     if (typeof selectedElIndex !== 'undefined' && selectedElIndex !== -1) {
         const ctx = document.getElementById('context-menu');
@@ -1221,82 +1188,9 @@ document.addEventListener('click', (e) => {
 });
 
 
-//The "Precision" Upgrade (Smart Alignment Guides)
-function applySmartSnap(el, index) {
-    snapLines = [];
-    const TOLERANCE = 5; // Will snap if within 5 pixels
-    
-    elements.forEach((other, i) => {
-        if (i === index || other.floor !== el.floor) return;
-        
-        // Vertical Snapping (X-axis)
-        if (Math.abs(el.x - other.x) < TOLERANCE) { el.x = other.x; snapLines.push({x: el.x, type: 'v'}); }
-        else if (Math.abs((el.x + el.w) - (other.x + other.w)) < TOLERANCE) { el.x = other.x + other.w - el.w; snapLines.push({x: el.x + el.w, type: 'v'}); }
-        
-        // Horizontal Snapping (Y-axis)
-        if (Math.abs(el.y - other.y) < TOLERANCE) { el.y = other.y; snapLines.push({y: el.y, type: 'h'}); }
-        else if (Math.abs((el.y + el.h) - (other.y + other.h)) < TOLERANCE) { el.y = other.y + other.h - el.h; snapLines.push({y: el.y + el.h, type: 'h'}); }
-    });
-}
-
-
 // =========================================
 // PHASE 2: PERSISTENCE & REPORTING
 // =========================================
-
-
-// --- 3. Auto-Area Calculation Dashboard ---
-function updateAreaDashboard2() {
-    const dash = document.getElementById('area-dashboard');
-    if (!dash) return;
-
-    if (elements.length === 0) {
-        dash.innerHTML = '<div style="color: #94a3b8; text-align: center;">Add rooms to see calculations...</div>';
-        return;
-    }
-
-    // Tally up square footage by room type
-    let totals = {};
-    let grandTotal = 0;
-
-    elements.forEach(el => {
-        // Skip furniture and staircases in the square footage calc
-        if (el.isFurniture || el.type === 'staircase') return; 
-        
-        const sqft = (el.w * el.h) / 144; // w and h are in inches
-        grandTotal += sqft;
-        
-        // Group by type (Living, Bedroom, etc.)
-        const typeName = el.customName || el.type.toUpperCase();
-        if (!totals[typeName]) totals[typeName] = 0;
-        totals[typeName] += sqft;
-    });
-
-    // Build the UI HTML
-    let html = '';
-    
-    // Sort rooms from largest to smallest area
-    const sortedRooms = Object.keys(totals).sort((a, b) => totals[b] - totals[a]);
-    
-    sortedRooms.forEach(room => {
-        html += `
-            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 4px;">
-                <span style="color: #cbd5e1;">${room}</span>
-                <span style="color: #38bdf8; font-weight: bold; font-family: monospace;">${totals[room].toFixed(1)} sqft</span>
-            </div>
-        `;
-    });
-
-    html += `
-        <div style="display: flex; justify-content: space-between; margin-top: 6px; padding-top: 6px; border-top: 1px solid #38bdf8;">
-            <span style="color: #f8fafc; font-weight: 900;">TOTAL BUILD AREA</span>
-            <span style="color: #10b981; font-weight: 900; font-family: monospace; font-size: 0.85rem;">${grandTotal.toFixed(1)} sqft</span>
-        </div>
-    `;
-
-    dash.innerHTML = html;
-}
-
 
 // --- 3. Auto-Area Calculation Dashboard ---
 function updateAreaDashboard() {
@@ -1370,3 +1264,29 @@ function updateAreaDashboard() {
 
     dash.innerHTML = html;
 }
+
+
+// ==========================================
+// 🌟 APP BOOTSTRAPPER (Auto-Starter) 🌟
+// ==========================================
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Cache the HTML elements
+    if (typeof initDOMCache === 'function') {
+        initDOMCache();
+    }
+    
+    // 2. Load any saved data from local storage (if you have an auto-save feature)
+    if (typeof loadState === 'function' && localStorage.getItem('ArchCAD_AutoSave')) {
+        loadState();
+    }
+    
+    // 3. Force the 2D canvas to draw
+    if (typeof updateCanvas === 'function') {
+        updateCanvas();
+    }
+    
+    // 4. Initialize the sidebar/floor data
+    if (typeof setFloor === 'function') {
+        setFloor(0); 
+    }
+});

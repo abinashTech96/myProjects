@@ -55,6 +55,7 @@ const Onboarding = {
 
     init() {
         if (!localStorage.getItem('ArchCAD_TourDone')) {
+            this.buildUI(); // 🌟 ADD THIS LINE to inject the HTML!
             setTimeout(() => {
                 const backdrop = document.getElementById('tour-backdrop');
                 const overlay = document.getElementById('tour-overlay');
@@ -127,4 +128,4 @@ const Onboarding = {
 };
 
 // Start engine on load
-//window.addEventListener('DOMContentLoaded', () => Onboarding.init());
+window.addEventListener('DOMContentLoaded', () => Onboarding.init());

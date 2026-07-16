@@ -1,0 +1,140 @@
+/* =========================================
+   🌟 SPLIT SCREEN WORKSPACE LAYOUT
+========================================= */
+.workspace-wrapper {
+    display: flex !important;
+    flex-direction: row;
+    overflow: hidden;
+    /* Note: .canvas-area handles the absolute positioning and sidebar offsets! */
+}
+
+/* --- Override the old absolute position of canvas-wrapper --- */
+#canvas-wrapper {
+    position: relative !important;
+    left: 0 !important;
+    top: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: auto !important;
+    height: 100% !important;
+}
+
+.split-left {
+    flex: 1; /* Defaults to 50% */
+    position: relative;
+    height: 100%;
+    min-width: 15%;
+}
+
+.split-right {
+    flex: 1; /* Defaults to 50% */
+    position: relative;
+    height: 100%;
+    min-width: 15%;
+    background: #020617; /* Ultra-deep blueprint background */
+    border-left: 1px solid rgba(56, 189, 248, 0.2);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: inset 15px 0 30px rgba(0,0,0,0.5); /* Soft inner shadow */
+}
+
+/* --- The Draggable Handle --- */
+.split-resizer {
+    width: 10px;
+    background: #1e293b;
+    border-left: 1px solid rgba(255, 255, 255, 0.05);
+    border-right: 1px solid rgba(0, 0, 0, 0.5);
+    cursor: col-resize;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9000;
+    transition: background 0.2s ease;
+}
+
+.split-resizer:hover, .split-resizer.dragging {
+    background: #38bdf8;
+}
+
+/* The vertical dots on the handle */
+.split-resizer::after {
+    content: "⋮";
+    color: #94a3b8;
+    font-size: 18px;
+    font-weight: bold;
+}
+.split-resizer:hover::after, .split-resizer.dragging::after {
+    color: #0f172a;
+}
+
+/* =========================================
+   RESPONSIVE DESIGN (MOBILE & TABLET)
+========================================= */
+@media (max-width: 768px) {
+    /* 1. Canvas becomes the full screen */
+    body {
+        position: relative;
+    }
+
+    /* 2. Sidebar turns into a sliding drawer */
+    .sidebar {
+        flex-shrink: 0;
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 100vh;
+        width: 85%;
+        max-width: 360px;
+        z-index: 1000;
+        box-shadow: 10px 0 30px rgba(0, 0, 0, 0.8);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        margin-left: 0 !important; /* Override desktop logic */
+    }
+
+    /* When collapsed on mobile, slide it entirely off-screen via transform */
+    .sidebar.collapsed {
+        transform: translateX(-100%);
+    }
+
+    /* 3. The Hamburger / Open Button Behavior */
+    #open-sidebar-btn {
+        left: 10px; /* Bring inside the screen */
+        top: 15px;
+        transform: none;
+        border-radius: 8px;
+        border-left: 1px solid rgba(56, 189, 248, 0.4);
+        padding: 10px 15px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+    }
+
+    /* Hide the open button when the drawer is open on mobile */
+    .sidebar:not(.collapsed) ~ .canvas-area #open-sidebar-btn {
+        left: -100px; 
+    }
+
+    /* 4. Tame the Floating Panels */
+    #area-overlay {
+        top: 70px; /* Push down to make room for the menu button */
+        left: 10px;
+        width: calc(100% - 50px) !important; /* Shrink to fit screen */
+        max-width: 240px;
+        padding: 10px !important;
+    }
+
+    #camera-controls {
+        bottom: 10px;
+        right: 10px;
+        transform: scale(0.85); /* Shrink the D-PAD */
+        transform-origin: bottom right;
+    }
+
+    /* 5. Stack the Sidebar Grids */
+    .input-grid {
+        grid-template-columns: 1fr; /* 2 columns becomes 1 column */
+    }
+    
+    .dim-grid {
+        grid-template-columns: 1fr;
+    }
+}

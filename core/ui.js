@@ -875,6 +875,51 @@ window.toggleAutoBuilder = function() {
     }
 };
 
+// =========================================
+// 🌟 PROJECT INFO DROPDOWN TOGGLE
+// =========================================
+window.toggleProjectInfo = function() {
+    const panel = document.getElementById('project-info-overlay');
+    const btn = document.getElementById('project-info-btn');
+    if (!panel) return;
+    
+    // Check if it's currently hidden
+    if (panel.style.display === 'none' || panel.style.display === '') {
+        panel.style.display = 'block';
+        
+        // Squeeze the button inward briefly
+        if (btn) {
+            btn.style.transform = 'scale(0.8)';
+            btn.style.background = 'rgba(56, 189, 248, 0.4)'; // Light up Cyan
+            setTimeout(() => btn.style.transform = 'scale(1)', 150);
+        }
+
+        // Expand the menu
+        setTimeout(() => {
+            panel.style.opacity = '1';
+            panel.style.transform = 'scale(1)';
+            panel.style.pointerEvents = 'auto';
+        }, 10);
+    } else {
+        // Squeeze the button inward briefly
+        if (btn) {
+            btn.style.transform = 'scale(0.8)';
+            btn.style.background = 'rgba(56, 189, 248, 0.15)'; // Dim Cyan
+            setTimeout(() => btn.style.transform = 'scale(1)', 150);
+        }
+
+        // Squeeze the menu back into the button
+        panel.style.opacity = '0';
+        panel.style.transform = 'scale(0)';
+        panel.style.pointerEvents = 'none';
+        
+        // Wait for animation to finish before hiding from DOM
+        setTimeout(() => {
+            panel.style.display = 'none';
+        }, 400); 
+    }
+};
+
 // ==========================================
 // WORKSPACE UI TOGGLES (Floating Panels)
 // ==========================================

@@ -1,0 +1,202 @@
+/* =========================================
+   🌟 QUICK CONVERTER WIDGET
+========================================= */
+
+/* --- 1. Main Card & Ambulance Effect --- */
+.sidebar-converter {
+    position: relative;
+    background: #1e293b;
+    border-radius: 12px;
+    padding: 12px 16px;
+    margin-bottom: 12px;
+    overflow: hidden;
+    z-index: 1;
+    box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.3),
+               -4px -4px 8px rgba(255, 255, 255, 0.03);
+    transition: box-shadow 0.3s ease;
+}
+
+.sidebar-converter::after {
+    content: '';
+    position: absolute;
+    inset: 2px;
+    background: #1e293b;
+    border-radius: 10px;
+    z-index: -1;
+}
+
+.sidebar-converter::before {
+    content: '';
+    position: absolute;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: conic-gradient(
+        transparent 0%, transparent 35%, #ef4444 50%, 
+        transparent 50%, transparent 85%, #38bdf8 100%
+    );
+    animation: spin-ambulance 2s linear infinite;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: -2;
+}
+
+.sidebar-converter:focus-within {
+    animation: ambulance-glow 2s linear infinite;
+}
+
+.sidebar-converter:focus-within::before {
+    opacity: 1;
+}
+
+/* --- 2. Header --- */
+.converter-header {
+    font-size: 0.65rem;
+    color: #94a3b8;
+    font-weight: 800;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.converter-header .icon {
+    color: #38bdf8;
+    font-size: 0.8rem;
+}
+
+/* --- 3. Inner Row & Laser Effect --- */
+.converter-row {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #0f172a; 
+    padding: 6px;
+    border-radius: 8px;
+    overflow: hidden;
+    z-index: 1;
+    transition: box-shadow 0.3s ease;
+}
+
+.converter-row::after {
+    content: '';
+    position: absolute;
+    inset: 1px; 
+    background: #0f172a; 
+    border-radius: 7px;
+    z-index: -1;
+    box-shadow: inset 3px 3px 6px rgba(0,0,0,0.6), 
+                inset -3px -3px 6px rgba(255,255,255,0.03);
+}
+
+.converter-row::before {
+    content: '';
+    position: absolute;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: conic-gradient(from 90deg, transparent 0%, transparent 60%, rgba(56, 189, 248, 0.4) 90%, #38bdf8 100%);
+    animation: run-border-light 2s linear infinite;
+    opacity: 0; 
+    transition: opacity 0.3s ease;
+    z-index: -2;
+}
+
+.converter-row:focus-within {
+    box-shadow: 0 0 15px rgba(56, 189, 248, 0.3);
+}
+
+.converter-row:focus-within::before {
+    opacity: 1;
+}
+
+/* Protect Content from Background Masks */
+.converter-header, .converter-row, .converter-input-group, .converter-equals {
+    position: relative;
+    z-index: 2;
+}
+
+/* --- 4. Inputs and Groups --- */
+.converter-input-group {
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    padding-right: 6px;
+    flex: 1;
+    transition: background 0.2s ease;
+}
+
+.converter-input-group:focus-within {
+    background: rgba(56, 189, 248, 0.1);
+    box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.4);
+}
+
+.converter-input-group input {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    width: 100%;
+    text-align: right;
+    padding: 6px 4px 6px 8px;
+    color: #f8fafc;
+    font-family: monospace;
+    font-size: 0.85rem;
+    outline: none;
+}
+
+.converter-input-group .unit {
+    color: #64748b;
+    font-size: 0.6rem;
+    font-weight: 800;
+    user-select: none;
+}
+
+.converter-equals {
+    color: #38bdf8;
+    font-weight: 900;
+    font-size: 1rem;
+}
+
+.result-group {
+    background: rgba(56, 189, 248, 0.1) !important;
+    border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.result-group input {
+    color: #38bdf8 !important;
+    font-weight: bold;
+    cursor: default;
+}
+
+.result-group .unit {
+    color: #38bdf8;
+}
+
+/* --- 5. Hide Browser Spinners --- */
+.converter-input-group input[type="number"]::-webkit-inner-spin-button,
+.converter-input-group input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.converter-input-group input[type="number"] {
+    -moz-appearance: textfield;
+}
+
+/* --- 6. Animations --- */
+@keyframes spin-ambulance {
+    0% { transform: rotate(360deg); }
+    100% { transform: rotate(0deg); }
+}
+
+@keyframes ambulance-glow {
+    0% { box-shadow: 0 0 15px rgba(239, 68, 68, 0.5); }
+    50% { box-shadow: 0 0 15px rgba(56, 189, 248, 0.5); }
+    100% { box-shadow: 0 0 15px rgba(239, 68, 68, 0.5); }
+}
+
+@keyframes run-border-light {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}

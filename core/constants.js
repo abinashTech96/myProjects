@@ -128,3 +128,14 @@ const AI_CONFIG = {
     DEFAULT_PLOT_H: 417,         // Fallback height if input is empty
     VASTU_PADDING_INCHES: 20     // Distance to keep AI-placed rooms away from the boundary walls
 };
+
+// =========================================
+// 🌟 REFINEMENTS & SAFEGUARDS
+// =========================================
+ARCH_CONFIG.REFINEMENTS = {
+    GHOST_FLOOR_OPACITY: 0.15,        // Faintness of the floor below
+    SECTION_SNAP_TOLERANCE: 20,       // Distance to auto-snap section lines straight
+    NIGHT_MODE_SUN_INTENSITY: 0.05,   // Dimmed moon-light level
+    DAY_MODE_SUN_INTENSITY: 1.2,      // Standard sun level
+    SMART_MERGE_TEXT_RADIUS: 150      // Merges duplicate room labels within this distance
+};

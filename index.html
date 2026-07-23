@@ -9,8 +9,15 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link rel="stylesheet" href="styles/style.css">
+    <link rel="stylesheet" href="styles/layout.css">
+    <link rel="stylesheet" href="styles/converter.css">
+    <link rel="stylesheet" href="styles/camera.css">
+    <link rel="stylesheet" href="styles/navbar.css">
+    <link rel="stylesheet" href="styles/presentation.css">    
+    <link rel="stylesheet" href="styles/sidebar.css">
     <link rel="stylesheet" href="features/room-studio/studio.css">
     <link rel="stylesheet" href="features/advanced-3d/advanced3d.css">
+    <link rel="stylesheet" href="features/onboarding/onboarding.css">
 </head>
 <body>
 
@@ -26,25 +33,54 @@
             <span class="nav-brand-text">ArchCAD</span>
         </div>
         <div class="nav-divider"></div>
+        
         <div class="nav-view-switcher">
-            <button id="mode-2d" class="nav-switch-btn active" onclick="if(is3DMode) toggle3D()">2D</button>
-            <button id="mode-3d" class="nav-switch-btn" onclick="if(!is3DMode) toggle3D()">3D</button>
+            <button id="mode-2d" class="nav-switch-btn active" onclick="setWorkspaceLayout('2d')">2D</button>
+            <button id="mode-3d" class="nav-switch-btn" onclick="setWorkspaceLayout('3d')">3D</button>
         </div>
+        
         <div class="nav-divider"></div>
         
         <div class="nav-floor-controls" style="position: relative;">
             <div id="top-floor-tabs" class="nav-floor-tabs"></div>
             
             <button class="nav-add-floor-btn" onclick="addManualFloor()" title="Add Floor">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
             </button>
 
-            <!-- 🌟 NEW: AUTO-BUILDER NAVBAR BUTTON -->
+            <!-- 🌟 NEW: PROJECT INFO BUTTON -->
+            <button id="project-info-btn" class="nav-add-floor-btn" onclick="toggleProjectInfo()" title="Project Details" style="margin-left: 4px; color: #38bdf8; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s ease;">
+                <span style="font-size: 0.9rem; font-weight: 900; font-family: serif; font-style: italic; filter: drop-shadow(0 0 2px rgba(56, 189, 248, 0.5));">i</span>
+            </button>
+            <!-- 🌟 NEW: PROJECT INFO DROPDOWN PANEL -->
+            <div id="project-info-overlay" class="glass-panel" style="display: none; opacity: 0; transform: scale(0); transform-origin: top right; position: absolute; top: calc(100% + 15px); right: 35px; width: 260px; z-index: 10000; transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); margin: 0;">
+                <div class="panel-header" style="border-bottom: 1px solid rgba(56, 189, 248, 0.3); margin-bottom: 15px; padding-bottom: 10px;">
+                    <span class="icon" style="color: #38bdf8;">ℹ️</span>
+                    <h2 style="background: linear-gradient(90deg, #38bdf8, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0; font-size: 0.9rem; font-weight: 700;">PROJECT DETAILS</h2>
+                </div>
+                
+                <!-- The Project Data HUD stacked beautifully inside the dropdown -->
+                <div class="nav-stats-hud" style="flex-direction: column; align-items: flex-start; gap: 12px; background: transparent; box-shadow: none; border: none; padding: 0;">
+                    <div class="hud-stat" title="Total Plot Area" style="width: 100%; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px;">
+                        <span class="hud-label">PLOT AREA</span> <span id="plot-area" class="hud-value blue">0</span>
+                    </div>
+                    <div class="hud-stat" title="Ground Build Area" style="width: 100%; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px;">
+                        <span class="hud-label">BUILD AREA</span> <span id="build-area" class="hud-value green">0</span>
+                    </div>
+                    <div class="hud-stat" title="Total Built-Up Area" style="width: 100%; justify-content: space-between;">
+                        <span class="hud-label">TOTAL BUILT-UP</span> <span id="total-built-area" class="hud-value purple">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 🌟 EXISTING: AUTO-BUILDER NAVBAR BUTTON -->
             <button id="auto-builder-btn" class="nav-add-floor-btn" onclick="toggleAutoBuilder()" title="Auto-Builder" style="margin-left: 4px; color: #f59e0b; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s ease;">
                 <span style="font-size: 0.8rem; filter: drop-shadow(0 0 2px rgba(245, 158, 11, 0.5));">✨</span>
             </button>
-
-            <!-- 🌟 NEW: AUTO-BUILDER DROPDOWN PANEL (Squeezed into the icon by default) -->
+            <!-- 🌟 EXISTING: AUTO-BUILDER DROPDOWN PANEL -->
             <div id="template-builder-overlay" class="glass-panel" style="display: none; opacity: 0; transform: scale(0); transform-origin: top right; position: absolute; top: calc(100% + 15px); right: 0; width: 260px; z-index: 10000; transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); margin: 0;">
                 <div class="panel-header"><span class="icon">✨</span><h2>AUTO-BUILDER</h2></div>
                 <div class="glass-field"><label>Total Floors:</label>
@@ -56,6 +92,27 @@
                 <button class="btn-generate" onclick="generateBuilding()">
                     <span class="btn-icon">🏗️</span><span class="btn-text">GENERATE BUILDING</span>
                 </button>
+            </div>
+
+            <!-- 🌟 NEW: AI AGENT NAVBAR BUTTON -->
+            <button id="ai-agent-btn" class="nav-add-floor-btn" onclick="toggleAIAgent()" title="AI Design Assistant" style="margin-left: 4px; color: #a855f7; background: rgba(168, 85, 247, 0.15); border: 1px solid rgba(168, 85, 247, 0.3); transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s ease;">
+                <span style="font-size: 0.8rem; filter: drop-shadow(0 0 2px rgba(168, 85, 247, 0.5));">🤖</span>
+            </button>
+            <!-- 🌟 NEW: AI AGENT DROPDOWN PANEL -->
+            <div id="ai-agent-overlay" class="glass-panel" style="display: none; opacity: 0; transform: scale(0); transform-origin: top right; position: absolute; top: calc(100% + 15px); right: 0; width: 300px; z-index: 10000; transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); margin: 0;">
+                <div class="panel-header" style="border-bottom: 1px solid rgba(168, 85, 247, 0.3); margin-bottom: 15px; padding-bottom: 10px;">
+                    <span class="icon" style="color: #a855f7;">🤖</span>
+                    <h2 style="background: linear-gradient(90deg, #a855f7, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0; font-size: 0.9rem; font-weight: 700;">AI ASSISTANT</h2>
+                </div>
+                
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <!-- Note: Retained the exact 'ai-input' and 'ai-generate-btn' IDs so your scripts still work perfectly -->
+                    <textarea id="ai-input" class="neo-sunken" placeholder="e.g., Add a 10x12 master bedroom on the left..." style="width: 100%; height: 65px; padding: 10px; font-size: 0.75rem; border: none; resize: none; color: #f8fafc; box-sizing: border-box; font-family: sans-serif;"></textarea>
+                    
+                    <button id="ai-generate-btn" class="btn-generate" style="background: linear-gradient(135deg, #a855f7, #9333ea); box-shadow: 0 4px 15px rgba(168, 85, 247, 0.4); border: none;">
+                        <span class="btn-icon">✨</span><span class="btn-text">GENERATE</span>
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -75,10 +132,16 @@
     <!-- 🌟 MAIN SIDEBAR -->
     <!-- ========================================== -->
     <div class="sidebar">
-        <!-- AI Command Bar -->
-        <div id="ai-command-bar" style="display: flex; gap: 10px; margin-bottom: 10px; padding: 10px; background: #0f172a; border-radius: 8px; border: 1px solid #38bdf8;">
-            <input type="text" id="ai-input" placeholder="e.g., Add a 10x12 master bedroom on the left..." style="flex-grow: 1; padding: 8px; border-radius: 4px; border: none;">
-            <button id="ai-generate-btn" style="background: #38bdf8; border: none; padding: 8px 16px; border-radius: 4px; font-weight: bold; cursor: pointer;">Generate</button>
+        <!-- 🌟 NEW: DRAGGABLE HEADER & PREMIUM MINIMIZE BTN -->
+        <div id="sidebar-drag-handle" class="sidebar-drag-header">
+            <div class="drag-grip" title="Drag to move">
+                <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+                <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+            </div>
+            <span class="sidebar-title">CONTROL PANEL</span>
+            <button class="neo-min-btn" onclick="toggleSidebar()" title="Dock & Minimize">
+                <span class="icon">◀</span>
+            </button>
         </div>
 
         <!-- ACCORDION 1: Plot & Floors (Plot Closed by Default) -->
@@ -123,6 +186,16 @@
                 <div class="hybrid-inner">
                     <div class="setting-card" style="padding: 8px; margin-bottom: 8px;">
                         <div class="setting-group">
+                            <label class="setting-label">ROOF STYLE</label>
+                            <select id="unitSelect" class="modern-select neo-sunken" onchange="if(typeof request3DUpdate === 'function') request3DUpdate();">
+                                <option value="hip">Hip Roof</option>
+                                <option value="gable">Gable Roof</option>
+                                <option value="flat">Flat / Parapet</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="setting-card" style="padding: 8px; margin-bottom: 8px;">
+                        <div class="setting-group">
                             <label class="setting-label">Measurement</label>
                             <select id="unitSelect" class="modern-select" onchange="updateCanvas()">
                                 <option value="in">Inches</option>
@@ -160,7 +233,12 @@
                     <div class="input-grid">  
                         <div class="field"><label>Top Direction:</label><select id="compassDir" onchange="handleCompassChange()"><option>West</option><option>South</option><option>East</option><option>North</option></select></div>
                         <div class="field"><label>Scale:</label><input type="number" id="scaleInput" value="1.2" step="0.1" oninput="updateCanvas()"></div>
+                    </div><!-- 🌟 MOVED: ROOM-BY-ROOM DASHBOARD -->
+                    <div class="neo-divider" style="margin: 10px 0;"></div>
+                    <div id="area-dashboard" style="display: flex; flex-direction: column; gap: 6px; font-size: 0.75rem; max-height: 120px; overflow-y: auto; padding-right: 4px;">
+                        <div style="color: #94a3b8; text-align: center;">Add rooms to see calculations...</div>
                     </div>
+                    <div class="neo-divider" style="margin: 10px 0;"></div>
 
                     <div class="global-toolbar" style="margin-top: 10px; display: flex; flex-direction: column; gap: 4px; padding: 6px;">
                         <div style="display: flex; gap: 4px; width: 100%;">
@@ -296,14 +374,6 @@
                 </div>
             </div>
         </div>
-
-        <!-- Sidebar Minimize Button -->
-        <div style="display: flex; justify-content: flex-end; margin-top: 2px; margin-bottom: 2px;">
-            <button onclick="toggleSidebar()" title="Minimize Sidebar" 
-                    style="background: transparent; border: 1px solid rgba(56, 189, 248, 0.3); color: #38bdf8; border-radius: 4px; padding: 2px 6px; font-size: 0.65rem; cursor: pointer;">
-                ◀ MINIMIZE
-            </button>
-        </div>
     </div>
 
 
@@ -311,6 +381,7 @@
     <!-- 🌟 MAIN SPLIT SCREEN WORKSPACE -->
     <!-- ========================================== -->
     <div class="canvas-area workspace-wrapper" id="main-workspace">
+        
         <!-- ========================================== -->
         <!-- LEFT CANVAS (2D Engine & Overlays) -->
         <!-- ========================================== -->
@@ -324,60 +395,87 @@
                 <div style="height:1px; background:rgba(255,255,255,0.1); margin:4px 0;"></div>
                 <div class="ctx-item" onclick="if(selectedElIndex !== -1) deleteElement(selectedElIndex)" style="color:#ef4444;"><span>🗑️ Delete</span><span class="ctx-shortcut">Del</span></div>
             </div>
-            <!-- Camera Controls Overlay -->
-            <div id="camera-controls">
-                <div class="camera-header">CAMERA</div>
-                <div></div>
-                <button class="action-btn dpad-btn" onclick="panCamera(0, 50)">▲</button>
-                <div></div>
-                <button class="action-btn dpad-btn" onclick="panCamera(50, 0)">◄</button>
-                <button class="action-btn dpad-btn" onclick="resetCamera()" title="Reset Camera" style="color: #38bdf8;">⚪</button>
-                <button class="action-btn dpad-btn" onclick="panCamera(-50, 0)">►</button>
-                <div></div>
-                <button class="action-btn dpad-btn" onclick="panCamera(0, -50)">▼</button>
-                <div></div>
-                <button class="action-btn camera-zoom-btn" onclick="zoomCamera(1.2)">➕ Zoom In</button>
-                <button class="action-btn camera-zoom-btn" onclick="zoomCamera(0.8)">➖ Zoom Out</button>
-            </div>
-            <!-- Project Data Overlay -->
-            <div id="area-overlay" class="glass-panel">
-                <div class="panel-header" style="margin-bottom: 15px; padding-bottom: 10px;">
-                    <span class="icon">📐</span>
-                    <h2>PROJECT DATA</h2>
+<!--abc-->
+            <!-- 🌟 QUICK CONVERTER WIDGET (Top Left) -->
+            <div class="canvas-widget-top-left" style="width: auto; position: relative;">
+                
+                <!-- MINIMIZED STATE BUTTON (Hidden by default) -->
+                <button id="qc-min-btn" class="neo-btn" style="padding: 8px 14px; background: rgba(15, 23, 42, 0.85); border: 1px solid #38bdf8; color: #38bdf8; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.5); display: flex; align-items: center; gap: 8px; font-weight: bold; backdrop-filter: blur(10px); position: absolute; top: 0; left: 0; transform-origin: top left; transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); opacity: 0; transform: scale(0.5); pointer-events: none;" onclick="toggleQuickConverter()">
+                    <span class="icon">📏</span> <span style="font-size: 0.75rem; letter-spacing: 1px;">CONVERTER</span>
+                </button>
+
+                <!-- FULL WIDGET STATE (Visible by default) -->
+                <div class="sidebar-converter" id="qc-full-widget" style="width: 380px; position: absolute; top: 0; left: 0; transform-origin: top left; transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); opacity: 1; transform: scale(1); pointer-events: auto; margin: 0;">
+                    <div class="converter-header" style="display: flex; justify-content: space-between; align-items: center;">
+                        <div><span class="icon">📏</span> QUICK CONVERTER</div>
+                        <button onclick="toggleQuickConverter()" title="Minimize Converter" style="background: transparent; border: none; color: #94a3b8; cursor: pointer; font-size: 1.4rem; padding: 0 5px; line-height: 1; transition: color 0.2s;">&times;</button>
+                    </div>
+                    
+                    <div class="converter-row">
+                        <!-- Feet Input -->
+                        <div class="converter-input-group">
+                            <input type="number" id="calcFt" placeholder="0" oninput="calcInches()">
+                            <span class="unit">FT</span>
+                        </div>
+                        
+                        <!-- Inches Input -->
+                        <div class="converter-input-group">
+                            <input type="number" id="calcIn" placeholder="0" oninput="calcInches()">
+                            <span class="unit">IN</span>
+                        </div>
+                        <span class="converter-equals">=</span>
+                        <div class="converter-input-group result-group">
+                            <input type="text" id="resIn" placeholder="Total" readonly>
+                            <span class="unit">IN</span>
+                        </div>
+                    </div>
                 </div>
-                <div id="plot-area" class="stat-box plot-stat">Plot Area: 0</div>
-                <div id="build-area" class="stat-box build-stat">Build Area: 0</div>
-                <div id="total-built-area" class="stat-box" style="color: #a855f7; border-left: 3px solid #a855f7;">Built-Up Area: 0</div>
-                <div id="area-dashboard" style="display: flex; flex-direction: column; gap: 6px; font-size: 0.75rem; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
-                    <div style="color: #94a3b8; text-align: center;">Add rooms...</div>
+            </div>
+        
+            <!-- VASTU SCORE block -->
+            <div id="vastu-floating-widget" class="canvas-widget-bottom-left neo-sunken" style="padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); background: #0f172a; width: 260px;">
+                <div style="font-size: 0.75rem; color: #cbd5e1; font-weight: bold; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+                    <span>🧭 VASTU SCORE</span>
+                    <span id="vastu-score-badge" style="color: #94a3b8; background: rgba(0,0,0,0.3); padding: 2px 8px; border-radius: 10px; box-shadow: 0 0 8px transparent;">0/100</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <div id="vastu-ring" style="width: 50px; height: 50px; border-radius: 50%; background: conic-gradient(#94a3b8 0%, #1e293b 0); display: flex; justify-content: center; align-items: center; box-shadow: inset 0 4px 8px rgba(0,0,0,0.5); flex-shrink: 0;">
+                        <div id="vastu-circle-text" style="width: 40px; height: 40px; background: #0f172a; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 0.9rem; font-weight: bold; color: #f1f5f9; box-shadow: 0 2px 4px rgba(0,0,0,0.5);">
+                            0
+                        </div>
+                    </div>
+                    <div id="vastu-feedback-text" style="font-size: 0.7rem; color: #94a3b8; flex: 1; line-height: 1.4;">
+                        Add rooms to calculate Vastu.
+                    </div>
+                </div>
+            </div>
+
+            <!-- 🌟 GREEN SQUIRCLE CAMERA CONTROLS -->
+            <div id="camera-controls" class="cam-bar-wrapper">
+                
+                <!-- Pan Controls (Pops up when camera is clicked) -->
+                <div class="cam-pan-popout">
+                    <button class="cam-squircle-btn pan-dir up" onclick="panCamera(0, 50)" title="Pan Up">▲</button>
+                    <button class="cam-squircle-btn pan-dir left" onclick="panCamera(50, 0)" title="Pan Left">◄</button>
+                    <button class="cam-squircle-btn pan-center" onclick="resetCamera()" title="Reset Camera">⚪</button>
+                    <button class="cam-squircle-btn pan-dir right" onclick="panCamera(-50, 0)" title="Pan Right">►</button>
+                    <button class="cam-squircle-btn pan-dir down" onclick="panCamera(0, -50)" title="Pan Down">▼</button>
                 </div>
 
-                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
-                    <div style="height: 1px; background: rgba(255, 255, 255, 0.1); margin: 15px 0;"></div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                        <span style="font-size: 0.75rem; color: #cbd5e1; font-weight: bold;">🏠 ROOF STYLE</span>
-                        <select id="roofStyleSelect" class="modern-select neo-sunken" style="width: 120px; padding: 6px; font-size: 0.7rem;" onchange="if(typeof request3DUpdate === 'function') request3DUpdate();">
-                            <option value="hip">Hip Roof</option>
-                            <option value="gable">Gable Roof</option>
-                            <option value="flat">Flat / Parapet</option>
-                        </select>
-                    </div>
-                    <button id="btn-laser" class="neo-btn" style="width: 100%; background: rgba(15, 23, 42, 0.85); color: #0ea5e9; border: 1px solid rgba(14, 165, 233, 0.4); display: flex; justify-content: center; align-items: center; gap: 8px; padding: 10px; border-radius: 8px; font-weight: bold;" onclick="toggleLaserMeasure()">
-                        <span class="icon">🔫</span><span class="text">3D LASER: OFF</span>
+                <!-- Main Bottom Bar -->
+                <div class="cam-main-bar">
+                    <button class="cam-squircle-btn cam-zoom-btn" onclick="zoomCamera(1.2)" title="Zoom In">➕</button>
+                    
+                    <!-- The Clickable Camera Toggle -->
+                    <button class="cam-squircle-btn cam-toggle-btn" onclick="document.getElementById('camera-controls').classList.toggle('open')" title="Toggle Pan Controls">
+                        <span class="cam-icon">🎥</span>
+                        <span class="close-icon">✕</span>
                     </button>
-                </div>
-                <div class="calc-panel">
-                    <label>📏 Quick Converter</label>
-                    <div class="calc-row">
-                        <input type="number" id="calcFt" placeholder="Ft" oninput="calcInches()" style="width: 30%;">
-                        <input type="number" id="calcIn" placeholder="In" oninput="calcInches()" style="width: 30%;">
-                        <span>=</span>
-                        <input type="text" id="resIn" placeholder="Total" readonly style="width: 30%;">
-                    </div>
+                    
+                    <button class="cam-squircle-btn cam-zoom-btn" onclick="zoomCamera(0.8)" title="Zoom Out">➖</button>
                 </div>
             </div>
-            <!-- THREE JS RENDER CONTAINER -->
-            <div id="three-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; z-index: 35; background: #0f172a;"></div>
+            
             <!-- ROOM TOOLTIP -->
             <div id="room-tooltip" style="position: absolute; display: none; background: rgba(15, 23, 42, 0.9); color: #f8fafc; padding: 8px; border-radius: 6px; border: 1px solid #38bdf8; pointer-events: none; z-index: 1000; font-size: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);"></div>
             <!-- MAIN BLUEPRINT SVG -->
@@ -423,8 +521,18 @@
                 <p style="color: #475569; font-size: 0.75rem;">(Ready for future development)</p>
             </div>
 
+            <div id="three-container" 
+                 style="position: absolute; top: 0; left: 0;
+                 width: 100%; height: 100%; z-index: 35; background: #0f172a;">
+            </div>
+
             <!-- 3D Navigation Pad (Moved to right canvas) -->
             <div id="nav-pad" style="position: absolute; bottom: 20px; right: 20px; z-index: 100; display: none; flex-direction: column; align-items: flex-end; gap: 12px;">
+                <!-- 🌟 MOVED & UPGRADED: 3D LASER BUTTON -->
+                <button id="btn-laser" class="float-action-btn laser-btn" onclick="toggleLaserMeasure()">
+                    <span class="icon">🔫</span><span class="text">3D LASER: OFF</span>
+                </button>
+                
                 <button id="btn-raycaster" class="float-action-btn" onclick="toggleRaycaster()">
                     <span class="icon">🖱️</span><span class="text">3D SELECTION: OFF</span>
                 </button>
@@ -440,26 +548,40 @@
     </div> <!-- END MAIN WORKSPACE -->
 
     <!-- ========================================== -->
-    <!-- 🌟 GLOBAL / COMMON OVERLAYS -->
+    <!-- 🌟 PRESENTATION CONTROLS (Pro Glass Pill)  -->
     <!-- ========================================== -->
-    <!-- PRESENTATION CONTROLS -->
-    <div id="presentation-controls" style="display: none; position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(15, 23, 42, 0.85); border: 1px solid #38bdf8; border-radius: 50px; padding: 10px 25px; z-index: 100; backdrop-filter: blur(8px); align-items: center; gap: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.6);">
-        <div style="display: flex; align-items: center; gap: 10px; width: 160px;">
-            <span style="font-size: 1rem; filter: grayscale(100%); transition: 0.2s;" title="Dawn">🌅</span>
-            <input type="range" id="sun-slider" min="6" max="18" step="0.1" value="12" style="flex-grow: 1; height: 4px; margin: 0; accent-color: #fbbf24;" oninput="updateSunlight(this.value)">
-            <span style="font-size: 1rem;" title="Dusk">🌇</span>
+    <div id="presentation-controls" class="pres-controls-wrapper" style="display: none;">
+        
+        <!-- Sun Controls -->
+        <div class="pres-sun-group">
+            <span class="pres-sun-icon dawn" title="Dawn">🌅</span>
+            <input type="range" id="sun-slider" class="pres-sun-slider" min="6" max="18" step="0.1" value="12" oninput="updateSunlight(this.value)">
+            <span class="pres-sun-icon dusk" title="Dusk">🌇</span>
         </div>
-        <div style="width: 1px; height: 24px; background: rgba(255,255,255,0.2);"></div>
-        <div style="display: flex; align-items: center; gap: 8px;">
-            <button class="action-btn" onclick="captureWaypoint()" style="padding: 6px 14px; border-radius: 20px; border-color: #a855f7; font-size: 0.75rem; margin: 0;">📷 Set (<span id="wp-count" style="color: #a855f7;">0</span>)</button>
-            <button class="action-btn" onclick="playCinematicTour()" style="padding: 6px 14px; border-radius: 20px; background: rgba(16, 185, 129, 0.2); border-color: #10b981; font-size: 0.75rem; margin: 0;">▶️ Play</button>
-            <button class="action-btn" onclick="clearTour()" style="padding: 6px 12px; border-radius: 20px; border-color: #ef4444; font-size: 0.75rem; margin: 0;">🗑️</button>
+        
+        <div class="pres-divider"></div>
+        
+        <!-- Tour Controls (Labels Restored) -->
+        <div class="pres-btn-group">
+            <button class="action-btn pres-btn waypoint-btn" onclick="captureWaypoint()">
+                📷 Set (<span id="wp-count">0</span>)
+            </button>
+            <button class="action-btn pres-btn play-btn" onclick="playCinematicTour()">
+                ▶️ Play
+            </button>
+            <button class="action-btn pres-btn clear-btn" onclick="clearTour()" title="Clear All">
+                🗑️
+            </button>
         </div>
-        <div style="width: 1px; height: 24px; background: rgba(255,255,255,0.2);"></div>
-        <div style="display: flex; align-items: center; gap: 8px;">
-            <button class="neo-btn outline-cyan" onclick="toggleShowcaseMode()" style="font-weight: bold; padding: 6px 14px; border-radius: 20px; background: rgba(56, 189, 248, 0.1); font-size: 0.75rem; margin: 0;">🎬 SHOWCASE</button>
-            <button id="btn-explode" class="neo-btn outline-cyan" onclick="toggleExplodeView()" style="font-weight: bold; padding: 6px 14px; border-radius: 20px; background: rgba(56, 189, 248, 0.1); font-size: 0.75rem; margin: 0;">💥 EXPLODE</button>
+        
+        <div class="pres-divider"></div>
+        
+        <!-- View Controls -->
+        <div class="pres-btn-group">
+            <button class="neo-btn outline-cyan pres-btn showcase-btn" onclick="toggleShowcaseMode()">🎬SHOW</button>
+            <button id="btn-explode" class="neo-btn outline-cyan pres-btn showcase-btn" onclick="toggleExplodeView()">💥EXPLODE</button>
         </div>
+        
     </div>
 
 
@@ -523,6 +645,9 @@
     <script src="core/utils.js"></script>
     <script src="core/ui.js"></script>
     <script src="core/app.js"></script>
+    <script src="core/engine3d-setup.js"></script>
+    <script src="core/engine3d-materials.js"></script>
+    <script src="core/engine3d-builders.js"></script>
     <script src="core/engine3d.js"></script>
     <script src="core/actions.js"></script>
     <script src="features/furniture-factory/furniture3d.js"></script>

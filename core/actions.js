@@ -414,6 +414,16 @@ function onSectionDown(e) {
 function onSectionMove(e) {
     if (!isSectionMode || !sectionStart || !sectionLine) return;
     const pt = getSectionPos(e);
+    
+    // 🌟 FIX 4: STRAIGHT-AXIS LOCKING
+    const dx = Math.abs(pt.x - sectionStart.x);
+    const dy = Math.abs(pt.y - sectionStart.y);
+    const tol = ARCH_CONFIG.REFINEMENTS.SECTION_SNAP_TOLERANCE;
+    
+    // Snap to straight lines if within tolerance, or if holding SHIFT
+    if (dx < tol || (e.shiftKey && dx < dy)) pt.x = sectionStart.x;
+    if (dy < tol || (e.shiftKey && dy < dx)) pt.y = sectionStart.y;
+    
     sectionLine.setAttribute("x2", pt.x);
     sectionLine.setAttribute("y2", pt.y);
 }
@@ -679,55 +689,144 @@ window.toggleShowcaseMode = function() {
 // 🌟 VASTU SHASTRA SCORING ENGINE
 // =========================================
 window.calculateVastuScore = function() {
-    if (elements.length === 0) return { score: 0, text: "Add rooms to calculate Vastu.", color: "#94a3b8" };
+    let score = 0;
+    let mainText = "Add rooms to calculate Vastu.";
+    let color = "#94a3b8"; // Gray default
 
-    let score = 50; // Neutral base score
-    let feedback = [];
-    const inW = parseFloat(document.getElementById('inW')?.value || 272);
-    const inH = parseFloat(document.getElementById('inH')?.value || 400);
+    if (elements.length > 0) {
+        score = 50; // Neutral base score
+        let feedback = [];
+        const inW = parseFloat(document.getElementById('inW')?.value || 272);
+        const inH = parseFloat(document.getElementById('inH')?.value || 400);
 
-    // Divide plot into 3x3 grid (9 Mandala Zones)
-    const cellW = inW / 3;
-    const cellH = inH / 3;
+        // Divide plot into 3x3 grid (9 Mandala Zones)
+        const cellW = inW / 3;
+        const cellH = inH / 3;
 
-    elements.forEach(el => {
-        if (el.isFurniture || el.floor > 0) return; // Vastu is primarily evaluated on the Ground Floor
-        const cx = el.x + (el.w / 2);
-        const cy = el.y + (el.h / 2);
-        // Determine Compass Zone
-        let zoneStr = "";
-        if (cx > cellW * 2) zoneStr += "N";
-        else if (cx < cellW) zoneStr += "S";
-        if (cy > cellH * 2) zoneStr += "E";
-        else if (cy < cellH) zoneStr += "W";
-        if (zoneStr === "") zoneStr = "CENTER";
-        // Apply Global Rules
-        if (el.type === 'kitchen') {
-            if (zoneStr === "SE") { score += 20; feedback.push("Kitchen perfectly in SE (+20)"); }
-            else if (zoneStr === "NW") { score += 10; feedback.push("Kitchen acceptable in NW (+10)"); }
-            else { score -= 15; feedback.push(`Kitchen in ${zoneStr} (Should be SE) (-15)`); }
-        }
-        if (el.type === 'puja') {
-            if (zoneStr === "NE") { score += 20; feedback.push("Puja perfectly in NE (+20)"); }
-            else { score -= 10; feedback.push(`Puja in ${zoneStr} (Should be NE) (-10)`); }
-        }
-        if (el.type === 'bedroom') {
-            if (zoneStr === "SW") { score += 15; feedback.push("Master Bed perfectly in SW (+15)"); }
-        }
-        if (el.type === 'toilet') {
-            if (zoneStr === "NE" || zoneStr === "SW") { score -= 25; feedback.push(`Toilet strictly prohibited in ${zoneStr} (-25)`); }
-            else { score += 10; }
-        }
-    });
-    score = Math.max(0, Math.min(100, score)); // Clamp between 0 and 100
-    // Determine Color based on score
-    let color = "#10b981"; // Green (Good)
-    if (score < 40) color = "#ef4444"; // Red (Bad)
-    else if (score < 70) color = "#f59e0b"; // Orange (Average)
-    let mainText = feedback.length > 0 ? feedback[0] : "Good overall spatial flow.";
-    if (score === 50 && feedback.length === 0) mainText = "Add specific rooms (Kitchen, Puja, Toilets) for scoring.";
+        elements.forEach(el => {
+            if (el.isFurniture || el.floor > 0) return; // Vastu is primarily evaluated on the Ground Floor
+            const cx = el.x + (el.w / 2);
+            const cy = el.y + (el.h / 2);
+            // Determine Compass Zone
+            let zoneStr = "";
+            if (cx > cellW * 2) zoneStr += "N";
+            else if (cx < cellW) zoneStr += "S";
+            if (cy > cellH * 2) zoneStr += "E";
+            else if (cy < cellH) zoneStr += "W";
+            if (zoneStr === "") zoneStr = "CENTER";
+            // Apply Global Rules
+            if (el.type === 'kitchen') {
+                if (zoneStr === "SE") { score += 20; feedback.push("Kitchen perfectly in SE (+20)"); }
+                else if (zoneStr === "NW") { score += 10; feedback.push("Kitchen acceptable in NW (+10)"); }
+                else { score -= 15; feedback.push(`Kitchen in ${zoneStr} (Should be SE) (-15)`); }
+            }
+            if (el.type === 'puja') {
+                if (zoneStr === "NE") { score += 20; feedback.push("Puja perfectly in NE (+20)"); }
+                else { score -= 10; feedback.push(`Puja in ${zoneStr} (Should be NE) (-10)`); }
+            }
+            if (el.type === 'bedroom') {
+                if (zoneStr === "SW") { score += 15; feedback.push("Master Bed perfectly in SW (+15)"); }
+            }
+            if (el.type === 'toilet') {
+                if (zoneStr === "NE" || zoneStr === "SW") { score -= 25; feedback.push(`Toilet strictly prohibited in ${zoneStr} (-25)`); }
+                else { score += 10; }
+            }
+        });
+        
+        score = Math.max(0, Math.min(100, score)); // Clamp between 0 and 100
+        
+        // Determine Color based on score
+        color = "#10b981"; // Green (Good)
+        if (score < 40) color = "#ef4444"; // Red (Bad)
+        else if (score < 70) color = "#f59e0b"; // Orange (Average)
+        
+        mainText = feedback.length > 0 ? feedback[0] : "Good overall spatial flow.";
+        if (score === 50 && feedback.length === 0) mainText = "Add specific rooms (Kitchen, Puja, Toilets) for scoring.";
+    }
+
+    // 🌟 Update the Floating Dark-Themed Vastu Widget on the 2D Canvas
+    const badge = document.getElementById('vastu-score-badge');
+    const ring = document.getElementById('vastu-ring');
+    const circleText = document.getElementById('vastu-circle-text');
+    const feedback = document.getElementById('vastu-feedback-text');
+
+    if (badge && ring && circleText && feedback) {
+        badge.innerText = `${score}/100`;
+        badge.style.color = color;
+        badge.style.boxShadow = `0 0 8px ${color}44`;
+
+        ring.style.background = `conic-gradient(${color} ${score}%, #1e293b 0)`;
+        circleText.innerText = score;
+        feedback.innerText = mainText;
+        feedback.title = mainText; // Adds hover tooltip for detailed feedback
+    }
+
     return { score, text: mainText, color };
 };
+
+/*
+window.calculateVastuScore = function() {
+    let score = 0;
+    let mainText = "Add rooms to calculate Vastu.";
+    let color = "#94a3b8";
+    if (elements.length > 0) {
+        score = 50;
+        let feedback = [];
+        const inW = parseFloat(document.getElementById('inW')?.value || 272);
+        const inH = parseFloat(document.getElementById('inH')?.value || 400);
+        const cellW = inW / 3;
+        const cellH = inH / 3;
+
+        elements.forEach(el => {
+            if (el.isFurniture || el.floor > 0) return; 
+            const cx = el.x + (el.w / 2);
+            const cy = el.y + (el.h / 2);
+            let zoneStr = "";
+            if (cx > cellW * 2) zoneStr += "N";
+            else if (cx < cellW) zoneStr += "S";
+            if (cy > cellH * 2) zoneStr += "E";
+            else if (cy < cellH) zoneStr += "W";
+            if (zoneStr === "") zoneStr = "CENTER";
+            
+            if (el.type === 'kitchen') {
+                if (zoneStr === "SE") { score += 20; feedback.push("Kitchen perfectly in SE (+20)"); }
+                else if (zoneStr === "NW") { score += 10; feedback.push("Kitchen acceptable in NW (+10)"); }
+                else { score -= 15; feedback.push(`Kitchen in ${zoneStr} (Should be SE) (-15)`); }
+            }
+            if (el.type === 'puja') {
+                if (zoneStr === "NE") { score += 20; feedback.push("Puja perfectly in NE (+20)"); }
+                else { score -= 10; feedback.push(`Puja in ${zoneStr} (Should be NE) (-10)`); }
+            }
+            if (el.type === 'bedroom') {
+                if (zoneStr === "SW") { score += 15; feedback.push("Master Bed perfectly in SW (+15)"); }
+            }
+            if (el.type === 'toilet') {
+                if (zoneStr === "NE" || zoneStr === "SW") { score -= 25; feedback.push(`Toilet strictly prohibited in ${zoneStr} (-25)`); }
+                else { score += 10; }
+            }
+        });
+        
+        score = Math.max(0, Math.min(100, score));
+        color = "#10b981";
+        if (score < 40) color = "#ef4444";
+        else if (score < 70) color = "#f59e0b";
+        
+        mainText = feedback.length > 0 ? feedback[0] : "Good overall spatial flow.";
+        if (score === 50 && feedback.length === 0) mainText = "Add specific rooms (Kitchen, Puja, Toilets) for scoring.";
+    }
+    const displayElement = document.getElementById('vastuScoreDisplay');
+    const barElement = document.getElementById('vastuProgressBar');
+
+    if (displayElement) {
+        displayElement.innerText = `${score}/100`;
+        displayElement.title = mainText; 
+    }
+    if (barElement) {
+        barElement.style.width = `${score}%`;
+        barElement.style.backgroundColor = color;
+    }
+    return { score, text: mainText, color };
+};*/
 // =========================================
 // 🌟 VASTU SHASTRA SCORING ENGINE
 // =========================================

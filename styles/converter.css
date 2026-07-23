@@ -1,47 +1,78 @@
 /* =========================================
-   🌟 QUICK CONVERTER WIDGET
+   🌟 QUICK CONVERTER WIDGET (Premium Glass)
 ========================================= */
+/* Modern CSS Engine for animating a gradient angle */
+@property --spin-angle {
+    syntax: "<angle>";
+    initial-value: 0deg;
+    inherits: false;
+}
 
-/* --- 1. Main Card & Ambulance Effect --- */
+/* Anti-Clockwise Spin (Outer Card) */
+@keyframes spin-anti {
+    0% { --spin-angle: 360deg; }
+    100% { --spin-angle: 0deg; }
+}
+
+/* Clockwise Spin (Inner Row) */
+@keyframes spin-clock {
+    0% { --spin-angle: 0deg; }
+    100% { --spin-angle: 360deg; }
+}
+
+@keyframes ambulance-glow {
+    0% { box-shadow: 0 0 15px rgba(239, 68, 68, 0.5); }
+    50% { box-shadow: 0 0 15px rgba(56, 189, 248, 0.5); }
+    100% { box-shadow: 0 0 15px rgba(239, 68, 68, 0.5); }
+}
+
+/* --- 1. Main Glass Card --- */
 .sidebar-converter {
     position: relative;
-    background: #1e293b;
+    /* Premium Frosted Glass */
+    background: rgba(15, 23, 42, 0.75); 
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    
+    border: 1px solid rgba(56, 189, 248, 0.3);
     border-radius: 12px;
     padding: 12px 16px;
-    margin-bottom: 12px;
-    overflow: hidden;
+    margin: 0;
+    
     z-index: 1;
-    box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.3),
-               -4px -4px 8px rgba(255, 255, 255, 0.03);
-    transition: box-shadow 0.3s ease;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 
+                inset 0 1px 1px rgba(255, 255, 255, 0.05);
+    pointer-events: auto;
+    
+    /* 🌟 FIX: Removed the CSS transition so your HTML's cubic-bezier bounce works perfectly! */
 }
 
-.sidebar-converter::after {
-    content: '';
-    position: absolute;
-    inset: 2px;
-    background: #1e293b;
-    border-radius: 10px;
-    z-index: -1;
+/* Outer Glow when focused */
+.sidebar-converter:focus-within {
+    animation: ambulance-glow 3s linear infinite;
+    border-color: rgba(56, 189, 248, 0.6);
 }
 
+/* 🌟 THE MAGIC: Animated Glowing Border that respects the Glass panel */
 .sidebar-converter::before {
     content: '';
     position: absolute;
-    top: -50%; left: -50%;
-    width: 200%; height: 200%;
-    background: conic-gradient(
+    inset: 0;
+    border-radius: 12px;
+    padding: 2px; /* Thickness of the glowing border */
+    background: conic-gradient(from var(--spin-angle),
         transparent 0%, transparent 35%, #ef4444 50%, 
         transparent 50%, transparent 85%, #38bdf8 100%
     );
-    animation: spin-ambulance 2s linear infinite;
+    /* This cuts out the center of the gradient, leaving only the 2px border! */
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    
+    animation: spin-anti 3s linear infinite;
     opacity: 0;
     transition: opacity 0.3s ease;
-    z-index: -2;
-}
-
-.sidebar-converter:focus-within {
-    animation: ambulance-glow 2s linear infinite;
+    pointer-events: none;
 }
 
 .sidebar-converter:focus-within::before {
@@ -54,10 +85,14 @@
     color: #94a3b8;
     font-weight: 800;
     letter-spacing: 1px;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    gap: 6px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 8px;
+    position: relative;
+    z-index: 2;
 }
 
 .converter-header .icon {
@@ -71,39 +106,37 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    background: #0f172a; 
-    padding: 6px;
+    
+    background: rgba(0, 0, 0, 0.3); /* Dark glass cutout */
+    padding: 8px;
     border-radius: 8px;
-    overflow: hidden;
-    z-index: 1;
-    transition: box-shadow 0.3s ease;
-}
-
-.converter-row::after {
-    content: '';
-    position: absolute;
-    inset: 1px; 
-    background: #0f172a; 
-    border-radius: 7px;
-    z-index: -1;
-    box-shadow: inset 3px 3px 6px rgba(0,0,0,0.6), 
-                inset -3px -3px 6px rgba(255,255,255,0.03);
-}
-
-.converter-row::before {
-    content: '';
-    position: absolute;
-    top: -50%; left: -50%;
-    width: 200%; height: 200%;
-    background: conic-gradient(from 90deg, transparent 0%, transparent 60%, rgba(56, 189, 248, 0.4) 90%, #38bdf8 100%);
-    animation: run-border-light 2s linear infinite;
-    opacity: 0; 
-    transition: opacity 0.3s ease;
-    z-index: -2;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);
+    z-index: 2;
+    transition: box-shadow 0.3s ease, border-color 0.3s ease;
 }
 
 .converter-row:focus-within {
     box-shadow: 0 0 15px rgba(56, 189, 248, 0.3);
+}
+
+/* The spinning laser border for the input row */
+.converter-row::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 8px; /* Match inner row */
+    padding: 2px;
+    background: conic-gradient(from var(--spin-angle), 
+        transparent 0%, transparent 60%, rgba(56, 189, 248, 0.4) 90%, #38bdf8 100%);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    
+    animation: spin-clock 3s linear infinite;
+    opacity: 0; 
+    transition: opacity 0.3s ease;
+    pointer-events: none;
 }
 
 .converter-row:focus-within::before {
@@ -111,9 +144,9 @@
 }
 
 /* Protect Content from Background Masks */
-.converter-header, .converter-row, .converter-input-group, .converter-equals {
+.converter-input-group, .converter-equals {
     position: relative;
-    z-index: 2;
+    z-index: 3;
 }
 
 /* --- 4. Inputs and Groups --- */

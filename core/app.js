@@ -12,7 +12,7 @@ function updateViewport() {
     if (UI.viewport) UI.viewport.setAttribute('transform', `matrix(${zoomLvl}, 0, 0, ${zoomLvl}, ${panX}, ${panY})`);
 }
 
-function panCamera(dx, dy) {
+function panCameraOld(dx, dy) {
     // If in 3D Mode, route the UI buttons to the 3D pan() function
     if (typeof is3DMode !== 'undefined' && is3DMode) {
         if (typeof pan === 'function') {
@@ -24,6 +24,12 @@ function panCamera(dx, dy) {
         return;
     }
     // Default 2D Mode behavior
+    panX += dx; panY += dy;
+    updateViewport();
+}
+
+function panCamera(dx, dy) {
+    // 🌟 REFACTORED: Only pan the 2D SVG. (3D is handled by OrbitControls now)
     panX += dx; panY += dy;
     updateViewport();
 }
@@ -162,6 +168,10 @@ function updateCanvas(force3D = true) {
     if (typeof request3DUpdate === 'function') request3DUpdate();
     if (typeof saveToMemory === 'function') saveToMemory();
     if (typeof updateAreaDashboard === 'function') updateAreaDashboard();
+    // 🌟 ADD THIS LINE: Updates the Vastu Dashboard live while dragging!
+    if (typeof updateVastuHUD === 'function') updateVastuHUD();
+    // 🌟 ADD THIS LINE: This forces the floating Vastu widget to calculate and update live!
+    if (typeof calculateVastuScore === 'function') calculateVastuScore();
 }
 
 // -----------------------------------------
@@ -295,18 +305,25 @@ function renderRooms(geom) {
 
     // 🌟 SMART MERGE LOGIC CAPTURED HERE
     const smartMerge = UI.smartMergeToggle && UI.smartMergeToggle.checked;
+    window.renderedLabels = []; // 🌟 FIX 6: Reset label tracking array
 
     elements.forEach((el, i) => {
         let r = document.getElementById(`rect-${i}`) || createSVGRect(`rect-${i}`, gRooms);
         let rb = document.getElementById(`rect-border-${i}`) || createSVGRect(`rect-border-${i}`, gBorders);
         let rh = document.getElementById(`rect-hollow-${i}`) || createSVGRect(`rect-hollow-${i}`, gHollows);
 
+        // 🌟 FIX 1: GHOST FLOOR SILHOUETTE
         if (el.floor !== currentFloor) {
-            r.style.display = 'none'; rb.style.display = 'none'; rh.style.display = 'none';
+            if (el.floor === currentFloor - 1 && !el.isFurniture) {
+                // Show floor below faintly
+                r.style.display = 'block'; rb.style.display = 'none'; rh.style.display = 'none';
+                r.setAttribute('style', `fill: transparent; stroke: #94a3b8; stroke-width: 1.5; stroke-dasharray: 6,4; opacity: ${ARCH_CONFIG.REFINEMENTS.GHOST_FLOOR_OPACITY}; pointer-events: none;`);
+            } else {
+                r.style.display = 'none'; rb.style.display = 'none'; rh.style.display = 'none';
+            }
             ['title', 'dims', 'area'].forEach(t => { let node = document.getElementById(`txt-${t}-${i}`); if(node) node.style.display = 'none'; });
             return; 
         }
-
         const rx = I.x + (el.x * SCALE); const ry = I.y + (el.y * SCALE);
         const w = el.w * SCALE; const h = el.h * SCALE;
         
@@ -501,6 +518,15 @@ function renderRoomText(i, el, rx, ry, w, h, IX, IY) {
     let gText = document.getElementById('group-text');
     const cx = rx + w / 2; const cy = ry + h / 2;
     const labelText = el.customName || (typeof getRoomDisplayName === 'function' ? getRoomDisplayName(i) : el.type.toUpperCase());
+    // 🌟 FIX 6: SMART-MERGE TEXT AGGREGATION
+    if (UI.showLabelsToggle && !UI.showLabelsToggle.checked) return;
+    if (UI.smartMergeToggle && UI.smartMergeToggle.checked) {
+        // If an identical label is already rendered nearby, skip drawing a duplicate
+        const isDuplicate = window.renderedLabels.find(l => l.text === labelText && Math.hypot(l.x - cx, l.y - cy) < ARCH_CONFIG.REFINEMENTS.SMART_MERGE_TEXT_RADIUS * (SCALE || 1));
+        if (isDuplicate) return; 
+        window.renderedLabels.push({ text: labelText, x: cx, y: cy });
+    }
+    
     const dimsText = `${Math.floor(el.w/12)}'${Math.round(el.w%12)}" × ${Math.floor(el.h/12)}'${Math.round(el.h%12)}"`;
     const areaText = `${((el.w * el.h)/144).toFixed(1)} sq.ft`;
     
@@ -774,7 +800,9 @@ function initInteractions() {
         if (guideLayer) guideLayer.innerHTML = '';
         
         snapLines = [];
-        updateCanvas(false); // Rebuild 3D once mouse is released!
+        //updateCanvas(false); // Rebuild 3D once mouse is released!
+        // Force the 3D model update ONLY now that the structural movement has officially concluded
+        updateCanvas(true);
     };
 
     UI.blueprint.addEventListener('mouseup', window.endDrag);
@@ -854,6 +882,17 @@ function initInteractions() {
         // Inverse calculation of your drawing logic
         const elementX = (pos.x - I.x) / SCALE;
         const elementY = (pos.y - I.y) / SCALE;
+
+        // 🌟 FIX 2: DROP-ZONE BOUNDARY SAFEGUARDS
+        const plotWInches = toInches(UI.inW.value, unit);
+        const plotHInches = toInches(UI.inH.value, unit);
+
+        let safeX = elementX - (w / 2);
+        let safeY = elementY - (h / 2);
+
+        // Clamp to property lines
+        safeX = Math.max(0, Math.min(safeX, plotWInches - w));
+        safeY = Math.max(0, Math.min(safeY, plotHInches - h));
 
         // 4. Instantiate the furniture centered exactly on the cursor
         elements.push({ 
@@ -1107,8 +1146,24 @@ window.deleteElementAI = function(idx) {
 };
 
 document.addEventListener('keydown', (e) => {
-    if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'SELECT') return;
-    if (typeof is3DMode !== 'undefined' && is3DMode) return;
+    const tag = document.activeElement.tagName;
+    // Ignore input if user is typing in a text box
+    if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+
+    // 🌟 FIX 9: CTRL+Z and CTRL+Y (Undo/Redo Shortcuts)
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        if (e.shiftKey) redoAction();
+        else undoAction();
+        return;
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
+        e.preventDefault();
+        redoAction();
+        return;
+    }
+
+    // --- Original Nudge (Arrow Keys) Logic ---
     if (typeof selectedElIndex === 'undefined' || selectedElIndex === -1) return;
 
     const el = elements[selectedElIndex];

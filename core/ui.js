@@ -81,6 +81,7 @@ const calcInches = () => {
     document.getElementById('resIn').value = (ft * 12 + inc) + " in"; 
 };
 
+
 function getRoomDisplayName(index) {
     const el = elements[index];
     let count = 0;
@@ -131,42 +132,6 @@ function renderSidebar() {
         // Inject Room Editor + Fixtures List
         div.innerHTML = buildEditorView(selectedElIndex, el) + buildFixturesView(selectedElIndex, el);
         ctrl.appendChild(div);
-    }
-    // 🌟 INJECT VASTU SCORING WIDGET
-    if (typeof calculateVastuScore === 'function') {
-        const vastuData = calculateVastuScore();
-        const vastuHTML = `
-            <div class="neo-sunken" style="margin-top: 20px; padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
-                <div style="font-size: 0.75rem; color: #cbd5e1; font-weight: bold; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
-                    <span>🧭 VASTU SCORE</span>
-                    <span style="color: ${vastuData.color}; background: rgba(0,0,0,0.3); padding: 2px 8px; border-radius: 10px;">${vastuData.score}/100</span>
-                </div>
-                <div style="display: flex; align-items: center; gap: 15px;">
-                    <div style="width: 50px; height: 50px; border-radius: 50%; background: conic-gradient(${vastuData.color} ${vastuData.score}%, #1e293b 0); display: flex; justify-content: center; align-items: center; box-shadow: inset 0 4px 8px rgba(0,0,0,0.5); flex-shrink: 0;">
-                        <div style="width: 40px; height: 40px; background: #0f172a; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 0.9rem; font-weight: bold; color: #f1f5f9; box-shadow: 0 2px 4px rgba(0,0,0,0.5);">
-                            ${vastuData.score}
-                        </div>
-                    </div>
-                    <div style="font-size: 0.7rem; color: #94a3b8; flex: 1; line-height: 1.4;">
-                        ${vastuData.text}
-                    </div>
-                </div>
-            </div>
-        `;
-        // 🌟 THE FIX: The sidebar uses a CLASS (.sidebar), not an ID!
-        let vastuContainer = document.getElementById('vastu-widget-container');
-        if (!vastuContainer) {
-            vastuContainer = document.createElement('div');
-            vastuContainer.id = 'vastu-widget-container';
-            // Safe selector fallback looking for the class
-            const sidebar = document.querySelector('.sidebar');
-            if (sidebar) {
-                sidebar.appendChild(vastuContainer);
-            } else if (ctrl) {
-                ctrl.appendChild(vastuContainer);
-            }
-        }
-        vastuContainer.innerHTML = vastuHTML;
     }
     // Re-initialize custom dropdowns if needed
     if (typeof initAnimatedDropdowns === 'function') initAnimatedDropdowns();
@@ -462,52 +427,6 @@ function renderFloorSelectors() {
     }
 }
 
-function renderFloorSelectorsBkup() {
-    let count = parseInt(document.getElementById('b-floors').value);
-    if (count < 1 || isNaN(count)) count = 1;
-
-    // 1. Update Auto-Builder Dropdowns
-    const container = document.getElementById('floor-layout-selectors');
-    if (container) {
-        container.innerHTML = '';
-        for(let i = 0; i < count; i++) {
-            let fName = i === 0 ? "Ground" : i === 1 ? "1st" : i === 2 ? "2nd" : `${i}th`;
-            container.innerHTML += `
-                <div class="field">
-                    <label>${fName} Floor Layout:</label>
-                    <select id="layout-f${i}">
-                        <option value="none">Empty / Open Terrace</option>
-                        <option value="1bhk">1 BHK</option>
-                        <option value="2bhk" ${i === 0 ? 'selected' : ''}>2 BHK</option>
-                        <option value="3bhk">3 BHK</option>
-                    </select>
-                </div>`;
-        }
-    }
-
-    // 2. Update Top Bar Tabs
-    const tabsContainer = document.getElementById('top-floor-tabs');
-    if (tabsContainer) {
-        tabsContainer.innerHTML = ''; 
-        for(let i = 0; i < count; i++) {
-            let label = i === 0 ? "G" : i === 1 ? "1st" : i === 2 ? "2nd" : `${i}th`;
-            tabsContainer.innerHTML += `<button class="floor-btn ${i === currentFloor ? 'active' : ''}" data-floor="${i}" onclick="setFloor(${i})">${label}</button>`;
-        }
-    }
-
-    // 3. Update Sidebar Tabs
-    const sidebarTabs = document.getElementById('floor-tabs');
-    if (sidebarTabs) {
-        sidebarTabs.innerHTML = '';
-        for(let i = 0; i < count; i++) {
-            let label = i === 0 ? "G" : i === 1 ? "1st" : i === 2 ? "2nd" : `${i}th`;
-            sidebarTabs.innerHTML += `<button class="floor-btn ${i === currentFloor ? 'active' : ''}" data-floor="${i}" onclick="setFloor(${i})">${label}</button>`;
-        }
-    }
-    //commented for DropDown Glitch
-    //if (typeof applyCustomSelects === 'function') applyCustomSelects(); 
-}
-
 // =========================================
 // UI TOGGLES & THEMES
 // =========================================
@@ -613,76 +532,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btn) btn.addEventListener('click', handleAICommand);
 });
 
-// =========================================
-// PRO ANIMATED DROPDOWNS ENGINE
-// =========================================
-function initAnimatedDropdowns() {
-    const selects = document.querySelectorAll('select:not([data-customized])');
-    
-    selects.forEach(select => {
-        select.style.display = 'none'; // Hide native select
-        select.setAttribute('data-customized', 'true');
-        
-        // Create Wrapper
-        const wrapper = document.createElement('div');
-        wrapper.className = 'pro-dropdown-wrapper';
-        select.parentNode.insertBefore(wrapper, select);
-        wrapper.appendChild(select); 
-        
-        // Create Header (Visible Button)
-        const header = document.createElement('div');
-        header.className = 'pro-dropdown-header';
-        
-        const selectedText = document.createElement('span');
-        selectedText.className = 'pro-dropdown-value';
-        selectedText.textContent = select.options[select.selectedIndex]?.text || '';
-        
-        const arrow = document.createElement('span');
-        arrow.className = 'pro-dropdown-arrow';
-        arrow.textContent = '▼';
-        
-        header.appendChild(selectedText);
-        header.appendChild(arrow);
-        wrapper.appendChild(header);
-        
-        // Create Options List
-        const list = document.createElement('div');
-        list.className = 'pro-dropdown-list';
-        
-        Array.from(select.options).forEach((option, index) => {
-            const item = document.createElement('div');
-            item.className = 'pro-dropdown-item';
-            if (index === select.selectedIndex) item.classList.add('selected');
-            item.textContent = option.text;
-            
-            // Handle Click
-            item.addEventListener('click', (e) => {
-                e.stopPropagation();
-                select.selectedIndex = index;
-                selectedText.textContent = option.text;
-                
-                select.dispatchEvent(new Event('change')); // Trigger app.js logic
-                
-                list.querySelectorAll('.pro-dropdown-item').forEach(el => el.classList.remove('selected'));
-                item.classList.add('selected');
-                wrapper.classList.remove('open');
-            });
-            
-            list.appendChild(item);
-        });
-        
-        wrapper.appendChild(list);
-        
-        // Handle Opening/Closing
-        header.addEventListener('click', (e) => {
-            e.stopPropagation();
-            document.querySelectorAll('.pro-dropdown-wrapper').forEach(w => {
-                if (w !== wrapper) w.classList.remove('open');
-            });
-            wrapper.classList.toggle('open');
-        });
-    });
-}
+
 
 // Close dropdowns if clicking anywhere else on the screen
 document.addEventListener('click', () => {
@@ -776,8 +626,6 @@ function initAnimatedDropdowns() {
         });
     });
 }
-
-
 // =========================================
 // 🌟 SPLIT SCREEN RESIZER ENGINE
 // =========================================
@@ -948,7 +796,6 @@ window.toggleWidget = function(widgetId, isVisible) {
         }, 200); 
     }
 };
-// Also ensure the sidebar minimize button works!
 window.toggleSidebar = function() {
     const sidebar = document.querySelector('.sidebar');
     const neoPanel = document.querySelector('.neo-panel');
@@ -958,6 +805,12 @@ window.toggleSidebar = function() {
 
     // 1. Toggle the main Sidebar
     if (sidebar) {
+        // 🌟 NEW: If we are about to minimize it, dock it back to its home position first!
+        if (!sidebar.classList.contains('collapsed')) {
+            sidebar.style.left = '20px';
+            sidebar.style.top = '20px';
+        }
+
         sidebar.classList.toggle('collapsed');
         isCollapsed = sidebar.classList.contains('collapsed');
     }
@@ -1043,3 +896,190 @@ window.renderTimeMachine = function() {
         </div>
     `;
 };
+window.toggleHybrid = function(sectionId) {
+    const targetContent = document.getElementById(`content-${sectionId}`);
+    const targetBtn = document.getElementById(`btn-${sectionId}`);
+    if (!targetContent || !targetBtn) return;
+    const isOpen = targetContent.classList.contains('active');
+    document.querySelectorAll('.hybrid-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.hybrid-btn').forEach(el => el.classList.remove('active'));
+    if (!isOpen) {
+        targetContent.classList.add('active');
+        targetBtn.classList.add('active');
+    }
+};
+
+
+// =========================================
+// VASTU UI DASHBOARD UPDATER
+// =========================================
+window.updateVastuHUD = function() {
+    let vastuContainer = document.getElementById('vastu-widget-container');
+    // If the widget isn't open or the logic isn't loaded, safely exit
+    if (!vastuContainer || typeof calculateVastuScore !== 'function') return;
+
+    // Grab the live score from app.js
+    const vastuData = calculateVastuScore();
+    
+    // Inject the updated HTML and glowing colors
+    vastuContainer.innerHTML = `
+        <div class="neo-sunken" style="margin-top: 20px; padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+            <div style="font-size: 0.75rem; color: #cbd5e1; font-weight: bold; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+                <span>🧭 VASTU SCORE</span>
+                <span style="color: ${vastuData.color}; background: rgba(0,0,0,0.3); padding: 2px 8px; border-radius: 10px; box-shadow: 0 0 8px ${vastuData.color}44;">${vastuData.score}/100</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <div style="width: 50px; height: 50px; border-radius: 50%; background: conic-gradient(${vastuData.color} ${vastuData.score}%, #1e293b 0); display: flex; justify-content: center; align-items: center; box-shadow: inset 0 4px 8px rgba(0,0,0,0.5); flex-shrink: 0;">
+                    <div style="width: 40px; height: 40px; background: #0f172a; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 0.9rem; font-weight: bold; color: #f1f5f9; box-shadow: 0 2px 4px rgba(0,0,0,0.5);">
+                        ${vastuData.score}
+                    </div>
+                </div>
+                <div style="font-size: 0.7rem; color: #94a3b8; flex: 1; line-height: 1.4;">
+                    ${vastuData.text}
+                </div>
+            </div>
+        </div>
+    `;
+};
+
+
+// =========================================
+// 🌟 QUICK CONVERTER TOGGLE ENGINE (Animated)
+// =========================================
+window.toggleQuickConverter = function() {
+    const fullWidget = document.getElementById('qc-full-widget');
+    const minBtn = document.getElementById('qc-min-btn');
+    
+    if (!fullWidget || !minBtn) return;
+    
+    const isClosed = fullWidget.style.opacity === '0';
+    
+    if (isClosed) {
+        // 1. Shrink and hide the small button
+        minBtn.style.opacity = '0';
+        minBtn.style.transform = 'scale(0.5)';
+        minBtn.style.pointerEvents = 'none';
+        
+        // 2. Expand and show the full widget
+        fullWidget.style.opacity = '1';
+        fullWidget.style.transform = 'scale(1)';
+        fullWidget.style.pointerEvents = 'auto';
+    } else {
+        // 1. Shrink and hide the full widget
+        fullWidget.style.opacity = '0';
+        fullWidget.style.transform = 'scale(0.5)';
+        fullWidget.style.pointerEvents = 'none';
+        
+        // 2. Expand and show the small button
+        minBtn.style.opacity = '1';
+        minBtn.style.transform = 'scale(1)';
+        minBtn.style.pointerEvents = 'auto';
+    }
+};
+// =========================================
+// 🌟 AI AGENT DROPDOWN TOGGLE
+// =========================================
+window.toggleAIAgent = function() {
+    const panel = document.getElementById('ai-agent-overlay');
+    const btn = document.getElementById('ai-agent-btn');
+    if (!panel) return;
+    
+    // Check if it's currently hidden
+    if (panel.style.display === 'none' || panel.style.display === '') {
+        panel.style.display = 'block';
+        
+        // Squeeze the button inward briefly
+        if (btn) {
+            btn.style.transform = 'scale(0.8)';
+            btn.style.background = 'rgba(168, 85, 247, 0.4)'; // Light up purple
+            setTimeout(() => btn.style.transform = 'scale(1)', 150);
+        }
+
+        // Expand the menu
+        setTimeout(() => {
+            panel.style.opacity = '1';
+            panel.style.transform = 'scale(1)';
+            panel.style.pointerEvents = 'auto';
+        }, 10);
+    } else {
+        // Squeeze the button inward briefly
+        if (btn) {
+            btn.style.transform = 'scale(0.8)';
+            btn.style.background = 'rgba(168, 85, 247, 0.15)'; // Dim purple
+            setTimeout(() => btn.style.transform = 'scale(1)', 150);
+        }
+
+        // Squeeze the menu back into the button
+        panel.style.opacity = '0';
+        panel.style.transform = 'scale(0)';
+        panel.style.pointerEvents = 'none';
+        
+        // Wait for animation to finish before hiding from DOM
+        setTimeout(() => {
+            panel.style.display = 'none';
+        }, 400); 
+    }
+};
+
+// =========================================
+// 🌟 SIDEBAR DRAG ENGINE
+// =========================================
+function initSidebarDrag() {
+    const sidebar = document.querySelector('.sidebar');
+    const handle = document.getElementById('sidebar-drag-handle');
+    if (!sidebar || !handle) return;
+
+    let isDragging = false;
+    let startX, startY, initialLeft, initialTop;
+
+    handle.addEventListener('mousedown', (e) => {
+        // Do NOT start dragging if the user clicks the minimize button
+        if (e.target.closest('.neo-min-btn')) return;
+
+        isDragging = true;
+        
+        // Find exactly where the sidebar currently is on screen
+        const rect = sidebar.getBoundingClientRect();
+        initialLeft = rect.left;
+        initialTop = rect.top;
+        
+        // Record where the mouse grabbed it
+        startX = e.clientX;
+        startY = e.clientY;
+        
+        // Disable CSS transitions while dragging so it moves instantly with the mouse
+        sidebar.style.transition = 'none'; 
+        document.body.style.cursor = 'grabbing';
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        
+        // Calculate how far the mouse has moved
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        
+        let newLeft = initialLeft + dx;
+        let newTop = initialTop + dy;
+        
+        // 🌟 BOUNDARIES: Prevent the user from dragging it off the screen
+        if (newLeft < 0) newLeft = 0;
+        if (newTop < 0) newTop = 0;
+        if (newLeft + sidebar.offsetWidth > window.innerWidth) newLeft = window.innerWidth - sidebar.offsetWidth;
+        if (newTop + sidebar.offsetHeight > window.innerHeight) newTop = window.innerHeight - sidebar.offsetHeight;
+
+        sidebar.style.left = `${newLeft}px`;
+        sidebar.style.top = `${newTop}px`;
+    });
+
+    document.addEventListener('mouseup', () => {
+        if (isDragging) {
+            isDragging = false;
+            document.body.style.cursor = 'default';
+            
+            // Re-enable smooth CSS transitions for when it expands/collapses later
+            sidebar.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), height 0.4s ease, left 0.4s ease, top 0.4s ease';
+        }
+    });
+}
+document.addEventListener('DOMContentLoaded', initSidebarDrag);

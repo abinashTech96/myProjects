@@ -455,7 +455,7 @@ function toggleWidget(widgetId, isVisible) {
 
 function toggleSidebar() {
     const sidebar = document.querySelector('.sidebar');
-    if (sidebar) sidebar.classList.toggle('collapsed');
+    sidebar.classList.toggle('collapsed');
 }
 
 function toggleTheme() {

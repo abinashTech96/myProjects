@@ -385,24 +385,6 @@ function importJSON(event) {
     reader.readAsText(file);
 }
 
-function resetWorkspaceOldv2() {
-    if (confirm("⚠️ This will completely erase your building. Continue?")) {
-        elements = []; fixtures = []; currentFloor = 0;
-        ProjectState.history.baseState = null; 
-        ProjectState.history.stack = [];
-        
-        if(document.getElementById('inW')) document.getElementById('inW').value = 278;
-        if(document.getElementById('inH')) document.getElementById('inH').value = 417;
-        if(document.getElementById('b-floors')) document.getElementById('b-floors').value = 1;
-        
-        localStorage.removeItem('ArchCAD_AutoSave');
-        
-        if (typeof renderFloorSelectors === 'function') renderFloorSelectors();
-        if (typeof setFloor === 'function') setFloor(0);
-        if (typeof updateCanvas === 'function') updateCanvas();
-        if (typeof generate3DModel === 'function') generate3DModel();
-    }
-}
 
 function undoAction() {
     ProjectState.undo();
@@ -415,3 +397,21 @@ function redoAction() {
     if (typeof renderSidebar === 'function') renderSidebar();
     if (typeof updateCanvas === 'function') updateCanvas();
 }
+
+// =========================================
+// AUTO-SAVE THROTTLER (Prevents DB Spam)
+// =========================================
+let dbNeedsSave = false;
+
+window.markStateDirty = function() {
+    dbNeedsSave = true;
+};
+
+// Check if a save is needed every 5 seconds, rather than every 16 milliseconds!
+setInterval(() => {
+    if (dbNeedsSave) {
+        if (typeof saveToMemory === 'function') saveToMemory();
+        dbNeedsSave = false;
+        console.log("💾 Throttled Auto-Save Complete.");
+    }
+}, 5000);

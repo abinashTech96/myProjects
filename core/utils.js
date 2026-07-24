@@ -1,19 +1,45 @@
 // =========================================
 // UTILITIES, MATH & COLLISION (utils.js)
 // =========================================
+// 🚀 SHARED UTILITIES & PERFORMANCE OPTIMIZERS
+const Utils = {
+    // DRY: Centralized Hex to RGB converter
+    hexToRgb(hexString) {
+        const hex = hexString.replace('#', '');
+        return `${parseInt(hex.substring(0,2),16)}, ${parseInt(hex.substring(2,4),16)}, ${parseInt(hex.substring(4,6),16)}`;
+    },
+    
+    // DRY: Centralized Canvas Dimensions (Stops redundant DOM querying)
+    getMetrics() {
+        const SCALE = parseFloat(document.getElementById('scaleInput')?.value || 1.2);
+        const unit = document.getElementById('unitSelect')?.value || 'in';
+        const inW = toInches(document.getElementById('inW')?.value || 0, unit) * SCALE;
+        const inH = toInches(document.getElementById('inH')?.value || 0, unit) * SCALE;
+        const I = { x: 500 - (inW/2), y: 500 - (inH/2) };
+        return { SCALE, unit, inW, inH, I };
+    },
+
+    // ANTI-THRASHING: Only touches the DOM if the value actually changed!
+    setAttr(el, attr, val) {
+        if (el && el.getAttribute(attr) !== String(val)) {
+            el.setAttribute(attr, val);
+        }
+    }
+};
+
 
 function getMousePos(evt) {
     const pt = UI.blueprint.createSVGPoint();
     pt.x = evt.clientX; pt.y = evt.clientY;
     const svgP = pt.matrixTransform(UI.blueprint.getScreenCTM().inverse());
-    return { x: (svgP.x - panX) / zoomLvl, y: (svgP.y - panY) / zoomLvl };
+    return { x: (svgP.x - CanvasState.panX) / CanvasState.zoomLvl, y: (svgP.y - CanvasState.panY) / CanvasState.zoomLvl };
 }
 
 function getTouchPos(evt) {
     const pt = UI.blueprint.createSVGPoint();
     pt.x = evt.touches[0].clientX; pt.y = evt.touches[0].clientY;
     const svgP = pt.matrixTransform(UI.blueprint.getScreenCTM().inverse());
-    return { x: (svgP.x - panX) / zoomLvl, y: (svgP.y - panY) / zoomLvl };
+    return { x: (svgP.x - CanvasState.panX) / CanvasState.zoomLvl, y: (svgP.y - CanvasState.panY) / CanvasState.zoomLvl };
 }
 
 const toInches = (val, unit) => unit === 'cm' ? parseFloat(val) / 2.54 : parseFloat(val);

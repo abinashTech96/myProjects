@@ -329,7 +329,7 @@ const RoomStudio = {
     },
 
     // =========================================
-    // ENHANCED PROPERTIES PANEL (Now supports Position)
+    // ENHANCED PROPERTIES PANEL (No Focus Loss!)
     // =========================================
     renderProperties() {
         const propPanel = document.getElementById('rs-properties');
@@ -339,11 +339,23 @@ const RoomStudio = {
         }
 
         const fix = this.sandboxFixtures[this.selectedFixtureIndex];
+        const isAlreadyOpen = propPanel.style.display === 'block';
+        const currentTitle = document.getElementById('rs-prop-title');
+
+        // 🚀 ANTI-THRASHING: If panel is open for the same item, just update the numbers!
+        if (isAlreadyOpen && currentTitle && currentTitle.innerText.includes(fix.type.toUpperCase())) {
+            document.getElementById('rs-pos-x').value = fix.x;
+            document.getElementById('rs-pos-y').value = fix.y;
+            document.getElementById('rs-dim-w').value = fix.w;
+            document.getElementById('rs-dim-h').value = fix.h;
+            return; // Exit early! No HTML wiping!
+        }
+
+        // Otherwise, build the HTML freshly (Notice the new IDs on the inputs)
         propPanel.style.display = 'block';
-        
         propPanel.innerHTML = `
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                <span style="font-weight: 800; font-size: 0.75rem; color: #38bdf8; text-transform: uppercase;">
+                <span id="rs-prop-title" style="font-weight: 800; font-size: 0.75rem; color: #38bdf8; text-transform: uppercase;">
                     ⚙️ EDIT ${fix.type}
                 </span>
                 <button onclick="RoomStudio.deleteSelected()" style="background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #ef4444; padding: 4px 8px; border-radius: 4px; font-size: 0.65rem; font-weight: bold; cursor: pointer;">✕ Del</button>
@@ -352,22 +364,22 @@ const RoomStudio = {
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
                 <div style="display: flex; flex-direction: column; gap: 4px;">
                     <label style="font-size: 0.6rem; color: #94a3b8; font-weight: bold;">POS X (in)</label>
-                    <input type="number" value="${fix.x}" step="6" oninput="RoomStudio.modifyFixture('x', this.value)" 
+                    <input id="rs-pos-x" type="number" value="${fix.x}" step="6" oninput="RoomStudio.modifyFixture('x', this.value)" 
                            style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 4px; padding: 4px; text-align: center;">
                 </div>
                 <div style="display: flex; flex-direction: column; gap: 4px;">
                     <label style="font-size: 0.6rem; color: #94a3b8; font-weight: bold;">POS Y (in)</label>
-                    <input type="number" value="${fix.y}" step="6" oninput="RoomStudio.modifyFixture('y', this.value)" 
+                    <input id="rs-pos-y" type="number" value="${fix.y}" step="6" oninput="RoomStudio.modifyFixture('y', this.value)" 
                            style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 4px; padding: 4px; text-align: center;">
                 </div>
                 <div style="display: flex; flex-direction: column; gap: 4px;">
                     <label style="font-size: 0.6rem; color: #94a3b8; font-weight: bold;">WIDTH (in)</label>
-                    <input type="number" value="${fix.w}" min="12" step="6" oninput="RoomStudio.modifyFixture('w', this.value)" 
+                    <input id="rs-dim-w" type="number" value="${fix.w}" min="12" step="6" oninput="RoomStudio.modifyFixture('w', this.value)" 
                            style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 4px; padding: 4px; text-align: center;">
                 </div>
                 <div style="display: flex; flex-direction: column; gap: 4px;">
                     <label style="font-size: 0.6rem; color: #94a3b8; font-weight: bold;">DEPTH (in)</label>
-                    <input type="number" value="${fix.h}" min="12" step="6" oninput="RoomStudio.modifyFixture('h', this.value)" 
+                    <input id="rs-dim-h" type="number" value="${fix.h}" min="12" step="6" oninput="RoomStudio.modifyFixture('h', this.value)" 
                            style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 4px; padding: 4px; text-align: center;">
                 </div>
             </div>
@@ -646,39 +658,48 @@ const RoomStudio = {
     on3DPointerMove(event) {
         if (!this.is3DDragging || this.selectedFixtureIndex === -1 || !this.is3DActive) return;
         
-        const container = document.getElementById('studio-3d-container');
-        const rect = container.getBoundingClientRect();
-        this.mouse3D.x = ((event.clientX - rect.left) / container.clientWidth) * 2 - 1;
-        this.mouse3D.y = -((event.clientY - rect.top) / container.clientHeight) * 2 + 1;
+        // 🚀 THROTTLE: If a frame is already waiting to be drawn, skip this mouse event!
+        if (this._raycastPending) return;
+        this._raycastPending = true;
         
-        this.raycaster.setFromCamera(this.mouse3D, this.camera3D);
-        
-        const intersectPoint = new THREE.Vector3();
-        this.raycaster.ray.intersectPlane(this.dragPlane, intersectPoint);
-        
-        if (intersectPoint) {
-            const fix = this.sandboxFixtures[this.selectedFixtureIndex];
+        requestAnimationFrame(() => {
+            const container = document.getElementById('studio-3d-container');
+            const rect = container.getBoundingClientRect();
+            this.mouse3D.x = ((event.clientX - rect.left) / container.clientWidth) * 2 - 1;
+            this.mouse3D.y = -((event.clientY - rect.top) / container.clientHeight) * 2 + 1;
             
-            // Calculate new X/Z position minus the offset we started the drag with
-            let newX = intersectPoint.x - this.dragOffset3D.x - (fix.w/2);
-            let newY = intersectPoint.z - this.dragOffset3D.z - (fix.h/2); 
+            this.raycaster.setFromCamera(this.mouse3D, this.camera3D);
             
-            // Apply grid snap
-            const snap = STUDIO_CONFIG.GRID_SNAP_INCHES;
-            newX = Math.round(newX / snap) * snap;
-            newY = Math.round(newY / snap) * snap;
+            const intersectPoint = new THREE.Vector3();
+            this.raycaster.ray.intersectPlane(this.dragPlane, intersectPoint);
             
-            // Boundaries
-            newX = Math.max(0, Math.min(newX, this.activeRoom.w - fix.w));
-            newY = Math.max(0, Math.min(newY, this.activeRoom.h - fix.h));
+            if (intersectPoint) {
+                const fix = this.sandboxFixtures[this.selectedFixtureIndex];
+                
+                // Calculate new X/Z position minus the offset we started the drag with
+                let newX = intersectPoint.x - this.dragOffset3D.x - (fix.w/2);
+                let newY = intersectPoint.z - this.dragOffset3D.z - (fix.h/2); 
+                
+                // Apply grid snap
+                const snap = typeof STUDIO_CONFIG !== 'undefined' ? STUDIO_CONFIG.GRID_SNAP_INCHES : 6;
+                newX = Math.round(newX / snap) * snap;
+                newY = Math.round(newY / snap) * snap;
+                
+                // Boundaries
+                newX = Math.max(0, Math.min(newX, this.activeRoom.w - fix.w));
+                newY = Math.max(0, Math.min(newY, this.activeRoom.h - fix.h));
+                
+                fix.x = newX;
+                fix.y = newY;
+                
+                // Sync UI panel and rebuild scene
+                this.renderProperties();
+                this.build3DScene();
+            }
             
-            fix.x = newX;
-            fix.y = newY;
-            
-            // Sync UI panel and rebuild scene instantly
-            this.renderProperties();
-            this.build3DScene();
-        }
+            // 🚀 Unlock the throttle so the next frame can process
+            this._raycastPending = false; 
+        });
     },
 
     on3DPointerUp() {

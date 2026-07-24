@@ -19,35 +19,6 @@ function getCachedSolidMaterial(hexColor, opacity) {
     return SOLID_MAT_CACHE[key];
 }
 
-// =========================================
-// 3D GEOMETRY GENERATOR (Modularized)
-// =========================================
-function generate3DModelBkup() {
-    const real3DToggle = document.getElementById('real3DToggle');
-    const useReal3D = real3DToggle ? real3DToggle.checked : false;
-
-    // 🌟 MEMORY DISPOSAL
-    if (!buildingGroup) {
-        buildingGroup = new THREE.Group();
-        scene3D.add(buildingGroup);
-    } else {
-        disposeScene(); 
-    }
-
-    // 🌟 REFACTORED: Call the helper method in one line!
-    const { SCALE, unit, inW, inH, I, WALL_HEIGHT } = get3DEnvironmentParams();
-
-    // 🌟 MODULAR BUILDERS (Roof safely removed)
-    build3DRooms(SCALE, I, WALL_HEIGHT, useReal3D);
-    build3DSlabs(SCALE, I, WALL_HEIGHT, useReal3D); // Still includes the Parapet!
-    build3DFixtures(SCALE, I, WALL_HEIGHT, useReal3D);
-    build3DBoundaries(SCALE, unit, I, inW, inH);
-
-    // 🌟 THE FIX: Actually call the roof builder!
-    build3DRoof(SCALE, I, WALL_HEIGHT);
-
-    scene3D.add(buildingGroup);
-}
 function generate3DModel() {
     // 🌟 THE FIX: Prevent early auto-saves from building 3D before the engine boots!
     if (typeof scene3D === 'undefined' || !scene3D) return;
@@ -113,22 +84,7 @@ function build3DRooms(SCALE, I, WALL_HEIGHT, useReal3D) {
     });
 }
 
-// ==========================================
-// 🧩 2. NEW SHARED HELPER (DRY Principle)
-// ==========================================
-function createRoomWallsOld(width, height, depth, thickness, material) {
-    const group = new THREE.Group();
-    const wGeom = new THREE.BoxGeometry(width, height, thickness);
-    const dGeom = new THREE.BoxGeometry(thickness, height, depth - thickness * 2);
 
-    const wN = new THREE.Mesh(wGeom, material); wN.position.set(0, height/2, -depth/2 + thickness/2);
-    const wS = new THREE.Mesh(wGeom, material); wS.position.set(0, height/2, depth/2 - thickness/2);
-    const wE = new THREE.Mesh(dGeom, material); wE.position.set(width/2 - thickness/2, height/2, 0);
-    const wW = new THREE.Mesh(dGeom, material); wW.position.set(-width/2 + thickness/2, height/2, 0);
-
-    [wN, wS, wE, wW].forEach(w => { w.castShadow = true; w.receiveShadow = true; group.add(w); });
-    return group;
-}
 // ==========================================
 // 🧩 PHASE 1: STATIC GEOMETRY BATCHING
 // ==========================================
@@ -430,68 +386,7 @@ function build3DSlabs(SCALE, I, WALL_HEIGHT, useReal3D) {
         }
     }
 }
-function build3DFixturesOldv2(SCALE, I, WALL_HEIGHT, useReal3D) {
-    fixtures.forEach(fix => {
-        const el = elements[fix.roomId];
-        if (!el || el.floor !== currentFloor) return;
 
-        const isDoor = fix.type === 'door';
-        const width = fix.size * SCALE;
-        const height = isDoor ? (80 * SCALE) : (40 * SCALE);
-        const depth = 8 * SCALE; 
-        
-        const group = new THREE.Group();
-        const frameMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.5 });
-        const panelMat = new THREE.MeshStandardMaterial({ color: 0x8b4513, roughness: 0.9 });    
-
-        const ft = 3 * SCALE; 
-        const isHoriz = (fix.edge === 'top' || fix.edge === 'bottom');
-        const fw = isHoriz ? width : depth;
-        const fd = isHoriz ? depth : width;
-
-        if (isHoriz) {
-            const fL = new THREE.Mesh(new THREE.BoxGeometry(ft, height, fd), frameMat); fL.position.set(-fw/2 + ft/2, 0, 0);
-            const fR = new THREE.Mesh(new THREE.BoxGeometry(ft, height, fd), frameMat); fR.position.set(fw/2 - ft/2, 0, 0);
-            const fT = new THREE.Mesh(new THREE.BoxGeometry(fw, ft, fd), frameMat); fT.position.set(0, height/2 - ft/2, 0);
-            group.add(fL, fR, fT);
-            if (!isDoor) { const fB = new THREE.Mesh(new THREE.BoxGeometry(fw, ft, fd), frameMat); fB.position.set(0, -height/2 + ft/2, 0); group.add(fB); }
-            
-            const pW = fw - (ft * 2);
-            const pH = isDoor ? height - ft : height - (ft * 2);
-            const panel = new THREE.Mesh(new THREE.BoxGeometry(pW, pH, 2 * SCALE), panelMat);
-            panel.position.set(0, isDoor ? -ft/2 : 0, 0);
-            
-            if (isDoor && useReal3D) { panel.position.set(-pW/2 + ft, -ft/2, -pW/2); panel.rotation.y = Math.PI / 3; }
-            group.add(panel);
-        } else {
-            const fN = new THREE.Mesh(new THREE.BoxGeometry(fw, height, ft), frameMat); fN.position.set(0, 0, -fd/2 + ft/2);
-            const fS = new THREE.Mesh(new THREE.BoxGeometry(fw, height, ft), frameMat); fS.position.set(0, 0, fd/2 - ft/2);
-            const fT = new THREE.Mesh(new THREE.BoxGeometry(fw, ft, fd), frameMat); fT.position.set(0, height/2 - ft/2, 0);
-            group.add(fN, fS, fT);
-            if (!isDoor) { const fB = new THREE.Mesh(new THREE.BoxGeometry(fw, ft, fd), frameMat); fB.position.set(0, -height/2 + ft/2, 0); group.add(fB); }
-            
-            const pD = fd - (ft * 2);
-            const pH = isDoor ? height - ft : height - (ft * 2);
-            const panel = new THREE.Mesh(new THREE.BoxGeometry(2 * SCALE, pH, pD), panelMat);
-            panel.position.set(0, isDoor ? -ft/2 : 0, 0);
-            
-            if (isDoor && useReal3D) { panel.position.set(pD/2, -ft/2, -pD/2 + ft); panel.rotation.y = Math.PI / 3; }
-            group.add(panel);
-        }
-
-        const yPos = (el.floor * WALL_HEIGHT) + (height / 2) + (isDoor ? 0 : 40 * SCALE);
-        let xPos = I.x + (el.x * SCALE);
-        let zPos = I.z + (el.y * SCALE);
-
-        if (fix.edge === 'bottom') { zPos = I.z + (el.y + el.h) * SCALE; xPos = I.x + (el.x + fix.offset) * SCALE; }
-        else if (fix.edge === 'top') { zPos = I.z + (el.y * SCALE); xPos = I.x + (el.x + fix.offset) * SCALE; }
-        else if (fix.edge === 'left') { xPos = I.x + (el.x * SCALE); zPos = I.z + (el.y + fix.offset) * SCALE; }
-        else if (fix.edge === 'right') { xPos = I.x + (el.x + el.w) * SCALE; zPos = I.z + (el.y + fix.offset) * SCALE; }
-
-        group.position.set(xPos, yPos, zPos);
-        buildingGroup.add(group);
-    });
-}
 // ==========================================
 // 🧱 PHASE 3: GPU DRAW CALL REDUCTION (Fixtures)
 // ==========================================

@@ -1,4 +1,25 @@
 // =========================================
+// 🎨 PHASE 1: MATERIAL & TEXTURE POOLING
+// =========================================
+const SOLID_MAT_CACHE = {};
+
+function getCachedSolidMaterial(hexColor, opacity) {
+    // Creates a unique key like "16777215_0.85"
+    const key = `${hexColor}_${opacity}`; 
+    
+    // If the material doesn't exist yet, create it and store it
+    if (!SOLID_MAT_CACHE[key]) {
+        SOLID_MAT_CACHE[key] = new THREE.MeshStandardMaterial({ 
+            color: hexColor, 
+            transparent: opacity < 1.0, 
+            opacity: opacity 
+        });
+    }
+    // Return the shared instance!
+    return SOLID_MAT_CACHE[key];
+}
+
+// =========================================
 // 3D GEOMETRY GENERATOR (Modularized)
 // =========================================
 function generate3DModelBkup() {
@@ -28,6 +49,8 @@ function generate3DModelBkup() {
     scene3D.add(buildingGroup);
 }
 function generate3DModel() {
+    // 🌟 THE FIX: Prevent early auto-saves from building 3D before the engine boots!
+    if (typeof scene3D === 'undefined' || !scene3D) return;
     const real3DToggle = document.getElementById('real3DToggle');
     const useReal3D = real3DToggle ? real3DToggle.checked : false;
     if (!buildingGroup) {
@@ -93,7 +116,7 @@ function build3DRooms(SCALE, I, WALL_HEIGHT, useReal3D) {
 // ==========================================
 // 🧩 2. NEW SHARED HELPER (DRY Principle)
 // ==========================================
-function createRoomWalls(width, height, depth, thickness, material) {
+function createRoomWallsOld(width, height, depth, thickness, material) {
     const group = new THREE.Group();
     const wGeom = new THREE.BoxGeometry(width, height, thickness);
     const dGeom = new THREE.BoxGeometry(thickness, height, depth - thickness * 2);
@@ -104,6 +127,35 @@ function createRoomWalls(width, height, depth, thickness, material) {
     const wW = new THREE.Mesh(dGeom, material); wW.position.set(-width/2 + thickness/2, height/2, 0);
 
     [wN, wS, wE, wW].forEach(w => { w.castShadow = true; w.receiveShadow = true; group.add(w); });
+    return group;
+}
+// ==========================================
+// 🧩 PHASE 1: STATIC GEOMETRY BATCHING
+// ==========================================
+function createRoomWalls(width, height, depth, thickness, material) {
+    // 1. Create base geometries
+    const wN = new THREE.BoxGeometry(width, height, thickness);
+    const wS = new THREE.BoxGeometry(width, height, thickness);
+    const wE = new THREE.BoxGeometry(thickness, height, depth - thickness * 2);
+    const wW = new THREE.BoxGeometry(thickness, height, depth - thickness * 2);
+
+    // 2. Mathematically shift the geometry vertices into position (no meshes needed yet)
+    wN.translate(0, height/2, -depth/2 + thickness/2);
+    wS.translate(0, height/2, depth/2 - thickness/2);
+    wE.translate(width/2 - thickness/2, height/2, 0);
+    wW.translate(-width/2 + thickness/2, height/2, 0);
+
+    // 3. 🌟 MERGE THEM ALL INTO ONE SINGLE GEOMETRY
+    const mergedGeometry = THREE.BufferGeometryUtils.mergeBufferGeometries([wN, wS, wE, wW]);
+    
+    // 4. Create one single mesh for the entire room's walls
+    const wallMesh = new THREE.Mesh(mergedGeometry, material);
+    wallMesh.castShadow = true;
+    wallMesh.receiveShadow = true;
+
+    // Return inside a group to maintain structural parity with your existing code
+    const group = new THREE.Group();
+    group.add(wallMesh);
     return group;
 }
 function buildStaircase(el, center, WALL_HEIGHT, isColliding) {
@@ -244,17 +296,26 @@ function buildStandardRoom(el, center, WALL_HEIGHT, useReal3D, isColliding, SCAL
     const t = 4 * SCALE;
     const { width, depth } = center;
 
-    let materialProps = { color: roomColor, transparent: true, opacity: isColliding ? 0.95 : 0.85 };
+    let material; // 🌟 Declared properly as 'let'
 
     if (useReal3D && !isColliding) {
+        // Create the high-definition textured material directly
         const texType = getTextureForRoom(el.type);
         const roomTex = getProceduralTexture(texType).clone();
         roomTex.repeat.set(width / 60, depth / 60);
         roomTex.needsUpdate = true;
-        materialProps = { map: roomTex, color: 0xffffff, opacity: 1.0, roughness: texType === 'tile' ? 0.2 : 0.8 };
+        
+        material = new THREE.MeshStandardMaterial({ 
+            map: roomTex, 
+            color: 0xffffff, 
+            opacity: 1.0, 
+            transparent: true,
+            roughness: texType === 'tile' ? 0.2 : 0.8 
+        });
+    } else {
+        // 🌟 PHASE 1 - OPTIMIZATION: Pull from cache instead of creating 100 duplicates!
+        material = getCachedSolidMaterial(roomColor, isColliding ? 0.95 : 0.85);
     }
-
-    const material = new THREE.MeshStandardMaterial(materialProps);
 
     if (useReal3D && !isColliding) {
         // ⚡ OPTIMIZATION: Using the new createRoomWalls helper!
@@ -369,7 +430,7 @@ function build3DSlabs(SCALE, I, WALL_HEIGHT, useReal3D) {
         }
     }
 }
-function build3DFixtures(SCALE, I, WALL_HEIGHT, useReal3D) {
+function build3DFixturesOldv2(SCALE, I, WALL_HEIGHT, useReal3D) {
     fixtures.forEach(fix => {
         const el = elements[fix.roomId];
         if (!el || el.floor !== currentFloor) return;
@@ -430,6 +491,117 @@ function build3DFixtures(SCALE, I, WALL_HEIGHT, useReal3D) {
         group.position.set(xPos, yPos, zPos);
         buildingGroup.add(group);
     });
+}
+// ==========================================
+// 🧱 PHASE 3: GPU DRAW CALL REDUCTION (Fixtures)
+// ==========================================
+function build3DFixtures(SCALE, I, WALL_HEIGHT, useReal3D) {
+    // 1. Fetch Shared Materials (Zero GPU duplication)
+    const frameMat = getCachedSolidMaterial(0x334155, 1.0);
+    const woodMat = getCachedSolidMaterial(0x8b4513, 1.0);
+    
+    let glassMat = SOLID_MAT_CACHE['glass'];
+    if (!glassMat) {
+        glassMat = new THREE.MeshStandardMaterial({ color: 0x98d8c8, transparent: true, opacity: 0.25, side: THREE.DoubleSide, roughness: 0.1, metalness: 0.1 });
+        SOLID_MAT_CACHE['glass'] = glassMat;
+    }
+
+    // 2. Arrays to hold our batched geometries
+    const frameGeoms = [];
+    const woodGeoms = [];
+    const glassGeoms = [];
+
+    fixtures.forEach(fix => {
+        const el = elements[fix.roomId];
+        if (!el || el.floor !== currentFloor) return;
+
+        const isDoor = fix.type === 'door';
+        const width = fix.size * SCALE;
+        const height = isDoor ? (80 * SCALE) : (40 * SCALE);
+        const depth = 8 * SCALE; 
+        const ft = 3 * SCALE; 
+        
+        const isHoriz = (fix.edge === 'top' || fix.edge === 'bottom');
+        const fw = isHoriz ? width : depth;
+        const fd = isHoriz ? depth : width;
+
+        // Create a temporary dummy group for local positioning (Never added to scene!)
+        const dummyGroup = new THREE.Group();
+
+        if (isHoriz) {
+            const fL = new THREE.Mesh(new THREE.BoxGeometry(ft, height, fd)); fL.position.set(-fw/2 + ft/2, 0, 0);
+            const fR = new THREE.Mesh(new THREE.BoxGeometry(ft, height, fd)); fR.position.set(fw/2 - ft/2, 0, 0);
+            const fT = new THREE.Mesh(new THREE.BoxGeometry(fw, ft, fd)); fT.position.set(0, height/2 - ft/2, 0);
+            dummyGroup.add(fL, fR, fT);
+            if (!isDoor) { const fB = new THREE.Mesh(new THREE.BoxGeometry(fw, ft, fd)); fB.position.set(0, -height/2 + ft/2, 0); dummyGroup.add(fB); }
+            
+            const pW = fw - (ft * 2);
+            const pH = isDoor ? height - ft : height - (ft * 2);
+            const panel = new THREE.Mesh(new THREE.BoxGeometry(pW, pH, 2 * SCALE));
+            panel.position.set(0, isDoor ? -ft/2 : 0, 0);
+            if (isDoor && useReal3D) { panel.position.set(-pW/2 + ft, -ft/2, -pW/2); panel.rotation.y = Math.PI / 3; }
+            
+            panel.userData.matType = isDoor ? 'wood' : 'glass';
+            dummyGroup.add(panel);
+        } else {
+            const fN = new THREE.Mesh(new THREE.BoxGeometry(fw, height, ft)); fN.position.set(0, 0, -fd/2 + ft/2);
+            const fS = new THREE.Mesh(new THREE.BoxGeometry(fw, height, ft)); fS.position.set(0, 0, fd/2 - ft/2);
+            const fT = new THREE.Mesh(new THREE.BoxGeometry(fw, ft, fd)); fT.position.set(0, height/2 - ft/2, 0);
+            dummyGroup.add(fN, fS, fT);
+            if (!isDoor) { const fB = new THREE.Mesh(new THREE.BoxGeometry(fw, ft, fd)); fB.position.set(0, -height/2 + ft/2, 0); dummyGroup.add(fB); }
+            
+            const pD = fd - (ft * 2);
+            const pH = isDoor ? height - ft : height - (ft * 2);
+            const panel = new THREE.Mesh(new THREE.BoxGeometry(2 * SCALE, pH, pD));
+            panel.position.set(0, isDoor ? -ft/2 : 0, 0);
+            if (isDoor && useReal3D) { panel.position.set(pD/2, -ft/2, -pD/2 + ft); panel.rotation.y = Math.PI / 3; }
+            
+            panel.userData.matType = isDoor ? 'wood' : 'glass';
+            dummyGroup.add(panel);
+        }
+
+        // Global positioning
+        const yPos = (el.floor * WALL_HEIGHT) + (height / 2) + (isDoor ? 0 : 40 * SCALE);
+        let xPos = I.x + (el.x * SCALE);
+        let zPos = I.z + (el.y * SCALE);
+
+        if (fix.edge === 'bottom') { zPos = I.z + (el.y + el.h) * SCALE; xPos = I.x + (el.x + fix.offset) * SCALE; }
+        else if (fix.edge === 'top') { zPos = I.z + (el.y * SCALE); xPos = I.x + (el.x + fix.offset) * SCALE; }
+        else if (fix.edge === 'left') { xPos = I.x + (el.x * SCALE); zPos = I.z + (el.y + fix.offset) * SCALE; }
+        else if (fix.edge === 'right') { xPos = I.x + (el.x + el.w) * SCALE; zPos = I.z + (el.y + fix.offset) * SCALE; }
+
+        dummyGroup.position.set(xPos, yPos, zPos);
+        dummyGroup.updateMatrixWorld(true);
+
+        // 3. Extract mathematically perfect global geometries
+        dummyGroup.children.forEach(child => {
+            const geom = child.geometry.clone();
+            geom.applyMatrix4(child.matrixWorld); // Converts local position to global!
+            
+            if (child.userData.matType === 'glass') glassGeoms.push(geom);
+            else if (child.userData.matType === 'wood') woodGeoms.push(geom);
+            else frameGeoms.push(geom); // Frames have no userData
+        });
+    });
+
+    // 4. Batch and push to GPU!
+    if (frameGeoms.length) {
+        const merged = THREE.BufferGeometryUtils.mergeBufferGeometries(frameGeoms);
+        const mesh = new THREE.Mesh(merged, frameMat);
+        mesh.castShadow = true; mesh.receiveShadow = true;
+        buildingGroup.add(mesh);
+    }
+    if (woodGeoms.length) {
+        const merged = THREE.BufferGeometryUtils.mergeBufferGeometries(woodGeoms);
+        const mesh = new THREE.Mesh(merged, woodMat);
+        mesh.castShadow = true; mesh.receiveShadow = true;
+        buildingGroup.add(mesh);
+    }
+    if (glassGeoms.length) {
+        const merged = THREE.BufferGeometryUtils.mergeBufferGeometries(glassGeoms);
+        const mesh = new THREE.Mesh(merged, glassMat);
+        buildingGroup.add(mesh);
+    }
 }
 function build3DBoundaries(SCALE, unit, I, inW, inH) {
     const toInches3D = (val, u) => u === 'cm' ? parseFloat(val) / 2.54 : parseFloat(val);
@@ -673,15 +845,32 @@ function createUShapedGroup(run, height, extWidth, material) {
     return group;
 }
 
+// ==========================================
+// 🧹 UPGRADED ENGINE OPTIMIZATION: MEMORY CLEANUP
+// ==========================================
 function disposeScene() {
     if (!buildingGroup) return;
+    
     buildingGroup.traverse((child) => {
         if (child.isMesh) {
-            child.geometry.dispose();
-            if (Array.isArray(child.material)) child.material.forEach(m => m.dispose());
-            else child.material.dispose();
+            // 1. Destroy Geometry
+            if (child.geometry) child.geometry.dispose();
+            
+            // 2. Destroy Materials AND Textures
+            if (child.material) {
+                if (Array.isArray(child.material)) {
+                    child.material.forEach(mat => {
+                        if (mat.map) mat.map.dispose(); // Delete Texture
+                        mat.dispose(); // Delete Material
+                    });
+                } else {
+                    if (child.material.map) child.material.map.dispose(); // Delete Texture
+                    child.material.dispose(); // Delete Material
+                }
+            }
         }
     });
+    
     buildingGroup.clear(); 
 }
 
@@ -703,7 +892,6 @@ function update3DTransforms() {
         }
     });
 }
-
 // =========================================
 // 3D FURNITURE GENERATOR
 // =========================================
@@ -743,7 +931,6 @@ function createFurniture3D(type, w, d) {
     return group;
 }
 let showBalconyExtras = true; 
-
 function createBalconyChair() {
     const group = new THREE.Group();
     const mat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.8 }); // Slate gray metal
@@ -768,7 +955,6 @@ function createBalconyChair() {
     
     return group;
 }
-
 function createBalconyPlant() {
     const group = new THREE.Group();
     const potMat = new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.9 }); 
@@ -781,10 +967,6 @@ function createBalconyPlant() {
     group.add(leaves);    
     return group;
 }
-
-
-
-
 function getRoomCenter(el, SCALE, I) {
     const width = el.w * SCALE;
     const depth = el.h * SCALE;

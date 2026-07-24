@@ -294,13 +294,21 @@ function buildEditorView(i, el) {
                 <div style="display: flex; flex-direction: column; gap: 12px;">
                     <div style="display: flex; align-items: center; gap: 10px;">
                         <label class="neo-label" style="width: 15px;">X</label>
-                        <input type="number" id="num-x-${i}" class="neo-sunken" value="${el.x}" oninput="elements[${i}].x=parseInt(this.value); document.getElementById('range-x-${i}').value=this.value; updateCanvas()" style="width: 65px; text-align: center; padding: 6px; font-family: monospace;">
-                        <input type="range" class="neo-range" id="range-x-${i}" min="0" max="800" value="${el.x}" oninput="elements[${i}].x=parseInt(this.value); document.getElementById('num-x-${i}').value=this.value; updateCanvas()" style="flex-grow: 1;">
+                        <input type="number" id="num-x-${i}" class="neo-sunken" value="${el.x}" 
+                            oninput="elements[${i}].x=parseInt(this.value); document.getElementById('range-x-${i}').value=this.value; updateCanvas(); if(typeof is3DMode !== 'undefined' && is3DMode) debounced3DUpdate();" 
+                            style="width: 65px; text-align: center; padding: 6px; font-family: monospace;">
+                        <input type="range" class="neo-range" id="range-x-${i}" min="0" max="800" value="${el.x}" 
+                            oninput="elements[${i}].x=parseInt(this.value); document.getElementById('num-x-${i}').value=this.value; debouncedUpdateCanvas(); if(typeof is3DMode !== 'undefined' && is3DMode) debounced3DUpdate();" 
+                            style="flex-grow: 1;">
                     </div>
                     <div style="display: flex; align-items: center; gap: 10px;">
                         <label class="neo-label" style="width: 15px;">Y</label>
-                        <input type="number" id="num-y-${i}" class="neo-sunken" value="${el.y}" oninput="elements[${i}].y=parseInt(this.value); document.getElementById('range-y-${i}').value=this.value; updateCanvas()" style="width: 65px; text-align: center; padding: 6px; font-family: monospace;">
-                        <input type="range" class="neo-range" id="range-y-${i}" min="0" max="800" value="${el.y}" oninput="elements[${i}].y=parseInt(this.value); document.getElementById('num-y-${i}').value=this.value; updateCanvas()" style="flex-grow: 1;">
+                        <input type="number" id="num-y-${i}" class="neo-sunken" value="${el.y}" 
+                            oninput="elements[${i}].y=parseInt(this.value); document.getElementById('range-y-${i}').value=this.value; updateCanvas(); if(typeof is3DMode !== 'undefined' && is3DMode) debounced3DUpdate();" 
+                            style="width: 65px; text-align: center; padding: 6px; font-family: monospace;">
+                        <input type="range" class="neo-range" id="range-y-${i}" min="0" max="800" value="${el.y}" 
+                            oninput="elements[${i}].y=parseInt(this.value); document.getElementById('num-y-${i}').value=this.value; debouncedUpdateCanvas(); if(typeof is3DMode !== 'undefined' && is3DMode) debounced3DUpdate();" 
+                            style="flex-grow: 1;">
                     </div>
                 </div>
             </div>
@@ -909,19 +917,14 @@ window.toggleHybrid = function(sectionId) {
     }
 };
 
-
 // =========================================
-// VASTU UI DASHBOARD UPDATER
+// VASTU UI DASHBOARD UPDATER (Worker Receiver)
 // =========================================
-window.updateVastuHUD = function() {
+window.renderVastuUI = function(vastuData) {
     let vastuContainer = document.getElementById('vastu-widget-container');
-    // If the widget isn't open or the logic isn't loaded, safely exit
-    if (!vastuContainer || typeof calculateVastuScore !== 'function') return;
+    if (!vastuContainer) return;
 
-    // Grab the live score from app.js
-    const vastuData = calculateVastuScore();
-    
-    // Inject the updated HTML and glowing colors
+    // Inject the updated HTML and glowing colors using the data handed back by the Worker
     vastuContainer.innerHTML = `
         <div class="neo-sunken" style="margin-top: 20px; padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
             <div style="font-size: 0.75rem; color: #cbd5e1; font-weight: bold; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
@@ -940,8 +943,24 @@ window.updateVastuHUD = function() {
             </div>
         </div>
     `;
-};
 
+    // Update the Floating Dark-Themed Vastu Widget on the 2D Canvas
+    const badge = document.getElementById('vastu-score-badge');
+    const ring = document.getElementById('vastu-ring');
+    const circleText = document.getElementById('vastu-circle-text');
+    const feedbackText = document.getElementById('vastu-feedback-text');
+
+    if (badge && ring && circleText && feedbackText) {
+        badge.innerText = `${vastuData.score}/100`;
+        badge.style.color = vastuData.color;
+        badge.style.boxShadow = `0 0 8px ${vastuData.color}44`;
+
+        ring.style.background = `conic-gradient(${vastuData.color} ${vastuData.score}%, #1e293b 0)`;
+        circleText.innerText = vastuData.score;
+        feedbackText.innerText = vastuData.text;
+        feedbackText.title = vastuData.text; 
+    }
+};
 
 // =========================================
 // 🌟 QUICK CONVERTER TOGGLE ENGINE (Animated)
@@ -983,18 +1002,15 @@ window.toggleAIAgent = function() {
     const panel = document.getElementById('ai-agent-overlay');
     const btn = document.getElementById('ai-agent-btn');
     if (!panel) return;
-    
     // Check if it's currently hidden
     if (panel.style.display === 'none' || panel.style.display === '') {
         panel.style.display = 'block';
-        
         // Squeeze the button inward briefly
         if (btn) {
             btn.style.transform = 'scale(0.8)';
             btn.style.background = 'rgba(168, 85, 247, 0.4)'; // Light up purple
             setTimeout(() => btn.style.transform = 'scale(1)', 150);
         }
-
         // Expand the menu
         setTimeout(() => {
             panel.style.opacity = '1';
@@ -1008,12 +1024,10 @@ window.toggleAIAgent = function() {
             btn.style.background = 'rgba(168, 85, 247, 0.15)'; // Dim purple
             setTimeout(() => btn.style.transform = 'scale(1)', 150);
         }
-
         // Squeeze the menu back into the button
         panel.style.opacity = '0';
         panel.style.transform = 'scale(0)';
         panel.style.pointerEvents = 'none';
-        
         // Wait for animation to finish before hiding from DOM
         setTimeout(() => {
             panel.style.display = 'none';
@@ -1083,3 +1097,123 @@ function initSidebarDrag() {
     });
 }
 document.addEventListener('DOMContentLoaded', initSidebarDrag);
+
+
+// ==========================================
+// 🧠 PHASE 4: WEB WORKER (Background Math)
+// ==========================================
+const mathWorkerCode = `
+    self.onmessage = function(e) {
+        const { type, payload } = e.data;
+        if (type === 'CALCULATE_MATH') {
+            const vastuResult = calculateVastu(payload.elements, payload.inW, payload.inH);
+            const areaResult = calculateArea(payload.elements, payload.currentFloor);
+            // Send the finalized data back to the main UI thread
+            self.postMessage({ type: 'MATH_COMPLETE', vastu: vastuResult, area: areaResult });
+        }
+    };
+
+    function calculateVastu(elements, inW, inH) {
+        let score = 0;
+        let mainText = "Add rooms to calculate Vastu.";
+        let color = "#94a3b8";
+
+        if (elements.length > 0) {
+            score = 50;
+            let feedback = [];
+            const cellW = inW / 3;
+            const cellH = inH / 3;
+
+            elements.forEach(el => {
+                if (el.isFurniture || el.floor > 0) return;
+                const cx = el.x + (el.w / 2);
+                const cy = el.y + (el.h / 2);
+                let zoneStr = "";
+                if (cx > cellW * 2) zoneStr += "N";
+                else if (cx < cellW) zoneStr += "S";
+                if (cy > cellH * 2) zoneStr += "E";
+                else if (cy < cellH) zoneStr += "W";
+                if (zoneStr === "") zoneStr = "CENTER";
+
+                if (el.type === 'kitchen') {
+                    if (zoneStr === "SE") { score += 20; feedback.push("Kitchen perfectly in SE (+20)"); }
+                    else if (zoneStr === "NW") { score += 10; feedback.push("Kitchen acceptable in NW (+10)"); }
+                    else { score -= 15; feedback.push("Kitchen in " + zoneStr + " (Should be SE) (-15)"); }
+                }
+                if (el.type === 'puja') {
+                    if (zoneStr === "NE") { score += 20; feedback.push("Puja perfectly in NE (+20)"); }
+                    else { score -= 10; feedback.push("Puja in " + zoneStr + " (Should be NE) (-10)"); }
+                }
+                if (el.type === 'bedroom') {
+                    if (zoneStr === "SW") { score += 15; feedback.push("Master Bed perfectly in SW (+15)"); }
+                }
+                if (el.type === 'toilet') {
+                    if (zoneStr === "NE" || zoneStr === "SW") { score -= 25; feedback.push("Toilet prohibited in " + zoneStr + " (-25)"); }
+                    else { score += 10; }
+                }
+            });
+            score = Math.max(0, Math.min(100, score));
+            color = "#10b981";
+            if (score < 40) color = "#ef4444";
+            else if (score < 70) color = "#f59e0b";
+            mainText = feedback.length > 0 ? feedback[0] : "Good overall spatial flow.";
+            if (score === 50 && feedback.length === 0) mainText = "Add specific rooms (Kitchen, Puja, Toilets) for scoring.";
+        }
+        return { score, text: mainText, color };
+    }
+
+    function calculateArea(elements, currentFloor) {
+        let currentFloorTotals = {};
+        let currentFloorGrandTotal = 0;
+        let totalBuiltUpAreaAllFloors = 0;
+
+        elements.forEach(el => {
+            if (el.isFurniture || el.type === 'staircase') return;
+            const sqft = (el.w * el.h) / 144;
+            totalBuiltUpAreaAllFloors += sqft;
+            if (el.floor === currentFloor) {
+                currentFloorGrandTotal += sqft;
+                const typeName = el.customName || el.type.toUpperCase();
+                if (!currentFloorTotals[typeName]) currentFloorTotals[typeName] = 0;
+                currentFloorTotals[typeName] += sqft;
+            }
+        });
+        // Sort rooms from largest to smallest area before sending to UI
+        const sortedRooms = Object.keys(currentFloorTotals).sort((a, b) => currentFloorTotals[b] - currentFloorTotals[a]);
+        let sortedTotals = {};
+        sortedRooms.forEach(room => sortedTotals[room] = currentFloorTotals[room]);
+
+        return { currentFloorTotals: sortedTotals, currentFloorGrandTotal, totalBuiltUpAreaAllFloors };
+    }
+`;
+
+// Initialize the Worker
+const mathBlob = new Blob([mathWorkerCode], { type: 'application/javascript' });
+window.mathWorker = new Worker(URL.createObjectURL(mathBlob));
+
+// Listen for the results from the background core
+window.mathWorker.onmessage = function(e) {
+    if (e.data.type === 'MATH_COMPLETE') {
+        if (typeof renderVastuUI === 'function') renderVastuUI(e.data.vastu);
+        if (typeof renderAreaUI === 'function') renderAreaUI(e.data.area);
+    }
+};
+
+// A debounced trigger we can safely call 60 times a second without flooding the worker
+window.requestBackgroundMath = debounce(() => {
+    if (!window.mathWorker || !elements) return;
+    
+    // Package up the current state of the house and send it to the background thread
+    window.mathWorker.postMessage({
+        type: 'CALCULATE_MATH',
+        payload: {
+            elements: elements,
+            currentFloor: currentFloor,
+            inW: parseFloat(document.getElementById('inW')?.value || 272),
+            inH: parseFloat(document.getElementById('inH')?.value || 400)
+        }
+    });
+}, 50);
+// ==========================================
+// 🧠 PHASE 4: WEB WORKER (Background Math)
+// ==========================================

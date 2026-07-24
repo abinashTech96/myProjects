@@ -170,6 +170,7 @@ function init3D() {
     let prevTime = performance.now();
 
     function animate() {
+        if (window.isEnginePaused) return; //PHASE - 1
         requestAnimationFrame(animate);
         // if (!is3DMode) return;
         const time = performance.now();

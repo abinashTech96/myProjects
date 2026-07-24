@@ -4,6 +4,22 @@
 
 // 🌟 REFACTORED: 3D Mode is now PERMANENTLY TRUE for the Split Screen live preview!
 let is3DMode = true;
+// =========================================
+// 🛑 PHASE 1: DEMAND-DRIVEN RENDERING
+// =========================================
+window.isEnginePaused = false;
+
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+        window.isEnginePaused = true;
+        console.log("⏸️ 3D Engine Paused (Tab Hidden)");
+    } else {
+        window.isEnginePaused = false;
+        console.log("▶️ 3D Engine Resumed");
+        // Force a fresh render the second they switch back to this tab
+        if (typeof request3DUpdate === 'function') request3DUpdate();
+    }
+});
 
 // =========================================
 // 🌟 AUTO-START THE DUAL ENGINE
@@ -569,3 +585,4 @@ window.toggleNightMode = function() {
         });
     }
 };
+

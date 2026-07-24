@@ -73,77 +73,71 @@
 }
 
 /* =========================================
-   RESPONSIVE DESIGN (MOBILE & TABLET)
+   📱 RESPONSIVE DESIGN (MOBILE & TABLET)
 ========================================= */
 @media (max-width: 768px) {
-    /* 1. Canvas becomes the full screen */
-    body {
-        position: relative;
+    /* 1. Navbar Adjustments */
+    .pro-studio-navbar {
+        width: 95%;
+        padding: 4px 8px;
+        top: 10px;
     }
-
-    /* 2. Sidebar turns into a sliding drawer */
+    
+    /* 2. Sidebar Morph: Float to Full Drawer */
     .sidebar {
-        flex-shrink: 0;
-        position: absolute;
-        top: 0;
-        left: 0;
-        height: 100vh;
-        width: 85%;
-        max-width: 360px;
-        z-index: 1000;
-        box-shadow: 10px 0 30px rgba(0, 0, 0, 0.8);
-        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        margin-left: 0 !important; /* Override desktop logic */
+        top: 0 !important;
+        left: 0 !important;
+        height: 100vh !important;
+        max-height: 100vh !important;
+        width: 85% !important;
+        max-width: 320px !important;
+        border-radius: 0 16px 16px 0 !important;
+        border-left: none !important;
+        box-shadow: 10px 0 30px rgba(0, 0, 0, 0.8) !important;
     }
 
-    /* When collapsed on mobile, slide it entirely off-screen via transform */
-    .sidebar.collapsed {
-        transform: translateX(-100%);
+    /* 3. Hide Drag Handle on Mobile (It's docked now) */
+    .sidebar-drag-header .drag-grip {
+        display: none !important;
+    }
+    
+    /* 4. Canvas Widgets Repositioning */
+    /* Pushes widgets below the top navbar and resets the 400px desktop offset */
+    .canvas-widget-top-left {
+        top: 75px !important; 
+        left: 15px !important;
+        width: calc(100% - 30px) !important;
+        max-width: 300px;
+    }
+    
+    .canvas-widget-bottom-left {
+        left: 15px !important;
+        bottom: 80px !important; /* Make room for mobile bottom bars */
     }
 
-    /* 3. The Hamburger / Open Button Behavior */
-    #open-sidebar-btn {
-        left: 10px; /* Bring inside the screen */
-        top: 15px;
-        transform: none;
-        border-radius: 8px;
-        border-left: 1px solid rgba(56, 189, 248, 0.4);
-        padding: 10px 15px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
-    }
-
-    /* Hide the open button when the drawer is open on mobile */
-    .sidebar:not(.collapsed) ~ .canvas-area #open-sidebar-btn {
-        left: -100px; 
-    }
-
-    /* 4. Tame the Floating Panels */
-    #area-overlay {
-        top: 70px; /* Push down to make room for the menu button */
-        left: 10px;
-        width: calc(100% - 50px) !important; /* Shrink to fit screen */
-        max-width: 240px;
-        padding: 10px !important;
-    }
-
+    /* 5. Shrink Camera Controls */
     #camera-controls {
-        bottom: 10px;
-        right: 10px;
-        transform: scale(0.85); /* Shrink the D-PAD */
+        bottom: 15px;
+        right: 15px;
+        transform: scale(0.85);
         transform-origin: bottom right;
     }
 
-    /* 5. Stack the Sidebar Grids */
+    /* 6. Stack Grid Columns in Sidebar */
     .input-grid {
-        grid-template-columns: 1fr; /* 2 columns becomes 1 column */
+        grid-template-columns: 1fr !important;
+    }
+    .setting-card {
+        grid-template-columns: 1fr !important;
     }
     
-    .dim-grid {
-        grid-template-columns: 1fr;
+    /* 7. Hide Split Screen Resizer */
+    .split-resizer {
+        display: none !important;
     }
 }
 
-
+/*vastu tool loaction*/
 .canvas-widget-bottom-left {
     position: absolute;
     bottom: 20px;
@@ -151,6 +145,7 @@
     z-index: 100;
     pointer-events: auto;
 }
+/*quick converter location*/
 .canvas-widget-top-left {
     position: absolute;
     top: 24px;

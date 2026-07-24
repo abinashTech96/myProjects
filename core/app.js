@@ -7,7 +7,7 @@ const CanvasState = {
     panX: 0,
     panY: 0,
     zoomLvl: 1,
-    snapLines: []
+    snapLines: [] // 🌟 ADD THIS HERE
 };
 
 function updateViewport() {
@@ -189,14 +189,14 @@ function renderPlotBoundaries(geom) {
     
     // Safe updates using your existing badge/label functions
     if (typeof drawProBadge === 'function') {
-        drawProBadge('A', A.x - 15, A.y - 15, 'A', '#94a3b8', showLabels, zoomLvl, UI.viewport);
-        drawProBadge('B', B.x + 15, B.y - 15, 'B', '#94a3b8', showLabels, zoomLvl, UI.viewport);
-        drawProBadge('C', C.x + 15, C.y + 15, 'C', '#94a3b8', showLabels, zoomLvl, UI.viewport);
-        drawProBadge('D', D.x - 15, D.y + 15, 'D', '#94a3b8', showLabels, zoomLvl, UI.viewport);
-        drawProBadge('I', I.x - 15, I.y - 15, 'I', '#38bdf8', showLabels, zoomLvl, UI.viewport);
-        drawProBadge('J', geom.J.x + 15, geom.J.y - 15, 'J', '#38bdf8', showLabels, zoomLvl, UI.viewport);
-        drawProBadge('K', geom.K.x + 15, geom.K.y + 15, 'K', '#38bdf8', showLabels, zoomLvl, UI.viewport);
-        drawProBadge('L', geom.L.x - 15, geom.L.y + 15, 'L', '#38bdf8', showLabels, zoomLvl, UI.viewport);
+        drawProBadge('A', A.x - 15, A.y - 15, 'A', '#94a3b8', showLabels, CanvasState.zoomLvl, UI.viewport);
+        drawProBadge('B', B.x + 15, B.y - 15, 'B', '#94a3b8', showLabels, CanvasState.zoomLvl, UI.viewport);
+        drawProBadge('C', C.x + 15, C.y + 15, 'C', '#94a3b8', showLabels, CanvasState.zoomLvl, UI.viewport);
+        drawProBadge('D', D.x - 15, D.y + 15, 'D', '#94a3b8', showLabels, CanvasState.zoomLvl, UI.viewport);
+        drawProBadge('I', I.x - 15, I.y - 15, 'I', '#38bdf8', showLabels, CanvasState.zoomLvl, UI.viewport);
+        drawProBadge('J', geom.J.x + 15, geom.J.y - 15, 'J', '#38bdf8', showLabels, CanvasState.zoomLvl, UI.viewport);
+        drawProBadge('K', geom.K.x + 15, geom.K.y + 15, 'K', '#38bdf8', showLabels, CanvasState.zoomLvl, UI.viewport);
+        drawProBadge('L', geom.L.x - 15, geom.L.y + 15, 'L', '#38bdf8', showLabels, CanvasState.zoomLvl, UI.viewport);
     }
 }
 
@@ -437,7 +437,7 @@ function renderOverlaysAndStats(geom) {
 
     // Draw Smart Alignment Guides
     const svg = document.getElementById('blueprint');
-    snapLines.forEach(line => {
+    CanvasState.snapLines.forEach(line => {
         const l = document.createElementNS("http://www.w3.org/2000/svg", "line");
         if (line.type === 'v') { l.setAttribute("x1", line.x); l.setAttribute("x2", line.x); l.setAttribute("y1", 0); l.setAttribute("y2", 1000); }
         else { l.setAttribute("y1", line.y); l.setAttribute("y2", line.y); l.setAttribute("x1", 0); l.setAttribute("x2", 1000); }
@@ -777,7 +777,7 @@ const endDrag = () => {
     if (guideLayer) guideLayer.innerHTML = '';
 
     // 🌟 FIXED: Clears the memory leak instantly
-    snapLines = [];
+    CanvasState.snapLines = [];
     updateCanvas();
 };
 

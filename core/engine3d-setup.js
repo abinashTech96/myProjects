@@ -170,6 +170,7 @@ function init3D() {
     let prevTime = performance.now();
 
     function animate() {
+        if (window.isEnginePaused) return; //PHASE - 1
         requestAnimationFrame(animate);
         // if (!is3DMode) return;
         const time = performance.now();
@@ -232,10 +233,22 @@ function init3D() {
     }
     animate();
 
-    window.addEventListener('resize', () => {
-        if (!is3DMode) return;
-        camera3D.aspect = container.clientWidth / container.clientHeight;
-        camera3D.updateProjectionMatrix();
-        renderer3D.setSize(container.clientWidth, container.clientHeight);
+    // 🚀 PHASE 2: RESIZE OBSERVER (Hardware Accelerated Resizing)
+    const resizeObserver = new ResizeObserver(entries => {
+        if (!is3DMode || !camera3D || !renderer3D) return;
+        
+        for (let entry of entries) {
+            const { width, height } = entry.contentRect;
+            
+            // Only update if dimensions actually changed (prevents micro-stutters)
+            if (width > 0 && height > 0) {
+                camera3D.aspect = width / height;
+                camera3D.updateProjectionMatrix();
+                renderer3D.setSize(width, height, false); // false prevents canvas scaling issues
+            }
+        }
     });
+
+    // Only watch the specific 3D container, not the whole window!
+    resizeObserver.observe(container);
 }

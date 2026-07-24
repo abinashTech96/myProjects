@@ -144,13 +144,36 @@ const AIAgent = {
                 return;
             }
 
-            // 4. Gatekeeper: Collision Check
-            const tempEl = { x: checkX, y: checkY, w: checkW, h: checkH, floor: currentFloor };
+            // 4. 🚀 Gatekeeper & Evasion: Collision Check
+            let tempEl = { x: checkX, y: checkY, w: checkW, h: checkH, floor: currentFloor };
             const ignoreIndex = plan.action === "moveElement" ? p.id : -1;
             
+            // If it collides, attempt to find a nearby safe spot by nudging it around
             if (typeof checkCollision === 'function' && checkCollision(tempEl, ignoreIndex)) {
-                console.error(`🚨 Gatekeeper Blocked AI: Collision overlap detected.`);
-                return;
+                console.warn(`⚠️ AI Collision detected at [${checkX}, ${checkY}]. Attempting evasion...`);
+                let resolved = false;
+                const offsets = [
+                    {dx: checkW, dy: 0}, {dx: -checkW, dy: 0}, 
+                    {dx: 0, dy: checkH}, {dx: 0, dy: -checkH}
+                ];
+                for (let off of offsets) {
+                    tempEl.x = checkX + off.dx;
+                    tempEl.y = checkY + off.dy;
+                    if (tempEl.x >= 0 && tempEl.y >= 0 && (tempEl.x + tempEl.w) <= plotW && (tempEl.y + tempEl.h) <= plotH) {
+                        if (!checkCollision(tempEl, ignoreIndex)) {
+                            checkX = tempEl.x;
+                            checkY = tempEl.y;
+                            resolved = true;
+                            console.log(`✅ AI successfully evaded collision. New coords: [${checkX}, ${checkY}]`);
+                            break;
+                        }
+                    }
+                }
+
+                if (!resolved) {
+                    console.error(`🛑 Gatekeeper Blocked AI: Could not find safe placement.`);
+                    return;
+                }
             }
 
             // 5. Execute Safe Action

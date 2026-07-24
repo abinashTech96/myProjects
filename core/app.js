@@ -2,45 +2,32 @@
 // APP.JS - CORE 2D ENGINE (Unabridged)
 // =================================================================
 let cachedSnapBoundaries = [];
-
-
-// --- CAMERA & VIEWPORT ---
-var panX = 0, panY = 0, zoomLvl = 1;
-var snapLines = []; // 🌟 MOVED HERE: Ensures it loads before updateCanvas tries to use it!
+// --- CAMERA & VIEWPORT (Secured Namespace) ---
+const CanvasState = {
+    panX: 0,
+    panY: 0,
+    zoomLvl: 1,
+    snapLines: [] // 🌟 ADD THIS HERE
+};
 
 function updateViewport() {
-    if (UI.viewport) UI.viewport.setAttribute('transform', `matrix(${zoomLvl}, 0, 0, ${zoomLvl}, ${panX}, ${panY})`);
+    if (UI.viewport) UI.viewport.setAttribute('transform', `matrix(${CanvasState.zoomLvl}, 0, 0, ${CanvasState.zoomLvl}, ${CanvasState.panX}, ${CanvasState.panY})`);
 }
-
-function panCameraOld(dx, dy) {
-    // If in 3D Mode, route the UI buttons to the 3D pan() function
-    if (typeof is3DMode !== 'undefined' && is3DMode) {
-        if (typeof pan === 'function') {
-            if (dy > 0) pan('up');
-            if (dy < 0) pan('down');
-            if (dx > 0) pan('left');
-            if (dx < 0) pan('right');
-        }
-        return;
-    }
-    // Default 2D Mode behavior
-    panX += dx; panY += dy;
-    updateViewport();
-}
-
 function panCamera(dx, dy) {
-    // 🌟 REFACTORED: Only pan the 2D SVG. (3D is handled by OrbitControls now)
-    panX += dx; panY += dy;
+    CanvasState.panX += dx; CanvasState.panY += dy;
     updateViewport();
 }
-
 function zoomCamera(factor) {
-    const newZoom = zoomLvl * factor;
+    const newZoom = CanvasState.zoomLvl * factor;
     if(newZoom < 0.2 || newZoom > 5) return; 
     const cx = 500, cy = 500;
-    panX = cx - (cx - panX) * factor;
-    panY = cy - (cy - panY) * factor;
-    zoomLvl = newZoom;
+    CanvasState.panX = cx - (cx - CanvasState.panX) * factor;
+    CanvasState.panY = cy - (cy - CanvasState.panY) * factor;
+    CanvasState.zoomLvl = newZoom;
+    updateViewport();
+}
+function resetCamera() {
+    CanvasState.panX = 0; CanvasState.panY = 0; CanvasState.zoomLvl = 1;
     updateViewport();
 }
 
@@ -85,55 +72,43 @@ function createOrUpdateText(id, container, x, y, text, color, fontSize, isBold) 
 
 function drawColumns() {
     const toggle = document.getElementById('showColsToggle');
-    // If toggle doesn't exist, we can't show/hide, so exit early
     if (!toggle) return; 
 
-    let group = document.getElementById('column-container');
-    if (!group) {
-        group = document.createElementNS("http://www.w3.org/2000/svg", "g");
-        group.id = 'column-container';
-        if (UI.elementContainer) UI.elementContainer.appendChild(group);
-    }
+    let group = getOrCreateSVG('g', 'column-container', UI.elementContainer || UI.blueprint);
     
-    // Clear and exit if toggle is off
     if (!toggle.checked) { 
-        group.innerHTML = ''; 
+        group.style.display = 'none'; 
         return; 
     }
+    group.style.display = '';
 
-    group.innerHTML = ''; 
     const SCALE = parseFloat(UI.scaleInput.value) || 1.2;
     const inW = toInches(UI.inW.value, UI.unitSelect.value);
     const inH = toInches(UI.inH.value, UI.unitSelect.value);
-    
-    // Center logic
     const I = { x: 500 - (inW * SCALE / 2), y: 500 - (inH * SCALE / 2) };
+    
     const placedColumns = new Set();
+    let displayIdx = 0;
 
     elements.forEach(el => {
         if (el.floor !== currentFloor || el.isFurniture) return;
-        
-        // Define corner points for every room
-        const corners = [
-            { x: el.x, y: el.y }, 
-            { x: el.x + el.w, y: el.y }, 
-            { x: el.x, y: el.y + el.h }, 
-            { x: el.x + el.w, y: el.y + el.h }
-        ];
+        const corners = [ { x: el.x, y: el.y }, { x: el.x + el.w, y: el.y }, { x: el.x, y: el.y + el.h }, { x: el.x + el.w, y: el.y + el.h } ];
 
         corners.forEach(pos => {
             const key = `${Math.round(pos.x)}_${Math.round(pos.y)}`;
             if (!placedColumns.has(key)) {
-                const col = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                placedColumns.add(key);
+                // 🚀 DIFF ENGINE
+                const col = getOrCreateSVG('circle', `col-${displayIdx}`, group);
                 col.setAttribute('cx', I.x + (pos.x * SCALE)); 
                 col.setAttribute('cy', I.y + (pos.y * SCALE));
                 col.setAttribute('r', 6 * SCALE); 
                 col.setAttribute('fill', '#94a3b8');
-                group.appendChild(col);
-                placedColumns.add(key);
+                displayIdx++;
             }
         });
     });
+    hideExcessSVG('col', displayIdx);
 }
 
 // =========================================
@@ -166,12 +141,14 @@ function updateCanvas(force3D = true) {
 
     // External Triggers
     if (typeof request3DUpdate === 'function') request3DUpdate();
-    if (typeof saveToMemory === 'function') saveToMemory();
+    if (typeof markStateDirty === 'function') markStateDirty(); // 🚀 Replaced saveToMemory()!
     if (typeof updateAreaDashboard === 'function') updateAreaDashboard();
     // 🌟 ADD THIS LINE: Updates the Vastu Dashboard live while dragging!
     if (typeof updateVastuHUD === 'function') updateVastuHUD();
     // 🌟 ADD THIS LINE: This forces the floating Vastu widget to calculate and update live!
     if (typeof calculateVastuScore === 'function') calculateVastuScore();
+    // 🧠 PHASE 4: Ping the Web Worker instead of freezing the UI!
+    if (typeof requestBackgroundMath === 'function') requestBackgroundMath();
 }
 
 // -----------------------------------------
@@ -212,40 +189,54 @@ function renderPlotBoundaries(geom) {
     
     // Safe updates using your existing badge/label functions
     if (typeof drawProBadge === 'function') {
-        drawProBadge('A', A.x - 15, A.y - 15, 'A', '#94a3b8', showLabels, zoomLvl, UI.viewport);
-        drawProBadge('B', B.x + 15, B.y - 15, 'B', '#94a3b8', showLabels, zoomLvl, UI.viewport);
-        drawProBadge('C', C.x + 15, C.y + 15, 'C', '#94a3b8', showLabels, zoomLvl, UI.viewport);
-        drawProBadge('D', D.x - 15, D.y + 15, 'D', '#94a3b8', showLabels, zoomLvl, UI.viewport);
-        drawProBadge('I', I.x - 15, I.y - 15, 'I', '#38bdf8', showLabels, zoomLvl, UI.viewport);
-        drawProBadge('J', geom.J.x + 15, geom.J.y - 15, 'J', '#38bdf8', showLabels, zoomLvl, UI.viewport);
-        drawProBadge('K', geom.K.x + 15, geom.K.y + 15, 'K', '#38bdf8', showLabels, zoomLvl, UI.viewport);
-        drawProBadge('L', geom.L.x - 15, geom.L.y + 15, 'L', '#38bdf8', showLabels, zoomLvl, UI.viewport);
+        drawProBadge('A', A.x - 15, A.y - 15, 'A', '#94a3b8', showLabels, CanvasState.zoomLvl, UI.viewport);
+        drawProBadge('B', B.x + 15, B.y - 15, 'B', '#94a3b8', showLabels, CanvasState.zoomLvl, UI.viewport);
+        drawProBadge('C', C.x + 15, C.y + 15, 'C', '#94a3b8', showLabels, CanvasState.zoomLvl, UI.viewport);
+        drawProBadge('D', D.x - 15, D.y + 15, 'D', '#94a3b8', showLabels, CanvasState.zoomLvl, UI.viewport);
+        drawProBadge('I', I.x - 15, I.y - 15, 'I', '#38bdf8', showLabels, CanvasState.zoomLvl, UI.viewport);
+        drawProBadge('J', geom.J.x + 15, geom.J.y - 15, 'J', '#38bdf8', showLabels, CanvasState.zoomLvl, UI.viewport);
+        drawProBadge('K', geom.K.x + 15, geom.K.y + 15, 'K', '#38bdf8', showLabels, CanvasState.zoomLvl, UI.viewport);
+        drawProBadge('L', geom.L.x - 15, geom.L.y + 15, 'L', '#38bdf8', showLabels, CanvasState.zoomLvl, UI.viewport);
     }
 }
+
 
 function renderSiteOffsets(geom) {
     const showOffsets = UI.showOffsetsToggle && UI.showOffsetsToggle.checked;
     if (!UI.siteOffsets) return;
     
-    if (!showOffsets) { 
-        UI.siteOffsets.innerHTML = ''; 
-        return; 
-    } 
+    if (!showOffsets) { UI.siteOffsets.style.display = 'none'; return; } 
+    UI.siteOffsets.style.display = ''; 
 
     const { SCALE, I, J, K, L, A, B, C, D } = geom;
     const unit = UI.unitSelect ? UI.unitSelect.value : 'in';
     const val = (id) => toInches(document.getElementById(id)?.value || 0, unit) * SCALE;
 
-    let html = '';
+    let displayIdx = 0;
     const addDim = (x1, y1, x2, y2, v, label, isVert) => {
         if (v <= 0) return;
         const cx = (x1 + x2) / 2; const cy = (y1 + y2) / 2;
         const ft = Math.floor(v / 12); const inch = Math.round(v % 12);
         const text = ft > 0 ? `${ft}'${inch}"` : `${inch}"`;
-        html += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#10b981" stroke-width="1.5" stroke-dasharray="3,3" />`;
-        html += `<circle cx="${x1}" cy="${y1}" r="2" fill="#10b981" /><circle cx="${x2}" cy="${y2}" r="2" fill="#10b981" />`;
-        if (isVert) html += `<text x="${cx + 6}" y="${cy + 3}" fill="#10b981" font-size="11" font-weight="bold">${label}: ${text}</text>`;
-        else html += `<text x="${cx}" y="${cy - 6}" fill="#10b981" font-size="11" font-weight="bold" text-anchor="middle">${label}: ${text}</text>`;
+        
+        // 🚀 DIFF ENGINE
+        const line = getOrCreateSVG('line', `offset-line-${displayIdx}`, UI.siteOffsets);
+        line.setAttribute('x1', x1); line.setAttribute('y1', y1); line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+        line.setAttribute('stroke', '#10b981'); line.setAttribute('stroke-width', '1.5'); line.setAttribute('stroke-dasharray', '3,3');
+
+        const c1 = getOrCreateSVG('circle', `offset-c1-${displayIdx}`, UI.siteOffsets);
+        c1.setAttribute('cx', x1); c1.setAttribute('cy', y1); c1.setAttribute('r', '2'); c1.setAttribute('fill', '#10b981');
+
+        const c2 = getOrCreateSVG('circle', `offset-c2-${displayIdx}`, UI.siteOffsets);
+        c2.setAttribute('cx', x2); c2.setAttribute('cy', y2); c2.setAttribute('r', '2'); c2.setAttribute('fill', '#10b981');
+
+        const txt = getOrCreateSVG('text', `offset-txt-${displayIdx}`, UI.siteOffsets);
+        if (isVert) { txt.setAttribute('x', cx + 6); txt.setAttribute('y', cy + 3); txt.removeAttribute('text-anchor'); } 
+        else { txt.setAttribute('x', cx); txt.setAttribute('y', cy - 6); txt.setAttribute('text-anchor', 'middle'); }
+        txt.setAttribute('fill', '#10b981'); txt.setAttribute('font-size', '11'); txt.setAttribute('font-weight', 'bold');
+        txt.textContent = `${label}: ${text}`;
+        
+        displayIdx++;
     };
 
     addDim(I.x, I.y, I.x, A.y, val('aU'), 'U', true); addDim(I.x, I.y, A.x, I.y, val('aL'), 'L', false);
@@ -253,7 +244,8 @@ function renderSiteOffsets(geom) {
     addDim(K.x, K.y, K.x, C.y, val('cD'), 'D', true); addDim(K.x, K.y, C.x, K.y, val('cR'), 'R', false);
     addDim(L.x, L.y, L.x, D.y, val('dD'), 'D', true); addDim(L.x, L.y, D.x, L.y, val('dL'), 'L', false);
     
-    UI.siteOffsets.innerHTML = html;
+    hideExcessSVG('offset-line', displayIdx); hideExcessSVG('offset-c1', displayIdx);
+    hideExcessSVG('offset-c2', displayIdx); hideExcessSVG('offset-txt', displayIdx);
 }
 
 function renderRoad(geom) {
@@ -366,9 +358,10 @@ function renderRooms(geom) {
 
 function renderFixtures(geom) {
     const { I, SCALE } = geom;
-    let fixtureGroup = document.getElementById('fixture-container') || createSVGGroup('fixture-container');
-    fixtureGroup.innerHTML = ''; 
-
+    let fixtureGroup = getOrCreateSVG('g', 'fixture-container', UI.elementContainer || UI.blueprint);
+    
+    let displayIdx = 0; // Track exactly how many fixtures we need to draw
+    
     fixtures.forEach((fix, i) => {
         const room = elements[fix.roomId];
         if (!room || room.floor !== currentFloor) return;
@@ -382,32 +375,37 @@ function renderFixtures(geom) {
         else if (fix.edge === 'left') { fx = rx - 3; fy = ry + offset; fw = 6; fh = fixSize; }
         else if (fix.edge === 'right') { fx = rx + (room.w * SCALE) - 3; fy = ry + offset; fw = 6; fh = fixSize; }
 
-        if (fix.type === 'window') {
-            const wRect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-            wRect.setAttribute('x', fx); wRect.setAttribute('y', fy); wRect.setAttribute('width', fw); wRect.setAttribute('height', fh);
-            wRect.setAttribute('fill', 'rgba(251, 191, 36, 0.2)');
-            wRect.setAttribute('stroke', '#fbbf24'); wRect.setAttribute('stroke-width', '1.5');
-            wRect.onmousedown = (e) => { e.stopPropagation(); startDragFixture(e, i); }; 
-            fixtureGroup.appendChild(wRect);
-        } else if (fix.type === 'door') {
-            const gap = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-            gap.setAttribute('x', fx); gap.setAttribute('y', fy); gap.setAttribute('width', fw); gap.setAttribute('height', fh);
-            gap.setAttribute('fill', '#0f172a'); 
-            gap.onmousedown = (e) => { e.stopPropagation(); startDragFixture(e, i); };
-            fixtureGroup.appendChild(gap);
+        // 🚀 DIFF ENGINE: Fetch existing SVG nodes instead of creating new ones!
+        const rect = getOrCreateSVG('rect', `fix-rect-${displayIdx}`, fixtureGroup);
+        const path = getOrCreateSVG('path', `fix-swing-${displayIdx}`, fixtureGroup);
+        path.style.display = 'none'; // Hide swing path by default
 
-            const swing = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        if (fix.type === 'window') {
+            rect.setAttribute('x', fx); rect.setAttribute('y', fy); rect.setAttribute('width', fw); rect.setAttribute('height', fh);
+            rect.setAttribute('fill', 'rgba(251, 191, 36, 0.2)');
+            rect.setAttribute('stroke', '#fbbf24'); rect.setAttribute('stroke-width', '1.5');
+            rect.onmousedown = (e) => { e.stopPropagation(); startDragFixture(e, i); }; 
+        } else if (fix.type === 'door') {
+            rect.setAttribute('x', fx); rect.setAttribute('y', fy); rect.setAttribute('width', fw); rect.setAttribute('height', fh);
+            rect.setAttribute('fill', '#0f172a'); rect.setAttribute('stroke', 'none');
+            rect.onmousedown = (e) => { e.stopPropagation(); startDragFixture(e, i); };
+
             let d = '';
             if (fix.edge === 'bottom') d = `M ${fx} ${fy+3} L ${fx} ${fy+3 - fixSize} A ${fixSize} ${fixSize} 0 0 1 ${fx + fixSize} ${fy+3}`;
             else if (fix.edge === 'top') d = `M ${fx} ${fy+3} L ${fx} ${fy+3 + fixSize} A ${fixSize} ${fixSize} 0 0 0 ${fx + fixSize} ${fy+3}`;
             else if (fix.edge === 'left') d = `M ${fx+3} ${fy} L ${fx+3 + fixSize} ${fy} A ${fixSize} ${fixSize} 0 0 1 ${fx+3} ${fy + fixSize}`;
             else if (fix.edge === 'right') d = `M ${fx+3} ${fy} L ${fx+3 - fixSize} ${fy} A ${fixSize} ${fixSize} 0 0 0 ${fx+3} ${fy + fixSize}`;
             
-            swing.setAttribute('d', d); swing.setAttribute('fill', 'rgba(251, 191, 36, 0.1)'); 
-            swing.setAttribute('stroke', '#fbbf24'); swing.setAttribute('stroke-width', '1.5');
-            fixtureGroup.appendChild(swing);
+            path.setAttribute('d', d); path.setAttribute('fill', 'rgba(251, 191, 36, 0.1)'); 
+            path.setAttribute('stroke', '#fbbf24'); path.setAttribute('stroke-width', '1.5');
+            path.style.display = ''; // Show the swing!
         }
+        displayIdx++;
     });
+
+    // 🚀 DIFF ENGINE: Hide any old fixtures that were deleted
+    hideExcessSVG('fix-rect', displayIdx);
+    hideExcessSVG('fix-swing', displayIdx);
 }
 
 // -----------------------------------------
@@ -439,7 +437,7 @@ function renderOverlaysAndStats(geom) {
 
     // Draw Smart Alignment Guides
     const svg = document.getElementById('blueprint');
-    snapLines.forEach(line => {
+    CanvasState.snapLines.forEach(line => {
         const l = document.createElementNS("http://www.w3.org/2000/svg", "line");
         if (line.type === 'v') { l.setAttribute("x1", line.x); l.setAttribute("x2", line.x); l.setAttribute("y1", 0); l.setAttribute("y2", 1000); }
         else { l.setAttribute("y1", line.y); l.setAttribute("y2", line.y); l.setAttribute("x1", 0); l.setAttribute("x2", 1000); }
@@ -459,6 +457,28 @@ function cleanupExcessSVG() {
         let rh = document.getElementById(`rect-hollow-${excessIndex}`); if (rh) rh.remove();
         ['title', 'dims', 'area'].forEach(t => { let n = document.getElementById(`txt-${t}-${excessIndex}`); if(n) n.remove(); });
         excessIndex++;
+    }
+}
+// ==========================================
+// 🚀 PHASE 2: "DIFF" ENGINE SVG RECYCLING
+// ==========================================
+function getOrCreateSVG(type, id, parent) {
+    let el = document.getElementById(id);
+    if (!el) {
+        el = document.createElementNS("http://www.w3.org/2000/svg", type);
+        el.id = id;
+        parent.appendChild(el);
+    }
+    el.style.display = ''; // Ensure it is visible if it was previously hidden
+    return el;
+}
+
+function hideExcessSVG(prefix, count) {
+    let el = document.getElementById(`${prefix}-${count}`);
+    while (el) {
+        el.style.display = 'none'; // Hide it instead of deleting it (DOM Recycling)
+        count++;
+        el = document.getElementById(`${prefix}-${count}`);
     }
 }
 
@@ -561,45 +581,40 @@ function renderRoomText(i, el, rx, ry, w, h, IX, IY) {
 
 function fastUpdateDrag(index) {
     const el = elements[index];
-    const SCALE = parseFloat(UI.scaleInput.value) || 1.2;
-    const inW = toInches(UI.inW.value, UI.unitSelect.value) * SCALE;
-    const inH = toInches(UI.inH.value, UI.unitSelect.value) * SCALE;
+    const { SCALE, I } = Utils.getMetrics(); // 🚀 Uses centralized math
     
-    const I = { x: 500 - (inW/2), y: 500 - (inH/2) };
     const rx = I.x + (el.x * SCALE); 
     const ry = I.y + (el.y * SCALE);
 
-    // 1. Update the Main Room Rectangles
-    const r = document.getElementById(`rect-${index}`);
-    const rb = document.getElementById(`rect-border-${index}`);
-    const rh = document.getElementById(`rect-hollow-${index}`);
+    // 1. Update the Main Room Rectangles (NO DOM THRASHING!)
+    Utils.setAttr(document.getElementById(`rect-${index}`), 'x', rx);
+    Utils.setAttr(document.getElementById(`rect-${index}`), 'y', ry);
+    Utils.setAttr(document.getElementById(`rect-border-${index}`), 'x', rx);
+    Utils.setAttr(document.getElementById(`rect-border-${index}`), 'y', ry);
+    Utils.setAttr(document.getElementById(`rect-hollow-${index}`), 'x', rx + 1.5);
+    Utils.setAttr(document.getElementById(`rect-hollow-${index}`), 'y', ry + 1.5);
 
-    if (r) { r.setAttribute('x', rx); r.setAttribute('y', ry); }
-    if (rb) { rb.setAttribute('x', rx); rb.setAttribute('y', ry); }
-    if (rh) { rh.setAttribute('x', rx + 1.5); rh.setAttribute('y', ry + 1.5); }
-
-    // 2. Update Text Labels (Title, Dims, Area)
+    // 2. Update Text Labels
     const cx = rx + (el.w * SCALE) / 2; 
     const cy = ry + (el.h * SCALE) / 2;
     
-    const titleText = document.getElementById(`txt-title-${index}`);
-    const dimsText = document.getElementById(`txt-dims-${index}`);
-    const areaText = document.getElementById(`txt-area-${index}`);
-    
-    if (titleText) { titleText.setAttribute('x', cx); titleText.setAttribute('y', cy - 8); }
-    if (dimsText) { dimsText.setAttribute('x', cx); dimsText.setAttribute('y', cy + 6); }
-    if (areaText) { areaText.setAttribute('x', cx); areaText.setAttribute('y', cy + 20); }
+    Utils.setAttr(document.getElementById(`txt-title-${index}`), 'x', cx);
+    Utils.setAttr(document.getElementById(`txt-title-${index}`), 'y', cy - 8);
+    Utils.setAttr(document.getElementById(`txt-dims-${index}`), 'x', cx);
+    Utils.setAttr(document.getElementById(`txt-dims-${index}`), 'y', cy + 6);
+    Utils.setAttr(document.getElementById(`txt-area-${index}`), 'x', cx);
+    Utils.setAttr(document.getElementById(`txt-area-${index}`), 'y', cy + 20);
 
-    // 3. Update Dimension Lines (if active)
+    // 3. Update Dimension Lines
     const dimTop = document.getElementById(`dim-top-${index}`);
     const dimLeft = document.getElementById(`dim-left-${index}`);
     if (dimTop) {
-        dimTop.setAttribute('x1', rx); dimTop.setAttribute('x2', rx);
-        dimTop.setAttribute('y1', ry); dimTop.setAttribute('y2', I.y);
+        Utils.setAttr(dimTop, 'x1', rx); Utils.setAttr(dimTop, 'x2', rx);
+        Utils.setAttr(dimTop, 'y1', ry); Utils.setAttr(dimTop, 'y2', I.y);
     }
     if (dimLeft) {
-        dimLeft.setAttribute('x1', rx); dimLeft.setAttribute('x2', I.x);
-        dimLeft.setAttribute('y1', ry); dimLeft.setAttribute('y2', ry);
+        Utils.setAttr(dimLeft, 'x1', rx); Utils.setAttr(dimLeft, 'x2', I.x);
+        Utils.setAttr(dimLeft, 'y1', ry); Utils.setAttr(dimLeft, 'y2', ry);
     }
 }
 
@@ -762,7 +777,7 @@ const endDrag = () => {
     if (guideLayer) guideLayer.innerHTML = '';
 
     // 🌟 FIXED: Clears the memory leak instantly
-    snapLines = [];
+    CanvasState.snapLines = [];
     updateCanvas();
 };
 
@@ -916,30 +931,21 @@ function initInteractions() {
 // =========================================
 // EXPORT & VIEW UTILITIES
 // =========================================
-
-function resetCamera() {
-    panX = 0; panY = 0; zoomLvl = 1;
-    updateViewport();
-}
-
 function centerOnSelection() {
     if (typeof selectedElIndex === 'undefined' || selectedElIndex === -1) return;
     
     const el = elements[selectedElIndex];
     if (!el || el.locked) return; // 🌟 FIXED: Added !el to check if the room actually exists first 
 
-    const SCALE = parseFloat(UI.scaleInput.value) || 1.2;
-    const unit = UI.unitSelect.value;
-    
-    const inW = toInches(UI.inW.value, unit) * SCALE;
-    const inH = toInches(UI.inH.value, unit) * SCALE;
-    const I = { x: 500 - (inW/2), y: 500 - (inH/2) };
+    // 🚀 1. Use our new centralized math utility!
+    const { SCALE, I } = Utils.getMetrics(); 
 
     const roomCenterX = I.x + (el.x * SCALE) + ((el.w * SCALE) / 2);
     const roomCenterY = I.y + (el.y * SCALE) + ((el.h * SCALE) / 2);
 
-    panX = 500 - (roomCenterX * zoomLvl);
-    panY = 500 - (roomCenterY * zoomLvl);
+    // 🚀 2. Use the newly secured CanvasState namespace!
+    CanvasState.panX = 500 - (roomCenterX * CanvasState.zoomLvl);
+    CanvasState.panY = 500 - (roomCenterY * CanvasState.zoomLvl);
     
     updateViewport();
 }
@@ -1039,57 +1045,51 @@ function setFloor(f) {
 
 function renderAutoDimensions() {
     const showDims = UI.showDims ? UI.showDims.checked : false;
-    let dimGroup = document.getElementById('dim-group');
-    
-    if (!dimGroup) {
-        dimGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
-        dimGroup.id = 'dim-group';
-        UI.blueprint.appendChild(dimGroup);
-    }
-    dimGroup.innerHTML = ''; 
+    let dimGroup = getOrCreateSVG('g', 'dim-group', UI.blueprint);
 
-    if (!showDims) return;
+    if (!showDims) { dimGroup.style.display = 'none'; return; }
+    dimGroup.style.display = '';
 
     const SCALE = parseFloat(UI.scaleInput.value) || 1.2;
     const inW = toInches(UI.inW.value, UI.unitSelect.value) * SCALE;
     const inH = toInches(UI.inH.value, UI.unitSelect.value) * SCALE;
     const I = { x: 500 - (inW/2), y: 500 - (inH/2) };
 
-    elements.forEach((el, i) => {
+    let displayIdx = 0;
+    elements.forEach((el) => {
         if (el.floor !== currentFloor) return;
 
-        const rx = I.x + (el.x * SCALE);
-        const ry = I.y + (el.y * SCALE);
-        const w = el.w * SCALE;
-        const h = el.h * SCALE;
+        const rx = I.x + (el.x * SCALE); const ry = I.y + (el.y * SCALE);
+        const w = el.w * SCALE; const h = el.h * SCALE;
 
-        const lineTop = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        // 🚀 DIFF ENGINE
+        const lineTop = getOrCreateSVG('line', `dim-auto-tline-${displayIdx}`, dimGroup);
         lineTop.setAttribute('x1', rx); lineTop.setAttribute('y1', ry - 10);
         lineTop.setAttribute('x2', rx + w); lineTop.setAttribute('y2', ry - 10);
         lineTop.setAttribute('stroke', '#38bdf8'); lineTop.setAttribute('stroke-width', '1');
-        dimGroup.appendChild(lineTop);
 
-        const textWidth = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        const textWidth = getOrCreateSVG('text', `dim-auto-ttext-${displayIdx}`, dimGroup);
         textWidth.setAttribute('x', rx + w/2); textWidth.setAttribute('y', ry - 15);
         textWidth.setAttribute('fill', '#38bdf8'); textWidth.setAttribute('font-size', '10');
         textWidth.setAttribute('text-anchor', 'middle');
         textWidth.textContent = `${Math.floor(el.w/12)}'${Math.round(el.w%12)}"`;
-        dimGroup.appendChild(textWidth);
 
-        const lineLeft = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        const lineLeft = getOrCreateSVG('line', `dim-auto-lline-${displayIdx}`, dimGroup);
         lineLeft.setAttribute('x1', rx - 10); lineLeft.setAttribute('y1', ry);
         lineLeft.setAttribute('x2', rx - 10); lineLeft.setAttribute('y2', ry + h);
         lineLeft.setAttribute('stroke', '#38bdf8'); lineLeft.setAttribute('stroke-width', '1');
-        dimGroup.appendChild(lineLeft);
 
-        const textHeight = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        const textHeight = getOrCreateSVG('text', `dim-auto-ltext-${displayIdx}`, dimGroup);
         textHeight.setAttribute('x', rx - 15); textHeight.setAttribute('y', ry + h/2);
         textHeight.setAttribute('fill', '#38bdf8'); textHeight.setAttribute('font-size', '10');
-        textHeight.setAttribute('text-anchor', 'end'); 
-        textHeight.setAttribute('alignment-baseline', 'middle'); 
+        textHeight.setAttribute('text-anchor', 'end'); textHeight.setAttribute('alignment-baseline', 'middle'); 
         textHeight.textContent = `${Math.floor(el.h/12)}'${Math.round(el.h%12)}"`;
-        dimGroup.appendChild(textHeight);
+        
+        displayIdx++;
     });
+
+    hideExcessSVG('dim-auto-tline', displayIdx); hideExcessSVG('dim-auto-ttext', displayIdx);
+    hideExcessSVG('dim-auto-lline', displayIdx); hideExcessSVG('dim-auto-ltext', displayIdx);
 }
 
 // =========================================
@@ -1247,78 +1247,47 @@ document.addEventListener('click', (e) => {
 // PHASE 2: PERSISTENCE & REPORTING
 // =========================================
 
-// --- 3. Auto-Area Calculation Dashboard ---
-function updateAreaDashboard() {
+// --- 3. Auto-Area Calculation Dashboard (Worker Receiver) ---
+window.renderAreaUI = function(areaData) {
     const dash = document.getElementById('area-dashboard');
-    const totalBuiltAreaUI = document.getElementById('total-built-area'); // Target the new div
+    const totalBuiltAreaUI = document.getElementById('total-built-area'); 
 
     if (!dash) return;
 
-    if (elements.length === 0) {
-        dash.innerHTML = '<div style="color: #94a3b8; text-align: center;">Add rooms to see calculations...</div>';
-        if (totalBuiltAreaUI) totalBuiltAreaUI.innerText = `Built-Up Area: 0 sq.ft`;
-        return;
-    }
-
-    let currentFloorTotals = {};
-    let currentFloorGrandTotal = 0;
-    let totalBuiltUpAreaAllFloors = 0;
-
-    elements.forEach(el => {
-        // Skip furniture and staircases in the square footage calc
-        if (el.isFurniture || el.type === 'staircase') return; 
-        
-        const sqft = (el.w * el.h) / 144; // w and h are in inches
-        
-        // 1. Add to the GLOBAL Built-Up Area (All Floors)
-        totalBuiltUpAreaAllFloors += sqft;
-        
-        // 2. Add to the Local Breakdown ONLY if on the current floor
-        if (el.floor === currentFloor) {
-            currentFloorGrandTotal += sqft;
-            
-            // Group by type (Living, Bedroom, etc.)
-            const typeName = el.customName || el.type.toUpperCase();
-            if (!currentFloorTotals[typeName]) currentFloorTotals[typeName] = 0;
-            currentFloorTotals[typeName] += sqft;
-        }
-    });
-
-    // Update the New UI Element
+    // 1. Update the Global Built-Up Area
     if (totalBuiltAreaUI) {
-        totalBuiltAreaUI.innerText = `Built-Up Area: ${totalBuiltUpAreaAllFloors.toFixed(1)} sq.ft`;
+        totalBuiltAreaUI.innerText = `Built-Up Area: ${areaData.totalBuiltUpAreaAllFloors.toFixed(1)} sq.ft`;
     }
 
-    // Handle empty current floor
-    if (Object.keys(currentFloorTotals).length === 0) {
+    // 2. Handle empty current floor
+    if (Object.keys(areaData.currentFloorTotals).length === 0) {
         dash.innerHTML = '<div style="color: #94a3b8; text-align: center;">No rooms on this floor...</div>';
         return;
     }
 
-    // Build the UI HTML for the Current Floor
+    // 3. Build the UI HTML for the Current Floor
     let html = '';
     
-    // Sort rooms from largest to smallest area
-    const sortedRooms = Object.keys(currentFloorTotals).sort((a, b) => currentFloorTotals[b] - currentFloorTotals[a]);
-    
-    sortedRooms.forEach(room => {
+    // The Web Worker already sorted the rooms by size for us, so we just loop and draw!
+    for (const [room, sqft] of Object.entries(areaData.currentFloorTotals)) {
         html += `
             <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 4px;">
                 <span style="color: #cbd5e1;">${room}</span>
-                <span style="color: #38bdf8; font-weight: bold; font-family: monospace;">${currentFloorTotals[room].toFixed(1)} sqft</span>
+                <span style="color: #38bdf8; font-weight: bold; font-family: monospace;">${sqft.toFixed(1)} sqft</span>
             </div>
         `;
-    });
+    }
 
+    // 4. Append the Grand Total
     html += `
         <div style="display: flex; justify-content: space-between; margin-top: 6px; padding-top: 6px; border-top: 1px solid #38bdf8;">
             <span style="color: #f8fafc; font-weight: 900;">THIS FLOOR TOTAL</span>
-            <span style="color: #10b981; font-weight: 900; font-family: monospace; font-size: 0.85rem;">${currentFloorGrandTotal.toFixed(1)} sqft</span>
+            <span style="color: #10b981; font-weight: 900; font-family: monospace; font-size: 0.85rem;">${areaData.currentFloorGrandTotal.toFixed(1)} sqft</span>
         </div>
     `;
 
     dash.innerHTML = html;
-}
+};
 
 
 // ==========================================

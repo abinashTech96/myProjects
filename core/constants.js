@@ -41,6 +41,24 @@ const ARCH_CONFIG = {
             plant: { w: 18, h: 18 }
         }
     },
+    // 🌟 UNIFIED THEME DICTIONARY
+    THEME: {
+        PRIMARY: '#38bdf8',   // Neon Cyan
+        SUCCESS: '#10b981',   // Emerald Green
+        DANGER: '#ef4444',    // Red
+        WARNING: '#f59e0b',   // Amber Gold
+        MUTED: '#94a3b8',     // Slate Gray
+        BACKGROUND: '#0f172a' // Deep Slate
+    },
+    // 🌟 UNIFIED Z-INDEX DICTIONARY
+    Z_LAYERS: {
+        BACKGROUND: 0,
+        CANVAS: 10,
+        FLOATING_HUD: 100,
+        SIDEBAR: 1000,
+        MODAL: 10000,
+        TOUR_OVERLAY: 99999
+    },
     // Unified color dictionary (combining 2D RGB and 3D Hex)
     COLORS: {
         living: { rgb: '168, 85, 247', hex: 0xa855f7 },

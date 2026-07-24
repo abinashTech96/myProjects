@@ -290,74 +290,82 @@ function toggleHybrid(panelName) {
 
 
 // =========================================
-// PDF EXPORT ENGINE (Paste at bottom of actions.js)
+// VECTOR PDF EXPORT ENGINE (Browser Native)
 // =========================================
-window.exportPDF = async function() {
-    try {
-        // Change button to loading state
-        const btn = document.querySelector('button[title="Export PDF"]');
-        let oldLabel = "PDF";
-        if (btn) {
-            oldLabel = btn.innerHTML;
-            btn.innerHTML = `<span class="icon">⏳</span><span class="btn-label">Wait...</span>`;
-        }
-        
-        const { jsPDF } = window.jspdf;
-        
-        // 1. Create a pristine "Digital Paper" wrapper (A4 Landscape aspect ratio)
-        const wrapper = document.createElement('div');
-        wrapper.style.cssText = 'position:fixed; top:0; left:-9999px; width:1123px; height:794px; background:white; padding:40px; box-sizing:border-box; font-family:sans-serif; display:flex; flex-direction:column;';
-        
-        // 2. Main Border Frame
-        const borderDiv = document.createElement('div');
-        borderDiv.style.cssText = 'border: 4px solid #0f172a; flex-grow:1; display:flex; flex-direction:column; position:relative; background:#f8fafc; overflow:hidden;';
-        
-        // 3. Clone the SVG Blueprint
-        const svgClone = UI.blueprint.cloneNode(true);
-        svgClone.style.cssText = 'width:100%; height:100%; object-fit:contain;';
-        borderDiv.appendChild(svgClone);
-        
-        // 4. Create the Professional Title Block
-        const titleBlock = document.createElement('div');
-        titleBlock.style.cssText = 'position:absolute; bottom:0; right:0; width:380px; background:white; border-top:4px solid #0f172a; border-left:4px solid #0f172a; display:grid; grid-template-columns: 1fr 1fr;';
-        
-        const dateStr = new Date().toLocaleDateString();
-        // Calculate Total Area
-        const totalArea = elements.reduce((sum, el) => sum + ((el.w * el.h) / 144), 0).toFixed(1);
+window.exportPDF = function() {
+    // 1. Clone the pristine SVG canvas directly
+    const svgNode = document.getElementById('blueprint').cloneNode(true);
+    
+    // 2. Remove all UI overlays, crosshairs, and selection borders from the clone
+    const layersToHide = ['smart-guides', 'measure-group', 'column-container', 'dim-group'];
+    layersToHide.forEach(id => {
+        const el = svgNode.querySelector(`#${id}`);
+        if (el) el.remove();
+    });
+    
+    // Remove the glowing selection border from any active room
+    svgNode.querySelectorAll('.room-selected').forEach(el => {
+        el.classList.remove('room-selected');
+        el.setAttribute('stroke', '#ffffff');
+    });
 
-        titleBlock.innerHTML = `
-            <div style="grid-column: span 2; padding: 12px; background:#0f172a; color:white; text-align:center; font-weight:900; font-size:1.3rem; letter-spacing:2px;">ARCHCAD PRO</div>
-            <div style="padding: 10px; border-right: 2px solid #0f172a; border-bottom: 2px solid #0f172a; font-size:0.8rem;"><strong>PROJECT:</strong><br><span style="font-size:1rem;">Residential Floorplan</span></div>
-            <div style="padding: 10px; border-bottom: 2px solid #0f172a; font-size:0.8rem;"><strong>DATE:</strong><br><span style="font-size:1rem;">${dateStr}</span></div>
-            <div style="padding: 10px; border-right: 2px solid #0f172a; font-size:0.8rem;"><strong>DRAWN BY:</strong><br><span style="font-size:1rem;">System Admin</span></div>
-            <div style="padding: 10px; font-size:0.8rem;"><strong>TOTAL AREA:</strong><br><span style="font-size:1rem;">${totalArea} sqft</span></div>
-        `;
-        
-        borderDiv.appendChild(titleBlock);
-        wrapper.appendChild(borderDiv);
-        document.body.appendChild(wrapper);
-        
-        // 5. Generate high-res image of the wrapper
-        const canvas = await html2canvas(wrapper, { scale: 2, useCORS: true });
-        const imgData = canvas.toDataURL('image/jpeg', 1.0);
-        
-        // 6. Print to PDF
-        const pdf = new jsPDF({ orientation: 'landscape', format: 'a4' });
-        pdf.addImage(imgData, 'JPEG', 0, 0, 297, 210); // 297x210 is A4 size in mm
-        pdf.save('ArchCAD_Pro_Export.pdf');
-        
-        // Cleanup
-        document.body.removeChild(wrapper);
-        if (btn) btn.innerHTML = oldLabel;
-        
-    } catch (error) {
-        console.error("PDF Export failed: ", error);
-        alert("Failed to generate PDF. Please ensure you are connected to the internet to load the export libraries.");
-        
-        // Reset button if it fails
-        const btn = document.querySelector('button[title="Export PDF"]');
-        if (btn) btn.innerHTML = `<span class="icon">📄</span><span class="btn-label">PDF</span>`;
-    }
+    // 3. Create a clean, temporary print window
+    const printWindow = window.open('', '_blank', 'width=1200,height=800');
+    
+    // Calculate Total Area for the Title Block
+    const totalArea = elements.reduce((sum, el) => sum + ((el.w * el.h) / 144), 0).toFixed(1);
+    const dateStr = new Date().toLocaleDateString();
+
+    // 4. Inject the Vector SVG and a professional Title Block into the print window
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+            <head>
+                <title>ArchCAD_Blueprint_Export</title>
+                <style>
+                    body { margin: 0; padding: 0; background: #ffffff; font-family: sans-serif; }
+                    .print-wrapper { width: 100vw; height: 100vh; display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; }
+                    .frame { flex-grow: 1; border: 4px solid #0f172a; position: relative; overflow: hidden; display: flex; justify-content: center; align-items: center; background: #0f172a; }
+                    svg { width: 100%; height: 100%; object-fit: contain; }
+                    
+                    /* The Professional Title Block */
+                    .title-block { position: absolute; bottom: 0; right: 0; width: 400px; background: white; border-top: 4px solid #0f172a; border-left: 4px solid #0f172a; display: grid; grid-template-columns: 1fr 1fr; color: #0f172a; }
+                    .title-header { grid-column: span 2; padding: 12px; background: #0f172a; color: white; text-align: center; font-weight: 900; font-size: 1.2rem; letter-spacing: 2px; }
+                    .title-cell { padding: 10px; border-right: 2px solid #0f172a; border-bottom: 2px solid #0f172a; font-size: 0.7rem; }
+                    .title-cell:nth-child(even) { border-right: none; }
+                    .title-cell strong { color: #64748b; }
+                    .title-val { display: block; font-size: 1rem; font-weight: bold; margin-top: 4px; }
+                    
+                    /* Force landscape mode in the browser print dialog */
+                    @page { size: landscape; margin: 0; }
+                </style>
+            </head>
+            <body>
+                <div class="print-wrapper">
+                    <div class="frame">
+                        ${svgNode.outerHTML}
+                        <div class="title-block">
+                            <div class="title-header">ARCHCAD PRO</div>
+                            <div class="title-cell"><strong>PROJECT</strong><span class="title-val">Floorplan</span></div>
+                            <div class="title-cell"><strong>DATE</strong><span class="title-val">${dateStr}</span></div>
+                            <div class="title-cell" style="border-bottom: none;"><strong>DRAWN BY</strong><span class="title-val">System Admin</span></div>
+                            <div class="title-cell" style="border-bottom: none;"><strong>TOTAL AREA</strong><span class="title-val">${totalArea} sqft</span></div>
+                        </div>
+                    </div>
+                </div>
+                <script>
+                    // Wait for the SVG to render, then open the print dialog!
+                    window.onload = () => {
+                        setTimeout(() => {
+                            window.print();
+                            window.close();
+                        }, 500);
+                    };
+                </script>
+            </body>
+        </html>
+    `);
+    printWindow.document.close();
 };
 
 // =========================================
@@ -763,70 +771,6 @@ window.calculateVastuScore = function() {
 
     return { score, text: mainText, color };
 };
-
-/*
-window.calculateVastuScore = function() {
-    let score = 0;
-    let mainText = "Add rooms to calculate Vastu.";
-    let color = "#94a3b8";
-    if (elements.length > 0) {
-        score = 50;
-        let feedback = [];
-        const inW = parseFloat(document.getElementById('inW')?.value || 272);
-        const inH = parseFloat(document.getElementById('inH')?.value || 400);
-        const cellW = inW / 3;
-        const cellH = inH / 3;
-
-        elements.forEach(el => {
-            if (el.isFurniture || el.floor > 0) return; 
-            const cx = el.x + (el.w / 2);
-            const cy = el.y + (el.h / 2);
-            let zoneStr = "";
-            if (cx > cellW * 2) zoneStr += "N";
-            else if (cx < cellW) zoneStr += "S";
-            if (cy > cellH * 2) zoneStr += "E";
-            else if (cy < cellH) zoneStr += "W";
-            if (zoneStr === "") zoneStr = "CENTER";
-            
-            if (el.type === 'kitchen') {
-                if (zoneStr === "SE") { score += 20; feedback.push("Kitchen perfectly in SE (+20)"); }
-                else if (zoneStr === "NW") { score += 10; feedback.push("Kitchen acceptable in NW (+10)"); }
-                else { score -= 15; feedback.push(`Kitchen in ${zoneStr} (Should be SE) (-15)`); }
-            }
-            if (el.type === 'puja') {
-                if (zoneStr === "NE") { score += 20; feedback.push("Puja perfectly in NE (+20)"); }
-                else { score -= 10; feedback.push(`Puja in ${zoneStr} (Should be NE) (-10)`); }
-            }
-            if (el.type === 'bedroom') {
-                if (zoneStr === "SW") { score += 15; feedback.push("Master Bed perfectly in SW (+15)"); }
-            }
-            if (el.type === 'toilet') {
-                if (zoneStr === "NE" || zoneStr === "SW") { score -= 25; feedback.push(`Toilet strictly prohibited in ${zoneStr} (-25)`); }
-                else { score += 10; }
-            }
-        });
-        
-        score = Math.max(0, Math.min(100, score));
-        color = "#10b981";
-        if (score < 40) color = "#ef4444";
-        else if (score < 70) color = "#f59e0b";
-        
-        mainText = feedback.length > 0 ? feedback[0] : "Good overall spatial flow.";
-        if (score === 50 && feedback.length === 0) mainText = "Add specific rooms (Kitchen, Puja, Toilets) for scoring.";
-    }
-    const displayElement = document.getElementById('vastuScoreDisplay');
-    const barElement = document.getElementById('vastuProgressBar');
-
-    if (displayElement) {
-        displayElement.innerText = `${score}/100`;
-        displayElement.title = mainText; 
-    }
-    if (barElement) {
-        barElement.style.width = `${score}%`;
-        barElement.style.backgroundColor = color;
-    }
-    return { score, text: mainText, color };
-};*/
 // =========================================
 // 🌟 VASTU SHASTRA SCORING ENGINE
 // =========================================

@@ -16,9 +16,13 @@
     <link rel="stylesheet" href="styles/converter.css">
     <link rel="stylesheet" href="styles/camera.css">
     <link rel="stylesheet" href="styles/navbar.css">
-    <link rel="stylesheet" href="styles/presentation.css">    
+    <link rel="stylesheet" href="styles/presentation.css">
     <link rel="stylesheet" href="styles/sidebar.css">
+    <link rel="stylesheet" href="styles/parapet.css">
     <link rel="stylesheet" href="features/room-studio/studio.css">
+    <link rel="stylesheet" href="features/showcase/showcase.css">
+    <link rel="stylesheet" href="features/cinematic-tour/tour.css">
+    <link rel="stylesheet" href="features/vastu/vastu.css">
     <link rel="stylesheet" href="features/advanced-3d/advanced3d.css">
     <link rel="stylesheet" href="features/onboarding/onboarding.css">
 </head>
@@ -189,11 +193,18 @@
                 <div class="hybrid-inner">
                     <div class="setting-card" style="padding: 8px; margin-bottom: 8px;">
                         <div class="setting-group">
-                            <label class="setting-label">ROOF STYLE</label>
-                            <select id="unitSelect" class="modern-select neo-sunken" onchange="if(typeof request3DUpdate === 'function') request3DUpdate();">
-                                <option value="hip">Hip Roof</option>
-                                <option value="gable">Gable Roof</option>
-                                <option value="flat">Flat / Parapet</option>
+                            <label class="setting-label">PARAPET STYLE</label>
+                            <select id="parapetStyleSelect" class="modern-select neo-sunken" onchange="if(typeof request3DUpdate === 'function') request3DUpdate();">
+                                <option value="premium-canopy">Premium Facade</option>
+                                <option value="modern-brown">Modern Brown & White</option>
+                                <option value="geo-interlock">Geometric Interlock</option>
+                                <option value="classic-curve">Classic Curves</option>
+                                <option value="modern-glass">Modern Glass</option>
+                                <option value="neo-brutalist">Neo-Brutalist (Fins & LEDs)</option>
+                                <option value="zen-pergola">Zen Pergola (Wood & Glass)</option>
+                                <option value="cyber-cantilever">Cyber Cantilever (Chrome)</option>
+                                <option value="standard">Standard Capped Wall</option>
+                                <option value="none">None (Flat Edge)</option>
                             </select>
                         </div>
                     </div>
@@ -531,11 +542,6 @@
 
             <!-- 3D Navigation Pad (Moved to right canvas) -->
             <div id="nav-pad" style="position: absolute; bottom: 20px; right: 20px; z-index: 100; display: none; flex-direction: column; align-items: flex-end; gap: 12px;">
-                <!-- 🌟 MOVED & UPGRADED: 3D LASER BUTTON -->
-                <button id="btn-laser" class="float-action-btn laser-btn" onclick="toggleLaserMeasure()">
-                    <span class="icon">🔫</span><span class="text">3D LASER: OFF</span>
-                </button>
-                
                 <button id="btn-raycaster" class="float-action-btn" onclick="toggleRaycaster()">
                     <span class="icon">🖱️</span><span class="text">3D SELECTION: OFF</span>
                 </button>
@@ -651,8 +657,16 @@
     <script src="core/engine3d-setup.js"></script>
     <script src="core/engine3d-materials.js"></script>
     <script src="core/engine3d-builders.js"></script>
+    <script src="core/parapet.js"></script>
     <script src="core/engine3d.js"></script>
     <script src="core/actions.js"></script>
+    <!-- Feature Modules -->
+    <script src="features/vastu/vastu.js"></script>
+    <script src="features/section-cut/elevation.js"></script>
+    <script src="features/export/export.js"></script>
+    <!-- Make sure this is here! -->
+    <script src="features/cinematic-tour/tour.js"></script> 
+    <script src="features/showcase/showcase.js"></script>
     <script src="features/furniture-factory/furniture3d.js"></script>
     <script src="features/room-studio/studio.js"></script>
     <script src="features/advanced-3d/advanced3d.js"></script>

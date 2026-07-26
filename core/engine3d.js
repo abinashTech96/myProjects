@@ -30,7 +30,6 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
         if (!scene3D) init3D();
         generate3DModel();
-        // ✅ ADD THIS: Force the layout to 2D view on load
         if (typeof setWorkspaceLayout === 'function') {
             setWorkspaceLayout('2d'); 
         }
@@ -59,101 +58,7 @@ let isRaycasterActive = false;
 const raycaster = new THREE.Raycaster();
 const mouse3D = new THREE.Vector2();
 
-// =========================================
-// 🌟 NEW: LIVE 3D LASER MEASURE TOOL
-// =========================================
-let laserActive = false;
-let laserLine = null;
-let laserHUD = null;
-let crosshairHUD = null;
 
-window.toggleLaserMeasure = function() {
-    laserActive = !laserActive;
-
-    // 🌟 Update the UI Button colors
-    const btn = document.getElementById('btn-laser');
-    if (btn) {
-        const textSpan = btn.querySelector('.text');
-        if (laserActive) {
-            if (textSpan) textSpan.innerHTML = 'LASER: ON';
-            btn.style.background = '#0ea5e9';
-            btn.style.color = '#0f172a';
-        } else {
-            if (textSpan) textSpan.innerHTML = 'LASER: OFF';
-            btn.style.background = 'rgba(15, 23, 42, 0.85)';
-            btn.style.color = '#0ea5e9';
-        }
-    }
-    
-    // Create UI elements dynamically if they don't exist
-    if (!laserHUD) {
-        laserHUD = document.createElement('div');
-        laserHUD.style.cssText = 'position:fixed; top:50%; left:50%; transform:translate(20px, -20px); background:rgba(15,23,42,0.85); backdrop-filter:blur(8px); border:1px solid #0ea5e9; color:#0ea5e9; padding:8px 12px; border-radius:8px; font-family:monospace; font-size:1.1rem; font-weight:bold; z-index:10000; pointer-events:none; box-shadow:0 0 15px rgba(14,165,233,0.4);';
-        document.body.appendChild(laserHUD);
-        
-        crosshairHUD = document.createElement('div');
-        crosshairHUD.innerHTML = '⌖';
-        crosshairHUD.style.cssText = 'position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); color:#0ea5e9; font-size:1.8rem; font-weight:100; z-index:10000; pointer-events:none; text-shadow:0 0 10px #0ea5e9;';
-        document.body.appendChild(crosshairHUD);
-    }
-    
-    laserHUD.style.display = laserActive ? 'block' : 'none';
-    crosshairHUD.style.display = laserActive ? 'block' : 'none';
-    
-    if (!laserActive && laserLine) {
-        scene3D.remove(laserLine);
-        laserLine = null;
-    }
-};
-
-function updateLaserMeasure() {
-    if (!laserActive || !camera3D || !scene3D || !buildingGroup) return;
-    
-    // Shoot ray directly from the center of the camera view
-    raycaster.setFromCamera(new THREE.Vector2(0, 0), camera3D);
-    
-    // Intersect against the entire building group
-    const intersects = raycaster.intersectObjects(buildingGroup.children, true);
-    
-    if (intersects.length > 0) {
-        const hit = intersects[0];
-        const dist = hit.distance;
-        
-        // Convert Three.js units to Real World Feet/Inches
-        const scaleInput = document.getElementById('scaleInput');
-        const SCALE = scaleInput ? parseFloat(scaleInput.value) || 1.2 : 1.2;
-        const totalInches = dist / SCALE;
-        const ft = Math.floor(totalInches / 12);
-        const inchRem = Math.round(totalInches % 12);
-        
-        laserHUD.innerHTML = `📏 ${ft}' ${inchRem}"`;
-        
-        // Draw Neon Beam Line
-        if (!laserLine) {
-            const mat = new THREE.LineBasicMaterial({ color: 0x0ea5e9, linewidth: 2, transparent: true, opacity: 0.8 });
-            const geo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
-            laserLine = new THREE.Line(geo, mat);
-            scene3D.add(laserLine);
-        }
-        
-        const positions = laserLine.geometry.attributes.position.array;
-        const camPos = new THREE.Vector3();
-        camera3D.getWorldPosition(camPos);
-        
-        // Push start point slightly ahead of camera so it doesn't clip into the lens
-        const startPos = camPos.clone().add(raycaster.ray.direction.clone().multiplyScalar(5));
-        
-        positions[0] = startPos.x; positions[1] = startPos.y; positions[2] = startPos.z;
-        positions[3] = hit.point.x; positions[4] = hit.point.y; positions[5] = hit.point.z;
-        laserLine.geometry.attributes.position.needsUpdate = true;
-    } else {
-        laserHUD.innerHTML = `📏 --' --"`;
-        if (laserLine) { scene3D.remove(laserLine); laserLine = null; }
-    }
-}
-// =========================================
-// 🌟 NEW: LIVE 3D LASER MEASURE TOOL
-// =========================================
 
 // --- 🌟 NEW: 3D PERFORMANCE DEBOUNCER ---
 let render3DTimeout = null;
@@ -166,13 +71,9 @@ function request3DUpdate() {
 }
 
 
-
-
-
 // =========================================
 // 3D UTILITIES 
 // =========================================
-
 
 function pan(direction) {
     if (!controls3D || !camera3D) return;
@@ -207,10 +108,13 @@ function startWalkthrough() {
             controls3D.enabled = true; 
             document.getElementById('nav-pad').style.display = 'flex'; 
             
+            // Clean up the premium UI when exiting
             const hint = document.getElementById('fly-hint');
             if(hint) hint.remove();
+            const crosshair = document.getElementById('walk-crosshair');
+            if(crosshair) crosshair.remove();
 
-            // Kill momentum instantly when exiting drone mode
+            // Kill momentum instantly when exiting
             moveState = { forward: false, backward: false, left: false, right: false, up: false, down: false };
         });
     }
@@ -219,18 +123,34 @@ function startWalkthrough() {
     controls3D.enabled = false; 
     document.getElementById('nav-pad').style.display = 'none';
 
+    // 🌟 PREMIUM UPGRADE: Glassmorphism HUD overlay
     if (!document.getElementById('fly-hint')) {
         const hint = document.createElement('div');
         hint.id = 'fly-hint';
-        hint.innerHTML = "<b>DRONE MODE:</b> WASD to Move | Mouse to Look | <b>E</b> to Fly Up | <b>Q</b> to Fly Down | <b>ESC</b> to Exit";
-        hint.style.cssText = "position:absolute; bottom:20px; left:50%; transform:translateX(-50%); background:rgba(15,23,42,0.8); color:#38bdf8; padding:10px 20px; border-radius:8px; font-size:14px; z-index:100; pointer-events:none; border:1px solid #38bdf8; box-shadow: 0 0 15px rgba(56, 189, 248, 0.2);";
+        hint.innerHTML = `
+            <div style="font-size: 1.1rem; font-weight: bold; color: #f8fafc; margin-bottom: 12px;">🚶 VIRTUAL TOUR ACTIVE</div>
+            <div style="display: grid; grid-template-columns: auto 1fr; gap: 8px 15px; text-align: left; font-size: 0.8rem; color: #94a3b8; align-items: center;">
+                <div><kbd style="background: rgba(255,255,255,0.1); padding: 4px 8px; border-radius: 4px; color: #38bdf8; font-family: monospace;">W A S D</kbd></div><div>Walk Around</div>
+                <div><kbd style="background: rgba(255,255,255,0.1); padding: 4px 8px; border-radius: 4px; color: #38bdf8; font-family: monospace;">MOUSE</kbd></div><div>Look Around</div>
+                <div><kbd style="background: rgba(255,255,255,0.1); padding: 4px 8px; border-radius: 4px; color: #ef4444; font-family: monospace;">ESC</kbd></div><div>Exit Tour</div>
+            </div>
+        `;
+        hint.style.cssText = "position:absolute; bottom:30px; left:50%; transform:translateX(-50%); background:rgba(15, 23, 42, 0.85); backdrop-filter:blur(10px); padding:20px 30px; border-radius:16px; z-index:100; pointer-events:none; border:1px solid rgba(56, 189, 248, 0.3); box-shadow: 0 10px 40px rgba(0,0,0,0.6); text-align: center;";
         document.body.appendChild(hint);
     }
 
+    // 🌟 PREMIUM UPGRADE: Minimalist FPS Crosshair
+    if (!document.getElementById('walk-crosshair')) {
+        const crosshair = document.createElement('div');
+        crosshair.id = 'walk-crosshair';
+        crosshair.style.cssText = "position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); width:6px; height:6px; background:rgba(255,255,255,0.9); border-radius:50%; z-index:100; pointer-events:none; box-shadow:0 0 6px rgba(0,0,0,0.8); mix-blend-mode: difference;";
+        document.body.appendChild(crosshair);
+    }
+
+    // Lock camera perfectly to human eye level on start
     const scaleInput = document.getElementById('scaleInput');
     const SCALE = scaleInput ? parseFloat(scaleInput.value) || 1.2 : 1.2;
-    camera3D.position.set(500, 66 * SCALE, 1000); 
-    camera3D.lookAt(500, 66 * SCALE, 500);
+    camera3D.position.set(camera3D.position.x, 65 * SCALE, camera3D.position.z); 
     
     fpsControls.lock();
 }
@@ -299,23 +219,54 @@ document.addEventListener('DOMContentLoaded', () => {
             const intersects = raycaster.intersectObjects(buildingGroup.children, true);
 
             let clickedRoomIndex = -1;
+            let clickedParapet = false;
+
+            // Loop through all clicked elements to find matches
             for (let i = 0; i < intersects.length; i++) {
                 const object = intersects[i].object;
+                
+                if (object.userData && object.userData.isParapet) {
+                    clickedParapet = true;
+                    break;
+                }
+                
                 if (object.userData && object.userData.isRoom) {
                     clickedRoomIndex = object.userData.roomIndex;
                     break; 
                 }
             }
 
+            if (clickedParapet) {
+                if (typeof ParapetModule !== 'undefined' && typeof ParapetModule.openEditor === 'function') {
+                    ParapetModule.openEditor();
+                }
+                return; // Stop execution so it doesn't clear room selection
+            } else {
+                if (typeof ParapetModule !== 'undefined' && typeof ParapetModule.closeEditor === 'function') {
+                    ParapetModule.closeEditor();
+                }
+            }
+
+            // Existing Room Selection Logic
             if (typeof selectedElIndex !== 'undefined') {
                 selectedElIndex = clickedRoomIndex;
+
+                // 🌟 THE FIX 3: Auto-switch the 2D UI to the exact floor of the clicked 3D room!
+                if (clickedRoomIndex !== -1 && typeof elements !== 'undefined' && elements[clickedRoomIndex]) {
+                    const targetFloor = elements[clickedRoomIndex].floor;
+                    if (currentFloor !== targetFloor) {
+                        currentFloor = targetFloor; 
+                        // Update the floor tabs in the UI without wiping the selection
+                        if (typeof renderFloorSelectors === 'function') renderFloorSelectors();
+                    }
+                }
+
                 if (typeof renderSidebar === 'function') renderSidebar(); 
                 if (typeof updateCanvas === 'function') updateCanvas();  
             }
         });
     }
 });
-
 // =========================================
 // 3D PERFORMANCE MANAGEMENT
 // =========================================
@@ -393,91 +344,6 @@ function updateSunlight(hour) {
         }
     }
 }
-
-// =========================================
-// PHASE 3: CINEMATIC TOUR ENGINE
-// =========================================
-
-function captureWaypoint() {
-    // 🌟 FIXED: Use camera3D and controls3D
-    if (!camera3D || !controls3D) return; 
-    
-    waypoints.push({
-        position: camera3D.position.clone(),
-        target: controls3D.target.clone()
-    });
-    
-    const countEl = document.getElementById('wp-count');
-    if (countEl) countEl.innerText = waypoints.length;
-}
-
-function clearTour() {
-    waypoints = [];
-    const countEl = document.getElementById('wp-count');
-    if (countEl) countEl.innerText = '0';
-}
-
-function playCinematicTour() {
-    if (waypoints.length < 2) {
-        alert("Please set at least 2 waypoints using the camera first!");
-        return;
-    }
-    if (isPlayingTour) return;
-    
-    isPlayingTour = true;
-    controls3D.enabled = false; // Disable mouse orbit while touring
-    
-    let currentWpIndex = 0;
-    const durationPerPoint = 3000; // 3 seconds per transition
-    let startTime = performance.now();
-    
-    function animateTour(time) {
-        if (!isPlayingTour) return;
-        
-        const elapsed = time - startTime;
-        let rawProgress = elapsed / durationPerPoint;
-        
-        const startWp = waypoints[currentWpIndex];
-        const endWp = waypoints[currentWpIndex + 1];
-        
-        // 🌟 FIXED: Strictly check raw elapsed time so it NEVER goes over 100%
-        if (rawProgress < 1) {
-            // Easing function (Smoothstep) applied safely
-            let progress = rawProgress * rawProgress * (3 - 2 * rawProgress); 
-            
-            // Interpolate Camera Position
-            camera3D.position.lerpVectors(startWp.position, endWp.position, progress);
-            // Interpolate Camera Look Target
-            controls3D.target.lerpVectors(startWp.target, endWp.target, progress);
-            controls3D.update(); 
-            
-            requestAnimationFrame(animateTour);
-        } else {
-            // 🌟 FIXED: Snap exactly to the target to prevent micro-drifting
-            camera3D.position.copy(endWp.position);
-            controls3D.target.copy(endWp.target);
-            controls3D.update();
-
-            // Move to next waypoint leg
-            currentWpIndex++;
-            
-            if (currentWpIndex >= waypoints.length - 1) {
-                // Tour Finished safely
-                isPlayingTour = false;
-                controls3D.enabled = true; 
-            } else {
-                // 🌟 FIXED: Continue to next point using exact frame time
-                startTime = time; 
-                requestAnimationFrame(animateTour);
-            }
-        }
-    }
-    
-    requestAnimationFrame(animateTour);
-}
-
-
-
 
 // =========================================
 // 🌟 EXPLODED AXONOMETRIC VIEW ENGINE

@@ -22,6 +22,34 @@ function getCachedSolidMaterial(hexColor, opacity) {
 function generate3DModel() {
     // 🌟 THE FIX: Prevent early auto-saves from building 3D before the engine boots!
     if (typeof scene3D === 'undefined' || !scene3D) return;
+    
+    const real3DToggle = document.getElementById('real3DToggle');
+    const useReal3D = real3DToggle ? real3DToggle.checked : false;
+    
+    if (!buildingGroup) {
+        buildingGroup = new THREE.Group();
+        scene3D.add(buildingGroup);
+    } else {
+        disposeScene(); 
+    }
+    
+    const { SCALE, unit, inW, inH, I, WALL_HEIGHT } = get3DEnvironmentParams();
+    
+    if (typeof elements !== 'undefined' && elements.length > 0) {
+        build3DRooms(SCALE, I, WALL_HEIGHT, useReal3D);
+        build3DSlabs(SCALE, I, WALL_HEIGHT, useReal3D);
+        build3DFixtures(SCALE, I, WALL_HEIGHT, useReal3D);
+        // 🌟 NEW: Dedicated, modular Parapet call!
+        if (typeof build3DParapet === 'function') {
+            build3DParapet(useReal3D);
+        }
+    }
+    
+    build3DBoundaries(SCALE, unit, I, inW, inH);
+    scene3D.add(buildingGroup);
+}
+function generate3DModelOld() {
+    if (typeof scene3D === 'undefined' || !scene3D) return;
     const real3DToggle = document.getElementById('real3DToggle');
     const useReal3D = real3DToggle ? real3DToggle.checked : false;
     if (!buildingGroup) {
@@ -35,9 +63,11 @@ function generate3DModel() {
         build3DRooms(SCALE, I, WALL_HEIGHT, useReal3D);
         build3DSlabs(SCALE, I, WALL_HEIGHT, useReal3D);
         build3DFixtures(SCALE, I, WALL_HEIGHT, useReal3D);
+        /*roof style
         if (typeof build3DRoof === 'function') {
             build3DRoof(SCALE, I, WALL_HEIGHT);
         }
+        */
     }
     build3DBoundaries(SCALE, unit, I, inW, inH);
     scene3D.add(buildingGroup);
@@ -349,41 +379,6 @@ function build3DSlabs(SCALE, I, WALL_HEIGHT, useReal3D) {
         
         slab.position.set(CX, slabY, CY); 
         buildingGroup.add(slab);
-
-        // 🌟 PARAPET: Safely locked to ONLY the maxFloor (Top Roof)
-        if (f === maxFloor) {
-            const parapetH = 36 * SCALE; 
-            const t = 6 * SCALE;         
-            
-            let pMat;
-            if (useReal3D) {
-                const pTex = getProceduralTexture('concrete').clone();
-                pTex.needsUpdate = true;
-                pTex.repeat.set(inW / 100, parapetH / 100);
-                pMat = new THREE.MeshStandardMaterial({ map: pTex, color: 0xffffff, roughness: 0.9 });
-            } else {
-                pMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8 });
-            }
-
-            // 🌟 REFACTORED: Replaced all '500's with CX and CY
-            const pN = new THREE.Mesh(new THREE.BoxGeometry(inW, parapetH, t), pMat);
-            pN.position.set(CX, slabY + (parapetH / 2), CY - (inH / 2) + (t / 2));
-            
-            const pS = new THREE.Mesh(new THREE.BoxGeometry(inW, parapetH, t), pMat);
-            pS.position.set(CX, slabY + (parapetH / 2), CY + (inH / 2) - (t / 2));
-
-            const pE = new THREE.Mesh(new THREE.BoxGeometry(t, parapetH, inH - t * 2), pMat);
-            pE.position.set(CX + (inW / 2) - (t / 2), slabY + (parapetH / 2), CY);
-            
-            const pW = new THREE.Mesh(new THREE.BoxGeometry(t, parapetH, inH - t * 2), pMat);
-            pW.position.set(CX - (inW / 2) + (t / 2), slabY + (parapetH / 2), CY);
-
-            [pN, pS, pE, pW].forEach(wall => {
-                wall.castShadow = true;
-                wall.receiveShadow = true;
-                buildingGroup.add(wall);
-            });
-        }
     }
 }
 
@@ -524,6 +519,69 @@ function build3DBoundaries(SCALE, unit, I, inW, inH) {
 function build3DRoof(SCALE, I, WALL_HEIGHT) {
     let maxFloor = -1;
     
+    // 1. Find the highest floor level in the project
+    elements.forEach(el => {
+        if (!el.isFurniture && el.floor > maxFloor) maxFloor = el.floor;
+    });
+
+    if (maxFloor < 0) return;
+
+    // 2. Calculate the exact bounding footprint of the top floor rooms
+    let minX = Infinity, minZ = Infinity, maxX = -Infinity, maxZ = -Infinity;
+    
+    elements.forEach(el => {
+        if (!el.isFurniture && el.floor === maxFloor) {
+            const rx = el.x * SCALE;
+            const rz = el.y * SCALE;
+            const rw = el.w * SCALE;
+            const rd = el.h * SCALE;
+            
+            if (rx < minX) minX = rx;
+            if (rz < minZ) minZ = rz;
+            if (rx + rw > maxX) maxX = rx + rw;
+            if (rz + rd > maxZ) maxZ = rz + rd;
+        }
+    });
+
+    if (maxX === -Infinity) return;
+
+    // 3. Base Math for a perfectly fitted Flat Roof (0 overhang, exact match)
+    const w = (maxX - minX);
+    const d = (maxZ - minZ);
+    
+    const centerX = minX + (w / 2) + I.x;
+    const centerZ = minZ + (d / 2) + I.z;
+    
+    // Lift roof to sit exactly on top of the highest walls
+    const baseY = ((maxFloor + 1) * WALL_HEIGHT);
+
+    const real3DToggle = document.getElementById('real3DToggle');
+    let roofMat;
+    
+    if (real3DToggle && real3DToggle.checked && typeof getProceduralTexture === 'function') {
+        const tex = getProceduralTexture('concrete').clone();
+        tex.needsUpdate = true;
+        tex.repeat.set(w / 60, d / 60);
+        roofMat = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.9, color: 0xcccccc });
+    } else {
+        roofMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.9 });
+    }
+
+    // 4. Build The Flat Roof Slab
+    const slabThickness = 8 * SCALE;
+    const geom = new THREE.BoxGeometry(w, slabThickness, d);
+    const roofMesh = new THREE.Mesh(geom, roofMat);
+    roofMesh.position.set(centerX, baseY + (slabThickness / 2), centerZ);
+    roofMesh.castShadow = true;
+    roofMesh.receiveShadow = true;
+    roofMesh.userData = { isRoof: true };
+    
+    buildingGroup.add(roofMesh);
+}
+/* roof style
+function build3DRoof(SCALE, I, WALL_HEIGHT) {
+    let maxFloor = -1;
+    
     // Find the highest floor level
     elements.forEach(el => {
         if (!el.isFurniture && el.floor > maxFloor) maxFloor = el.floor;
@@ -637,7 +695,7 @@ function build3DRoof(SCALE, I, WALL_HEIGHT) {
     roofMesh.userData = { isRoof: true };
     
     buildingGroup.add(roofMesh);
-}
+}*/
 
 // 🌟 NEW: STRAIGHT STAIRCASE BUILDER
 function createStraightStaircaseGroup(run, height, width, material) {

@@ -950,44 +950,6 @@ function centerOnSelection() {
     updateViewport();
 }
 
-function exportPNG() {
-    const svgElement = document.getElementById('blueprint');
-    const serializer = new XMLSerializer();
-    let svgString = serializer.serializeToString(svgElement);
-
-    if (!svgString.match(/^<svg[^>]+xmlns="http\:\/\/www\.w3\.org\/2000\/svg"/)) {
-        svgString = svgString.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
-    }
-
-    const svgBlob = new Blob([svgString], {type: 'image/svg+xml;charset=utf-8'});
-    const url = URL.createObjectURL(svgBlob);
-    const img = new Image();
-
-    img.onload = function() {
-        const canvas = document.createElement('canvas');
-        canvas.width = 2000;
-        canvas.height = 2000;
-        const ctx = canvas.getContext('2d');
-        
-        ctx.fillStyle = '#0f172a';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        URL.revokeObjectURL(url); 
-
-        const downloadLink = document.createElement('a');
-        downloadLink.href = canvas.toDataURL('image/png', 1.0);
-        downloadLink.download = 'Architectural-Blueprint.png';
-        document.body.appendChild(downloadLink);
-        downloadLink.click();
-        document.body.removeChild(downloadLink);
-    };
-    img.src = url;
-}
-
-// function exportPDF() {
-//     window.print();
-// }
-
 // --- MEASUREMENT TOOL ---
 let isMeasuringMode = false, measureStart = null, tempMeasureLine = null, measureGroup = null;
 

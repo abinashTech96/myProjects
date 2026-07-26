@@ -1,0 +1,11 @@
+/* =========================================
+   🧭 VASTU SHASTRA CSS (vastu.css)
+   ========================================= */
+/*vastu tool loaction*/
+.canvas-widget-bottom-left {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    z-index: 100;
+    pointer-events: auto;
+}

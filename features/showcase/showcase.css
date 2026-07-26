@@ -1,0 +1,77 @@
+/* =========================================
+   🌟 CLIENT SHOWCASE CSS (showcase.css)
+   ========================================= */
+
+/* --- Showcase Toggle Button --- */
+.showcase-btn { 
+    padding: 6px 10px !important; 
+    background: rgba(56, 189, 248, 0.1) !important; 
+    border: 1px solid rgba(56, 189, 248, 0.3) !important;
+    color: #bae6fd !important;
+}
+.showcase-btn:hover { box-shadow: 0 6px 15px rgba(56, 189, 248, 0.25); border-color: #38bdf8 !important; }
+
+/* --- 1. Hide all distractions --- */
+body.showcase-active .sidebar,
+body.showcase-active .pro-studio-navbar,
+body.showcase-active #mode-switch-container,
+body.showcase-active .neo-panel:not(#presentation-controls),
+body.showcase-active .ui-toggles {
+    display: none !important;
+}
+
+/* --- 2. Stretch the 3D Canvas to fill the monitor --- */
+body.showcase-active #three-container {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 9000 !important;
+}
+
+/* --- 3. Re-position the Presentation Controls --- */
+body.showcase-active #presentation-controls {
+    position: fixed !important;
+    bottom: 30px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    z-index: 10000 !important;
+    background: rgba(15, 23, 42, 0.85) !important;
+    backdrop-filter: blur(10px) !important;
+    border: 1px solid #38bdf8 !important;
+    border-radius: 12px !important;
+    padding: 20px !important;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.9) !important;
+    width: auto !important;
+    max-width: 90vw !important;
+    display: flex !important;
+    justify-content: center !important;
+}
+
+/* --- 4. Style the Exit Button --- */
+#exit-showcase-btn {
+    display: none;
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 10001;
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+    border: 1px solid #ef4444;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    backdrop-filter: blur(5px);
+    transition: all 0.2s;
+}
+
+#exit-showcase-btn:hover {
+    background: #ef4444;
+    color: white;
+}
+
+body.showcase-active #exit-showcase-btn {
+    display: block;
+}

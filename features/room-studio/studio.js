@@ -151,22 +151,26 @@ const RoomStudio = {
         const indicesToRemove = this.sandboxFixtures
             .filter(f => f.globalRef !== undefined)
             .map(f => f.globalRef)
-            .sort((a, b) => b - a); 
-        
-        indicesToRemove.forEach(idx => elements.splice(idx, 1));
-
+            .sort((a, b) => b - a);
+        indicesToRemove.forEach(idx => {
+            elements.splice(idx, 1);
+            if (typeof fixtures !== 'undefined') {
+                fixtures.forEach(fix => {
+                    if (fix.roomId > idx) {
+                        fix.roomId -= 1;
+                    }
+                });
+            }
+        });
         this.sandboxFixtures.forEach(fix => {
             const globalFurniture = JSON.parse(JSON.stringify(fix));
-            delete globalFurniture.globalRef; 
-            
+            delete globalFurniture.globalRef;
             globalFurniture.x = this.activeRoom.x + fix.x;
             globalFurniture.y = this.activeRoom.y + fix.y;
             globalFurniture.floor = this.activeRoom.floor;
             globalFurniture.locked = false;
-            
             elements.push(globalFurniture);
         });
-
         this.close();
         if (typeof updateCanvas === 'function') updateCanvas();
         if (typeof renderSidebar === 'function') renderSidebar();
@@ -194,7 +198,6 @@ const RoomStudio = {
 
     handleDragMove(event) {
         if (!this.isDragging || this.selectedFixtureIndex === -1 || this.is3DActive) return;
-        
         const pt = this.getSVGPos(event);
         const fix = this.sandboxFixtures[this.selectedFixtureIndex];
         

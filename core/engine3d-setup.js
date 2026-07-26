@@ -115,7 +115,6 @@ function init3D() {
     controls3D.target.set(500, 0, 500);
     controls3D.maxPolarAngle = Math.PI / 2 - 0.05; 
 
-
     // 🌟 PHASE 3: Dynamic Global Lighting
     hemiLight = new THREE.HemisphereLight(0xffffff, 0x444455, 0.6); // Sky color, Ground color, Intensity
     hemiLight.position.set(0, 200, 0);
@@ -170,64 +169,86 @@ function init3D() {
     let prevTime = performance.now();
 
     function animate() {
-        if (window.isEnginePaused) return; //PHASE - 1
+        if (window.isEnginePaused) return; 
         requestAnimationFrame(animate);
-        // if (!is3DMode) return;
+        
         const time = performance.now();
         const delta = (time - prevTime) / 1000;
 
         if (isWalkthrough && fpsControls.isLocked) {
+            // 1. Smooth Friction (Restored Y-axis for flying)
             velocity.x -= velocity.x * 10.0 * delta;
             velocity.y -= velocity.y * 10.0 * delta; 
-            velocity.z -= velocity.z * 10.0 * delta;
+            velocity.z -= velocity.z * 10.0 * delta; 
 
             direction.z = Number(moveState.forward) - Number(moveState.backward);
             direction.x = Number(moveState.right) - Number(moveState.left);
-            direction.y = Number(moveState.up) - Number(moveState.down);
+            direction.y = Number(moveState.up) - Number(moveState.down); // Restored E/Q keys
             direction.normalize();
 
-            const speedMultiplier = 600.0;
+            // 2. High-Speed Movement (Cranked up to 800)
+            const speedMultiplier = 800.0;
             if (moveState.forward || moveState.backward) velocity.z -= direction.z * speedMultiplier * delta;
             if (moveState.left || moveState.right) velocity.x -= direction.x * speedMultiplier * delta;
-            if (moveState.up || moveState.down) velocity.y -= direction.y * speedMultiplier * delta;
+            if (moveState.up || moveState.down) velocity.y -= direction.y * speedMultiplier * delta; 
 
             const controlObj = fpsControls.getObject();
-            
-            controlObj.translateX(velocity.x * delta);
-            controlObj.translateZ(velocity.z * delta);
-            controlObj.position.y += (velocity.y * delta);
-
-            const camBox = new THREE.Box3().setFromCenterAndSize(controlObj.position, new THREE.Vector3(15, 60, 15));
-            let isColliding = false;
-
-            if (buildingGroup) {
-                buildingGroup.children.forEach(mesh => {
-                    if (mesh.geometry && mesh.geometry.type === 'BoxGeometry' && mesh.position.y > 10) {
-                        const wallBox = new THREE.Box3().setFromObject(mesh);
-                        if (camBox.intersectsBox(wallBox)) isColliding = true;
-                    }
-                });
-            }
-
-            if (isColliding) {
-                controlObj.translateX(-velocity.x * delta);
-                controlObj.translateZ(-velocity.z * delta);
-                velocity.x = 0;
-                velocity.z = 0;
-            }
+            const originalPos = controlObj.position.clone();
 
             const scaleInput = document.getElementById('scaleInput');
             const SCALE = scaleInput ? parseFloat(scaleInput.value) || 1.2 : 1.2;
-            if (controlObj.position.y < 20 * SCALE) {
-                controlObj.position.y = 20 * SCALE;
+            const HITBOX_RADIUS = 10 * SCALE; 
+
+            // 3. Wall Sliding Engine (Check X and Z independently)
+            
+            // --- Test X Movement ---
+            controlObj.translateX(velocity.x * delta);
+            let hitX = false;
+            let camBoxX = new THREE.Box3().setFromCenterAndSize(controlObj.position, new THREE.Vector3(HITBOX_RADIUS, 60, HITBOX_RADIUS));
+            
+            if (buildingGroup) {
+                for (let mesh of buildingGroup.children) {
+                    if (mesh.geometry && mesh.geometry.type === 'BoxGeometry' && mesh.position.y > 10) {
+                        if (camBoxX.intersectsBox(new THREE.Box3().setFromObject(mesh))) { hitX = true; break; }
+                    }
+                }
+            }
+            if (hitX) {
+                controlObj.position.x = originalPos.x; 
+                velocity.x = 0;
+            }
+
+            // --- Test Z Movement ---
+            originalPos.copy(controlObj.position); 
+            controlObj.translateZ(velocity.z * delta);
+            let hitZ = false;
+            let camBoxZ = new THREE.Box3().setFromCenterAndSize(controlObj.position, new THREE.Vector3(HITBOX_RADIUS, 60, HITBOX_RADIUS));
+
+            if (buildingGroup) {
+                for (let mesh of buildingGroup.children) {
+                    if (mesh.geometry && mesh.geometry.type === 'BoxGeometry' && mesh.position.y > 10) {
+                        if (camBoxZ.intersectsBox(new THREE.Box3().setFromObject(mesh))) { hitZ = true; break; }
+                    }
+                }
+            }
+            if (hitZ) {
+                controlObj.position.z = originalPos.z; 
+                velocity.z = 0;
+            }
+
+            // 4. Restore Vertical Flying (Up/Down)
+            controlObj.position.y += (velocity.y * delta);
+
+            // Floor boundary so you don't fall into the void, but can still fly into the sky
+            if (controlObj.position.y < 40 * SCALE) { 
+                controlObj.position.y = 40 * SCALE;
+                velocity.y = 0;
             }
 
         } else {
             controls3D.update(); 
         }
-        // 🌟 NEW: Update the Laser Measure before drawing the frame!
-        if (typeof updateLaserMeasure === 'function') updateLaserMeasure();
-
+        
         renderer3D.render(scene3D, camera3D);
         prevTime = time;
     }
@@ -236,19 +257,14 @@ function init3D() {
     // 🚀 PHASE 2: RESIZE OBSERVER (Hardware Accelerated Resizing)
     const resizeObserver = new ResizeObserver(entries => {
         if (!is3DMode || !camera3D || !renderer3D) return;
-        
         for (let entry of entries) {
             const { width, height } = entry.contentRect;
-            
-            // Only update if dimensions actually changed (prevents micro-stutters)
             if (width > 0 && height > 0) {
                 camera3D.aspect = width / height;
                 camera3D.updateProjectionMatrix();
-                renderer3D.setSize(width, height, false); // false prevents canvas scaling issues
+                renderer3D.setSize(width, height, false);
             }
         }
     });
-
-    // Only watch the specific 3D container, not the whole window!
     resizeObserver.observe(container);
 }

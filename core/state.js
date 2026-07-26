@@ -74,7 +74,6 @@ const ProjectState = {
         return newState;
     },
 
-    // Rebuilds the house from the Base Frame + Deltas
     _buildStateFromHistory(targetIndex) {
         if (!this.history.baseState) return { elements: [], fixtures: [] };
         let state = this._clone(this.history.baseState);
@@ -84,28 +83,20 @@ const ProjectState = {
         return state;
     },
 
-    // --- PUBLIC API ---
     saveState(actionName = "Action Executed") {
         const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         const currentState = { elements: this.data.elements, fixtures: this.data.fixtures };
-
-        // Save the very first state as our Base Frame
         if (!this.history.baseState) {
             this.history.baseState = this._clone(currentState);
             return;
         }
-
         const lastState = this.history.stack.length > 0
             ? this._buildStateFromHistory(this.history.stack.length - 1)
             : this.history.baseState;
-
         const delta = this._getDelta(lastState, currentState);
-
-        if (!delta) return; // If user clicked but didn't change anything, don't bloat history!
+        if (!delta) return;
 
         const hist = this.history.stack;
-        
-        // Smart Continuous Dragging Overwrite
         if (hist.length > 0 && actionName === "Moved Element" && hist[hist.length - 1].action === "Moved Element") {
             const stateBeforeMove = hist.length > 1 ? this._buildStateFromHistory(hist.length - 2) : this.history.baseState;
             const updatedDelta = this._getDelta(stateBeforeMove, currentState);
@@ -116,16 +107,12 @@ const ProjectState = {
             if (typeof renderTimeMachine === 'function') renderTimeMachine();
             return;
         }
-
         hist.push({ action: actionName, time: timeStr, delta: delta });
         this.history.redoStack = [];
-
-        // If history exceeds max, lock in the oldest delta to the base frame to save memory
         if (hist.length > this.history.MAX_HISTORY) {
             const oldestItem = hist.shift();
             this.history.baseState = this._applyDelta(this.history.baseState, oldestItem.delta);
         }
-
         if (typeof renderTimeMachine === 'function') renderTimeMachine();
     },
 
@@ -133,7 +120,6 @@ const ProjectState = {
         if (this.history.stack.length > 0) {
             const popped = this.history.stack.pop();
             this.history.redoStack.push(popped);
-
             const restoredState = this.history.stack.length > 0
                 ? this._buildStateFromHistory(this.history.stack.length - 1)
                 : this.history.baseState;
@@ -150,7 +136,6 @@ const ProjectState = {
         if (this.history.redoStack.length > 0) {
             const item = this.history.redoStack.pop();
             this.history.stack.push(item);
-
             const restoredState = this._buildStateFromHistory(this.history.stack.length - 1);
             this.data.elements = this._clone(restoredState.elements);
             this.data.fixtures = this._clone(restoredState.fixtures);
@@ -162,15 +147,12 @@ const ProjectState = {
 
     jumpToTime(index) {
         if (index < 0 || index >= this.history.stack.length) return false;
-        
         const toRedo = this.history.stack.splice(index + 1);
         toRedo.reverse().forEach(item => this.history.redoStack.push(item));
-
         const restoredState = this._buildStateFromHistory(index);
         this.data.elements = this._clone(restoredState.elements);
         this.data.fixtures = this._clone(restoredState.fixtures);
         this._syncGlobals();
-
         if (typeof renderSidebar === 'function') renderSidebar();
         if (typeof updateCanvas === 'function') updateCanvas(true);
         if (typeof renderTimeMachine === 'function') renderTimeMachine();
@@ -205,27 +187,23 @@ const ProjectState = {
     }
 };
 
-// Map to Window Scope
 ['elements', 'fixtures', 'currentFloor', 'globalCompassDir', 'selectedElIndex'].forEach(key => {
     Object.defineProperty(window, key, {
         get: () => ProjectState.data[key],
         set: (value) => { ProjectState.data[key] = value; }
     });
 });
-
 Object.defineProperty(window, 'clipboard', {
     get: () => ProjectState.history.clipboard,
     set: (value) => { ProjectState.history.clipboard = value; }
 });
 
-// --- SAVE / LOAD DATA (Basic Storage) ---
 // =========================================
 // 💾 ASYNC INDEXED-DB STORAGE ENGINE
 // =========================================
 const DB_NAME = 'ArchCAD_Storage';
 const STORE_NAME = 'autosaves';
 
-// Helper to open the background database
 function initDB() {
     return new Promise((resolve, reject) => {
         const request = indexedDB.open(DB_NAME, 1);
@@ -234,8 +212,6 @@ function initDB() {
         request.onerror = () => reject(request.error);
     });
 }
-
-// 🌟 Fire-and-forget Async Saving (Never blocks the UI!)
 async function saveToMemory() {
     const data = {
         elements: elements, fixtures: fixtures,
@@ -253,8 +229,6 @@ async function saveToMemory() {
         localStorage.setItem('ArchCAD_AutoSave', JSON.stringify(data));
     }
 }
-
-// 🌟 Async Loading with graceful fallbacks
 async function loadFromMemory() {
     try {
         const db = await initDB();
@@ -263,30 +237,23 @@ async function loadFromMemory() {
         
         request.onsuccess = () => {
             const data = request.result;
-            // Check both new IndexedDB and old LocalStorage
             if (!data && !localStorage.getItem('ArchCAD_AutoSave')) return; 
-
             const wantsToRestore = confirm("💾 A previous session was found.\n\nWould you like to restore your last design?");
             if (wantsToRestore) {
-                // If DB has data, use it. Otherwise, pull legacy data from LocalStorage
                 const finalData = data || JSON.parse(localStorage.getItem('ArchCAD_AutoSave'));
-                
                 if (finalData && finalData.elements && finalData.elements.length > 0) {
                     elements = finalData.elements;
                     fixtures = finalData.fixtures || [];
                     if (finalData.inW && document.getElementById('inW')) document.getElementById('inW').value = finalData.inW;
                     if (finalData.inH && document.getElementById('inH')) document.getElementById('inH').value = finalData.inH;
-                    
                     let maxFloor = 0;
                     elements.forEach(el => { if (el.floor > maxFloor) maxFloor = el.floor; });
                     if (document.getElementById('b-floors')) document.getElementById('b-floors').value = maxFloor + 1;
-                    
                     if (typeof setFloor === 'function') setFloor(currentFloor || 0);
                     if (typeof renderSidebar === 'function') renderSidebar();
                     if (typeof updateCanvas === 'function') updateCanvas(false); 
                 }
             } else {
-                // User declined, clear both memories
                 db.transaction(STORE_NAME, 'readwrite').objectStore(STORE_NAME).delete('latest_session');
                 localStorage.removeItem('ArchCAD_AutoSave');
             }
@@ -295,31 +262,25 @@ async function loadFromMemory() {
         console.error("Async load failed.", e); 
     }
 }
-
 async function resetWorkspace() {
     if (confirm("⚠️ This will completely erase your building. Continue?")) {
         elements = []; fixtures = []; currentFloor = 0;
         ProjectState.history.baseState = null; 
         ProjectState.history.stack = [];
-        
         if(document.getElementById('inW')) document.getElementById('inW').value = 278;
         if(document.getElementById('inH')) document.getElementById('inH').value = 417;
         if(document.getElementById('b-floors')) document.getElementById('b-floors').value = 1;
-        
-        // Clear both storages safely
         try {
             const db = await initDB();
             db.transaction(STORE_NAME, 'readwrite').objectStore(STORE_NAME).delete('latest_session');
         } catch(e) {}
         localStorage.removeItem('ArchCAD_AutoSave');
-        
         if (typeof renderFloorSelectors === 'function') renderFloorSelectors();
         if (typeof setFloor === 'function') setFloor(0);
         if (typeof updateCanvas === 'function') updateCanvas();
         if (typeof generate3DModel === 'function') generate3DModel();
     }
 }
-
 // --- JSON EXPORT / IMPORT ---
 function exportJSON() {
     const projectData = {
@@ -345,7 +306,6 @@ function exportJSON() {
     downloadAnchorNode.click();
     downloadAnchorNode.remove();
 }
-
 function importJSON(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -354,12 +314,14 @@ function importJSON(event) {
         try {
             const importedData = JSON.parse(e.target.result);
             if (!importedData.elements) return alert("Invalid project file.");
-            
             elements = importedData.elements;
-            fixtures = importedData.fixtures || [];            
-            const importedFloors = importedData.floorCount || 1;
-            
-            if (document.getElementById('b-floors')) document.getElementById('b-floors').value = importedFloors;
+            fixtures = importedData.fixtures || [];
+            const maxFloor = elements.reduce((max, el) => Math.max(max, el.floor || 0), 0);
+            const calculatedFloors = maxFloor + 1;
+            const finalFloorCount = Math.max(importedData.floorCount || 1, calculatedFloors);
+            if (document.getElementById('b-floors')) {
+                document.getElementById('b-floors').value = finalFloorCount;
+            }
             if (importedData.plot) {
                 const p = importedData.plot;
                 const setVal = (id, val) => { if(document.getElementById(id)) document.getElementById(id).value = val; };
@@ -374,7 +336,6 @@ function importJSON(event) {
             setFloor(0); selectedElIndex = -1;
             if (typeof renderSidebar === 'function') renderSidebar();
             updateCanvas(false);
-            
             setTimeout(() => {
                 if (typeof generate3DModel === 'function') generate3DModel();
                 alert("✅ Project loaded successfully!");
@@ -384,14 +345,11 @@ function importJSON(event) {
     };
     reader.readAsText(file);
 }
-
-
 function undoAction() {
     ProjectState.undo();
     if (typeof renderSidebar === 'function') renderSidebar();
     if (typeof updateCanvas === 'function') updateCanvas();
 }
-
 function redoAction() {
     ProjectState.redo();
     if (typeof renderSidebar === 'function') renderSidebar();
@@ -402,12 +360,9 @@ function redoAction() {
 // AUTO-SAVE THROTTLER (Prevents DB Spam)
 // =========================================
 let dbNeedsSave = false;
-
 window.markStateDirty = function() {
     dbNeedsSave = true;
 };
-
-// Check if a save is needed every 5 seconds, rather than every 16 milliseconds!
 setInterval(() => {
     if (dbNeedsSave) {
         if (typeof saveToMemory === 'function') saveToMemory();

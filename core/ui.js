@@ -96,7 +96,7 @@ function getRoomDisplayName(index) {
 // =========================================
 // MAIN SIDEBAR ORCHESTRATOR
 // =========================================
-function renderSidebar() {
+function renderSidebarOld() {
     if (!ctrl) return;
     ctrl.innerHTML = '';
     // Handle Studio Button Visibility
@@ -134,6 +134,42 @@ function renderSidebar() {
         ctrl.appendChild(div);
     }
     // Re-initialize custom dropdowns if needed
+    if (typeof initAnimatedDropdowns === 'function') initAnimatedDropdowns();
+}
+function renderSidebar() {
+    // 🌟 THE FIX 1: Fetch dynamically to prevent DOM disconnects
+    const ctrl = document.getElementById('element-controls');
+    if (!ctrl) return;
+    ctrl.innerHTML = '';
+    const studioBtn = document.getElementById('btn-room-studio');
+    if (studioBtn) {
+        if (selectedElIndex !== -1 && !elements[selectedElIndex].isFurniture) {
+            studioBtn.style.display = 'flex'; 
+        } else {
+            studioBtn.style.display = 'none'; 
+        }
+    }
+    if (typeof UI.prevSelected === 'undefined') UI.prevSelected = -1;
+    let isGoingBack = UI.prevSelected !== -1 && selectedElIndex === -1;
+    let isGoingDeeper = UI.prevSelected === -1 && selectedElIndex !== -1;
+    let animClass = isGoingBack ? 'slide-in-left' : (isGoingDeeper ? 'slide-in-right' : 'fade-in-ui');
+    UI.prevSelected = selectedElIndex;
+    if (selectedElIndex !== -1) {
+        const contentInt = document.getElementById('content-interiors');
+        if (contentInt && !contentInt.classList.contains('active')) {
+            if (typeof toggleHybrid === 'function') toggleHybrid('interiors');
+        }
+    }
+    if (selectedElIndex === -1) {
+        ctrl.innerHTML = buildExplorerView(animClass);
+    } else {
+        const el = elements[selectedElIndex];
+        if (!el) return; 
+        const div = document.createElement('div');
+        div.className = animClass;
+        div.innerHTML = buildEditorView(selectedElIndex, el) + buildFixturesView(selectedElIndex, el);
+        ctrl.appendChild(div);
+    }
     if (typeof initAnimatedDropdowns === 'function') initAnimatedDropdowns();
 }
 

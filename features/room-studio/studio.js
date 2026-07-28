@@ -310,18 +310,17 @@ const RoomStudio = {
             const strokeColor = isSelected ? '#38bdf8' : '#ec4899';
             const fillColor = isSelected ? 'rgba(56, 189, 248, 0.3)' : 'rgba(236, 72, 153, 0.2)';
             
-            // Add a visual indicator if the item is rotated
-            let textTransform = '';
-            if (Math.abs(f.rot) === 90 || Math.abs(f.rot) === 270) {
-                textTransform = `transform="rotate(-90 ${f.w/2} ${f.h/2})"`;
-            }
+            // 🌟 NEW: Calculate visual dimensions based on rotation
+            const isTurned = Math.abs(f.rot) === 90 || Math.abs(f.rot) === 270;
+            const drawW = isTurned ? f.h : f.w;
+            const drawH = isTurned ? f.w : f.h;
 
             furnGroup.innerHTML += `
                 <g transform="translate(${f.x}, ${f.y})" 
                    onmousedown="RoomStudio.startDrag(${idx}, event)" 
                    style="cursor: ${isSelected ? 'grabbing' : 'grab'};">
-                    <rect width="${f.w}" height="${f.h}" fill="${fillColor}" stroke="${strokeColor}" stroke-width="${isSelected ? 3 : 1}" />
-                    <text x="${f.w/2}" y="${f.h/2 + 4}" ${textTransform} fill="#f8fafc" font-size="10" text-anchor="middle" font-weight="bold" pointer-events="none">
+                    <rect width="${drawW}" height="${drawH}" fill="${fillColor}" stroke="${strokeColor}" stroke-width="${isSelected ? 3 : 1}" />
+                    <text x="${drawW/2}" y="${drawH/2 + 4}" fill="#f8fafc" font-size="10" text-anchor="middle" font-weight="bold" pointer-events="none">
                           ${f.type.toUpperCase()}
                     </text>
                 </g>
@@ -414,17 +413,17 @@ const RoomStudio = {
         if (this.selectedFixtureIndex === -1) return;
         const fix = this.sandboxFixtures[this.selectedFixtureIndex];
         
-        // 1. Swap dimensions for bounding box
-        const temp = fix.w;
-        fix.w = fix.h;
-        fix.h = temp;
+        // 1. Only track the mathematical rotation
+        fix.rot = ((fix.rot || 0) + 90) % 360;
         
-        // 2. Track actual 360 rotation (0, -90, -180, -270)
-        fix.rot = ((fix.rot || 0) - 90) % 360;
+        // 2. Calculate the visual footprint for boundary collisions
+        const isTurned = Math.abs(fix.rot) === 90 || Math.abs(fix.rot) === 270;
+        const visualW = isTurned ? fix.h : fix.w;
+        const visualH = isTurned ? fix.w : fix.h;
         
-        // Safety bound check
-        fix.x = Math.max(0, Math.min(fix.x, this.activeRoom.w - fix.w));
-        fix.y = Math.max(0, Math.min(fix.y, this.activeRoom.h - fix.h));
+        // 3. Safety bound check using the active visual footprint
+        fix.x = Math.max(0, Math.min(fix.x, this.activeRoom.w - visualW));
+        fix.y = Math.max(0, Math.min(fix.y, this.activeRoom.h - visualH));
         
         this.renderCanvas();
         if (this.is3DActive) this.build3DScene();

@@ -17,12 +17,21 @@ function panCamera(dx, dy) {
     CanvasState.panX += dx; CanvasState.panY += dy;
     updateViewport();
 }
-function zoomCamera(factor) {
+function zoomCamera(factor, e = null) {
     const newZoom = CanvasState.zoomLvl * factor;
-    if(newZoom < 0.2 || newZoom > 5) return; 
-    const cx = 500, cy = 500;
-    CanvasState.panX = cx - (cx - CanvasState.panX) * factor;
-    CanvasState.panY = cy - (cy - CanvasState.panY) * factor;
+    if (newZoom < 0.2 || newZoom > 5) return;
+    let pointerX = 500;
+    let pointerY = 500;
+    if (e && UI.blueprint) {
+        const pt = UI.blueprint.createSVGPoint();
+        pt.x = e.clientX || (e.touches ? e.touches[0].clientX : 500);
+        pt.y = e.clientY || (e.touches ? e.touches[0].clientY : 500);
+        const svgP = pt.matrixTransform(UI.blueprint.getScreenCTM().inverse());
+        pointerX = svgP.x;
+        pointerY = svgP.y;
+    }
+    CanvasState.panX = pointerX - (pointerX - CanvasState.panX) * factor;
+    CanvasState.panY = pointerY - (pointerY - CanvasState.panY) * factor;
     CanvasState.zoomLvl = newZoom;
     updateViewport();
 }
@@ -118,37 +127,24 @@ function drawColumns() {
 // 🌟 1. The Main Orchestrator
 function updateCanvas(force3D = true) {
     syncStaircasesIfNeeded();
-
     const unit = UI.unitSelect ? UI.unitSelect.value : 'in';
     const SCALE = parseFloat(UI.scaleInput ? UI.scaleInput.value : 1.2) || 1.2;
-    
     updateCompass();
-    
-    // Calculate core math once, pass it to all rendering modules
     const geom = calculateGeometry(SCALE, unit); 
-
-    // Render Layers Pipeline
     renderPlotBoundaries(geom);
     renderSiteOffsets(geom);
     renderRoad(geom);
     renderRooms(geom);
     renderFixtures(geom);
-    
-    // Utilities & Cleanup
     cleanupExcessSVG();
-    handleColumnToggle(); // <-- ShowCols logic applied here
+    handleColumnToggle();
     renderOverlaysAndStats(geom);
-
-    // External Triggers
-    if (typeof request3DUpdate === 'function') request3DUpdate();
-    if (typeof markStateDirty === 'function') markStateDirty(); // 🚀 Replaced saveToMemory()!
+    
+    if (force3D && typeof request3DUpdate === 'function') request3DUpdate();
+    if (typeof markStateDirty === 'function') markStateDirty();
     if (typeof updateAreaDashboard === 'function') updateAreaDashboard();
-    // 🌟 ADD THIS LINE: Updates the Vastu Dashboard live while dragging!
     if (typeof updateVastuHUD === 'function') updateVastuHUD();
-    // 🌟 ADD THIS LINE: This forces the floating Vastu widget to calculate and update live!
     if (typeof calculateVastuScore === 'function') calculateVastuScore();
-    // 🧠 PHASE 4: Ping the Web Worker instead of freezing the UI!
-    if (typeof requestBackgroundMath === 'function') requestBackgroundMath();
 }
 
 // -----------------------------------------
@@ -538,22 +534,39 @@ function renderRoomText(i, el, rx, ry, w, h, IX, IY) {
     let gText = document.getElementById('group-text');
     const cx = rx + w / 2; const cy = ry + h / 2;
     const labelText = el.customName || (typeof getRoomDisplayName === 'function' ? getRoomDisplayName(i) : el.type.toUpperCase());
+    
     // 🌟 FIX 6: SMART-MERGE TEXT AGGREGATION
     if (UI.showLabelsToggle && !UI.showLabelsToggle.checked) return;
+    
+    // Calculate global scale once for this function
+    const SCALE = parseFloat(UI.scaleInput?.value) || 1.2;
+
     if (UI.smartMergeToggle && UI.smartMergeToggle.checked) {
         // If an identical label is already rendered nearby, skip drawing a duplicate
-        const isDuplicate = window.renderedLabels.find(l => l.text === labelText && Math.hypot(l.x - cx, l.y - cy) < ARCH_CONFIG.REFINEMENTS.SMART_MERGE_TEXT_RADIUS * (SCALE || 1));
+        const isDuplicate = window.renderedLabels.find(l => l.text === labelText && Math.hypot(l.x - cx, l.y - cy) < ARCH_CONFIG.REFINEMENTS.SMART_MERGE_TEXT_RADIUS * SCALE);
         if (isDuplicate) return; 
         window.renderedLabels.push({ text: labelText, x: cx, y: cy });
     }
     
-    const dimsText = `${Math.floor(el.w/12)}'${Math.round(el.w%12)}" × ${Math.floor(el.h/12)}'${Math.round(el.h%12)}"`;
-    const areaText = `${((el.w * el.h)/144).toFixed(1)} sq.ft`;
+    // 🌟 NEW: Responsive Text Hiding Threshold
+    const minSize = 45 * SCALE; // Minimum pixels required to comfortably display text
     
-    if (typeof createOrUpdateText === 'function') {
-        createOrUpdateText(`txt-title-${i}`, gText, cx, cy - 8, labelText, '#ffffff', '12', true);
-        createOrUpdateText(`txt-dims-${i}`, gText, cx, cy + 6, dimsText, '#cbd5e1', '10', false);
-        createOrUpdateText(`txt-area-${i}`, gText, cx, cy + 20, areaText, '#94a3b8', '10', false);
+    if (w < minSize || h < minSize) {
+        // Hide existing text nodes if the room was shrunk too small
+        ['title', 'dims', 'area'].forEach(t => { 
+            let node = document.getElementById(`txt-${t}-${i}`); 
+            if(node) node.style.display = 'none'; 
+        });
+    } else {
+        // Render text normally if space permits
+        const dimsText = `${Math.floor(el.w/12)}'${Math.round(el.w%12)}" × ${Math.floor(el.h/12)}'${Math.round(el.h%12)}"`;
+        const areaText = `${((el.w * el.h)/144).toFixed(1)} sq.ft`;
+        
+        if (typeof createOrUpdateText === 'function') {
+            createOrUpdateText(`txt-title-${i}`, gText, cx, cy - 8, labelText, '#ffffff', '12', true);
+            createOrUpdateText(`txt-dims-${i}`, gText, cx, cy + 6, dimsText, '#cbd5e1', '10', false);
+            createOrUpdateText(`txt-area-${i}`, gText, cx, cy + 20, areaText, '#94a3b8', '10', false);
+        }
     }
 
     const showDimsToggle = UI.showDims || document.getElementById('showDims');
@@ -775,15 +788,16 @@ const endDrag = () => {
     isDragging = false; dragFixtureIndex = -1; isDraggingFixture = false; dragElIndex = -1;
     const guideLayer = document.getElementById('smart-guides');
     if (guideLayer) guideLayer.innerHTML = '';
-
-    // 🌟 FIXED: Clears the memory leak instantly
     CanvasState.snapLines = [];
-    updateCanvas();
+    updateCanvas(true);    
+    // 🌟 NEW: Calculate heavy math only after the drop
+    if (typeof requestBackgroundMath === 'function') requestBackgroundMath();
 };
 
 // Event Listeners (Mouse & Touch)
 function initInteractions() {
     if (!UI.blueprint) return;
+    let initialPinchDist = null;
     UI.blueprint.addEventListener('mousemove', (e) => {
         if (UI.isSpacePanning) { panCamera(e.clientX - UI.spacePanStart.x, e.clientY - UI.spacePanStart.y); UI.spacePanStart = { x: e.clientX, y: e.clientY }; return; }
         
@@ -798,14 +812,26 @@ function initInteractions() {
             handleMove(getMousePos(e), e);
         }
     });
-
     UI.blueprint.addEventListener('touchmove', (e) => {
+        if (e.touches.length === 2 && initialPinchDist) {
+            e.preventDefault();
+            const currentDist = Math.hypot(
+                e.touches[0].clientX - e.touches[1].clientX,
+                e.touches[0].clientY - e.touches[1].clientY
+            );
+            const factor = currentDist / initialPinchDist;
+            const pseudoEvent = {
+                clientX: (e.touches[0].clientX + e.touches[1].clientX) / 2,
+                clientY: (e.touches[0].clientY + e.touches[1].clientY) / 2
+            };
+            zoomCamera(factor, pseudoEvent);
+            initialPinchDist = currentDist;
+            return;
+        }
         if ((isDragging && dragElIndex !== -1) || (isDraggingFixture && dragFixtureIndex !== -1)) {
             if(e.touches.length === 1) { e.preventDefault(); handleMove(getTouchPos(e), e); }
         }
     }, {passive: false});
-
-    // 🌟 FIXED: Made endDrag a true global function to prevent memory leaks
     window.endDrag = (e) => {
         if (hasDragged && typeof saveState === 'function') saveState();
         UI.isSpacePanning = false; 
@@ -815,15 +841,11 @@ function initInteractions() {
         if (guideLayer) guideLayer.innerHTML = '';
         
         snapLines = [];
-        //updateCanvas(false); // Rebuild 3D once mouse is released!
-        // Force the 3D model update ONLY now that the structural movement has officially concluded
         updateCanvas(true);
     };
-
     UI.blueprint.addEventListener('mouseup', window.endDrag);
     UI.blueprint.addEventListener('mouseleave', window.endDrag);
     UI.blueprint.addEventListener('touchend', window.endDrag);
-
     UI.blueprint.addEventListener('mousedown', (e) => {
         if (UI.isSpacePanMode) {
             UI.isSpacePanning = true; UI.spacePanStart = { x: e.clientX, y: e.clientY }; UI.blueprint.style.cursor = 'grabbing'; 
@@ -856,23 +878,23 @@ function initInteractions() {
             updateCanvas();
         }
     });
-
     UI.blueprint.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 2) {
+            initialPinchDist = Math.hypot(
+                e.touches[0].clientX - e.touches[1].clientX,
+                e.touches[0].clientY - e.touches[1].clientY
+            );
+            return;
+        }
         if (e.touches.length === 1 && e.target.id.startsWith('rect-')) {
             const index = parseInt(e.target.id.split('-')[1]);
             startDrag({ button: 0, shiftKey: false, clientX: e.touches[0].clientX, clientY: e.touches[0].clientY }, index);
         }
     }, {passive: false});
-
-
-    // ==========================================
-    // 🌟 NATIVE DRAG AND DROP RECEIVER
-    // ==========================================
     UI.blueprint.addEventListener('dragover', (e) => {
         e.preventDefault(); // Required to allow dropping
         e.dataTransfer.dropEffect = 'copy';
     });
-
     UI.blueprint.addEventListener('drop', (e) => {
         e.preventDefault();
         
@@ -925,7 +947,11 @@ function initInteractions() {
         if (typeof renderSidebar === 'function') renderSidebar(); 
         updateCanvas();
     });
-
+    UI.blueprint.addEventListener('wheel', (e) => {
+        e.preventDefault(); // Stop page scrolling
+        const factor = e.deltaY < 0 ? 1.1 : 0.9; // Zoom in or out
+        zoomCamera(factor, e);
+    }, { passive: false });
 }
 
 // =========================================
@@ -933,20 +959,13 @@ function initInteractions() {
 // =========================================
 function centerOnSelection() {
     if (typeof selectedElIndex === 'undefined' || selectedElIndex === -1) return;
-    
     const el = elements[selectedElIndex];
-    if (!el || el.locked) return; // 🌟 FIXED: Added !el to check if the room actually exists first 
-
-    // 🚀 1. Use our new centralized math utility!
+    if (!el || el.locked) return;
     const { SCALE, I } = Utils.getMetrics(); 
-
     const roomCenterX = I.x + (el.x * SCALE) + ((el.w * SCALE) / 2);
     const roomCenterY = I.y + (el.y * SCALE) + ((el.h * SCALE) / 2);
-
-    // 🚀 2. Use the newly secured CanvasState namespace!
     CanvasState.panX = 500 - (roomCenterX * CanvasState.zoomLvl);
     CanvasState.panY = 500 - (roomCenterY * CanvasState.zoomLvl);
-    
     updateViewport();
 }
 
@@ -984,15 +1003,10 @@ function rotateStaircase(index) {
     if(typeof saveState === 'function') saveState();
     const el = elements[index];
     if (el.type !== 'staircase') return;
-
-    // Cycle through entry orientations
     const directions = ['up', 'right', 'down', 'left'];
     el.dir = directions[(directions.indexOf(el.dir || 'up') + 1) % 4];
-
     if(typeof renderSidebar === 'function') renderSidebar(); 
     updateCanvas();
-    
-    // Force an immediate 3D rebuild so you can see the stairs turn!
     if (typeof request3DUpdate === 'function') request3DUpdate();
 }
 

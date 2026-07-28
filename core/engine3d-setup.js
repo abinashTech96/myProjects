@@ -105,7 +105,8 @@ function init3D() {
     renderer3D.setPixelRatio(window.devicePixelRatio); 
     renderer3D.setSize(container.clientWidth, container.clientHeight);
     renderer3D.shadowMap.enabled = true; 
-    renderer3D.shadowMap.type = THREE.PCFSoftShadowMap; 
+    renderer3D.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer3D.shadowMap.autoUpdate = false; // 🌟 NEW: Turn off continuous shadow rendering
     renderer3D.outputEncoding = THREE.sRGBEncoding; 
     container.appendChild(renderer3D.domElement);
 
@@ -132,10 +133,8 @@ function init3D() {
     sunLight.shadow.camera.top = d;
     sunLight.shadow.camera.bottom = -d;
     sunLight.shadow.camera.far = 3000;
-    
     scene3D.add(sunLight);
     
-    // Soft ambient backup
     const ambientLight = new THREE.AmbientLight(0x404040, 0.3); 
     scene3D.add(ambientLight);
 
@@ -157,8 +156,6 @@ function init3D() {
         
         const hint = document.getElementById('fly-hint');
         if(hint) hint.remove();
-
-        // Kill momentum instantly when exiting drone mode
         moveState = { forward: false, backward: false, left: false, right: false, up: false, down: false };
     });
 

@@ -22,35 +22,60 @@ const ProjectState = {
         return JSON.parse(JSON.stringify(obj)); 
     },
 
-    // Calculates the exact mathematical difference between two arrays
+    // 🌟 1. ADD THESE TWO NEW HELPER METHODS
+    _isElementChanged(oldEl, newEl) {
+        if (!oldEl || !newEl) return true; // If one is null, it was added or deleted
+        
+        // Check the core properties that change during drafting
+        return oldEl.x !== newEl.x || 
+               oldEl.y !== newEl.y || 
+               oldEl.w !== newEl.w || 
+               oldEl.h !== newEl.h || 
+               oldEl.floor !== newEl.floor ||
+               oldEl.rot !== newEl.rot || 
+               oldEl.customColor !== newEl.customColor ||
+               oldEl.customName !== newEl.customName ||
+               oldEl.material !== newEl.material ||
+               oldEl.locked !== newEl.locked ||
+               oldEl.stairStyle !== newEl.stairStyle ||
+               oldEl.dir !== newEl.dir;
+    },
+
+    _isFixtureChanged(oldFix, newFix) {
+        if (!oldFix || !newFix) return true;
+        
+        return oldFix.offset !== newFix.offset ||
+               oldFix.size !== newFix.size ||
+               oldFix.edge !== newFix.edge ||
+               oldFix.roomId !== newFix.roomId ||
+               oldFix.type !== newFix.type;
+    },
+
+    // 🌟 2. UPDATE THE _getDelta METHOD
     _getDelta(oldState, newState) {
         const delta = { elements: { length: newState.elements.length }, fixtures: { length: newState.fixtures.length } };
         let hasChanges = false;
-
         const maxEl = Math.max(oldState.elements.length, newState.elements.length);
         for (let i = 0; i < maxEl; i++) {
             const oldEl = oldState.elements[i];
             const newEl = newState.elements[i];
-            if (JSON.stringify(oldEl) !== JSON.stringify(newEl)) {
+            if (this._isElementChanged(oldEl, newEl)) {
                 delta.elements[i] = newEl ? this._clone(newEl) : null;
                 hasChanges = true;
             }
         }
-
         const maxFix = Math.max(oldState.fixtures.length, newState.fixtures.length);
         for (let i = 0; i < maxFix; i++) {
             const oldFix = oldState.fixtures[i];
             const newFix = newState.fixtures[i];
-            if (JSON.stringify(oldFix) !== JSON.stringify(newFix)) {
+            if (this._isFixtureChanged(oldFix, newFix)) {
                 delta.fixtures[i] = newFix ? this._clone(newFix) : null;
                 hasChanges = true;
             }
         }
-
         if (oldState.elements.length !== newState.elements.length || oldState.fixtures.length !== newState.fixtures.length) {
             hasChanges = true;
         }
-
         return hasChanges ? delta : null;
     },
 
@@ -264,6 +289,7 @@ async function loadFromMemory() {
 }
 async function resetWorkspace() {
     if (confirm("⚠️ This will completely erase your building. Continue?")) {
+        if (typeof clearTextureCache === 'function') clearTextureCache();
         elements = []; fixtures = []; currentFloor = 0;
         ProjectState.history.baseState = null; 
         ProjectState.history.stack = [];

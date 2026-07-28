@@ -25,7 +25,6 @@ document.addEventListener('visibilitychange', () => {
 // 🌟 AUTO-START THE DUAL ENGINE
 // =========================================
 document.addEventListener('DOMContentLoaded', () => {
-    // ✅ KEEP THIS FALSE: App starts in 2D-dominant mode
     is3DMode = false;
     setTimeout(() => {
         if (!scene3D) init3D();
@@ -33,9 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (typeof setWorkspaceLayout === 'function') {
             setWorkspaceLayout('2d'); 
         }
-    }, 300); 
-
-    // 🌟 ADD THIS: Make the Real 3D toggle trigger a re-render!
+    }, 300);
     const real3DToggle = document.getElementById('real3DToggle');
     if (real3DToggle) {
         real3DToggle.addEventListener('change', () => {
@@ -265,6 +262,38 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (typeof updateCanvas === 'function') updateCanvas();  
             }
         });
+        let hoveredObject = null;
+        let hoveredOriginalEmissive = new THREE.Color(0x000000);
+        threeContainer.addEventListener('mousemove', (event) => {
+            if (!is3DMode || !isRaycasterActive || isWalkthrough) {
+                if (threeContainer.style.cursor === 'pointer') threeContainer.style.cursor = 'default';
+                return;
+            }
+            const rect = renderer3D.domElement.getBoundingClientRect();
+            mouse3D.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+            mouse3D.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+            raycaster.setFromCamera(mouse3D, camera3D);
+            const intersects = raycaster.intersectObjects(buildingGroup.children, true);
+            let foundHover = null;
+            for (let i = 0; i < intersects.length; i++) {
+                const object = intersects[i].object;
+                if (object.userData && (object.userData.isRoom || object.userData.isParapet)) {
+                    foundHover = object;
+                    break;
+                }
+            }
+            if (hoveredObject !== foundHover) {
+                if (hoveredObject && hoveredObject.material) {
+                    hoveredObject.material.emissive.copy(hoveredOriginalEmissive);
+                }
+                hoveredObject = foundHover;
+                if (hoveredObject && hoveredObject.material) {
+                    hoveredOriginalEmissive.copy(hoveredObject.material.emissive);
+                    hoveredObject.material.emissive.setHex(0x38bdf8);
+                }
+            }
+            threeContainer.style.cursor = hoveredObject ? 'pointer' : 'default';
+        });
     }
 });
 // =========================================
@@ -304,11 +333,6 @@ function togglePerformanceMode() {
     }
 }
 
-
-
-
-//Phase - 3
-// --- DYNAMIC SUNLIGHT CONTROLLER ---
 function updateSunlight(hour) {
     // 🌟 FIXED: Changed 'scene' to 'scene3D'
     if (!sunLight || !scene3D) return; 
@@ -342,6 +366,11 @@ function updateSunlight(hour) {
             timeDisplay.style.color = "#38bdf8";
             sunLight.color.setHex(0xffffff); 
         }
+    }
+
+    // 🌟 NEW: Trigger a single shadow frame because the sun moved
+    if (typeof renderer3D !== 'undefined') {
+        renderer3D.shadowMap.needsUpdate = true;
     }
 }
 

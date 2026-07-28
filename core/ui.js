@@ -331,7 +331,7 @@ function buildEditorView(i, el) {
 
                     <div class="neo-color-wrapper" title="Change Room Color">
                         <input type="color" value="${el.customColor || defaultHex}" 
-                            oninput="elements[${i}].customColor=this.value; updateCanvas();">
+                            oninput="elements[${i}].customColor=this.value; updateCanvas(false); updateRoomMaterial3D(${i}, parseInt(this.value.replace('#', '0x')));">
                     </div>
                 </div>
             </div>
@@ -955,14 +955,14 @@ window.mathWorker.onmessage = function(e) {
 window.requestBackgroundMath = debounce(() => {
     if (!window.mathWorker || !elements) return;
     
-    // Package up the current state of the house and send it to the background thread
     window.mathWorker.postMessage({
         type: 'CALCULATE_MATH',
         payload: {
             elements: elements,
             currentFloor: currentFloor,
             inW: parseFloat(document.getElementById('inW')?.value || 272),
-            inH: parseFloat(document.getElementById('inH')?.value || 400)
+            inH: parseFloat(document.getElementById('inH')?.value || 400),
+            compassDir: document.getElementById('compassDir')?.value || 'West' // 🌟 NEW: Pass direction
         }
     });
 }, 50);

@@ -4,10 +4,7 @@
 const SOLID_MAT_CACHE = {};
 
 function getCachedSolidMaterial(hexColor, opacity) {
-    // Creates a unique key like "16777215_0.85"
-    const key = `${hexColor}_${opacity}`; 
-    
-    // If the material doesn't exist yet, create it and store it
+    const key = `${hexColor}_${opacity}`;
     if (!SOLID_MAT_CACHE[key]) {
         SOLID_MAT_CACHE[key] = new THREE.MeshStandardMaterial({ 
             color: hexColor, 
@@ -15,81 +12,44 @@ function getCachedSolidMaterial(hexColor, opacity) {
             opacity: opacity 
         });
     }
-    // Return the shared instance!
     return SOLID_MAT_CACHE[key];
 }
-
 function generate3DModel() {
-    // 🌟 THE FIX: Prevent early auto-saves from building 3D before the engine boots!
     if (typeof scene3D === 'undefined' || !scene3D) return;
-    
     const real3DToggle = document.getElementById('real3DToggle');
     const useReal3D = real3DToggle ? real3DToggle.checked : false;
-    
     if (!buildingGroup) {
         buildingGroup = new THREE.Group();
         scene3D.add(buildingGroup);
     } else {
         disposeScene(); 
     }
-    
     const { SCALE, unit, inW, inH, I, WALL_HEIGHT } = get3DEnvironmentParams();
-    
     if (typeof elements !== 'undefined' && elements.length > 0) {
         build3DRooms(SCALE, I, WALL_HEIGHT, useReal3D);
         build3DSlabs(SCALE, I, WALL_HEIGHT, useReal3D);
         build3DFixtures(SCALE, I, WALL_HEIGHT, useReal3D);
-        // 🌟 NEW: Dedicated, modular Parapet call!
         if (typeof build3DParapet === 'function') {
             build3DParapet(useReal3D);
         }
     }
-    
     build3DBoundaries(SCALE, unit, I, inW, inH);
     scene3D.add(buildingGroup);
-}
-function generate3DModelOld() {
-    if (typeof scene3D === 'undefined' || !scene3D) return;
-    const real3DToggle = document.getElementById('real3DToggle');
-    const useReal3D = real3DToggle ? real3DToggle.checked : false;
-    if (!buildingGroup) {
-        buildingGroup = new THREE.Group();
-        scene3D.add(buildingGroup);
-    } else {
-        disposeScene(); 
+    // 🌟 Trigger a single shadow frame when the building rebuilds
+    if (typeof renderer3D !== 'undefined') {
+        renderer3D.shadowMap.needsUpdate = true;
     }
-    const { SCALE, unit, inW, inH, I, WALL_HEIGHT } = get3DEnvironmentParams();
-    if (typeof elements !== 'undefined' && elements.length > 0) {
-        build3DRooms(SCALE, I, WALL_HEIGHT, useReal3D);
-        build3DSlabs(SCALE, I, WALL_HEIGHT, useReal3D);
-        build3DFixtures(SCALE, I, WALL_HEIGHT, useReal3D);
-        /*roof style
-        if (typeof build3DRoof === 'function') {
-            build3DRoof(SCALE, I, WALL_HEIGHT);
-        }
-        */
-    }
-    build3DBoundaries(SCALE, unit, I, inW, inH);
-    scene3D.add(buildingGroup);
 }
 function build3DRooms(SCALE, I, WALL_HEIGHT, useReal3D) {
-    // ⚡ OPTIMIZATION: Fetch DOM elements ONCE before the loop
     const smartMerge = document.getElementById('smartMergeToggle')?.checked;
-
     elements.forEach((el, i) => {
-        // 🌟 REFACTORED: Single call for all positioning math
         const center = getRoomCenter(el, SCALE, I);
         const isColliding = !smartMerge && !el.isFurniture && typeof checkCollision === 'function' ? checkCollision(el, i) : false;
-
-        // 🐛 BUG FIX: Restored Custom Color Logic
         let roomColor = isColliding ? 0xef4444 : (typeof ARCH_CONFIG !== 'undefined' && ARCH_CONFIG.COLORS[el.type]?.hex || 0xffffff);
         if (!isColliding && el.customColor) {
             roomColor = parseInt(el.customColor.replace('#', '0x'));
         }
-
         let mesh;
-
-        // Route to the appropriate modular builder
         if (el.isFurniture) {
             mesh = createFurniture3D(el.type, center.width, center.depth);
             mesh.position.set(center.x, el.floor * WALL_HEIGHT, center.z);
@@ -99,47 +59,33 @@ function build3DRooms(SCALE, I, WALL_HEIGHT, useReal3D) {
             mesh = buildBalcony(el, center, WALL_HEIGHT, useReal3D, isColliding, SCALE);
         } else if (el.type === 'living') {
             mesh = buildLivingRoom(el, center, WALL_HEIGHT, useReal3D, isColliding, SCALE);
-        } else if (el.type === 'living2') { 
-            // 🐛 BUG FIX: Restored the living2 (HD Floor) routing
+        } else if (el.type === 'living2') {
             mesh = buildIsolatedLivingRoom(el, center, WALL_HEIGHT, useReal3D, isColliding, SCALE);
         } else {
             mesh = buildStandardRoom(el, center, WALL_HEIGHT, useReal3D, isColliding, SCALE, roomColor);
         }
-
-        // Apply metadata and add to scene
         if (mesh) {
             mesh.traverse(child => { if (child.isMesh) child.userData = { roomIndex: i, isRoom: true }; });
             buildingGroup.add(mesh);
         }
     });
 }
-
-
 // ==========================================
 // 🧩 PHASE 1: STATIC GEOMETRY BATCHING
 // ==========================================
 function createRoomWalls(width, height, depth, thickness, material) {
-    // 1. Create base geometries
     const wN = new THREE.BoxGeometry(width, height, thickness);
     const wS = new THREE.BoxGeometry(width, height, thickness);
     const wE = new THREE.BoxGeometry(thickness, height, depth - thickness * 2);
     const wW = new THREE.BoxGeometry(thickness, height, depth - thickness * 2);
-
-    // 2. Mathematically shift the geometry vertices into position (no meshes needed yet)
     wN.translate(0, height/2, -depth/2 + thickness/2);
     wS.translate(0, height/2, depth/2 - thickness/2);
     wE.translate(width/2 - thickness/2, height/2, 0);
     wW.translate(-width/2 + thickness/2, height/2, 0);
-
-    // 3. 🌟 MERGE THEM ALL INTO ONE SINGLE GEOMETRY
     const mergedGeometry = THREE.BufferGeometryUtils.mergeBufferGeometries([wN, wS, wE, wW]);
-    
-    // 4. Create one single mesh for the entire room's walls
     const wallMesh = new THREE.Mesh(mergedGeometry, material);
     wallMesh.castShadow = true;
     wallMesh.receiveShadow = true;
-
-    // Return inside a group to maintain structural parity with your existing code
     const group = new THREE.Group();
     group.add(wallMesh);
     return group;
@@ -249,7 +195,6 @@ function buildLivingRoom(el, center, WALL_HEIGHT, useReal3D, isColliding, SCALE)
     mesh.position.set(center.x, (el.floor * WALL_HEIGHT) + 2, center.z);
     return mesh;
 }
-// 🐛 BUG FIX: Restored the Isolated Living Room (HD Floor) Builder
 function buildIsolatedLivingRoom(el, center, WALL_HEIGHT, useReal3D, isColliding, SCALE) {
     if (!useReal3D || isColliding) return buildStandardRoom(el, center, WALL_HEIGHT, useReal3D, isColliding, SCALE, 0xffffff);
 
@@ -496,19 +441,16 @@ function build3DFixtures(SCALE, I, WALL_HEIGHT, useReal3D) {
 function build3DBoundaries(SCALE, unit, I, inW, inH) {
     const toInches3D = (val, u) => u === 'cm' ? parseFloat(val) / 2.54 : parseFloat(val);
     const val = (id) => toInches3D(document.getElementById(id)?.value || 0, unit) * SCALE;
-    
     const plotA = { x: I.x - val('aL'), z: I.z - val('aU') };
     const plotB = { x: I.x + inW + val('bR'), z: I.z - val('bU') };
     const plotC = { x: I.x + inW + val('cR'), z: I.z + inH + val('cD') };
     const plotD = { x: I.x - val('dL'), z: I.z + inH + val('dD') };
-
     const plotGeom = new THREE.BufferGeometry().setFromPoints([
         new THREE.Vector3(plotA.x, 0, plotA.z), new THREE.Vector3(plotB.x, 0, plotB.z),
         new THREE.Vector3(plotC.x, 0, plotC.z), new THREE.Vector3(plotD.x, 0, plotD.z)
     ]);
     const plotLine = new THREE.LineLoop(plotGeom, new THREE.LineBasicMaterial({ color: 0xff4d4d }));
     buildingGroup.add(plotLine);
-
     const buildGeom = new THREE.BufferGeometry().setFromPoints([
         new THREE.Vector3(I.x, 0.5, I.z), new THREE.Vector3(I.x + inW, 0.5, I.z),
         new THREE.Vector3(I.x + inW, 0.5, I.z + inH), new THREE.Vector3(I.x, 0.5, I.z + inH)
@@ -518,46 +460,31 @@ function build3DBoundaries(SCALE, unit, I, inW, inH) {
 }
 function build3DRoof(SCALE, I, WALL_HEIGHT) {
     let maxFloor = -1;
-    
-    // 1. Find the highest floor level in the project
     elements.forEach(el => {
         if (!el.isFurniture && el.floor > maxFloor) maxFloor = el.floor;
     });
-
     if (maxFloor < 0) return;
-
-    // 2. Calculate the exact bounding footprint of the top floor rooms
     let minX = Infinity, minZ = Infinity, maxX = -Infinity, maxZ = -Infinity;
-    
     elements.forEach(el => {
         if (!el.isFurniture && el.floor === maxFloor) {
             const rx = el.x * SCALE;
             const rz = el.y * SCALE;
             const rw = el.w * SCALE;
             const rd = el.h * SCALE;
-            
             if (rx < minX) minX = rx;
             if (rz < minZ) minZ = rz;
             if (rx + rw > maxX) maxX = rx + rw;
             if (rz + rd > maxZ) maxZ = rz + rd;
         }
     });
-
     if (maxX === -Infinity) return;
-
-    // 3. Base Math for a perfectly fitted Flat Roof (0 overhang, exact match)
     const w = (maxX - minX);
     const d = (maxZ - minZ);
-    
     const centerX = minX + (w / 2) + I.x;
     const centerZ = minZ + (d / 2) + I.z;
-    
-    // Lift roof to sit exactly on top of the highest walls
     const baseY = ((maxFloor + 1) * WALL_HEIGHT);
-
     const real3DToggle = document.getElementById('real3DToggle');
     let roofMat;
-    
     if (real3DToggle && real3DToggle.checked && typeof getProceduralTexture === 'function') {
         const tex = getProceduralTexture('concrete').clone();
         tex.needsUpdate = true;
@@ -566,8 +493,6 @@ function build3DRoof(SCALE, I, WALL_HEIGHT) {
     } else {
         roofMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.9 });
     }
-
-    // 4. Build The Flat Roof Slab
     const slabThickness = 8 * SCALE;
     const geom = new THREE.BoxGeometry(w, slabThickness, d);
     const roofMesh = new THREE.Mesh(geom, roofMat);
@@ -575,129 +500,8 @@ function build3DRoof(SCALE, I, WALL_HEIGHT) {
     roofMesh.castShadow = true;
     roofMesh.receiveShadow = true;
     roofMesh.userData = { isRoof: true };
-    
     buildingGroup.add(roofMesh);
 }
-/* roof style
-function build3DRoof(SCALE, I, WALL_HEIGHT) {
-    let maxFloor = -1;
-    
-    // Find the highest floor level
-    elements.forEach(el => {
-        if (!el.isFurniture && el.floor > maxFloor) maxFloor = el.floor;
-    });
-
-    if (maxFloor < 0) return;
-
-    // Calculate the exact bounding footprint of the top floor
-    let minX = Infinity, minZ = Infinity, maxX = -Infinity, maxZ = -Infinity;
-    
-    elements.forEach(el => {
-        if (!el.isFurniture && el.floor === maxFloor) {
-            const rx = el.x * SCALE;
-            const rz = el.y * SCALE;
-            const rw = el.w * SCALE;
-            const rd = el.h * SCALE;
-            
-            if (rx < minX) minX = rx;
-            if (rz < minZ) minZ = rz;
-            if (rx + rw > maxX) maxX = rx + rw;
-            if (rz + rd > maxZ) maxZ = rz + rd;
-        }
-    });
-
-    if (maxX === -Infinity) return;
-
-    // Base Math & Overhangs
-    const overhang = 18 * SCALE; 
-    const w = (maxX - minX) + (overhang * 2);
-    const d = (maxZ - minZ) + (overhang * 2);
-    const h = 72 * SCALE; 
-    const parapetH = 36 * SCALE; 
-    
-    const centerX = minX + ((maxX - minX) / 2) + I.x;
-    const centerZ = minZ + ((maxZ - minZ) / 2) + I.z;
-    
-    // Lift roof to sit exactly on top of the parapet/slab
-    const baseY = ((maxFloor + 1) * WALL_HEIGHT) + parapetH - (2 * SCALE);
-
-    const roofStyle = document.getElementById('roofStyleSelect')?.value || 'hip';
-    
-    // Apply realistic Shingle Texture if Real3D is active, else flat color
-    const real3DToggle = document.getElementById('real3DToggle');
-    let roofMat;
-    
-    if (real3DToggle && real3DToggle.checked && typeof getProceduralTexture === 'function') {
-        const tex = getProceduralTexture('shingle').clone();
-        tex.needsUpdate = true;
-        tex.repeat.set(w / 60, d / 60);
-        roofMat = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.9 });
-    } else {
-        roofMat = new THREE.MeshStandardMaterial({ color: 0xa8412b, roughness: 0.9 });
-    }
-
-    let roofMesh;
-
-    // 🔨 BUILD 1: FLAT ROOF
-    if (roofStyle === 'flat') {
-        const geom = new THREE.BoxGeometry(w - overhang, 8 * SCALE, d - overhang);
-        roofMesh = new THREE.Mesh(geom, roofMat);
-        roofMesh.position.set(centerX, baseY - parapetH + (4 * SCALE), centerZ);
-    } 
-    
-    // 🔨 BUILD 2: GABLE ROOF (Triangular Prism)
-    else if (roofStyle === 'gable') {
-        const shape = new THREE.Shape();
-        shape.moveTo(-w/2, 0);
-        shape.lineTo(w/2, 0);
-        shape.lineTo(0, h);
-        shape.lineTo(-w/2, 0);
-
-        const extrudeSettings = { depth: d, bevelEnabled: false };
-        const geom = new THREE.ExtrudeGeometry(shape, extrudeSettings);
-        roofMesh = new THREE.Mesh(geom, roofMat);
-        
-        // Extrude geometry draws along the Z axis, so we offset it by half depth
-        roofMesh.position.set(centerX, baseY, centerZ - d/2);
-    }
-    
-    // 🔨 BUILD 3: HIP ROOF (Complex Sloped Geometry)
-    else {
-        const geom = new THREE.BufferGeometry();
-        const ridgeL = w * 0.4; // The top ridge is 40% of the total width
-        
-        // Counter-Clockwise Winding for perfect normals
-        const vertices = new Float32Array([
-            // Front Sloped Face
-            -w/2, 0, d/2,   w/2, 0, d/2,    ridgeL/2, h, 0,
-            -w/2, 0, d/2,   ridgeL/2, h, 0, -ridgeL/2, h, 0,
-            // Back Sloped Face
-            w/2, 0, -d/2,  -w/2, 0, -d/2,  -ridgeL/2, h, 0,
-            w/2, 0, -d/2,  -ridgeL/2, h, 0, ridgeL/2, h, 0,
-            // Left Triangle Face
-            -w/2, 0, -d/2, -w/2, 0, d/2,   -ridgeL/2, h, 0,
-            // Right Triangle Face
-            w/2, 0, d/2,   w/2, 0, -d/2,   ridgeL/2, h, 0,
-            // Flat Bottom Base
-            -w/2, 0, d/2,  -w/2, 0, -d/2,  w/2, 0, -d/2,
-            -w/2, 0, d/2,  w/2, 0, -d/2,   w/2, 0, d/2
-        ]);
-        
-        geom.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
-        geom.computeVertexNormals(); // Auto-calculate light bouncing
-        
-        roofMesh = new THREE.Mesh(geom, roofMat);
-        roofMesh.position.set(centerX, baseY, centerZ);
-    }
-
-    roofMesh.castShadow = true;
-    roofMesh.receiveShadow = true;
-    roofMesh.userData = { isRoof: true };
-    
-    buildingGroup.add(roofMesh);
-}*/
-
-// 🌟 NEW: STRAIGHT STAIRCASE BUILDER
 function createStraightStaircaseGroup(run, height, width, material) {
     const group = new THREE.Group();
     const steps = Math.round(height / 7.5); // 7.5 inch max riser
@@ -797,7 +601,6 @@ function createUShapedGroup(run, height, extWidth, material) {
     }
     return group;
 }
-
 // ==========================================
 // 🧹 UPGRADED ENGINE OPTIMIZATION: MEMORY CLEANUP
 // ==========================================
@@ -826,7 +629,6 @@ function disposeScene() {
     
     buildingGroup.clear(); 
 }
-
 function update3DTransforms() {
     if (!is3DMode || !buildingGroup) return;
     const { SCALE, I } = get3DEnvironmentParams();
@@ -947,3 +749,19 @@ function get3DEnvironmentParams() {
     const WALL_HEIGHT = ARCH_CONFIG.DEFAULTS.WALL_HEIGHT_3D * SCALE;
     return { SCALE, unit, inW, inH, I, WALL_HEIGHT, CX, CY };
 }
+
+// 🌟 NEW: Targeted 3D Material Updater
+window.updateRoomMaterial3D = function(roomIndex, newHexColor) {
+    if (!buildingGroup || !is3DMode) return;
+    const roomMesh = buildingGroup.children.find(child => 
+        child.userData && child.userData.roomIndex === roomIndex
+    );
+    if (roomMesh) {
+        const newMat = getCachedSolidMaterial(newHexColor, 0.85);
+        if (roomMesh.children[0] && roomMesh.children[0].isMesh) {
+            roomMesh.children[0].material = newMat;
+        } else {
+            roomMesh.material = newMat;
+        }
+    }
+};

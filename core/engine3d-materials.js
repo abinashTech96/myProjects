@@ -140,3 +140,14 @@ function getFloorMaterial(texType) {
     }
     return FAST_COLORS[texType] || FAST_COLORS['concrete'];
 }
+
+// 🌟 NEW: Global Texture Cache Cleanup
+window.clearTextureCache = function() {
+    for (const key in textureCache) {
+        if (textureCache[key]) {
+            textureCache[key].dispose();
+        }
+    }
+    for (const key in textureCache) delete textureCache[key];
+    console.log("🧹 Texture Cache Cleared");
+};

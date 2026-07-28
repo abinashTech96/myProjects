@@ -77,3 +77,22 @@ window.calculateVastuScore = function() {
     }
     return { score, text: mainText, color };
 };
+
+// Toggles the Vastu widget between expanded and minimized states
+function toggleVastuWidget() {
+    const widget = document.getElementById('vastu-floating-widget');
+    const toggleBtn = document.getElementById('vastu-toggle-btn');
+    
+    if (widget) {
+        widget.classList.toggle('minimized');
+        
+        // Update button text to visually indicate state ( + or - )
+        if (widget.classList.contains('minimized')) {
+            toggleBtn.innerHTML = '＋';
+            toggleBtn.style.transform = 'translateY(1px)'; // subtle alignment tweak for the plus sign
+        } else {
+            toggleBtn.innerHTML = '—';
+            toggleBtn.style.transform = 'translateY(-2px)'; // subtle alignment tweak for the minus sign
+        }
+    }
+}

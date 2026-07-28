@@ -16,6 +16,7 @@
     <link rel="stylesheet" href="styles/converter.css">
     <link rel="stylesheet" href="styles/camera.css">
     <link rel="stylesheet" href="styles/navbar.css">
+    <link rel="stylesheet" href="styles/settings.css">
     <link rel="stylesheet" href="styles/presentation.css">
     <link rel="stylesheet" href="styles/sidebar.css">
     <link rel="stylesheet" href="styles/parapet.css">
@@ -121,17 +122,102 @@
                     </button>
                 </div>
             </div>
+
+            <!-- 🌟 SETTINGS NAVBAR BUTTON -->
+<button id="settings-btn" class="nav-add-floor-btn nav-settings-btn" title="Settings" onclick="toggleSettings()">
+    <span class="nav-settings-icon">⚙️</span>
+</button>
+
+<!-- 🌟 SETTINGS DROPDOWN PANEL -->
+<div id="settings-overlay" class="glass-panel settings-dropdown">
+    <div class="panel-header settings-header">
+        <span class="icon settings-icon-color">⚙️</span>
+        <h2 class="settings-title">SETTINGS</h2>
+    </div>
+    
+    <!-- 🌟 THE MISSING CONTENT WRAPPER -->
+    <div id="settings-content" class="settings-content">
+        
+        <!-- 🌟 WIDGET CONTROLS (ACCORDION) -->
+        <div class="settings-accordion-wrapper">
+            <button class="settings-accordion-btn active" id="btn-widget-visibility">
+                <!-- 🌟 The flex wrapper to keep the chevron on the right -->
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 0.85rem; opacity: 0.8;">👁️</span>
+                    <span class="settings-category" style="margin: 0;">WIDGET VISIBILITY</span>
+                </div>
+                <span class="settings-chevron">▼</span>
+            </button>                    
+            <div class="settings-accordion-content active" id="content-widget-visibility">
+                <div class="settings-accordion-inner">
+                    <!-- Control Panel Toggle -->
+                    <label class="ui-toggle">
+                        <span class="settings-label-text">◀ Control Panel</span>
+                        <input type="checkbox" id="toggle-sidebar-cb" checked>
+                        <div class="slider"></div>
+                    </label>
+
+                    <!-- Quick Converter Toggle -->
+                    <label class="ui-toggle">
+                        <span class="settings-label-text">📏 Quick Converter</span>
+                        <input type="checkbox" id="toggle-qc-cb" checked>
+                        <div class="slider"></div>
+                    </label>
+
+                    <!-- Vastu Score Toggle -->
+                    <label class="ui-toggle">
+                        <span class="settings-label-text">🧭 Vastu Score</span>
+                        <input type="checkbox" id="toggle-vastu-cb" checked>
+                        <div class="slider"></div>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- 🌟 DATA CONTROLS (ACCORDION) -->
+        <div class="settings-accordion-wrapper">
+            <button class="settings-accordion-btn" id="btn-data-controls">
+                <!-- 🌟 The flex wrapper to keep the chevron on the right -->
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 0.85rem; opacity: 0.8;">💾</span>
+                    <span class="settings-category" style="margin: 0;">DATA CONTROLS</span>
+                </div>
+                <span class="settings-chevron">▼</span>
+            </button>
+            <div class="settings-accordion-content" id="content-data-controls">
+                <div class="settings-accordion-inner" style="display: flex; gap: 8px; flex-wrap: wrap; padding-bottom: 10px;">
+                    
+                    <div style="display: flex; gap: 8px; width: 100%;">
+                        <button class="neo-btn outline-cyan" onclick="exportJSON()" style="flex: 1; padding: 8px; font-size: 0.7rem; justify-content: center;">
+                            💾 Save JSON
+                        </button>
+                        <button class="neo-btn outline-cyan" onclick="document.getElementById('importFile').click()" style="flex: 1; padding: 8px; font-size: 0.7rem; justify-content: center;">
+                            📂 Load JSON
+                        </button>
+                    </div>
+                    
+                    <button class="neo-btn danger" onclick="resetWorkspace()" style="width: 100%; padding: 8px; font-size: 0.7rem; justify-content: center; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #ef4444;">
+                        ⚠️ FACTORY RESET
+                    </button>
+                    
+                    <input type="file" id="importFile" style="display:none" onchange="importJSON(event)">
+                </div>
+            </div>
+        </div>
+
+    </div> <!-- End of settings-content -->
+</div> <!-- End of settings-overlay -->
         </div>
 
     </div>
 
     <!-- FLOATING ADVANCED BUTTONS -->
-    <div style="position: absolute; top: 15px; right: 20px; display: flex; gap: 10px; z-index: 1000; align-items: center;">
-        <button id="btn-room-studio" class="btn-adv-3d" onclick="RoomStudio.open()" style="display: none; background: linear-gradient(135deg, #ec4899, #e11d48); border-color: #f43f5e; position: static;">
-            <span class="icon">🛋️</span> ROOM STUDIO
+    <div class="adv-btn-container">
+        <button id="btn-room-studio" class="btn-adv-3d" onclick="RoomStudio.open()">
+            <span class="icon">🛋️</span> <span class="adv-text">ROOM STUDIO</span>
         </button>
-        <button class="btn-adv-3d" onclick="Adv3D.toggleWorkspaceMode(true)" style="position: static;">
-            <span class="icon">👁️</span> ADVANCED 3D
+        <button class="btn-adv-3d" onclick="Adv3D.toggleWorkspaceMode(true)">
+            <span class="icon">👁️</span> <span class="adv-text">ADVANCED 3D</span>
         </button>
     </div>
 
@@ -259,11 +345,11 @@
                             <button class="tool-btn" onclick="undoAction()" title="Undo"><span class="icon">⏪</span><span class="btn-label">Undo</span></button>
                             <button class="tool-btn" onclick="redoAction()" title="Redo"><span class="icon">⏩</span><span class="btn-label">Redo</span></button>
                             <button class="tool-btn" onclick="toggleMeasureMode()" title="Tape Measure"><span class="icon">📏</span><span class="btn-label">Measure</span></button>
-                            <button class="tool-btn" onclick="resetWorkspace()" title="Danger: Reset Workspace" style="border-bottom: 2px solid #ef4444;"><span class="icon">⚠️</span><span class="btn-label">Reset</span></button>
+                            <!-- <button class="tool-btn" onclick="resetWorkspace()" title="Danger: Reset Workspace" style="border-bottom: 2px solid #ef4444;"><span class="icon">⚠️</span><span class="btn-label">Reset</span></button> -->
                         </div>
                         <div style="display: flex; gap: 4px; width: 100%;">
-                            <button class="tool-btn" onclick="exportJSON()" title="Save / Export JSON"><span class="icon">💾</span><span class="btn-label">Save</span></button>
-                            <button class="tool-btn" onclick="document.getElementById('importFile').click()" title="Open / Import JSON"><span class="icon">📂</span><span class="btn-label">Load</span></button>
+                            <!-- <button class="tool-btn" onclick="exportJSON()" title="Save / Export JSON"><span class="icon">💾</span><span class="btn-label">Save</span></button> -->
+                            <!-- <button class="tool-btn" onclick="document.getElementById('importFile').click()" title="Open / Import JSON"><span class="icon">📂</span><span class="btn-label">Load</span></button> -->
                             <button class="tool-btn" onclick="exportPNG()" title="Export PNG" style="border-bottom: 2px solid #a855f7;"><span class="icon">🖼️</span><span class="btn-label">PNG</span></button>
                             <button class="tool-btn" onclick="exportPDF()" title="Export PDF" style="border-bottom: 2px solid #f43f5e;"><span class="icon">📄</span><span class="btn-label">PDF</span></button>
                         </div>
@@ -411,54 +497,67 @@
             </div>
 <!--abc-->
             <!-- 🌟 QUICK CONVERTER WIDGET (Top Left) -->
-            <div class="canvas-widget-top-left" style="width: auto; position: relative;">
-                
-                <!-- MINIMIZED STATE BUTTON (Hidden by default) -->
-                <button id="qc-min-btn" class="neo-btn" style="padding: 8px 14px; background: rgba(15, 23, 42, 0.85); border: 1px solid #38bdf8; color: #38bdf8; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.5); display: flex; align-items: center; gap: 8px; font-weight: bold; backdrop-filter: blur(10px); position: absolute; top: 0; left: 0; transform-origin: top left; transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); opacity: 0; transform: scale(0.5); pointer-events: none;" onclick="toggleQuickConverter()">
-                    <span class="icon">📏</span> <span style="font-size: 0.75rem; letter-spacing: 1px;">CONVERTER</span>
-                </button>
-
-                <!-- FULL WIDGET STATE (Visible by default) -->
-                <div class="sidebar-converter" id="qc-full-widget" style="width: 380px; position: absolute; top: 0; left: 0; transform-origin: top left; transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); opacity: 1; transform: scale(1); pointer-events: auto; margin: 0;">
-                    <div class="converter-header" style="display: flex; justify-content: space-between; align-items: center;">
-                        <div><span class="icon">📏</span> QUICK CONVERTER</div>
-                        <button onclick="toggleQuickConverter()" title="Minimize Converter" style="background: transparent; border: none; color: #94a3b8; cursor: pointer; font-size: 1.4rem; padding: 0 5px; line-height: 1; transition: color 0.2s;">&times;</button>
-                    </div>
-                    
-                    <div class="converter-row">
-                        <!-- Feet Input -->
-                        <div class="converter-input-group">
-                            <input type="number" id="calcFt" placeholder="0" oninput="calcInches()">
-                            <span class="unit">FT</span>
-                        </div>
-                        
-                        <!-- Inches Input -->
-                        <div class="converter-input-group">
-                            <input type="number" id="calcIn" placeholder="0" oninput="calcInches()">
-                            <span class="unit">IN</span>
-                        </div>
-                        <span class="converter-equals">=</span>
-                        <div class="converter-input-group result-group">
-                            <input type="text" id="resIn" placeholder="Total" readonly>
-                            <span class="unit">IN</span>
-                        </div>
-                    </div>
-                </div>
+<div id="qc-widget-wrapper" class="canvas-widget-top-left qc-wrapper">
+    
+    <!-- Minimized Micro-Input Pill -->
+    <div id="qc-min-btn" class="qc-min-btn">
+        <button onclick="toggleQuickConverter()" style="background:transparent; border:none; cursor:pointer; padding:0; display:flex;" title="Maximize Converter">
+            <span class="icon" style="font-size: 1.1rem; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">📏</span>
+        </button>
+        <div style="display:flex; align-items:center; gap:2px; margin-left:6px;">
+            <!-- Tiny Feet Input -->
+            <input type="number" id="minFt" class="qc-min-input" placeholder="0" oninput="document.getElementById('calcFt').value = this.value; calcInches();">
+            <span style="color:#94a3b8; font-weight:bold;">'</span>
+            
+            <!-- Tiny Inches Input -->
+            <input type="number" id="minIn" class="qc-min-input" placeholder="0" oninput="document.getElementById('calcIn').value = this.value; calcInches();">
+            <span style="color:#94a3b8; font-weight:bold;">"</span>
+            
+            <span style="color:#38bdf8; margin: 0 4px; font-weight:bold;">=</span>
+            <span id="qc-min-text" style="color:#f8fafc; font-family:monospace; font-weight:bold; font-size:0.9rem;">0"</span>
+        </div>
+    </div>
+    
+    <!-- Maximized Full Widget (Uses your original .sidebar-converter class!) -->
+    <div id="qc-full-widget" class="sidebar-converter">
+        <div class="converter-header">
+            <div><span class="icon">📏</span> QUICK CONVERTER</div>
+            <button onclick="toggleQuickConverter()" title="Minimize Converter" class="converter-close-btn">&times;</button>
+        </div>
+        <div class="converter-row">
+            <div class="converter-input-group">
+                <input type="number" id="calcFt" placeholder="0" oninput="calcInches()">
+                <span class="unit">FT</span>
             </div>
+            <div class="converter-input-group">
+                <input type="number" id="calcIn" placeholder="0" oninput="calcInches()">
+                <span class="unit">IN</span>
+            </div>
+            <span class="converter-equals">=</span>
+            <div class="converter-input-group result-group">
+                <input type="text" id="resIn" placeholder="Total" readonly>
+                <span class="unit">IN</span>
+            </div>
+        </div>
+    </div>
+</div>
         
             <!-- VASTU SCORE block -->
-            <div id="vastu-floating-widget" class="canvas-widget-bottom-left neo-sunken" style="padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); background: #0f172a; width: 260px;">
-                <div style="font-size: 0.75rem; color: #cbd5e1; font-weight: bold; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
-                    <span>🧭 VASTU SCORE</span>
-                    <span id="vastu-score-badge" style="color: #94a3b8; background: rgba(0,0,0,0.3); padding: 2px 8px; border-radius: 10px; box-shadow: 0 0 8px transparent;">0/100</span>
-                </div>
-                <div style="display: flex; align-items: center; gap: 15px;">
-                    <div id="vastu-ring" style="width: 50px; height: 50px; border-radius: 50%; background: conic-gradient(#94a3b8 0%, #1e293b 0); display: flex; justify-content: center; align-items: center; box-shadow: inset 0 4px 8px rgba(0,0,0,0.5); flex-shrink: 0;">
-                        <div id="vastu-circle-text" style="width: 40px; height: 40px; background: #0f172a; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 0.9rem; font-weight: bold; color: #f1f5f9; box-shadow: 0 2px 4px rgba(0,0,0,0.5);">
-                            0
-                        </div>
+            <div id="vastu-floating-widget" class="canvas-widget-bottom-left neo-sunken vastu-widget">
+                <div class="vastu-header">
+                    <span class="vastu-title">🧭 VASTU SCORE</span>
+                    <div class="vastu-header-controls">
+                        <span id="vastu-score-badge" class="vastu-badge">0/100</span>
+                        <button id="vastu-toggle-btn" class="vastu-toggle-btn" onclick="toggleVastuWidget()" title="Minimize/Maximize">
+                            —
+                        </button>
                     </div>
-                    <div id="vastu-feedback-text" style="font-size: 0.7rem; color: #94a3b8; flex: 1; line-height: 1.4;">
+                </div>
+                <div id="vastu-content" class="vastu-content">
+                    <div id="vastu-ring" class="vastu-ring">
+                        <div id="vastu-circle-text" class="vastu-circle-text">0</div>
+                    </div>
+                    <div id="vastu-feedback-text" class="vastu-feedback-text">
                         Add rooms to calculate Vastu.
                     </div>
                 </div>
@@ -653,6 +752,7 @@
     <script src="core/state.js"></script>
     <script src="core/utils.js"></script>
     <script src="core/ui.js"></script>
+    <script src="core/settings.js"></script>
     <script src="core/app.js"></script>
     <script src="core/engine3d-setup.js"></script>
     <script src="core/engine3d-materials.js"></script>

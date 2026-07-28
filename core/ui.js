@@ -66,19 +66,96 @@ function initDOMCache() {
     initAnimatedDropdowns();
 }
 
+function getFloorLabel(index) {
+    if (index === 0) return 'G';
+    if (index === 1) return '1st';
+    if (index === 2) return '2nd';
+    return `${index}th`;
+}
+function getFloorDisplayName(index) {
+    if (index === 0) return 'Ground Floor';
+    if (index === 1) return '1st Floor';
+    if (index === 2) return '2nd Floor';
+    return `${index}th Floor`;
+}
+function renderFloorButtons(containerId, count, activeFloor, callback) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    container.innerHTML = '';
+    for (let i = 0; i < count; i++) {
+        const btn = document.createElement('button');
+        btn.className = `floor-btn ${i === activeFloor ? 'active' : ''}`;
+        btn.dataset.floor = i;
+        btn.textContent = getFloorLabel(i);
+        btn.onclick = () => {
+            if (typeof callback === 'function') callback(i);
+            else if (typeof window[callback] === 'function') window[callback](i);
+        };
+        container.appendChild(btn);
+    }
+}
+function toggleOverlayPanel(panelId, buttonId, activeColor, inactiveColor) {
+    const panel = document.getElementById(panelId);
+    const btn = document.getElementById(buttonId);
+    if (!panel) return;
+
+    const isOpen = panel.style.display === 'block' && panel.style.opacity !== '0';
+
+    if (!isOpen) {
+        panel.style.display = 'block';
+        if (btn) {
+            btn.style.transform = 'scale(0.8)';
+            btn.style.background = activeColor;
+            setTimeout(() => btn.style.transform = 'scale(1)', 150);
+        }
+        setTimeout(() => {
+            panel.style.opacity = '1';
+            panel.style.transform = 'scale(1)';
+            panel.style.pointerEvents = 'auto';
+        }, 10);
+    } else {
+        if (btn) {
+            btn.style.transform = 'scale(0.8)';
+            btn.style.background = inactiveColor;
+            setTimeout(() => btn.style.transform = 'scale(1)', 150);
+        }
+        panel.style.opacity = '0';
+        panel.style.transform = 'scale(0)';
+        panel.style.pointerEvents = 'none';
+        setTimeout(() => {
+            panel.style.display = 'none';
+        }, 400);
+    }
+}
+
 // =========================================
 // UI CONTROLS & SIDEBAR
 // =========================================
-
 function handleCompassChange() {
     globalCompassDir = document.getElementById('compassDir').value;
     if (typeof updateCanvas === 'function') updateCanvas();
 }
-
 const calcInches = () => { 
-    const ft = parseFloat(document.getElementById('calcFt').value) || 0; 
-    const inc = parseFloat(document.getElementById('calcIn').value) || 0; 
-    document.getElementById('resIn').value = (ft * 12 + inc) + " in"; 
+    const ftInput = document.getElementById('calcFt');
+    const inInput = document.getElementById('calcIn');
+    
+    const ft = parseFloat(ftInput.value) || 0; 
+    const inc = parseFloat(inInput.value) || 0; 
+    const total = ft * 12 + inc;
+    
+    // Update the main big result
+    document.getElementById('resIn').value = total + " in"; 
+
+    // Update the micro-inputs and text in the minimized pill
+    const minFt = document.getElementById('minFt');
+    const minIn = document.getElementById('minIn');
+    const minText = document.getElementById('qc-min-text');
+    
+    // Check activeElement so we don't accidentally overwrite the input the user is currently typing in
+    if (minFt && document.activeElement !== minFt) minFt.value = ftInput.value;
+    if (minIn && document.activeElement !== minIn) minIn.value = inInput.value;
+    if (minText) minText.innerText = total + '"';
 };
 
 
@@ -96,48 +173,7 @@ function getRoomDisplayName(index) {
 // =========================================
 // MAIN SIDEBAR ORCHESTRATOR
 // =========================================
-function renderSidebarOld() {
-    if (!ctrl) return;
-    ctrl.innerHTML = '';
-    // Handle Studio Button Visibility
-    const studioBtn = document.getElementById('btn-room-studio');
-    if (studioBtn) {
-        if (selectedElIndex !== -1 && !elements[selectedElIndex].isFurniture) {
-            studioBtn.style.display = 'flex'; 
-        } else {
-            studioBtn.style.display = 'none'; 
-        }
-    }
-    // Determine Animation Direction
-    if (typeof UI.prevSelected === 'undefined') UI.prevSelected = -1;
-    let isGoingBack = UI.prevSelected !== -1 && selectedElIndex === -1;
-    let isGoingDeeper = UI.prevSelected === -1 && selectedElIndex !== -1;
-    let animClass = isGoingBack ? 'slide-in-left' : (isGoingDeeper ? 'slide-in-right' : 'fade-in-ui');
-    UI.prevSelected = selectedElIndex; 
-    // 🌟 SMART UX: Automatically pop open the Interiors tab if a room is selected!
-    if (selectedElIndex !== -1) {
-        const contentInt = document.getElementById('content-interiors');
-        if (contentInt && !contentInt.classList.contains('active')) {
-            if (typeof toggleHybrid === 'function') toggleHybrid('interiors');
-        }
-    }
-    // Render State 1 or State 2
-    if (selectedElIndex === -1) {
-        ctrl.innerHTML = buildExplorerView(animClass);
-    } else {
-        const el = elements[selectedElIndex];
-        if (!el || el.floor !== currentFloor) return; 
-        const div = document.createElement('div');
-        div.className = animClass;
-        // Inject Room Editor + Fixtures List
-        div.innerHTML = buildEditorView(selectedElIndex, el) + buildFixturesView(selectedElIndex, el);
-        ctrl.appendChild(div);
-    }
-    // Re-initialize custom dropdowns if needed
-    if (typeof initAnimatedDropdowns === 'function') initAnimatedDropdowns();
-}
 function renderSidebar() {
-    // 🌟 THE FIX 1: Fetch dynamically to prevent DOM disconnects
     const ctrl = document.getElementById('element-controls');
     if (!ctrl) return;
     ctrl.innerHTML = '';
@@ -180,7 +216,7 @@ function buildExplorerView(animClass) {
     let count = parseInt(document.getElementById('b-floors').value) || 1;
     let floorOptions = '';
     for(let i = 0; i < count; i++) {
-        let label = i === 0 ? "Ground Floor" : i === 1 ? "1st Floor" : i === 2 ? "2nd Floor" : `${i}th Floor`;
+        const label = getFloorDisplayName(i);
         floorOptions += `<option value="${i}" ${i === currentFloor ? 'selected' : ''}>${label}</option>`;
     }
     let html = `
@@ -426,12 +462,11 @@ function renderFloorSelectors() {
     let count = parseInt(document.getElementById('b-floors').value);
     if (count < 1 || isNaN(count)) count = 1;
 
-    // 1. Update Auto-Builder Dropdowns
     const container = document.getElementById('floor-layout-selectors');
     if (container) {
         container.innerHTML = '';
-        for(let i = 0; i < count; i++) {
-            let fName = i === 0 ? "Ground" : i === 1 ? "1st" : i === 2 ? "2nd" : `${i}th`;
+        for (let i = 0; i < count; i++) {
+            const fName = i === 0 ? 'Ground' : i === 1 ? '1st' : i === 2 ? '2nd' : `${i}th`;
             container.innerHTML += `
                 <div class="field">
                     <label>${fName} Floor Layout:</label>
@@ -445,55 +480,15 @@ function renderFloorSelectors() {
         }
     }
 
-    // 2. Update Top Bar Tabs
-    const tabsContainer = document.getElementById('top-floor-tabs');
-    if (tabsContainer) {
-        tabsContainer.innerHTML = ''; 
-        for(let i = 0; i < count; i++) {
-            let label = i === 0 ? "G" : i === 1 ? "1st" : i === 2 ? "2nd" : `${i}th`;
-            tabsContainer.innerHTML += `<button class="floor-btn ${i === currentFloor ? 'active' : ''}" data-floor="${i}" onclick="setFloor(${i})">${label}</button>`;
-        }
-    }
+    renderFloorButtons('top-floor-tabs', count, currentFloor, 'setFloor');
+    renderFloorButtons('floor-tabs', count, currentFloor, 'setFloor');
 
-    // 3. Update Sidebar Tabs
-    const sidebarTabs = document.getElementById('floor-tabs');
-    if (sidebarTabs) {
-        sidebarTabs.innerHTML = '';
-        for(let i = 0; i < count; i++) {
-            let label = i === 0 ? "G" : i === 1 ? "1st" : i === 2 ? "2nd" : `${i}th`;
-            sidebarTabs.innerHTML += `<button class="floor-btn ${i === currentFloor ? 'active' : ''}" data-floor="${i}" onclick="setFloor(${i})">${label}</button>`;
-        }
-    }
-
-    // 4. THE FIX: Apply the new animated dropdown script to the newly created HTML
     if (typeof initAnimatedDropdowns === 'function') {
-        initAnimatedDropdowns(); 
+        initAnimatedDropdowns();
     }
 }
 
-// =========================================
-// UI TOGGLES & THEMES
-// =========================================
-
-function toggleWidget(widgetId, isVisible) {
-    const widget = document.getElementById(widgetId);
-    if (!widget) return;
-    
-    widget.style.transition = 'opacity 0.3s ease';
-    if (isVisible) {
-        widget.style.opacity = '1';
-        widget.style.pointerEvents = 'auto'; 
-    } else {
-        widget.style.opacity = '0';
-        widget.style.pointerEvents = 'none'; 
-    }
-}
-
-function toggleSidebar() {
-    const sidebar = document.querySelector('.sidebar');
-    sidebar.classList.toggle('collapsed');
-}
-
+/*UI TOGGLES & THEMES*/
 function toggleTheme() {
     const isClassic = document.body.classList.toggle('classic-theme');
     if (typeof updateCanvas === 'function') updateCanvas(); 
@@ -507,78 +502,10 @@ function toggleTheme() {
 // =========================================
 // CUSTOM DROPDOWN ENGINE
 // =========================================
-/* //commented for DropDown Glitch
-function applyCustomSelects() {
-    const selects = document.querySelectorAll('select');
-    selects.forEach(sel => {
-        if (sel.dataset.customized) return; 
-        sel.dataset.customized = true;
-        sel.style.display = 'none'; 
-
-        const wrapper = document.createElement('div');
-        wrapper.className = 'custom-select';
-        sel.parentNode.insertBefore(wrapper, sel);
-        wrapper.appendChild(sel);
-
-        const selectedDiv = document.createElement('div');
-        selectedDiv.className = 'select-selected';
-        selectedDiv.innerHTML = sel.options[sel.selectedIndex].innerHTML;
-        wrapper.appendChild(selectedDiv);
-
-        const optionsDiv = document.createElement('div');
-        optionsDiv.className = 'select-items';
-
-        for (let i = 0; i < sel.options.length; i++) {
-            const opt = document.createElement('div');
-            opt.innerHTML = sel.options[i].innerHTML;
-            if (i === sel.selectedIndex) opt.classList.add('same-as-selected');
-            
-            opt.addEventListener('click', function(e) {
-                sel.selectedIndex = i;
-                selectedDiv.innerHTML = this.innerHTML;
-                
-                sel.dispatchEvent(new Event('change'));
-                
-                const siblings = this.parentNode.querySelectorAll('div');
-                siblings.forEach(s => s.classList.remove('same-as-selected'));
-                this.classList.add('same-as-selected');
-                selectedDiv.click(); 
-            });
-            optionsDiv.appendChild(opt);
-        }
-        wrapper.appendChild(optionsDiv);
-
-        selectedDiv.addEventListener('click', function(e) {
-            e.stopPropagation();
-            closeAllSelect(this);
-            this.nextSibling.classList.toggle('select-show');
-            this.classList.toggle('select-arrow-active');
-        });
-    });
-}
-
-
-function closeAllSelect(elmnt) {
-    const items = document.querySelectorAll('.select-items');
-    const selected = document.querySelectorAll('.select-selected');
-    for (let i = 0; i < selected.length; i++) {
-        if (elmnt !== selected[i]) {
-            selected[i].classList.remove('select-arrow-active');
-            items[i].classList.remove('select-show');
-        }
-    }
-}
-document.addEventListener('click', closeAllSelect);
-*/
-
 document.addEventListener('DOMContentLoaded', () => {
     const btn = document.getElementById('ai-generate-btn');
     if (btn) btn.addEventListener('click', handleAICommand);
 });
-
-
-
-// Close dropdowns if clicking anywhere else on the screen
 document.addEventListener('click', () => {
     document.querySelectorAll('.pro-dropdown-wrapper').forEach(w => w.classList.remove('open'));
 });
@@ -726,90 +653,14 @@ document.addEventListener('DOMContentLoaded', initSplitScreen);
 // 🌟 AUTO-BUILDER DROPDOWN TOGGLE (Squeeze Effect)
 // =========================================
 window.toggleAutoBuilder = function() {
-    const panel = document.getElementById('template-builder-overlay');
-    const btn = document.getElementById('auto-builder-btn');
-    if (!panel) return;
-    
-    // Check if it's currently hidden
-    if (panel.style.display === 'none' || panel.style.display === '') {
-        panel.style.display = 'block';
-        
-        // 1. Squeeze the button inward briefly
-        if (btn) {
-            btn.style.transform = 'scale(0.8)';
-            btn.style.background = 'rgba(245, 158, 11, 0.4)'; // Light up the button
-            setTimeout(() => btn.style.transform = 'scale(1)', 150); // Release the squeeze
-        }
-
-        // 2. Expand the menu out of the button
-        setTimeout(() => {
-            panel.style.opacity = '1';
-            panel.style.transform = 'scale(1)';
-            panel.style.pointerEvents = 'auto';
-        }, 10);
-    } else {
-        // 1. Squeeze the button inward briefly
-        if (btn) {
-            btn.style.transform = 'scale(0.8)';
-            btn.style.background = 'rgba(245, 158, 11, 0.15)'; // Dim the button
-            setTimeout(() => btn.style.transform = 'scale(1)', 150); // Release the squeeze
-        }
-
-        // 2. Squeeze the menu back into the button
-        panel.style.opacity = '0';
-        panel.style.transform = 'scale(0)';
-        panel.style.pointerEvents = 'none';
-        
-        // Wait for animation to finish before hiding from DOM
-        setTimeout(() => {
-            panel.style.display = 'none';
-        }, 400); // Matches the 0.4s transition time in the HTML
-    }
+    toggleOverlayPanel('template-builder-overlay', 'auto-builder-btn', 'rgba(245, 158, 11, 0.4)', 'rgba(245, 158, 11, 0.15)');
 };
 
 // =========================================
 // 🌟 PROJECT INFO DROPDOWN TOGGLE
 // =========================================
 window.toggleProjectInfo = function() {
-    const panel = document.getElementById('project-info-overlay');
-    const btn = document.getElementById('project-info-btn');
-    if (!panel) return;
-    
-    // Check if it's currently hidden
-    if (panel.style.display === 'none' || panel.style.display === '') {
-        panel.style.display = 'block';
-        
-        // Squeeze the button inward briefly
-        if (btn) {
-            btn.style.transform = 'scale(0.8)';
-            btn.style.background = 'rgba(56, 189, 248, 0.4)'; // Light up Cyan
-            setTimeout(() => btn.style.transform = 'scale(1)', 150);
-        }
-
-        // Expand the menu
-        setTimeout(() => {
-            panel.style.opacity = '1';
-            panel.style.transform = 'scale(1)';
-            panel.style.pointerEvents = 'auto';
-        }, 10);
-    } else {
-        // Squeeze the button inward briefly
-        if (btn) {
-            btn.style.transform = 'scale(0.8)';
-            btn.style.background = 'rgba(56, 189, 248, 0.15)'; // Dim Cyan
-            setTimeout(() => btn.style.transform = 'scale(1)', 150);
-        }
-
-        // Squeeze the menu back into the button
-        panel.style.opacity = '0';
-        panel.style.transform = 'scale(0)';
-        panel.style.pointerEvents = 'none';
-        
-        // Wait for animation to finish before hiding from DOM
-        setTimeout(() => {
-            panel.style.display = 'none';
-        }, 400); 
-    }
+    toggleOverlayPanel('project-info-overlay', 'project-info-btn', 'rgba(56, 189, 248, 0.4)', 'rgba(56, 189, 248, 0.15)');
 };
 
 // ==========================================
@@ -818,23 +669,16 @@ window.toggleProjectInfo = function() {
 window.toggleWidget = function(widgetId, isVisible) {
     const widget = document.getElementById(widgetId);
     if (!widget) return;
-
     if (isVisible) {
-        // Clearing the inline display style forces it to revert to your CSS file's default (flex/block)
         widget.style.display = ''; 
         widget.style.opacity = '0';
-        
-        // Slight delay to allow display to register before fading in
         setTimeout(() => {
             widget.style.transition = 'opacity 0.2s ease-in-out';
             widget.style.opacity = '1';
         }, 10);
     } else {
-        // Fade out before hiding
         widget.style.transition = 'opacity 0.2s ease-in-out';
         widget.style.opacity = '0';
-        
-        // Wait for the fade animation to finish before removing it from the layout
         setTimeout(() => {
             widget.style.display = 'none';
         }, 200); 
@@ -846,19 +690,15 @@ window.toggleSidebar = function() {
     const openBtn = document.getElementById('open-sidebar-btn');
 
     let isCollapsed = false;
-
     // 1. Toggle the main Sidebar
     if (sidebar) {
-        // 🌟 NEW: If we are about to minimize it, dock it back to its home position first!
         if (!sidebar.classList.contains('collapsed')) {
             sidebar.style.left = '20px';
-            sidebar.style.top = '20px';
+            sidebar.style.top = '155px';
         }
-
         sidebar.classList.toggle('collapsed');
         isCollapsed = sidebar.classList.contains('collapsed');
     }
-    
     // 2. Sync the Workspace UI (.neo-panel) with the Sidebar
     if (neoPanel) {
         if (isCollapsed) {
@@ -867,7 +707,6 @@ window.toggleSidebar = function() {
             neoPanel.classList.remove('collapsed');
         }
     }
-
     // 3. Handle the tiny Expand button visibility
     if (openBtn) {
         if (isCollapsed) {
@@ -959,8 +798,6 @@ window.toggleHybrid = function(sectionId) {
 window.renderVastuUI = function(vastuData) {
     let vastuContainer = document.getElementById('vastu-widget-container');
     if (!vastuContainer) return;
-
-    // Inject the updated HTML and glowing colors using the data handed back by the Worker
     vastuContainer.innerHTML = `
         <div class="neo-sunken" style="margin-top: 20px; padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
             <div style="font-size: 0.75rem; color: #cbd5e1; font-weight: bold; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
@@ -980,7 +817,6 @@ window.renderVastuUI = function(vastuData) {
         </div>
     `;
 
-    // Update the Floating Dark-Themed Vastu Widget on the 2D Canvas
     const badge = document.getElementById('vastu-score-badge');
     const ring = document.getElementById('vastu-ring');
     const circleText = document.getElementById('vastu-circle-text');
@@ -990,7 +826,6 @@ window.renderVastuUI = function(vastuData) {
         badge.innerText = `${vastuData.score}/100`;
         badge.style.color = vastuData.color;
         badge.style.boxShadow = `0 0 8px ${vastuData.color}44`;
-
         ring.style.background = `conic-gradient(${vastuData.color} ${vastuData.score}%, #1e293b 0)`;
         circleText.innerText = vastuData.score;
         feedbackText.innerText = vastuData.text;
@@ -1005,16 +840,14 @@ window.toggleQuickConverter = function() {
     const fullWidget = document.getElementById('qc-full-widget');
     const minBtn = document.getElementById('qc-min-btn');
     
-    if (!fullWidget || !minBtn) return;
-    
+    if (!fullWidget || !minBtn) return;    
     const isClosed = fullWidget.style.opacity === '0';
     
     if (isClosed) {
         // 1. Shrink and hide the small button
         minBtn.style.opacity = '0';
         minBtn.style.transform = 'scale(0.5)';
-        minBtn.style.pointerEvents = 'none';
-        
+        minBtn.style.pointerEvents = 'none';        
         // 2. Expand and show the full widget
         fullWidget.style.opacity = '1';
         fullWidget.style.transform = 'scale(1)';
@@ -1023,8 +856,7 @@ window.toggleQuickConverter = function() {
         // 1. Shrink and hide the full widget
         fullWidget.style.opacity = '0';
         fullWidget.style.transform = 'scale(0.5)';
-        fullWidget.style.pointerEvents = 'none';
-        
+        fullWidget.style.pointerEvents = 'none';        
         // 2. Expand and show the small button
         minBtn.style.opacity = '1';
         minBtn.style.transform = 'scale(1)';
@@ -1035,40 +867,13 @@ window.toggleQuickConverter = function() {
 // 🌟 AI AGENT DROPDOWN TOGGLE
 // =========================================
 window.toggleAIAgent = function() {
-    const panel = document.getElementById('ai-agent-overlay');
-    const btn = document.getElementById('ai-agent-btn');
-    if (!panel) return;
-    // Check if it's currently hidden
-    if (panel.style.display === 'none' || panel.style.display === '') {
-        panel.style.display = 'block';
-        // Squeeze the button inward briefly
-        if (btn) {
-            btn.style.transform = 'scale(0.8)';
-            btn.style.background = 'rgba(168, 85, 247, 0.4)'; // Light up purple
-            setTimeout(() => btn.style.transform = 'scale(1)', 150);
-        }
-        // Expand the menu
-        setTimeout(() => {
-            panel.style.opacity = '1';
-            panel.style.transform = 'scale(1)';
-            panel.style.pointerEvents = 'auto';
-        }, 10);
-    } else {
-        // Squeeze the button inward briefly
-        if (btn) {
-            btn.style.transform = 'scale(0.8)';
-            btn.style.background = 'rgba(168, 85, 247, 0.15)'; // Dim purple
-            setTimeout(() => btn.style.transform = 'scale(1)', 150);
-        }
-        // Squeeze the menu back into the button
-        panel.style.opacity = '0';
-        panel.style.transform = 'scale(0)';
-        panel.style.pointerEvents = 'none';
-        // Wait for animation to finish before hiding from DOM
-        setTimeout(() => {
-            panel.style.display = 'none';
-        }, 400); 
-    }
+    toggleOverlayPanel('ai-agent-overlay', 'ai-agent-btn', 'rgba(168, 85, 247, 0.4)', 'rgba(168, 85, 247, 0.15)');
+};
+// =========================================
+// 🌟 SETTINGS DROPDOWN TOGGLE
+// =========================================
+window.toggleSettings = function() {
+    toggleOverlayPanel('settings-overlay', 'settings-btn', 'rgba(148, 163, 184, 0.4)', 'rgba(148, 163, 184, 0.15)');
 };
 
 // =========================================
@@ -1083,21 +888,13 @@ function initSidebarDrag() {
     let startX, startY, initialLeft, initialTop;
 
     handle.addEventListener('mousedown', (e) => {
-        // Do NOT start dragging if the user clicks the minimize button
         if (e.target.closest('.neo-min-btn')) return;
-
         isDragging = true;
-        
-        // Find exactly where the sidebar currently is on screen
         const rect = sidebar.getBoundingClientRect();
         initialLeft = rect.left;
         initialTop = rect.top;
-        
-        // Record where the mouse grabbed it
         startX = e.clientX;
         startY = e.clientY;
-        
-        // Disable CSS transitions while dragging so it moves instantly with the mouse
         sidebar.style.transition = 'none'; 
         document.body.style.cursor = 'grabbing';
     });

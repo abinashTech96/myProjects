@@ -1,11 +1,134 @@
 /* =========================================
    🧭 VASTU SHASTRA CSS (vastu.css)
    ========================================= */
-/*vastu tool loaction*/
+
+/* vastu tool location */
 .canvas-widget-bottom-left {
     position: absolute;
     bottom: 20px;
     left: 20px;
     z-index: 100;
     pointer-events: auto;
+}
+
+/* Main Widget Container */
+.vastu-widget {
+    padding: 15px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    background: #0f172a;
+    width: 260px;
+    transition: width 0.3s ease, padding 0.3s ease;
+}
+
+/* Header Section */
+.vastu-header {
+    font-size: 0.75rem;
+    color: #cbd5e1;
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: margin-bottom 0.3s ease;
+}
+
+.vastu-widget:not(.minimized) .vastu-header {
+    margin-bottom: 15px;
+}
+
+.vastu-title {
+    display: flex;
+    align-items: center;
+    letter-spacing: 0.5px;
+}
+
+.vastu-header-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.vastu-badge {
+    color: #94a3b8;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 2px 8px;
+    border-radius: 10px;
+    box-shadow: 0 0 8px transparent;
+}
+
+/* Minimize Toggle Button */
+.vastu-toggle-btn {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    padding: 0;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s, transform 0.2s;
+}
+
+.vastu-toggle-btn:hover {
+    color: #38bdf8;
+    transform: scale(1.2);
+}
+
+/* Content Area */
+.vastu-content {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    opacity: 1;
+    transition: opacity 0.2s ease;
+}
+
+/* Visual Ring & Score */
+.vastu-ring {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: conic-gradient(#94a3b8 0%, #1e293b 0);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: inset 0 4px 8px rgba(0, 0, 0, 0.5);
+    flex-shrink: 0;
+}
+
+.vastu-circle-text {
+    width: 40px;
+    height: 40px;
+    background: #0f172a;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 0.9rem;
+    font-weight: bold;
+    color: #f1f5f9;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.vastu-feedback-text {
+    font-size: 0.7rem;
+    color: #94a3b8;
+    flex: 1;
+    line-height: 1.4;
+}
+
+/* =========================================
+   Minimization State Overrides
+   ========================================= */
+.vastu-widget.minimized {
+    width: 200px;
+    padding: 10px 15px;
+}
+
+.vastu-widget.minimized .vastu-content {
+    display: none;
+    opacity: 0;
 }

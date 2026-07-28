@@ -1,5 +1,5 @@
 /* =========================================
-   💎 100% ULTRA-PREMIUM: MIDNIGHT AURORA
+   💎 100% ULTRA-PREMIUM: MIDNIGHT AURORA (COMPACT)
 ========================================= */
 :root {
     /* Haptic Spring Physics */
@@ -10,7 +10,7 @@
     --bg-glass: rgba(10, 10, 14, 0.55);
     --bg-glass-hover: rgba(20, 20, 25, 0.65);
     --border-subtle: rgba(255, 255, 255, 0.08);
-    --border-highlight: rgba(255, 255, 255, 0.2);
+    --border-highlight: rgba(9, 2, 2, 0.2);
     
     /* Aurora Accents (Cyan to Purple) */
     --accent-cyan: #06b6d4;
@@ -25,37 +25,32 @@
 /* =========================================
    🌟 MAIN SIDEBAR CONTAINER
 ========================================= */
-.sidebar { 
-    /* Structural Requirements */
-    position: absolute; 
-    top: 20px; 
+.sidebar {
+    position: absolute;
+    top: 155px;
     left: 20px; 
     bottom: auto; 
     height: fit-content; 
     max-height: calc(100vh - 40px); 
-    width: 360px; 
+    width: 350px; 
     flex-shrink: 0;
     z-index: 1000; 
     will-change: transform, backdrop-filter;
     transform: translateZ(0);
     overflow-y: auto; 
     perspective: 1200px;
-
-    /* Bleeding-Edge Glassmorphism */
     background: var(--bg-glass); 
     background-image: radial-gradient(circle at top left, rgba(255,255,255,0.03) 0%, transparent 50%);
     backdrop-filter: blur(48px) saturate(200%);
     -webkit-backdrop-filter: blur(48px) saturate(200%);
-    padding: 20px; 
+    padding: 12px; 
     border: 1px solid var(--border-subtle); 
     border-radius: 20px; 
-    
-    /* Volumetric Studio Lighting Shadow */
     box-shadow: 
         0 30px 60px -12px rgba(0, 0, 0, 0.7),
         0 18px 36px -18px rgba(0, 0, 0, 0.5),
         inset 0 1px 1px rgba(255, 255, 255, 0.1);
-    
+    animation: alternatingGreenPulse 4.5s infinite ease-in-out;
     transition: transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1), 
                 opacity 0.5s cubic-bezier(0.21, 1.02, 0.73, 1),
                 filter 0.5s ease-out !important;
@@ -70,15 +65,12 @@
     transition: background 0.3s;
 }
 .sidebar::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.3); }
-
-/* --- Collapse Logic --- */
 .sidebar.collapsed {
     transform: translateX(calc(-100% - 60px)) scale(0.85) rotateY(-15deg) !important; 
     opacity: 0 !important;
     filter: blur(8px) !important; 
     pointer-events: none !important;
 }
-/* 🚀 Make the minimize button dive towards the left edge when collapsing */
 .sidebar.collapsed .neo-min-btn {
     transform: translate(-300px, 250px) scale(0.2) rotate(-180deg);
     opacity: 0;
@@ -92,19 +84,17 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-bottom: 16px;
-    margin-bottom: 20px;
+    padding-bottom: 8px;
+    margin-bottom: 12px;
     border-bottom: 1px solid var(--border-subtle);
     cursor: grab;
     user-select: none;
 }
 .sidebar-drag-header:active { cursor: grabbing; }
-
-/* Micro-interaction Grip */
 .drag-grip {
     display: grid;
     grid-template-columns: repeat(3, 4px);
-    gap: 3px;
+    gap: 2px;
     opacity: 0.2;
     transition: all 0.4s var(--ease-spring);
 }
@@ -205,14 +195,11 @@ body:has(.sidebar.collapsed) #open-sidebar-btn {
     flex-direction: column;
     margin-bottom: 12px; 
 }
-
-/* This is the crucial missing wrapper that creates your 2x2 grid */
 .hybrid-headers-row {
     display: flex;
     gap: 10px;
     width: 100%;
 }
-
 .hybrid-btn {
     flex: 1; /* Forces both buttons to split 50/50 width perfectly */
     display: flex;
@@ -228,42 +215,35 @@ body:has(.sidebar.collapsed) #open-sidebar-btn {
     position: relative;
     overflow: hidden;
 }
-
 .hybrid-btn:hover {
     background: var(--bg-glass-hover);
     border-color: rgba(255,255,255,0.06);
     transform: translateY(-1px);
 }
-
 .hybrid-btn.active {
     background: rgba(0, 0, 0, 0.4);
     border: 1px solid var(--border-subtle);
     box-shadow: inset 0 2px 8px rgba(0,0,0,0.5);
 }
-
 .hybrid-title {
     font-size: 0.8rem;
     font-weight: 600;
     color: var(--text-muted); 
     transition: color 0.3s var(--ease-out);
 }
-
 .hybrid-btn.active .hybrid-title { 
     color: var(--text-primary); 
     text-shadow: 0 0 10px rgba(255,255,255,0.2);
 }
-
 .hybrid-btn .chevron {
     font-size: 0.7rem;
     color: var(--text-muted);
     transition: transform 0.6s var(--ease-spring); 
 }
-
 .hybrid-btn.active .chevron {
     color: var(--text-primary);
     transform: rotate(180deg) scale(1.1);
 }
-
 /* 🚀 EXTREME 3D ANIMATION FOR CONTENT */
 .hybrid-content {
     display: grid;
@@ -275,65 +255,48 @@ body:has(.sidebar.collapsed) #open-sidebar-btn {
                 transform 0.6s var(--ease-spring), 
                 opacity 0.4s var(--ease-out);
 }
-
 .hybrid-content.active {
     grid-template-rows: 1fr;
     transform: rotateX(0deg) translateY(0) scale(1);
     opacity: 1;
 }
-
 /* =========================================
    ✨ PREMIUM INSET TRAY (ALTERNATING GREEN PULSE)
 ========================================= */
 .hybrid-inner {
     overflow: hidden;
     padding: 0 8px;
-    
-    /* The base border must be set here so the colors can animate */
     border: 1px solid transparent;
     border-radius: 12px;
     box-sizing: border-box;
     transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
-
 .hybrid-content.active .hybrid-inner {
     padding-top: 16px;
     padding-bottom: 12px;
-    margin-top: 8px; 
-    
-    background: rgba(0, 0, 0, 0.2); 
-    
-    /* 🌬️ The Alternating Breathing Engine */
+    margin-top: 8px;
+    background: rgba(0, 0, 0, 0.2);border-radius: 12px;
     animation: alternatingGreenPulse 4.5s infinite ease-in-out;
 }
 
 @keyframes alternatingGreenPulse {
     0%, 100% {
-        /* Phase 1: Top & Bottom Peak, Sides Dim */
         border-top-color: rgba(16, 185, 129, 0.4);
         border-bottom-color: rgba(16, 185, 129, 0.4);
-        
         border-left-color: rgba(16, 185, 129, 0.05);
         border-right-color: rgba(16, 185, 129, 0.05);
-        
-        /* Subtle green tint to the shadows */
         box-shadow: inset 0 4px 12px rgba(0, 0, 0, 0.4),
                     0 1px 0 rgba(16, 185, 129, 0.1);
         background: rgba(0, 0, 0, 0.2);
     }
     50% {
-        /* Phase 2: Sides Peak, Top & Bottom Dim */
         border-top-color: rgba(16, 185, 129, 0.05);
         border-bottom-color: rgba(16, 185, 129, 0.05);
-        
         border-left-color: rgba(16, 185, 129, 0.4);
         border-right-color: rgba(16, 185, 129, 0.4);
-        
-        /* Inner shadow gets a tiny pop of emerald */
         box-shadow: inset 0 4px 15px rgba(0, 0, 0, 0.6),
                     0 1px 0 rgba(16, 185, 129, 0.02),
-                    inset 0 0 30px rgba(16, 185, 129, 0.06); 
-                    
+                    inset 0 0 30px rgba(16, 185, 129, 0.06);
         background: rgba(0, 0, 0, 0.05); 
     }
 }
@@ -377,7 +340,6 @@ body:has(.sidebar.collapsed) #open-sidebar-btn {
     grid-template-columns: 1fr 1fr; 
     gap: 20px 16px;               
 }
-
 .ui-toggle {
     display: flex;
     justify-content: space-between;
@@ -391,7 +353,6 @@ body:has(.sidebar.collapsed) #open-sidebar-btn {
 }
 .ui-toggle:hover { color: var(--text-primary); }
 .ui-toggle input { display: none; }
-
 .ui-toggle .slider {
     width: 40px;
     height: 22px;
@@ -414,7 +375,6 @@ body:has(.sidebar.collapsed) #open-sidebar-btn {
     transition: transform 0.5s var(--ease-spring), background-color 0.4s var(--ease-out);
     box-shadow: 0 2px 4px rgba(0,0,0,0.4);
 }
-
 .ui-toggle input:checked + .slider {
     background-image: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
     border-color: transparent;
@@ -425,7 +385,6 @@ body:has(.sidebar.collapsed) #open-sidebar-btn {
     box-shadow: -2px 0 8px rgba(0,0,0,0.3);
 }
 .ui-toggle input:checked ~ span { color: var(--text-primary); }
-
 /* =========================================
    CINEMATIC ACTION BUTTONS
 ========================================= */
@@ -435,7 +394,6 @@ body:has(.sidebar.collapsed) #open-sidebar-btn {
     gap: 12px; 
     margin-top: 24px;
 }
-
 .sidebar-btn {
     display: flex; 
     align-items: center; 
@@ -452,8 +410,6 @@ body:has(.sidebar.collapsed) #open-sidebar-btn {
     position: relative;
     overflow: hidden;
 }
-
-/* Primary Button: Aurora Gradient & Shimmer */
 .sidebar-btn.primary { 
     background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple)); 
     color: #ffffff; 
@@ -477,8 +433,6 @@ body:has(.sidebar.collapsed) #open-sidebar-btn {
     left: 150%;
 }
 .sidebar-btn.primary:active { transform: scale(0.95); }
-
-/* Secondary Button: Premium Ghost */
 .sidebar-btn.secondary { 
     background: rgba(255, 255, 255, 0.02); 
     color: var(--text-primary); 

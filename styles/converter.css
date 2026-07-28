@@ -1,6 +1,16 @@
 /* =========================================
-   🌟 QUICK CONVERTER WIDGET (Premium Glass)
+   🌟 QUICK CONVERTER WIDGET (Premium Glass) @converter.css
 ========================================= */
+/*quick converter location*/
+.canvas-widget-top-left {
+    position: absolute;
+    top: 24px;
+    left: 24px;
+    z-index: 100;
+    pointer-events: auto;
+    width: 380px;
+}
+
 /* Modern CSS Engine for animating a gradient angle */
 @property --spin-angle {
     syntax: "<angle>";
@@ -232,4 +242,149 @@
 @keyframes run-border-light {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
+}
+
+/* =========================================
+   🔄 TOGGLE LOGIC & EXTRACTED INLINE STYLES 
+   (Appended safely below existing animations)
+========================================= */
+
+/* =========================================
+   🔄 TOGGLE LOGIC & EXTRACTED INLINE STYLES 
+========================================= */
+
+/* FIX: Ensure it stays absolutely positioned over the canvas! */
+.qc-wrapper {
+    position: absolute !important;
+    z-index: 9999 !important;
+    width: 380px;
+    height: 60px; /* Prevents the wrapper from collapsing */
+    pointer-events: none !important; /* 🌟 THE MAGIC FIX: Lets clicks pass through empty space! */
+}
+
+/* Ensure the full widget stays aligned inside the wrapper */
+#qc-full-widget {
+    width: 380px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    margin: 0;
+    
+    transform-origin: top left;
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    
+    opacity: 1;
+    transform: scale(1);
+    pointer-events: auto;
+}
+
+/* Extracted styles for the small minimize button */
+.qc-min-btn {
+    position: absolute;
+    top: 0;
+    left: 0;
+    padding: 8px 14px;
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid #38bdf8;
+    color: #38bdf8;
+    border-radius: 8px;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: bold;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    
+    /* Your original bouncy transition */
+    transform-origin: top left;
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    
+    /* Hidden by default */
+    opacity: 0;
+    transform: scale(0.5);
+    pointer-events: none;
+}
+
+.qc-min-btn span:not(.icon) {
+    font-size: 0.75rem;
+    letter-spacing: 1px;
+}
+
+/* Re-apply the positioning and bounce to your existing widget */
+#qc-full-widget {
+    width: 380px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    margin: 0;
+    
+    /* Your original bouncy transition */
+    transform-origin: top left;
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    
+    /* Visible by default */
+    opacity: 1;
+    transform: scale(1);
+    pointer-events: auto;
+}
+
+.converter-close-btn {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    font-size: 1.4rem;
+    padding: 0 5px;
+    line-height: 1;
+    transition: color 0.2s;
+}
+
+.converter-close-btn:hover {
+    color: #ef4444;
+}
+
+/* --- THE TOGGLE STATE --- */
+.qc-wrapper.minimized .qc-min-btn {
+    opacity: 1;
+    transform: scale(1);
+    pointer-events: auto;
+}
+
+.qc-wrapper.minimized #qc-full-widget {
+    opacity: 0;
+    transform: scale(0.5);
+    pointer-events: none;
+}
+
+
+/* --- MICRO-INPUT BAR (Minimized State) --- */
+.qc-min-input {
+    width: 32px;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid rgba(56, 189, 248, 0.4);
+    color: #38bdf8;
+    text-align: center;
+    outline: none;
+    font-family: monospace;
+    font-size: 0.9rem;
+    padding: 0 2px;
+    transition: all 0.2s ease;
+    -moz-appearance: textfield;
+}
+
+/* Hide Spinners */
+.qc-min-input::-webkit-inner-spin-button,
+.qc-min-input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Glow effect when typing */
+.qc-min-input:focus {
+    border-bottom-color: #f8fafc;
+    color: #f8fafc;
+    box-shadow: 0 4px 6px -4px rgba(56, 189, 248, 0.6);
 }

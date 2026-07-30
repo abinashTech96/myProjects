@@ -65,39 +65,39 @@
                 </svg>
             </button>
 
-            <!-- 🌟 NEW: PROJECT INFO BUTTON -->
-            <button id="project-info-btn" class="nav-add-floor-btn" onclick="toggleProjectInfo()" title="Project Details" style="margin-left: 4px; color: #38bdf8; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s ease;">
-                <span style="font-size: 0.9rem; font-weight: 900; font-family: serif; font-style: italic; filter: drop-shadow(0 0 2px rgba(56, 189, 248, 0.5));">i</span>
+            <!-- 🌟 PROJECT INFO -->
+            <button id="project-info-btn" class="nav-add-floor-btn tool-btn theme-blue" onclick="toggleProjectInfo()" title="Project Details">
+                <span class="tool-icon italic-serif">i</span>
             </button>
-            <!-- 🌟 NEW: PROJECT INFO DROPDOWN PANEL -->
-            <div id="project-info-overlay" class="glass-panel" style="display: none; opacity: 0; transform: scale(0); transform-origin: top right; position: absolute; top: calc(100% + 15px); right: 35px; width: 260px; z-index: 10000; transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); margin: 0;">
-                <div class="panel-header" style="border-bottom: 1px solid rgba(56, 189, 248, 0.3); margin-bottom: 15px; padding-bottom: 10px;">
-                    <span class="icon" style="color: #38bdf8;">ℹ️</span>
-                    <h2 style="background: linear-gradient(90deg, #38bdf8, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0; font-size: 0.9rem; font-weight: 700;">PROJECT DETAILS</h2>
+            
+            <div id="project-info-overlay" class="glass-panel nav-dropdown-panel offset-right">
+                <div class="panel-header drop-header-blue">
+                    <span class="icon">ℹ️</span>
+                    <h2>PROJECT DETAILS</h2>
                 </div>
                 
-                <!-- The Project Data HUD stacked beautifully inside the dropdown -->
-                <div class="nav-stats-hud" style="flex-direction: column; align-items: flex-start; gap: 12px; background: transparent; box-shadow: none; border: none; padding: 0;">
-                    <div class="hud-stat" title="Total Plot Area" style="width: 100%; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px;">
+                <div class="nav-stats-hud transparent-hud">
+                    <div class="hud-stat stat-row">
                         <span class="hud-label">PLOT AREA</span> <span id="plot-area" class="hud-value blue">0</span>
                     </div>
-                    <div class="hud-stat" title="Ground Build Area" style="width: 100%; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px;">
+                    <div class="hud-stat stat-row">
                         <span class="hud-label">BUILD AREA</span> <span id="build-area" class="hud-value green">0</span>
                     </div>
-                    <div class="hud-stat" title="Total Built-Up Area" style="width: 100%; justify-content: space-between;">
+                    <div class="hud-stat stat-row no-border">
                         <span class="hud-label">TOTAL BUILT-UP</span> <span id="total-built-area" class="hud-value purple">0</span>
                     </div>
                 </div>
             </div>
 
-            <!-- 🌟 EXISTING: AUTO-BUILDER NAVBAR BUTTON -->
-            <button id="auto-builder-btn" class="nav-add-floor-btn" onclick="toggleAutoBuilder()" title="Auto-Builder" style="margin-left: 4px; color: #f59e0b; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s ease;">
-                <span style="font-size: 0.8rem; filter: drop-shadow(0 0 2px rgba(245, 158, 11, 0.5));">✨</span>
+            <!-- 🌟 AUTO-BUILDER -->
+            <button id="auto-builder-btn" class="nav-add-floor-btn tool-btn theme-yellow" onclick="toggleAutoBuilder()" title="Auto-Builder">
+                <span class="tool-icon">✨</span>
             </button>
-            <!-- 🌟 EXISTING: AUTO-BUILDER DROPDOWN PANEL -->
-            <div id="template-builder-overlay" class="glass-panel" style="display: none; opacity: 0; transform: scale(0); transform-origin: top right; position: absolute; top: calc(100% + 15px); right: 0; width: 260px; z-index: 10000; transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); margin: 0;">
+            
+            <div id="template-builder-overlay" class="glass-panel nav-dropdown-panel width-sm">
                 <div class="panel-header"><span class="icon">✨</span><h2>AUTO-BUILDER</h2></div>
-                <div class="glass-field"><label>Total Floors:</label>
+                <div class="glass-field">
+                    <label>Total Floors:</label>
                     <div class="number-input-wrapper">
                         <input type="number" id="b-floors" value="1" min="1" max="10" oninput="renderFloorSelectors()">
                     </div>
@@ -108,190 +108,151 @@
                 </button>
             </div>
 
-            <!-- 🌟 NEW: AI AGENT NAVBAR BUTTON -->
-            <button id="ai-agent-btn" class="nav-add-floor-btn" onclick="toggleAIAgent()" title="AI Design Assistant" style="margin-left: 4px; color: #a855f7; background: rgba(168, 85, 247, 0.15); border: 1px solid rgba(168, 85, 247, 0.3); transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s ease;">
-                <span style="font-size: 0.8rem; filter: drop-shadow(0 0 2px rgba(168, 85, 247, 0.5));">🤖</span>
+            <!-- 🌟 AI AGENT -->
+            <button id="ai-agent-btn" class="nav-add-floor-btn tool-btn theme-purple" onclick="toggleAIAgent()" title="AI Design Assistant">
+                <span class="tool-icon">🤖</span>
             </button>
-            <!-- 🌟 NEW: AI AGENT DROPDOWN PANEL -->
-            <div id="ai-agent-overlay" class="glass-panel" style="display: none; opacity: 0; transform: scale(0); transform-origin: top right; position: absolute; top: calc(100% + 15px); right: 0; width: 300px; z-index: 10000; transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); margin: 0;">
-                <div class="panel-header" style="border-bottom: 1px solid rgba(168, 85, 247, 0.3); margin-bottom: 15px; padding-bottom: 10px;">
-                    <span class="icon" style="color: #a855f7;">🤖</span>
-                    <h2 style="background: linear-gradient(90deg, #a855f7, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0; font-size: 0.9rem; font-weight: 700;">AI ASSISTANT</h2>
+            
+            <div id="ai-agent-overlay" class="glass-panel nav-dropdown-panel width-md">
+                <div class="panel-header drop-header-purple">
+                    <span class="icon">🤖</span>
+                    <h2>AI ASSISTANT</h2>
                 </div>
                 
                 <div style="display: flex; flex-direction: column; gap: 10px;">
-                    <!-- Note: Retained the exact 'ai-input' and 'ai-generate-btn' IDs so your scripts still work perfectly -->
-                    <textarea id="ai-input" class="neo-sunken" placeholder="e.g., Add a 10x12 master bedroom on the left..." style="width: 100%; height: 65px; padding: 10px; font-size: 0.75rem; border: none; resize: none; color: #f8fafc; box-sizing: border-box; font-family: sans-serif;"></textarea>
+                    <textarea id="ai-input" class="neo-sunken ai-textarea" placeholder="e.g., Add a 10x12 master bedroom on the left..."></textarea>
                     
-                    <button id="ai-generate-btn" class="btn-generate" style="background: linear-gradient(135deg, #a855f7, #9333ea); box-shadow: 0 4px 15px rgba(168, 85, 247, 0.4); border: none;">
+                    <button id="ai-generate-btn" class="btn-generate theme-purple-btn">
                         <span class="btn-icon">✨</span><span class="btn-text">GENERATE</span>
                     </button>
                 </div>
             </div>
 
-            <!-- 🌟 SETTINGS NAVBAR BUTTON -->
+            <!-- 🌟 SETTINGS -->
             <button id="settings-btn" class="nav-add-floor-btn nav-settings-btn" title="Settings" onclick="toggleSettings()">
                 <span class="nav-settings-icon">⚙️</span>
             </button>
 
-            <!-- 🌟 SETTINGS DROPDOWN PANEL -->
             <div id="settings-overlay" class="glass-panel settings-dropdown">
                 <div class="panel-header settings-header">
                     <span class="icon settings-icon-color">⚙️</span>
                     <h2 class="settings-title">SETTINGS</h2>
                 </div>
                 
-                <!-- 🌟 THE MISSING CONTENT WRAPPER -->
                 <div id="settings-content" class="settings-content">
                     
-                    <!-- 🌟 WIDGET CONTROLS (ACCORDION) -->
+                    <!-- WIDGET VISIBILITY -->
                     <div class="settings-accordion-wrapper">
-                        <button class="settings-accordion-btn active" id="btn-widget-visibility">
-                            <!-- 🌟 The flex wrapper to keep the chevron on the right -->
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <span style="font-size: 0.85rem; opacity: 0.8;">👁️</span>
-                                <span class="settings-category" style="margin: 0;">WIDGET VISIBILITY</span>
+                        <button class="settings-accordion-btn active" id="btn-widget-vis-new" onclick="this.classList.toggle('active'); this.nextElementSibling.classList.toggle('active');">
+                            <div class="accordion-title-wrap">
+                                <span class="accordion-emoji">👁️</span>
+                                <span class="settings-category">WIDGET VISIBILITY</span>
                             </div>
                             <span class="settings-chevron">▼</span>
                         </button>                    
                         <div class="settings-accordion-content active" id="content-widget-visibility">
                             <div class="settings-accordion-inner">
-                                <!-- Control Panel Toggle -->
                                 <label class="ui-toggle">
                                     <span class="settings-label-text">◀ Control Panel</span>
-                                    <input type="checkbox" id="toggle-sidebar-cb" checked>
+                                    <input type="checkbox" id="toggle-sidebar-cb" checked autocomplete="off">
                                     <div class="slider"></div>
                                 </label>
-
-                                <!-- Quick Converter Toggle -->
                                 <label class="ui-toggle">
                                     <span class="settings-label-text">📏 Quick Converter</span>
-                                    <input type="checkbox" id="toggle-qc-cb" checked>
+                                    <input type="checkbox" id="toggle-qc-cb" checked autocomplete="off">
                                     <div class="slider"></div>
                                 </label>
-
-                                <!-- Vastu Score Toggle -->
                                 <label class="ui-toggle">
                                     <span class="settings-label-text">🧭 Vastu Score</span>
-                                    <input type="checkbox" id="toggle-vastu-cb" checked>
+                                    <input type="checkbox" id="toggle-vastu-cb" checked autocomplete="off">
                                     <div class="slider"></div>
                                 </label>
                             </div>
                         </div>
                     </div>
 
-                    <!-- 🌟 DATA CONTROLS (ACCORDION) -->
+                    <!-- DATA CONTROLS -->
                     <div class="settings-accordion-wrapper">
-                        <button class="settings-accordion-btn" id="btn-data-controls">
-                            <!-- 🌟 The flex wrapper to keep the chevron on the right -->
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <span style="font-size: 0.85rem; opacity: 0.8;">💾</span>
-                                <span class="settings-category" style="margin: 0;">DATA CONTROLS</span>
+                        <button class="settings-accordion-btn" id="btn-data-ctrl-new" onclick="this.classList.toggle('active'); this.nextElementSibling.classList.toggle('active');">
+                            <div class="accordion-title-wrap">
+                                <span class="accordion-emoji">💾</span>
+                                <span class="settings-category">DATA CONTROLS</span>
                             </div>
                             <span class="settings-chevron">▼</span>
                         </button>
                         <div class="settings-accordion-content" id="content-data-controls">
-                            <div class="settings-accordion-inner" style="display: flex; gap: 8px; flex-wrap: wrap; padding-bottom: 10px;">
-                                
-                                <div style="display: flex; gap: 8px; width: 100%;">
-                                    <button class="neo-btn outline-cyan" onclick="exportJSON()" style="flex: 1; padding: 8px; font-size: 0.7rem; justify-content: center;">
-                                        💾 Save JSON
-                                    </button>
-                                    <button class="neo-btn outline-cyan" onclick="document.getElementById('importFile').click()" style="flex: 1; padding: 8px; font-size: 0.7rem; justify-content: center;">
-                                        📂 Load JSON
-                                    </button>
+                            <div class="settings-accordion-inner btn-grid">
+                                <div class="flex-row">
+                                    <button class="sidebar-btn secondary" style="flex:1; padding: 5px;" onclick="exportJSON()">💾 Save</button>
+                                    <button class="sidebar-btn secondary" style="flex:1; padding: 5px;" onclick="document.getElementById('importFile').click()">📂 Load</button>
                                 </div>
-                                
-                                <button class="neo-btn danger" onclick="resetWorkspace()" style="width: 100%; padding: 8px; font-size: 0.7rem; justify-content: center; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #ef4444;">
-                                    ⚠️ FACTORY RESET
-                                </button>
-                                
+                                <button class="sidebar-btn secondary danger-override" onclick="resetWorkspace()">⚠️ FACTORY RESET</button>
                                 <input type="file" id="importFile" style="display:none" onchange="importJSON(event)">
                             </div>
                         </div>
                     </div>
 
-
-                    <!-- 🌟 TOOLBAR CONTROLS (ACCORDION) -->
+                    <!-- TOOLBAR CONTROLS -->
                     <div class="settings-accordion-wrapper">
                         <button class="settings-accordion-btn" id="btn-toolbar-controls" onclick="this.classList.toggle('active'); this.nextElementSibling.classList.toggle('active');">
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <span style="font-size: 0.85rem; opacity: 0.8;">🛠️</span>
-                                <span class="settings-category" style="margin: 0;">TOOLBAR TOOLS</span>
+                            <div class="accordion-title-wrap">
+                                <span class="accordion-emoji">🛠️</span>
+                                <span class="settings-category">TOOLBAR TOOLS</span>
                             </div>
                             <span class="settings-chevron">▼</span>
                         </button>
                         <div class="settings-accordion-content" id="content-toolbar-controls">
                             <div class="settings-accordion-inner">
-                                
-                                <!-- Project Info Toggle -->
                                 <label class="ui-toggle">
                                     <span class="settings-label-text">ℹ️ Project Info</span>
-                                    <input type="checkbox" id="toggle-project-info-cb" checked onchange="toggleNavTool('project-info-btn', this.checked)">
+                                    <input type="checkbox" id="toggle-project-info-cb" checked autocomplete="off" onchange="toggleNavTool('project-info-btn', this.checked)">
                                     <div class="slider"></div>
                                 </label>
-
-                                <!-- Auto-Builder Toggle -->
                                 <label class="ui-toggle">
                                     <span class="settings-label-text">✨ Auto-Builder</span>
-                                    <input type="checkbox" id="toggle-auto-builder-cb" checked onchange="toggleNavTool('auto-builder-btn', this.checked)">
+                                    <input type="checkbox" id="toggle-auto-builder-cb" checked autocomplete="off" onchange="toggleNavTool('auto-builder-btn', this.checked)">
                                     <div class="slider"></div>
                                 </label>
-
-                                <!-- AI Agent Toggle -->
                                 <label class="ui-toggle">
                                     <span class="settings-label-text">🤖 AI Agent</span>
-                                    <input type="checkbox" id="toggle-ai-agent-cb" checked onchange="toggleNavTool('ai-agent-btn', this.checked)">
+                                    <input type="checkbox" id="toggle-ai-agent-cb" checked autocomplete="off" onchange="toggleNavTool('ai-agent-btn', this.checked)">
                                     <div class="slider"></div>
                                 </label>
-
                             </div>
                         </div>
                     </div>
 
+                </div>
+            </div>
 
-
-
-
-                </div> <!-- End of settings-content -->
-            </div> <!-- End of settings-overlay -->
         </div>
-
     </div>
     
     
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    <!-- 🌟 NAVBAR EXPAND/COLLAPSE PULL TAB WITH DOWN ARROW -->
+<!-- 🌟 NAVBAR EXPAND/COLLAPSE PULL TAB WITH DOWN ARROW -->
     <button id="navbar-toggle-btn" class="navbar-toggle-btn" onclick="toggleNavbarDrawer()" title="Expand Secondary Drawer">
         ▼
     </button>
-<!-- 🌟 DROPDOWN DRAWER (TABBED_LAYOUT) -->
 
+    <!-- 🌟 DROPDOWN DRAWER (TABBED_LAYOUT) -->
     <div id="nav-drawer" class="nav-drawer-panel">
+        
+        <!-- DRAWER HEADERS -->
         <div class="drawer-tabs-header">
-            <button class="drawer-tab-btn" onclick="switchDrawerTab(event, 'plot')">🏗️ PLOT</button>
+            <button class="drawer-tab-btn active" onclick="switchDrawerTab(event, 'plot')">🏗️ PLOT</button>
             <button class="drawer-tab-btn" onclick="switchDrawerTab(event, 'floors')">🏢 FLOORS</button>
             <button class="drawer-tab-btn" onclick="switchDrawerTab(event, 'interiors')">🛋️ INTERIORS</button>
+            <button class="drawer-tab-btn" onclick="switchDrawerTab(event, 'controls')">⚙️ CONTROLS</button>
         </div>
+
         <div class="drawer-tabs-content">
             
-            <div id="drawer-tab-plot" class="drawer-tab-panel">
+            <!-- ========================================= -->
+            <!-- 🏗️ PLOT TAB CONTENT                       -->
+            <!-- ========================================= -->
+            <div id="drawer-tab-plot" class="drawer-tab-panel active">
                 <div class="input-grid">
                     <div class="field"><label>Width:</label><input type="number" id="inW" value="278" oninput="updateCanvas()"></div>
                     <div class="field"><label>Depth:</label><input type="number" id="inH" value="417" oninput="updateCanvas()"></div>
@@ -311,22 +272,32 @@
                     <div class="field"><label>D (L / D):</label><div style="display: flex; gap: 4px;"><input type="number" id="dL" value="51" oninput="updateCanvas()"><input type="number" id="dD" value="41" oninput="updateCanvas()"></div></div>
                 </div>
             </div>
-            
+
+            <!-- ========================================= -->
+            <!-- 🏢 FLOORS TAB CONTENT                     -->
+            <!-- ========================================= -->
             <div id="drawer-tab-floors" class="drawer-tab-panel">
+                
                 <div class="setting-card" style="padding: 8px; margin-bottom: 8px;">
                     <div class="setting-group">
                         <label class="setting-label">PARAPET STYLE</label>
                         <select id="parapetStyleSelect" class="modern-select neo-sunken" onchange="if(typeof request3DUpdate === 'function') request3DUpdate();">
                             <option value="premium-canopy">Premium Facade</option>
                             <option value="modern-brown">Modern Brown & White</option>
+                            <option value="geo-interlock">Geometric Interlock</option>
+                            <option value="classic-curve">Classic Curves</option>
+                            <option value="modern-glass">Modern Glass</option>
+                            <option value="neo-brutalist">Neo-Brutalist (Fins & LEDs)</option>
+                            <option value="zen-pergola">Zen Pergola (Wood & Glass)</option>
+                            <option value="cyber-cantilever">Cyber Cantilever (Chrome)</option>
                             <option value="standard">Standard Capped Wall</option>
                             <option value="none">None (Flat Edge)</option>
                         </select>
                     </div>
                 </div>
-
-                <div class="setting-card" style="padding: 8px; margin-bottom: 8px; display: flex; justify-content: space-between;">
-                    <div class="setting-group" style="flex: 1;">
+                
+                <div class="setting-card" style="padding: 8px; margin-bottom: 8px;">
+                    <div class="setting-group">
                         <label class="setting-label">Measurement</label>
                         <select id="unitSelect" class="modern-select" onchange="updateCanvas()">
                             <option value="in">Inches</option>
@@ -342,24 +313,64 @@
                         </label>                        
                     </div>
                 </div>
-
+                
                 <div style="display:flex; align-items:center; justify-content: space-between; gap: 4px; margin-bottom: 8px;">
                     <div id="floor-tabs" style="display:flex; flex-wrap: wrap; gap:4px;">
                         <button class="floor-btn active" data-floor="0" onclick="setFloor(0)">G</button>
                     </div>
                     <div style="display:flex; gap: 4px;">
-                        <button class="action-btn" onclick="addManualFloor()" style="padding: 4px 6px; font-weight: bold; background: rgba(56, 189, 248, 0.1); color: #38bdf8; border: 1px dashed #38bdf8;">+ ADD</button>
-                        <button class="action-btn" onclick="deleteCurrentFloor()" style="padding: 4px 6px; font-weight: bold; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px dashed #ef4444;">🗑️ DEL</button>
+                        <button class="action-btn" onclick="addManualFloor()" title="Add New Floor" style="padding: 4px 6px; font-weight: bold; background: rgba(56, 189, 248, 0.1); color: #38bdf8; border: 1px dashed #38bdf8;">+ ADD</button>
+                        <button class="action-btn" onclick="deleteCurrentFloor()" title="Delete Current Floor" style="padding: 4px 6px; font-weight: bold; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px dashed #ef4444;">🗑️ DEL</button>
                     </div>
                 </div>
-
+                
+                <div id="stair-warning" style="margin-top: 0; margin-bottom: 8px; padding: 4px;">⚠ Stairs must match across floors!</div>
+                
                 <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 8px;">
-                    <button class="action-btn" onclick="toggle3D()" style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 6px; font-size: 0.7rem;">👁️ 3D</button>
+                    <button class="action-btn" onclick="toggle3D()" style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 6px; font-size: 0.7rem;">👁️ 3D View</button>
                     <button class="action-btn" onclick="cloneEntireFloor()" style="background: #6366f1; color: white; padding: 6px; font-size: 0.7rem;">🚀 Clone</button>
                     <button class="action-btn" onclick="toggleTheme()" style="background: #6366f1; color: white; padding: 6px; font-size: 0.7rem;">🎨 Theme</button>
                 </div>
+
+                <div class="input-grid">  
+                    <div class="field"><label>Top Direction:</label><select id="compassDir" onchange="handleCompassChange()"><option>West</option><option>South</option><option>East</option><option>North</option></select></div>
+                    <div class="field"><label>Scale:</label><input type="number" id="scaleInput" value="1.2" step="0.1" oninput="updateCanvas()"></div>
+                </div>
+                
+                <div class="neo-divider" style="margin: 10px 0;"></div>
+                
+                <div id="area-dashboard" style="display: flex; flex-direction: column; gap: 6px; font-size: 0.75rem; max-height: 120px; overflow-y: auto; padding-right: 4px;">
+                    <div style="color: #94a3b8; text-align: center;">Add rooms to see calculations...</div>
+                </div>
+                
+                <div class="neo-divider" style="margin: 10px 0;"></div>
+
+                <div class="global-toolbar" style="margin-top: 10px; display: flex; flex-direction: column; gap: 4px; padding: 6px;">
+                    <div style="display: flex; gap: 4px; width: 100%;">
+                        <button class="tool-btn" onclick="undoAction()" title="Undo"><span class="icon">⏪</span><span class="btn-label">Undo</span></button>
+                        <button class="tool-btn" onclick="redoAction()" title="Redo"><span class="icon">⏩</span><span class="btn-label">Redo</span></button>
+                        <button class="tool-btn" onclick="toggleMeasureMode()" title="Tape Measure"><span class="icon">📏</span><span class="btn-label">Measure</span></button>
+                    </div>
+                    <div style="display: flex; gap: 4px; width: 100%;">
+                        <button class="tool-btn" onclick="exportPNG()" title="Export PNG" style="border-bottom: 2px solid #a855f7;"><span class="icon">🖼️</span><span class="btn-label">PNG</span></button>
+                        <button class="tool-btn" onclick="exportPDF()" title="Export PDF" style="border-bottom: 2px solid #f43f5e;"><span class="icon">📄</span><span class="btn-label">PDF</span></button>
+                    </div>
+                    <div style="display: flex; gap: 4px; width: 100%;">
+                        <button class="tool-btn" onclick="exportPDF()" title="Export PDF" style="border-bottom: 2px solid #f43f5e;">
+                            <span class="icon">📄</span><span class="btn-label">PDF</span>
+                        </button>
+                        <button id="btn-section" class="neo-btn" onclick="toggleSectionCut()" title="Draw Section Line">
+                            <span class="icon">✂️</span><span class="btn-label">Section</span>
+                        </button>
+                    </div>
+                </div>
+                <input type="file" id="importFile" style="display:none" onchange="importJSON(event)">
+                <p style="font-size: 0.65rem; color: #10b981; margin-top: 8px; margin-bottom: 0; font-weight: bold; text-align: center;">🖱️ Scroll: Zoom | Mid-Click: Pan</p>
             </div>
-            
+
+            <!-- ========================================= -->
+            <!-- 🛋️ INTERIORS TAB CONTENT                  -->
+            <!-- ========================================= -->
             <div id="drawer-tab-interiors" class="drawer-tab-panel">
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                     <div style="display: flex; flex-direction: column; gap: 8px;">
@@ -369,6 +380,9 @@
                             <option value="bedroom">Bedroom</option>
                             <option value="toilet">Toilet</option>
                             <option value="kitchen">Kitchen</option>
+                            <option value="puja">Puja Room</option>
+                            <option value="staircase">Staircase</option>
+                            <option value="balcony">Balcony</option>
                         </select>
                         <button class="neo-btn" onclick="addElement()">+ ADD ROOM</button>
                     </div>
@@ -376,8 +390,10 @@
                     <div style="display: flex; flex-direction: column; gap: 8px;">
                         <label class="neo-label">INTERIOR SCALE</label>
                         <select id="furn-type" class="modern-select neo-sunken">
-                            <option value="bed">🛏️ King Bed</option>
-                            <option value="sofa">🛋️ 3-Seater Sofa</option>
+                            <option value="bed">🛏️ King Bed (6'x7')</option>
+                            <option value="sofa">🛋️ 3-Seater Sofa (7'x3')</option>
+                            <option value="dining">🍽️ Dining Table (6'x4')</option>
+                            <option value="wardrobe">🚪 Wardrobe (4'x2')</option>
                         </select>
                         <button class="neo-btn primary-green" onclick="addElement(document.getElementById('furn-type').value)">
                             + FURNITURE
@@ -388,17 +404,117 @@
                 <div class="neo-divider" style="margin: 10px 0;"></div>
                 
                 <div style="display: flex; flex-direction: column; gap: 10px;">
-                    <label class="neo-label">ROOM FIXTURES</label>
+                    <label class="neo-label">ROOM FIXTURES <span style="text-transform:none; font-weight:normal; opacity:0.5;">(Select Room First)</span></label>
                     <div style="display: flex; gap: 12px;">
-                        <button class="neo-btn outline-yellow" style="flex:1;" onclick="addFixture('door')">🚪 DOOR</button>
-                        <button class="neo-btn outline-cyan" style="flex:1;" onclick="addFixture('window')">🪟 WINDOW</button>
+                        <button class="neo-btn outline-yellow" onclick="addFixture('door')">🚪 DOOR</button>
+                        <button class="neo-btn outline-cyan" onclick="addFixture('window')">🪟 WINDOW</button>
                     </div>
                 </div>
                 <div id="element-controls" style="margin-top: 15px;"></div>
             </div>
 
+            <!-- ========================================= -->
+            <!-- ⚙️ CONTROLS TAB CONTENT                  -->
+            <!-- ========================================= -->
+            <div id="drawer-tab-controls" class="drawer-tab-panel">
+                
+                <div class="setting-card" style="padding: 8px; margin-bottom: 8px;">
+                    <div class="setting-group toggle-group" style="justify-content: flex-end; padding-bottom: 5px;">
+                        <label class="ui-toggle" style="justify-content: flex-end; gap: 10px;">
+                            <span style="font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;">
+                                📏 Show Site Offsets
+                            </span>
+                            <input type="checkbox" id="showOffsetsToggle" onchange="updateCanvas()">
+                            <div class="slider"></div>
+                        </label>                        
+                    </div>
+                    <div class="setting-group toggle-group" style="justify-content: flex-end; padding-bottom: 5px;">
+                        <label class="ui-toggle" style="justify-content: flex-end; gap: 10px;">
+                            <span style="font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;">
+                                🔠 Show Plot Labels
+                            </span>
+                            <input type="checkbox" id="showLabelsToggle" onchange="updateCanvas()" checked>
+                            <div class="slider"></div>
+                        </label>                        
+                    </div>
+                            
+                </div>
+                <div class="neo-divider" style="margin: 10px 0;"></div>
+                <div class="setting-card" style="padding: 8px; margin-bottom: 8px;">
+                    <div class="setting-group toggle-group" style="justify-content: flex-end; padding-bottom: 5px;">
+                        <label class="ui-toggle" style="justify-content: flex-end; gap: 10px;">
+                            <span style="font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;">
+                                📐 Project Data
+                            </span>
+                            <input type="checkbox" checked onchange="toggleWidget('area-overlay', this.checked)">
+                            <div class="slider"></div>
+                        </label>                        
+                    </div>
+                    <div class="setting-group toggle-group" style="justify-content: flex-end; padding-bottom: 5px;">
+                        <label class="ui-toggle" style="justify-content: flex-end; gap: 10px;">
+                            <span style="font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;">
+                                📐 Snap to 1ft Grid
+                            </span>
+                            <input type="checkbox" id="gridSnapToggle" checked>
+                            <div class="slider"></div>
+                        </label>                        
+                    </div>
+                </div>
+                <div class="neo-divider" style="margin: 10px 0;"></div>
+                <div class="setting-card" style="padding: 8px; margin-bottom: 8px;">
+                    <div class="setting-group toggle-group" style="justify-content: flex-end; padding-bottom: 5px;">
+                        <label class="ui-toggle" style="justify-content: flex-end; gap: 10px;">
+                            <span style="font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;">
+                                📷 Camera Controls
+                            </span>
+                            <input type="checkbox" checked onchange="toggleWidget('camera-controls', this.checked)">
+                            <div class="slider"></div>
+                        </label>                        
+                    </div>
+                    <div class="setting-group toggle-group" style="justify-content: flex-end; padding-bottom: 5px;">
+                        <label class="ui-toggle" style="justify-content: flex-end; gap: 10px;">
+                            <span style="font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;">
+                                🧩 Smart-Merge</span>
+                            <input type="checkbox" id="smartMergeToggle" onchange="updateCanvas()">
+                            <div class="slider"></div>
+                        </label>                        
+                    </div>
+                </div>
+                <div class="neo-divider" style="margin: 10px 0;"></div>
+                <div class="setting-card" style="padding: 8px; margin-bottom: 8px;">
+                    <div class="setting-group toggle-group" style="justify-content: flex-end; padding-bottom: 5px;">
+                        <label class="ui-toggle" style="justify-content: flex-end; gap: 10px;">
+                            <span style="font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;">
+                                🏠 Real3D View</span>
+                            <input type="checkbox" id="real3DToggle" onchange="if(typeof is3DMode !== 'undefined' && is3DMode) generate3DModel()">
+                            <div class="slider"></div>
+                        </label>                        
+                    </div>
+                    <div class="setting-group toggle-group" style="justify-content: flex-end; padding-bottom: 5px;">
+                        <label class="ui-toggle" style="justify-content: flex-end; gap: 10px;">
+                            <span style="font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;">
+                                🏗️ Show Columns</span>
+                            <input type="checkbox" id="showColsToggle" onchange="updateCanvas()">
+                            <div class="slider"></div>
+                        </label>                        
+                    </div>
+                </div>
+                
+
+                
+                
+                <p style="font-size: 0.65rem; color: #10b981; margin-top: 8px; margin-bottom: 0; font-weight: bold; text-align: center;">🖱️ Scroll: Zoom | Mid-Click: Pan</p>
+            </div>
+
         </div>
     </div>
+
+
+
+
+
+
+
 
 <!-- 🌟 DROPDOWN DRAWER (FOCUS_LAYOUT) -->
 <!--
@@ -805,7 +921,7 @@
                         </div>
                     </div>
 
-                    <!-- CRITICAL: Dynamic Editor renders here -->
+                    <!-- CRITICAL: Dynamic Editor renders -->
                     <div id="element-controls" style="margin-top: 15px;"></div>
                 </div>
             </div>
@@ -1100,7 +1216,6 @@
     <script src="features/vastu/vastu.js"></script>
     <script src="features/section-cut/elevation.js"></script>
     <script src="features/export/export.js"></script>
-    <!-- Make sure this is here! -->
     <script src="features/cinematic-tour/tour.js"></script> 
     <script src="features/showcase/showcase.js"></script>
     <script src="features/furniture-factory/furniture3d.js"></script>

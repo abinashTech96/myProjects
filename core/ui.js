@@ -923,19 +923,6 @@ window.toggleNavbarDrawerFocus = function() {
 // =========================================
 // 🌟 DROPDOWN DRAWER (TABBED_LAYOUT)
 // =========================================
-window.switchDrawerTabOld = function(event, tabId) {
-    document.querySelectorAll('.drawer-tab-btn').forEach(btn => btn.classList.remove('active'));
-    document.querySelectorAll('.drawer-tab-panel').forEach(panel => panel.classList.remove('active'));
-    event.currentTarget.classList.add('active');
-    document.getElementById(`drawer-tab-${tabId}`).classList.add('active');
-    const drawerPanel = document.getElementById('nav-drawer');
-    const pullTab = document.getElementById('navbar-toggle-btn');
-    setTimeout(() => {
-        if (drawerPanel.classList.contains('drawer-open')) {
-            pullTab.style.top = `${drawerPanel.offsetHeight + 15}px`;
-        }
-    }, 50);
-}
 window.toggleNavbarDrawer = function() {
     const drawer = document.getElementById('nav-drawer');
     const btn = document.getElementById('navbar-toggle-btn');
@@ -952,7 +939,7 @@ window.toggleNavbarDrawer = function() {
         }
     }
 };
-window.switchDrawerTab = function(event, tabId) {
+window.switchDrawerTabOld = function(event, tabId) {
     const clickedBtn = event.currentTarget;
     const targetPanel = document.getElementById(`drawer-tab-${tabId}`);
     const contentContainer = document.querySelector('.drawer-tabs-content');
@@ -970,20 +957,52 @@ window.switchDrawerTab = function(event, tabId) {
     const pullTab = document.getElementById('navbar-toggle-btn');
     setTimeout(() => {
         if (drawerPanel.classList.contains('drawer-open')) {
-          //pullTab.style.top = `${drawerPanel.offsetHeight + 15}px`;
+            pullTab.style.top = `${60 + drawerPanel.offsetHeight - 10}px`;
+        }
+    }, 50); 
+}
+window.switchDrawerTab = function(event, tabId) {
+    const clickedBtn = event.currentTarget;
+    const targetPanel = document.getElementById(`drawer-tab-${tabId}`);
+    const contentContainer = document.querySelector('.drawer-tabs-content');
+    if (!targetPanel || !contentContainer) return;
+    const isAlreadyActive = clickedBtn.classList.contains('active');
+    document.querySelectorAll('.drawer-tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.drawer-tab-panel').forEach(panel => panel.classList.remove('active'));
+    if (isAlreadyActive) {
+        contentContainer.style.display = 'none';
+    } else {
+        clickedBtn.classList.add('active');
+        targetPanel.classList.add('active');
+        contentContainer.style.display = 'block';
+    }
+    setTimeout(() => {
+        const drawerPanel = document.getElementById('nav-drawer');
+        const pullTab = document.getElementById('navbar-toggle-btn');
+        
+        if (drawerPanel && pullTab && drawerPanel.classList.contains('drawer-open')) {
             pullTab.style.top = `${60 + drawerPanel.offsetHeight - 10}px`;
         }
     }, 50); 
 }
 // =========================================
-// 🌟 TOOLBAR WIDGET VISIBILITY TOGGLE
+// 🌟 TOOLBAR WIDGET VISIBILITY TOGGLE (ANIMATED)
 // =========================================
 window.toggleNavTool = function(btnId, isVisible) {
     const btn = document.getElementById(btnId);
     if (btn) {
-        btn.style.display = isVisible ? 'flex' : 'none';
-        if (!isVisible) {
-            // Converts "ai-agent-btn" -> "ai-agent-overlay"
+        if (isVisible) {
+            btn.style.display = 'flex';
+            setTimeout(() => {
+                btn.classList.remove('hidden-tool');
+            }, 10);
+        } else {
+            btn.classList.add('hidden-tool');
+            setTimeout(() => {
+                if (btn.classList.contains('hidden-tool')) {
+                    btn.style.display = 'none';
+                }
+            }, 300);
             const overlayId = btnId.replace('-btn', '-overlay'); 
             const overlay = document.getElementById(overlayId);
             if (overlay) {
@@ -1104,20 +1123,14 @@ function initSidebarDrag() {
 
     document.addEventListener('mousemove', (e) => {
         if (!isDragging) return;
-        
-        // Calculate how far the mouse has moved
         const dx = e.clientX - startX;
         const dy = e.clientY - startY;
-        
         let newLeft = initialLeft + dx;
         let newTop = initialTop + dy;
-        
-        // 🌟 BOUNDARIES: Prevent the user from dragging it off the screen
         if (newLeft < 0) newLeft = 0;
         if (newTop < 0) newTop = 0;
         if (newLeft + sidebar.offsetWidth > window.innerWidth) newLeft = window.innerWidth - sidebar.offsetWidth;
         if (newTop + sidebar.offsetHeight > window.innerHeight) newTop = window.innerHeight - sidebar.offsetHeight;
-
         sidebar.style.left = `${newLeft}px`;
         sidebar.style.top = `${newTop}px`;
     });
@@ -1126,8 +1139,6 @@ function initSidebarDrag() {
         if (isDragging) {
             isDragging = false;
             document.body.style.cursor = 'default';
-            
-            // Re-enable smooth CSS transitions for when it expands/collapses later
             sidebar.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), height 0.4s ease, left 0.4s ease, top 0.4s ease';
         }
     });

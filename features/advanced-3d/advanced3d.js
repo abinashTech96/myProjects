@@ -76,12 +76,10 @@ function closeAdvPanel() {
 }
 
 function toggleAdvWorkspace(isAdvanced) {
-    const sidebar = document.querySelector('.sidebar');
     const real3dToggle = document.querySelector('input[id*="real3D"], input[id*="real3d"]');
     const panel = document.getElementById('adv-3d-panel');
 
     if (isAdvanced) {
-        if (sidebar) sidebar.classList.add('collapsed');
         if (real3dToggle && !real3dToggle.checked) {
             real3dToggle.checked = true;
             real3dToggle.dispatchEvent(new Event('change'));
@@ -91,7 +89,6 @@ function toggleAdvWorkspace(isAdvanced) {
         panel.style.transform = 'translateY(0)';
         renderAdvFloors();
     } else {
-        if (sidebar) sidebar.classList.remove('collapsed');
         if (real3dToggle && real3dToggle.checked) {
             real3dToggle.checked = false;
             real3dToggle.dispatchEvent(new Event('change'));

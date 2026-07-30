@@ -108,7 +108,8 @@ const RoomStudio = {
                 const ry = this.activeRoom.y;
 
                 if (cx >= rx && cx <= rx + this.activeRoom.w && cy >= ry && cy <= ry + this.activeRoom.h) {
-                    const localFurniture = JSON.parse(JSON.stringify(el));
+                    // const localFurniture = JSON.parse(JSON.stringify(el));
+                    const localFurniture = structuredClone(el);
                     localFurniture.x = el.x - this.activeRoom.x;
                     localFurniture.y = el.y - this.activeRoom.y;
                     localFurniture.globalRef = globalIdx; 
@@ -163,7 +164,8 @@ const RoomStudio = {
             }
         });
         this.sandboxFixtures.forEach(fix => {
-            const globalFurniture = JSON.parse(JSON.stringify(fix));
+            // const globalFurniture = JSON.parse(JSON.stringify(fix));
+            const globalFurniture = structuredClone(fix);
             delete globalFurniture.globalRef;
             globalFurniture.x = this.activeRoom.x + fix.x;
             globalFurniture.y = this.activeRoom.y + fix.y;
@@ -206,7 +208,11 @@ const RoomStudio = {
         let newY = pt.y - this.dragOffset.y;
         
         // 2. Apply your existing Grid Snapping
-        const snap = STUDIO_CONFIG.GRID_SNAP_INCHES;
+        let snap = typeof STUDIO_CONFIG !== 'undefined' ? STUDIO_CONFIG.GRID_SNAP_INCHES : 6;
+        if (typeof CanvasState !== 'undefined') {
+            if (CanvasState.zoomLvl > 2.5) snap = 1;
+            else if (CanvasState.zoomLvl < 0.8) snap = 12;
+        }
         newX = Math.round(newX / snap) * snap; 
         newY = Math.round(newY / snap) * snap;
 

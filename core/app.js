@@ -732,8 +732,14 @@ const handleMove = (currentMouse, e) => {
             });
 
             const isStrictSnap = UI.gridSnapToggle ? UI.gridSnapToggle.checked : false;
-            if (!snappedX) newX = isStrictSnap ? Math.round(newX / 12) * 12 : Math.round(newX);
-            if (!snappedY) newY = isStrictSnap ? Math.round(newY / 12) * 12 : Math.round(newY);
+            
+            // 🌟 DYNAMIC SNAP RESOLUTION
+            let snapRes = 12; // Default: 1 foot
+            if (CanvasState.zoomLvl > 2.5) snapRes = 1;      // Deep Zoom: 1 inch precision
+            else if (CanvasState.zoomLvl > 1.2) snapRes = 6; // Mid Zoom: 6 inch precision
+
+            if (!snappedX) newX = isStrictSnap ? Math.round(newX / snapRes) * snapRes : Math.round(newX);
+            if (!snappedY) newY = isStrictSnap ? Math.round(newY / snapRes) * snapRes : Math.round(newY);
 
             newX = Math.max(0, Math.min(newX, inW - el.w));
             newY = Math.max(0, Math.min(newY, inH - el.h));
@@ -1266,6 +1272,20 @@ window.renderAreaUI = function(areaData) {
 };
 
 
+
+// =========================================
+// 📡 EVENT BUS LISTENERS
+// =========================================
+AppEvents.onStateChange(() => {
+    // Whenever data changes, the UI automatically updates itself
+    if (typeof updateCanvas === 'function') updateCanvas();
+    if (typeof renderSidebar === 'function') renderSidebar();
+});
+
+AppEvents.onSelectionChange(() => {
+    // Whenever selection changes, update the sidebar
+    if (typeof renderSidebar === 'function') renderSidebar();
+});
 // ==========================================
 // 🌟 APP BOOTSTRAPPER (Auto-Starter) 🌟
 // ==========================================

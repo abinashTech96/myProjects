@@ -1,5 +1,5 @@
 /* =========================================
-   🌟 NEUMORPHIC STUDIO NAVBAR BASE
+   🌟 NEUMORPHIC STUDIO NAVBAR BASE (navbar.css)
 ========================================= */
 .pro-studio-navbar {
     position: absolute;
@@ -218,11 +218,11 @@
 /* 🌟 Enhanced Toolbar Button Animations */
 .tool-btn {
     margin-left: 4px;
-    width: 26px; /* Explicit width required for smooth shrinking */
+    width: 26px;
     height: 26px;
     opacity: 1;
     transform: scale(1);
-    overflow: hidden; /* Prevents icons from spilling out while shrinking */
+    overflow: hidden;
     transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 

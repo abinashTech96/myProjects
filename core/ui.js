@@ -191,9 +191,10 @@ function renderSidebar() {
     let animClass = isGoingBack ? 'slide-in-left' : (isGoingDeeper ? 'slide-in-right' : 'fade-in-ui');
     UI.prevSelected = selectedElIndex;
     if (selectedElIndex !== -1) {
-        const contentInt = document.getElementById('content-interiors');
-        if (contentInt && !contentInt.classList.contains('active')) {
-            if (typeof toggleHybrid === 'function') toggleHybrid('interiors');
+        const tabInteriors = document.getElementById('drawer-tab-interiors');
+        const tabBtn = document.querySelector('.drawer-tab-btn:nth-child(3)');
+        if (tabInteriors && !tabInteriors.classList.contains('active') && tabBtn) {
+            if (typeof switchDrawerTab === 'function') switchDrawerTab({ currentTarget: tabBtn }, 'interiors');
         }
     }
     if (selectedElIndex === -1) {
@@ -684,40 +685,6 @@ window.toggleWidget = function(widgetId, isVisible) {
         }, 200); 
     }
 };
-window.toggleSidebar = function() {
-    const sidebar = document.querySelector('.sidebar');
-    const neoPanel = document.querySelector('.neo-panel');
-    const openBtn = document.getElementById('open-sidebar-btn');
-
-    let isCollapsed = false;
-    // 1. Toggle the main Sidebar
-    if (sidebar) {
-        if (!sidebar.classList.contains('collapsed')) {
-            sidebar.style.left = '20px';
-            sidebar.style.top = '155px';
-        }
-        sidebar.classList.toggle('collapsed');
-        isCollapsed = sidebar.classList.contains('collapsed');
-    }
-    // 2. Sync the Workspace UI (.neo-panel) with the Sidebar
-    if (neoPanel) {
-        if (isCollapsed) {
-            neoPanel.classList.add('collapsed');
-        } else {
-            neoPanel.classList.remove('collapsed');
-        }
-    }
-    // 3. Handle the tiny Expand button visibility
-    if (openBtn) {
-        if (isCollapsed) {
-            openBtn.style.display = 'block';
-            setTimeout(() => openBtn.style.opacity = '1', 10);
-        } else {
-            openBtn.style.opacity = '0';
-            setTimeout(() => openBtn.style.display = 'none', 200); // Wait for fade out
-        }
-    }
-};
 window.toggleCheatSheet = function() {
     const panel = document.getElementById('cheat-sheet-panel');
     if (!panel) return;
@@ -779,147 +746,7 @@ window.renderTimeMachine = function() {
         </div>
     `;
 };
-window.toggleHybrid = function(sectionId) {
-    const targetContent = document.getElementById(`content-${sectionId}`);
-    const targetBtn = document.getElementById(`btn-${sectionId}`);
-    if (!targetContent || !targetBtn) return;
-    const isOpen = targetContent.classList.contains('active');
-    document.querySelectorAll('.hybrid-content').forEach(el => el.classList.remove('active'));
-    document.querySelectorAll('.hybrid-btn').forEach(el => el.classList.remove('active'));
-    if (!isOpen) {
-        targetContent.classList.add('active');
-        targetBtn.classList.add('active');
-    }
-};
 
-// =========================================
-// 🌟 SECONDARY NAVBAR DRAWER TOGGLE & HORIZONTAL DRAWER ACCORDION TOGGLE
-// =========================================
-window.toggleNavbarDrawerOld = function() {
-    const drawer = document.getElementById('nav-drawer');
-    const btn = document.getElementById('navbar-toggle-btn');
-    
-    if (drawer && btn) {
-        const isOpen = drawer.classList.toggle('drawer-open');
-        btn.classList.toggle('drawer-open', isOpen);
-        
-        if (isOpen) {
-            btn.title = "Collapse Drawer";
-            // Calculate height immediately when opening
-            btn.style.top = `${drawer.offsetHeight + 15}px`; 
-        } else {
-            btn.title = "Expand Secondary Drawer";
-            // Reset to default top position when closed
-            btn.style.top = '54px'; 
-        }
-    }
-};
-window.toggleDrawerAccordionOld = function(sectionId) {
-    const targetWrap = document.getElementById(`acc-wrap-${sectionId}`);
-    const targetBtn = targetWrap.querySelector('.drawer-acc-btn');
-    const targetContent = document.getElementById(`drawer-content-${sectionId}`);
-    const drawerPanel = document.getElementById('nav-drawer');
-    const pullTab = document.getElementById('navbar-toggle-btn');
-    
-    // Check if the clicked section is already open
-    const isOpen = targetBtn.classList.contains('active');
-    
-    // 1. Exclusive Open: Close all other accordions first
-    document.querySelectorAll('.drawer-acc-btn').forEach(btn => btn.classList.remove('active'));
-    document.querySelectorAll('.drawer-acc-content').forEach(content => content.classList.remove('active'));
-    
-    // 2. Open the requested accordion if it was closed
-    if (!isOpen) {
-        targetBtn.classList.add('active');
-        targetContent.classList.add('active');
-    }
-
-    // 3. Dynamic Drawer Sizing (.single-mode trigger)
-    const openCount = document.querySelectorAll('.drawer-acc-btn.active').length;
-    if (openCount <= 1) {
-        drawerPanel.classList.add('single-mode'); // Shrinks drawer width if only 1 or 0 open
-    } else {
-        drawerPanel.classList.remove('single-mode'); // Expands to full width
-    }
-    
-    // 4. Dynamically push the pull-tab down to match the new content height
-    // We wait 400ms for the CSS grid transition to finish opening/closing
-    setTimeout(() => {
-        if (drawerPanel.classList.contains('drawer-open')) {
-            pullTab.style.top = `${drawerPanel.offsetHeight + 15}px`;
-        }
-    }, 400); 
-};
-
-
-// =========================================
-// 🌟 DROPDOWN DRAWER (FOCUS_LAYOUT)
-// =========================================
-window.toggleDrawerAccordionFocus = function(sectionId) {
-    const targetWrap = document.getElementById(`acc-wrap-${sectionId}`);
-    const targetBtn = targetWrap.querySelector('.drawer-acc-btn');
-    const targetContent = document.getElementById(`drawer-content-${sectionId}`);
-    
-    const drawerPanel = document.getElementById('nav-drawer');
-    const horizontalLayout = document.getElementById('drawer-horizontal-layout');
-    const pullTab = document.getElementById('navbar-toggle-btn');
-    const allWrappers = document.querySelectorAll('.drawer-acc-wrapper');
-    
-    // Check if the clicked section is already open
-    const isOpen = targetBtn.classList.contains('active');
-    
-    // 1. Reset everything first
-    document.querySelectorAll('.drawer-acc-btn').forEach(btn => btn.classList.remove('active'));
-    document.querySelectorAll('.drawer-acc-content').forEach(content => content.classList.remove('active'));
-    
-    // 2. Apply Focus Mode or Reset to Normal
-    if (!isOpen) {
-        // OPENING: Activate focus mode
-        targetBtn.classList.add('active');
-        targetContent.classList.add('active');
-        horizontalLayout.classList.add('focus-mode'); // Removes gaps
-        
-        // Hide the other columns
-        allWrappers.forEach(wrap => {
-            if (wrap.id === `acc-wrap-${sectionId}`) {
-                wrap.classList.remove('hidden-by-focus');
-            } else {
-                wrap.classList.add('hidden-by-focus');
-            }
-        });
-    } else {
-        // CLOSING: Return to the 3-column view
-        horizontalLayout.classList.remove('focus-mode');
-        allWrappers.forEach(wrap => wrap.classList.remove('hidden-by-focus'));
-    }
-    
-    // 3. Dynamically push the pull-tab down to match the new content height
-    setTimeout(() => {
-        if (drawerPanel.classList.contains('drawer-open')) {
-            // Calculates height after the CSS animation completes
-            pullTab.style.top = `${drawerPanel.offsetHeight + 15}px`;
-        }
-    }, 400); 
-};
-window.toggleNavbarDrawerFocus = function() {
-    const drawer = document.getElementById('nav-drawer');
-    const btn = document.getElementById('navbar-toggle-btn');
-    
-    if (drawer && btn) {
-        const isOpen = drawer.classList.toggle('drawer-open');
-        btn.classList.toggle('drawer-open', isOpen);
-        
-        if (isOpen) {
-            btn.title = "Collapse Drawer";
-            // Calculate height immediately when opening
-            btn.style.top = `${drawer.offsetHeight + 15}px`; 
-        } else {
-            btn.title = "Expand Secondary Drawer";
-            // Reset to default top position when closed
-            btn.style.top = '54px'; 
-        }
-    }
-};
 // =========================================
 // 🌟 DROPDOWN DRAWER (TABBED_LAYOUT)
 // =========================================
@@ -939,28 +766,6 @@ window.toggleNavbarDrawer = function() {
         }
     }
 };
-window.switchDrawerTabOld = function(event, tabId) {
-    const clickedBtn = event.currentTarget;
-    const targetPanel = document.getElementById(`drawer-tab-${tabId}`);
-    const contentContainer = document.querySelector('.drawer-tabs-content');
-    const isAlreadyActive = clickedBtn.classList.contains('active');
-    document.querySelectorAll('.drawer-tab-btn').forEach(btn => btn.classList.remove('active'));
-    document.querySelectorAll('.drawer-tab-panel').forEach(panel => panel.classList.remove('active'));
-    if (isAlreadyActive) {
-        contentContainer.style.display = 'none';
-    } else {
-        clickedBtn.classList.add('active');
-        targetPanel.classList.add('active');
-        contentContainer.style.display = 'block';
-    }
-    const drawerPanel = document.getElementById('nav-drawer');
-    const pullTab = document.getElementById('navbar-toggle-btn');
-    setTimeout(() => {
-        if (drawerPanel.classList.contains('drawer-open')) {
-            pullTab.style.top = `${60 + drawerPanel.offsetHeight - 10}px`;
-        }
-    }, 50); 
-}
 window.switchDrawerTab = function(event, tabId) {
     const clickedBtn = event.currentTarget;
     const targetPanel = document.getElementById(`drawer-tab-${tabId}`);
@@ -1097,54 +902,6 @@ window.toggleAIAgent = function() {
 window.toggleSettings = function() {
     toggleOverlayPanel('settings-overlay', 'settings-btn', 'rgba(148, 163, 184, 0.4)', 'rgba(148, 163, 184, 0.15)');
 };
-
-// =========================================
-// 🌟 SIDEBAR DRAG ENGINE
-// =========================================
-function initSidebarDrag() {
-    const sidebar = document.querySelector('.sidebar');
-    const handle = document.getElementById('sidebar-drag-handle');
-    if (!sidebar || !handle) return;
-
-    let isDragging = false;
-    let startX, startY, initialLeft, initialTop;
-
-    handle.addEventListener('mousedown', (e) => {
-        if (e.target.closest('.neo-min-btn')) return;
-        isDragging = true;
-        const rect = sidebar.getBoundingClientRect();
-        initialLeft = rect.left;
-        initialTop = rect.top;
-        startX = e.clientX;
-        startY = e.clientY;
-        sidebar.style.transition = 'none'; 
-        document.body.style.cursor = 'grabbing';
-    });
-
-    document.addEventListener('mousemove', (e) => {
-        if (!isDragging) return;
-        const dx = e.clientX - startX;
-        const dy = e.clientY - startY;
-        let newLeft = initialLeft + dx;
-        let newTop = initialTop + dy;
-        if (newLeft < 0) newLeft = 0;
-        if (newTop < 0) newTop = 0;
-        if (newLeft + sidebar.offsetWidth > window.innerWidth) newLeft = window.innerWidth - sidebar.offsetWidth;
-        if (newTop + sidebar.offsetHeight > window.innerHeight) newTop = window.innerHeight - sidebar.offsetHeight;
-        sidebar.style.left = `${newLeft}px`;
-        sidebar.style.top = `${newTop}px`;
-    });
-
-    document.addEventListener('mouseup', () => {
-        if (isDragging) {
-            isDragging = false;
-            document.body.style.cursor = 'default';
-            sidebar.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), height 0.4s ease, left 0.4s ease, top 0.4s ease';
-        }
-    });
-}
-document.addEventListener('DOMContentLoaded', initSidebarDrag);
-
 
 // ==========================================
 // 🧠 PHASE 4: WEB WORKER (Background Math)

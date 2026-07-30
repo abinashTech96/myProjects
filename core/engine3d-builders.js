@@ -40,7 +40,7 @@ function generate3DModel() {
         renderer3D.shadowMap.needsUpdate = true;
     }
 }
-function build3DRooms(SCALE, I, WALL_HEIGHT, useReal3D) {
+function build3DRoomsOld(SCALE, I, WALL_HEIGHT, useReal3D) {
     const smartMerge = document.getElementById('smartMergeToggle')?.checked;
     elements.forEach((el, i) => {
         const center = getRoomCenter(el, SCALE, I);
@@ -67,6 +67,162 @@ function build3DRooms(SCALE, I, WALL_HEIGHT, useReal3D) {
         if (mesh) {
             mesh.traverse(child => { if (child.isMesh) child.userData = { roomIndex: i, isRoom: true }; });
             buildingGroup.add(mesh);
+        }
+    });
+}
+function build3DRooms2(SCALE, I, WALL_HEIGHT, useReal3D) {
+    const smartMerge = document.getElementById('smartMergeToggle')?.checked;
+    
+    // 🌟 PERFORMANCE: BATCH ARRAYS FOR FURNITURE
+    const furnitureGeoms = {
+        wood: [], fabricLight: [], fabricDark: [], metal: [], 
+        glass: [], ceramic: [], blackPlastic: [], marble: []
+    };
+
+    elements.forEach((el, i) => {
+        const center = getRoomCenter(el, SCALE, I);
+        const isColliding = !smartMerge && !el.isFurniture && typeof checkCollision === 'function' ? checkCollision(el, i) : false;
+        let roomColor = isColliding ? 0xef4444 : (typeof ARCH_CONFIG !== 'undefined' && ARCH_CONFIG.COLORS[el.type]?.hex || 0xffffff);
+        
+        if (!isColliding && el.customColor) {
+            roomColor = parseInt(el.customColor.replace('#', '0x'));
+        }
+
+        if (el.isFurniture) {
+            // 🌟 1. Build the furniture mathematically in a dummy group
+            const mesh = createFurniture3D(el.type, center.width, center.depth);
+            mesh.position.set(center.x, el.floor * WALL_HEIGHT, center.z);
+            if (el.rot) mesh.rotation.y = el.rot * (Math.PI / 180);
+            mesh.updateMatrixWorld(true);
+
+            // 🌟 2. Extract and sort the geometries by material for batching!
+            mesh.traverse(child => {
+                if (child.isMesh && child.geometry) {
+                    const geom = child.geometry.clone();
+                    geom.applyMatrix4(child.matrixWorld); // Convert to global 3D space
+                    
+                    // Identify material and push to the correct batch array
+                    const matColor = child.material.color.getHex();
+                    if (matColor === 0x8b5a2b) furnitureGeoms.wood.push(geom);
+                    else if (matColor === 0xf1f5f9) furnitureGeoms.fabricLight.push(geom);
+                    else if (matColor === 0x475569) furnitureGeoms.fabricDark.push(geom);
+                    else if (matColor === 0x94a3b8) furnitureGeoms.metal.push(geom);
+                    else if (matColor === 0xbae6fd) furnitureGeoms.glass.push(geom);
+                    else if (matColor === 0x111111) furnitureGeoms.blackPlastic.push(geom);
+                    else if (matColor === 0xf8fafc) furnitureGeoms.marble.push(geom);
+                    else furnitureGeoms.ceramic.push(geom); // Fallback
+                }
+            });
+            return; // Skip adding the raw mesh to the scene to save GPU draw calls
+        } 
+        
+        // Build Architecture (Rooms, Stairs, Balconies) normally
+        let mesh;
+        if (el.type === 'staircase') mesh = buildStaircase(el, center, WALL_HEIGHT, isColliding);
+        else if (el.type === 'balcony') mesh = buildBalcony(el, center, WALL_HEIGHT, useReal3D, isColliding, SCALE);
+        else if (el.type === 'living') mesh = buildLivingRoom(el, center, WALL_HEIGHT, useReal3D, isColliding, SCALE);
+        else if (el.type === 'living2') mesh = buildIsolatedLivingRoom(el, center, WALL_HEIGHT, useReal3D, isColliding, SCALE);
+        else mesh = buildStandardRoom(el, center, WALL_HEIGHT, useReal3D, isColliding, SCALE, roomColor);
+        
+        if (mesh) {
+            mesh.traverse(child => { if (child.isMesh) child.userData = { roomIndex: i, isRoom: true }; });
+            Engine3D.buildingGroup.add(mesh);
+        }
+    });
+
+    // 🌟 3. MERGE AND ADD FURNITURE TO GPU (Massive Frame Rate Boost!)
+    Object.keys(furnitureGeoms).forEach(matKey => {
+        if (furnitureGeoms[matKey].length > 0) {
+            const mergedGeom = THREE.BufferGeometryUtils.mergeBufferGeometries(furnitureGeoms[matKey]);
+            const batchedMesh = new THREE.Mesh(mergedGeom, FurnitureFactory.mats[matKey]);
+            batchedMesh.castShadow = true;
+            batchedMesh.receiveShadow = true;
+            // Tag it so the raycaster ignores it during isolation mode
+            batchedMesh.userData = { isBatchedFurniture: true }; 
+            Engine3D.buildingGroup.add(batchedMesh);
+        }
+    });
+}
+function build3DRooms(SCALE, I, WALL_HEIGHT, useReal3D) {
+    const smartMerge = document.getElementById('smartMergeToggle')?.checked;
+    
+    // 🌟 PERFORMANCE: BATCH ARRAYS FOR FURNITURE
+    const furnitureGeoms = {
+        wood: [], fabricLight: [], fabricDark: [], metal: [], 
+        glass: [], ceramic: [], blackPlastic: [], marble: []
+    };
+
+    elements.forEach((el, i) => {
+        const center = getRoomCenter(el, SCALE, I);
+        const isColliding = !smartMerge && !el.isFurniture && typeof checkCollision === 'function' ? checkCollision(el, i) : false;
+        let roomColor = isColliding ? 0xef4444 : (typeof ARCH_CONFIG !== 'undefined' && ARCH_CONFIG.COLORS[el.type]?.hex || 0xffffff);
+        
+        if (!isColliding && el.customColor) {
+            roomColor = parseInt(el.customColor.replace('#', '0x'));
+        }
+
+        if (el.isFurniture) {
+            // 🌟 1. Build the furniture mathematically in a dummy group
+            const mesh = createFurniture3D(el.type, center.width, center.depth);
+            mesh.position.set(center.x, el.floor * WALL_HEIGHT, center.z);
+            if (el.rot) mesh.rotation.y = el.rot * (Math.PI / 180);
+            mesh.updateMatrixWorld(true);
+
+            // 🌟 2. Extract and sort geometries safely using material mapping
+            mesh.traverse(child => {
+                if (child.isMesh && child.geometry) {
+                    const geom = child.geometry.clone();
+                    geom.applyMatrix4(child.matrixWorld); // Convert to global 3D space
+                    
+                    // Match against known factory materials safely
+                    let matchedKey = 'ceramic'; // Fallback
+                    for (const [key, mat] of Object.entries(FurnitureFactory.mats)) {
+                        if (child.material === mat || child.material.color?.getHex() === mat.color?.getHex()) {
+                            matchedKey = key;
+                            break;
+                        }
+                    }
+                    
+                    if (furnitureGeoms[matchedKey]) {
+                        furnitureGeoms[matchedKey].push(geom);
+                    } else {
+                        furnitureGeoms.ceramic.push(geom);
+                    }
+                }
+            });
+            return; // Skip adding raw individual mesh to scene
+        } 
+        
+        // Build Architecture (Rooms, Stairs, Balconies) normally
+        let mesh;
+        if (el.type === 'staircase') mesh = buildStaircase(el, center, WALL_HEIGHT, isColliding);
+        else if (el.type === 'balcony') mesh = buildBalcony(el, center, WALL_HEIGHT, useReal3D, isColliding, SCALE);
+        else if (el.type === 'living') mesh = buildLivingRoom(el, center, WALL_HEIGHT, useReal3D, isColliding, SCALE);
+        else if (el.type === 'living2') mesh = buildIsolatedLivingRoom(el, center, WALL_HEIGHT, useReal3D, isColliding, SCALE);
+        else mesh = buildStandardRoom(el, center, WALL_HEIGHT, useReal3D, isColliding, SCALE, roomColor);
+        
+        if (mesh) {
+            mesh.traverse(child => { if (child.isMesh) child.userData = { roomIndex: i, isRoom: true }; });
+            Engine3D.buildingGroup.add(mesh);
+        }
+    });
+
+    // 🌟 3. MERGE AND ADD FURNITURE TO GPU (Massive Frame Rate Boost!)
+    Object.keys(furnitureGeoms).forEach(matKey => {
+        if (furnitureGeoms[matKey].length > 0) {
+            // Safety check: ensure BufferGeometryUtils is available
+            if (typeof THREE.BufferGeometryUtils !== 'undefined' && typeof THREE.BufferGeometryUtils.mergeBufferGeometries === 'function') {
+                const mergedGeom = THREE.BufferGeometryUtils.mergeBufferGeometries(furnitureGeoms[matKey]);
+                if (mergedGeom) {
+                    const batchedMesh = new THREE.Mesh(mergedGeom, FurnitureFactory.mats[matKey]);
+                    batchedMesh.castShadow = true;
+                    batchedMesh.receiveShadow = true;
+                    batchedMesh.userData = { isBatchedFurniture: true }; 
+                    Engine3D.buildingGroup.add(batchedMesh);
+                }
+            } else {
+                console.error("BufferGeometryUtils.mergeBufferGeometries is missing!");
+            }
         }
     });
 }

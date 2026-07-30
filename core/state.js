@@ -19,7 +19,8 @@ const ProjectState = {
 
     // --- DELTA ENGINE HELPERS ---
     _clone(obj) { 
-        return JSON.parse(JSON.stringify(obj)); 
+        //return JSON.parse(JSON.stringify(obj));
+        return structuredClone(obj);  
     },
 
     // 🌟 1. ADD THESE TWO NEW HELPER METHODS

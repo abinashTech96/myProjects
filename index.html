@@ -2,13 +2,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <!-- 🌟 THE MAGIC MOBILE TAG -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ArchCAD Pro</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
-    <!-- 🌟 PHASE 1: GEOMETRY BATCHING UTILITY -->
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/BufferGeometryUtils.js"></script>
 
     <link rel="stylesheet" href="styles/style.css">
@@ -17,11 +15,6 @@
     <link rel="stylesheet" href="styles/camera.css">
     <link rel="stylesheet" href="styles/navbar.css">
     <link rel="stylesheet" href="styles/navbarDrawerTabbed.css">
-    <!--
-    <link rel="stylesheet" href="styles/navbarDrawer.css">
-    <link rel="stylesheet" href="styles/navbarDrawerFocus.css">
-    <link rel="stylesheet" href="styles/navbarDrawerStag.css">
-    -->
     <link rel="stylesheet" href="styles/settings.css">
     <link rel="stylesheet" href="styles/presentation.css">
     <link rel="stylesheet" href="styles/sidebar.css">
@@ -152,11 +145,6 @@
                         </button>                    
                         <div class="settings-accordion-content active" id="content-widget-visibility">
                             <div class="settings-accordion-inner">
-                                <label class="ui-toggle">
-                                    <span class="settings-label-text">◀ Control Panel</span>
-                                    <input type="checkbox" id="toggle-sidebar-cb" checked autocomplete="off">
-                                    <div class="slider"></div>
-                                </label>
                                 <label class="ui-toggle">
                                     <span class="settings-label-text">📏 Quick Converter</span>
                                     <input type="checkbox" id="toggle-qc-cb" checked autocomplete="off">
@@ -509,160 +497,6 @@
         </div>
     </div>
 
-
-
-
-
-
-
-
-<!-- 🌟 DROPDOWN DRAWER (FOCUS_LAYOUT) -->
-<!--
-
-    <div id="nav-drawer" class="nav-drawer-panel">
-        <div id="drawer-horizontal-layout" class="drawer-horizontal-layout">
-            
-            <div id="acc-wrap-plot" class="drawer-acc-wrapper">
-                <button class="drawer-acc-btn" onclick="toggleDrawerAccordion('plot')">
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <span class="drawer-acc-title">🏗️ PLOT SETTINGS</span>
-                    </div>
-                    <span class="drawer-acc-chevron">▼</span>
-                </button>
-                <div id="drawer-content-plot" class="drawer-acc-content">
-                    <div class="drawer-acc-inner">
-                        <div class="input-grid">
-                            <div class="field"><label>Width:</label><input type="number" id="inW" value="278" oninput="updateCanvas()"></div>
-                            <div class="field"><label>Depth:</label><input type="number" id="inH" value="417" oninput="updateCanvas()"></div>
-                            <div class="field" style="grid-column: span 2;">
-                                <label>Main Road Placement:</label>
-                                <select id="roadSide" onchange="updateCanvas()" class="modern-select">
-                                    <option value="east">⬇ East (Bottom)</option>
-                                    <option value="west">⬆ West (Top)</option>
-                                    <option value="north">➡ North (Right)</option>
-                                    <option value="south">⬅ South (Left)</option>
-                                    <option value="none">None</option>
-                                </select>
-                            </div>
-                            <div class="field"><label>A (L / U):</label><div style="display: flex; gap: 4px;"><input type="number" id="aL" value="26" oninput="updateCanvas()"><input type="number" id="aU" value="28" oninput="updateCanvas()"></div></div>
-                            <div class="field"><label>B (R / U):</label><div style="display: flex; gap: 4px;"><input type="number" id="bR" value="75" oninput="updateCanvas()"><input type="number" id="bU" value="35" oninput="updateCanvas()"></div></div>
-                            <div class="field"><label>C (R / D):</label><div style="display: flex; gap: 4px;"><input type="number" id="cR" value="22" oninput="updateCanvas()"><input type="number" id="cD" value="33" oninput="updateCanvas()"></div></div>
-                            <div class="field"><label>D (L / D):</label><div style="display: flex; gap: 4px;"><input type="number" id="dL" value="51" oninput="updateCanvas()"><input type="number" id="dD" value="41" oninput="updateCanvas()"></div></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div id="acc-wrap-floors" class="drawer-acc-wrapper">
-                <button class="drawer-acc-btn" onclick="toggleDrawerAccordion('floors')">
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <span class="drawer-acc-title">🏢 FLOORS & VIEWS</span>
-                    </div>
-                    <span class="drawer-acc-chevron">▼</span>
-                </button>
-                <div id="drawer-content-floors" class="drawer-acc-content">
-                    <div class="drawer-acc-inner">
-                        <div class="setting-card" style="padding: 8px; margin-bottom: 8px;">
-                            <div class="setting-group">
-                                <label class="setting-label">PARAPET STYLE</label>
-                                <select id="parapetStyleSelect" class="modern-select neo-sunken" onchange="if(typeof request3DUpdate === 'function') request3DUpdate();">
-                                    <option value="premium-canopy">Premium Facade</option>
-                                    <option value="modern-brown">Modern Brown & White</option>
-                                    <option value="standard">Standard Capped Wall</option>
-                                    <option value="none">None (Flat Edge)</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="setting-card" style="padding: 8px; margin-bottom: 8px; display: flex; justify-content: space-between;">
-                            <div class="setting-group" style="flex: 1;">
-                                <label class="setting-label">Measurement</label>
-                                <select id="unitSelect" class="modern-select" onchange="updateCanvas()">
-                                    <option value="in">Inches</option>
-                                    <option value="cm">Centimeters</option>
-                                    <option value="ftin">Ft & In</option>
-                                </select>
-                            </div>
-                            <div class="setting-group toggle-group" style="justify-content: flex-end; padding-bottom: 5px;">
-                                <label class="ui-toggle" style="justify-content: flex-end; gap: 10px;">
-                                    <span style="font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;">Show Dims</span>
-                                    <input type="checkbox" id="showDims" onchange="updateCanvas()">
-                                    <div class="slider"></div>
-                                </label>                        
-                            </div>
-                        </div>
-
-                        <div style="display:flex; align-items:center; justify-content: space-between; gap: 4px; margin-bottom: 8px;">
-                            <div id="floor-tabs" style="display:flex; flex-wrap: wrap; gap:4px;">
-                                <button class="floor-btn active" data-floor="0" onclick="setFloor(0)">G</button>
-                            </div>
-                            <div style="display:flex; gap: 4px;">
-                                <button class="action-btn" onclick="addManualFloor()" style="padding: 4px 6px; font-weight: bold; background: rgba(56, 189, 248, 0.1); color: #38bdf8; border: 1px dashed #38bdf8;">+ ADD</button>
-                                <button class="action-btn" onclick="deleteCurrentFloor()" style="padding: 4px 6px; font-weight: bold; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px dashed #ef4444;">🗑️ DEL</button>
-                            </div>
-                        </div>
-
-                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 8px;">
-                            <button class="action-btn" onclick="toggle3D()" style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 6px; font-size: 0.7rem;">👁️ 3D</button>
-                            <button class="action-btn" onclick="cloneEntireFloor()" style="background: #6366f1; color: white; padding: 6px; font-size: 0.7rem;">🚀 Clone</button>
-                            <button class="action-btn" onclick="toggleTheme()" style="background: #6366f1; color: white; padding: 6px; font-size: 0.7rem;">🎨 Theme</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div id="acc-wrap-interiors" class="drawer-acc-wrapper">
-                <button class="drawer-acc-btn" onclick="toggleDrawerAccordion('interiors')">
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <span class="drawer-acc-title">🛋️ INTERIORS & FIXTURES</span>
-                    </div>
-                    <span class="drawer-acc-chevron">▼</span>
-                </button>
-                <div id="drawer-content-interiors" class="drawer-acc-content">
-                    <div class="drawer-acc-inner">
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                            <div style="display: flex; flex-direction: column; gap: 8px;">
-                                <label class="neo-label">ARCHITECTURE</label>
-                                <select id="elem-type" class="modern-select neo-sunken">
-                                    <option value="living">Living Room</option>
-                                    <option value="bedroom">Bedroom</option>
-                                    <option value="toilet">Toilet</option>
-                                    <option value="kitchen">Kitchen</option>
-                                </select>
-                                <button class="neo-btn" onclick="addElement()">+ ADD ROOM</button>
-                            </div>
-
-                            <div style="display: flex; flex-direction: column; gap: 8px;">
-                                <label class="neo-label">INTERIOR SCALE</label>
-                                <select id="furn-type" class="modern-select neo-sunken">
-                                    <option value="bed">🛏️ King Bed</option>
-                                    <option value="sofa">🛋️ 3-Seater Sofa</option>
-                                </select>
-                                <button class="neo-btn primary-green" onclick="addElement(document.getElementById('furn-type').value)">
-                                    + FURNITURE
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <div class="neo-divider" style="margin: 10px 0;"></div>
-                        
-                        <div style="display: flex; flex-direction: column; gap: 10px;">
-                            <label class="neo-label">ROOM FIXTURES</label>
-                            <div style="display: flex; gap: 12px;">
-                                <button class="neo-btn outline-yellow" style="flex:1;" onclick="addFixture('door')">🚪 DOOR</button>
-                                <button class="neo-btn outline-cyan" style="flex:1;" onclick="addFixture('window')">🪟 WINDOW</button>
-                            </div>
-                        </div>
-                        <div id="element-controls" style="margin-top: 15px;"></div>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-    </div>
-
--->
-
     <!-- FLOATING ADVANCED BUTTONS -->
     <div class="adv-btn-container">
         <button id="btn-room-studio" class="btn-adv-3d" onclick="RoomStudio.open()">
@@ -674,271 +508,11 @@
     </div>
 
     <!-- ========================================== -->
-    <!-- 🌟 MAIN SIDEBAR -->
-    <!-- ========================================== -->
-    <div class="sidebar">
-        <!-- 🌟 NEW: DRAGGABLE HEADER & PREMIUM MINIMIZE BTN -->
-        <div id="sidebar-drag-handle" class="sidebar-drag-header">
-            <div class="drag-grip" title="Drag to move">
-                <div class="dot"></div><div class="dot"></div><div class="dot"></div>
-                <div class="dot"></div><div class="dot"></div><div class="dot"></div>
-            </div>
-            <span class="sidebar-title">CONTROL PANEL</span>
-            <button class="neo-min-btn" onclick="toggleSidebar()" title="Dock & Minimize">
-                <span class="icon">◀</span>
-            </button>
-        </div>
-
-        <!-- ACCORDION 1: Plot & Floors (Plot Closed by Default) -->
-        <div class="hybrid-accordion-container">
-            <div class="hybrid-headers-row">
-                <div class="hybrid-btn" id="btn-plot" onclick="toggleHybrid('plot')">
-                    <div class="hybrid-title">🏗️ PLOT AREA<br>SETTINGS</div>
-                    <span class="chevron">▼</span>
-                </div>
-                <div class="hybrid-btn" id="btn-floors" onclick="toggleHybrid('floors')">
-                    <div class="hybrid-title">🏢 FLOORS & DATA</div>
-                    <span class="chevron">▼</span>
-                </div>
-            </div>
-
-            <!-- Plot Content -->
-            <div id="content-plot" class="hybrid-content">
-                <div class="hybrid-inner">
-                    <div class="input-grid">
-                        <div class="field"><label>Width:</label><input type="number" id="inW" value="278" oninput="updateCanvas()"></div>
-                        <div class="field"><label>Depth:</label><input type="number" id="inH" value="417" oninput="updateCanvas()"></div>
-                        <div class="field" style="grid-column: span 2;">
-                            <label>Main Road Placement:</label>
-                            <select id="roadSide" onchange="updateCanvas()" class="modern-select">
-                                <option value="east">⬇ East (Bottom)</option>
-                                <option value="west">⬆ West (Top)</option>
-                                <option value="north">➡ North (Right)</option>
-                                <option value="south">⬅ South (Left)</option>
-                                <option value="none">None</option>
-                            </select>
-                        </div>
-                        <div class="field"><label>A (L / U):</label><div style="display: flex; gap: 4px;"><input type="number" id="aL" value="26" oninput="updateCanvas()"><input type="number" id="aU" value="28" oninput="updateCanvas()"></div></div>
-                        <div class="field"><label>B (R / U):</label><div style="display: flex; gap: 4px;"><input type="number" id="bR" value="75" oninput="updateCanvas()"><input type="number" id="bU" value="35" oninput="updateCanvas()"></div></div>
-                        <div class="field"><label>C (R / D):</label><div style="display: flex; gap: 4px;"><input type="number" id="cR" value="22" oninput="updateCanvas()"><input type="number" id="cD" value="33" oninput="updateCanvas()"></div></div>
-                        <div class="field"><label>D (L / D):</label><div style="display: flex; gap: 4px;"><input type="number" id="dL" value="51" oninput="updateCanvas()"><input type="number" id="dD" value="41" oninput="updateCanvas()"></div></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Floors Content -->
-            <div id="content-floors" class="hybrid-content">
-                <div class="hybrid-inner">
-                    <div class="setting-card" style="padding: 8px; margin-bottom: 8px;">
-                        <div class="setting-group">
-                            <label class="setting-label">PARAPET STYLE</label>
-                            <select id="parapetStyleSelect" class="modern-select neo-sunken" onchange="if(typeof request3DUpdate === 'function') request3DUpdate();">
-                                <option value="premium-canopy">Premium Facade</option>
-                                <option value="modern-brown">Modern Brown & White</option>
-                                <option value="geo-interlock">Geometric Interlock</option>
-                                <option value="classic-curve">Classic Curves</option>
-                                <option value="modern-glass">Modern Glass</option>
-                                <option value="neo-brutalist">Neo-Brutalist (Fins & LEDs)</option>
-                                <option value="zen-pergola">Zen Pergola (Wood & Glass)</option>
-                                <option value="cyber-cantilever">Cyber Cantilever (Chrome)</option>
-                                <option value="standard">Standard Capped Wall</option>
-                                <option value="none">None (Flat Edge)</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="setting-card" style="padding: 8px; margin-bottom: 8px;">
-                        <div class="setting-group">
-                            <label class="setting-label">Measurement</label>
-                            <select id="unitSelect" class="modern-select" onchange="updateCanvas()">
-                                <option value="in">Inches</option>
-                                <option value="cm">Centimeters</option>
-                                <option value="ftin">Ft & In</option>
-                            </select>
-                        </div>
-                        <div class="setting-group toggle-group" style="justify-content: flex-end; padding-bottom: 5px;">
-                            <label class="ui-toggle" style="justify-content: flex-end; gap: 10px;">
-                                <span style="font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;">Show Dims</span>
-                                <input type="checkbox" id="showDims" onchange="updateCanvas()">
-                                <div class="slider"></div>
-                            </label>                        
-                        </div>
-                    </div>
-                    
-                    <div style="display:flex; align-items:center; justify-content: space-between; gap: 4px; margin-bottom: 8px;">
-                        <div id="floor-tabs" style="display:flex; flex-wrap: wrap; gap:4px;">
-                            <button class="floor-btn active" data-floor="0" onclick="setFloor(0)">G</button>
-                        </div>
-                        <div style="display:flex; gap: 4px;">
-                            <button class="action-btn" onclick="addManualFloor()" title="Add New Floor" style="padding: 4px 6px; font-weight: bold; background: rgba(56, 189, 248, 0.1); color: #38bdf8; border: 1px dashed #38bdf8;">+ ADD</button>
-                            <button class="action-btn" onclick="deleteCurrentFloor()" title="Delete Current Floor" style="padding: 4px 6px; font-weight: bold; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px dashed #ef4444;">🗑️ DEL</button>
-                        </div>
-                    </div>
-                    
-                    <div id="stair-warning" style="margin-top: 0; margin-bottom: 8px; padding: 4px;">⚠ Stairs must match across floors!</div>
-                    
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 8px;">
-                        <button class="action-btn" onclick="toggle3D()" style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 6px; font-size: 0.7rem;">👁️ 3D View</button>
-                        <button class="action-btn" onclick="cloneEntireFloor()" style="background: #6366f1; color: white; padding: 6px; font-size: 0.7rem;">🚀 Clone</button>
-                        <button class="action-btn" onclick="toggleTheme()" style="background: #6366f1; color: white; padding: 6px; font-size: 0.7rem;">🎨 Theme</button>
-                    </div>
-
-                    <div class="input-grid">  
-                        <div class="field"><label>Top Direction:</label><select id="compassDir" onchange="handleCompassChange()"><option>West</option><option>South</option><option>East</option><option>North</option></select></div>
-                        <div class="field"><label>Scale:</label><input type="number" id="scaleInput" value="1.2" step="0.1" oninput="updateCanvas()"></div>
-                    </div><!-- 🌟 MOVED: ROOM-BY-ROOM DASHBOARD -->
-                    <div class="neo-divider" style="margin: 10px 0;"></div>
-                    <div id="area-dashboard" style="display: flex; flex-direction: column; gap: 6px; font-size: 0.75rem; max-height: 120px; overflow-y: auto; padding-right: 4px;">
-                        <div style="color: #94a3b8; text-align: center;">Add rooms to see calculations...</div>
-                    </div>
-                    <div class="neo-divider" style="margin: 10px 0;"></div>
-
-                    <div class="global-toolbar" style="margin-top: 10px; display: flex; flex-direction: column; gap: 4px; padding: 6px;">
-                        <div style="display: flex; gap: 4px; width: 100%;">
-                            <button class="tool-btn" onclick="undoAction()" title="Undo"><span class="icon">⏪</span><span class="btn-label">Undo</span></button>
-                            <button class="tool-btn" onclick="redoAction()" title="Redo"><span class="icon">⏩</span><span class="btn-label">Redo</span></button>
-                            <button class="tool-btn" onclick="toggleMeasureMode()" title="Tape Measure"><span class="icon">📏</span><span class="btn-label">Measure</span></button>
-                            <!-- <button class="tool-btn" onclick="resetWorkspace()" title="Danger: Reset Workspace" style="border-bottom: 2px solid #ef4444;"><span class="icon">⚠️</span><span class="btn-label">Reset</span></button> -->
-                        </div>
-                        <div style="display: flex; gap: 4px; width: 100%;">
-                            <!-- <button class="tool-btn" onclick="exportJSON()" title="Save / Export JSON"><span class="icon">💾</span><span class="btn-label">Save</span></button> -->
-                            <!-- <button class="tool-btn" onclick="document.getElementById('importFile').click()" title="Open / Import JSON"><span class="icon">📂</span><span class="btn-label">Load</span></button> -->
-                            <button class="tool-btn" onclick="exportPNG()" title="Export PNG" style="border-bottom: 2px solid #a855f7;"><span class="icon">🖼️</span><span class="btn-label">PNG</span></button>
-                            <button class="tool-btn" onclick="exportPDF()" title="Export PDF" style="border-bottom: 2px solid #f43f5e;"><span class="icon">📄</span><span class="btn-label">PDF</span></button>
-                        </div>
-                        <div style="display: flex; gap: 4px; width: 100%;">
-                            <button class="tool-btn" onclick="exportPDF()" title="Export PDF" style="border-bottom: 2px solid #f43f5e;">
-                                <span class="icon">📄</span><span class="btn-label">PDF</span>
-                            </button>
-                            <button id="btn-section" class="neo-btn" onclick="toggleSectionCut()" title="Draw Section Line">
-                                <span class="icon">✂️</span><span class="btn-label">Section</span>
-                            </button>
-                        </div>
-                    </div>
-                    <input type="file" id="importFile" style="display:none" onchange="importJSON(event)">
-                    <p style="font-size: 0.65rem; color: #10b981; margin-top: 8px; margin-bottom: 0; font-weight: bold; text-align: center;">🖱️ Scroll: Zoom | Mid-Click: Pan</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- ACCORDION 2: Workspace & Interiors (Workspace Open By Default) -->
-        <div class="hybrid-accordion-container">
-            <div class="hybrid-headers-row">
-                <div class="hybrid-btn active" id="btn-workspace" onclick="toggleHybrid('workspace')">
-                    <div class="hybrid-title">⚙️ WORKSPACE<br>CONTROLS</div>
-                    <span class="chevron">▼</span>
-                </div>
-                <div class="hybrid-btn" id="btn-interiors" onclick="toggleHybrid('interiors')">
-                    <div class="hybrid-title">🛋️ INTERIORS<br>& FIXTURES</div>
-                    <span class="chevron">▼</span>
-                </div>
-            </div>
-
-            <!-- Workspace Content -->
-            <div id="content-workspace" class="hybrid-content active">
-                <div class="hybrid-inner">
-                    <div class="toggle-list">
-                        <label class="ui-toggle">
-                            <span>📐 Project Data</span>
-                            <input type="checkbox" checked onchange="toggleWidget('area-overlay', this.checked)">
-                            <div class="slider"></div>
-                        </label>
-                        <label class="ui-toggle">
-                            <span>📏 Show Site Offsets</span>
-                                <input type="checkbox" id="showOffsetsToggle" onchange="updateCanvas()">
-                                <div class="slider"></div>
-                        </label>
-                        <label class="ui-toggle" style="margin-top: 10px;">
-                            <span>🔠 Show Plot Labels</span>
-                            <input type="checkbox" id="showLabelsToggle" onchange="updateCanvas()" checked>
-                            <div class="slider"></div>
-                        </label>
-                        <label class="ui-toggle" style="margin-top: 10px;">
-                            <span>📐 Snap to 1ft Grid</span>
-                            <input type="checkbox" id="gridSnapToggle" checked>
-                            <div class="slider"></div>
-                        </label>
-                        <label class="ui-toggle">
-                            <span>📷 Camera Controls</span>
-                            <input type="checkbox" checked onchange="toggleWidget('camera-controls', this.checked)">
-                            <div class="slider"></div>
-                        </label>
-                        <label class="ui-toggle">
-                            <span>🧩 Smart-Merge</span>
-                            <input type="checkbox" id="smartMergeToggle" onchange="updateCanvas()">
-                            <div class="slider"></div>
-                        </label>
-                        <label class="ui-toggle">
-                            <span>🏠 Real3D View</span>
-                            <input type="checkbox" id="real3DToggle" onchange="if(typeof is3DMode !== 'undefined' && is3DMode) generate3DModel()">
-                            <div class="slider"></div>
-                        </label>
-                        <label class="ui-toggle">
-                            <span>🏗️ Show Columns</span>
-                            <input type="checkbox" id="showColsToggle" onchange="updateCanvas()">
-                            <div class="slider"></div>
-                        </label>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Interiors Content -->
-            <div id="content-interiors" class="hybrid-content">
-                <div class="hybrid-inner">
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                        <div style="display: flex; flex-direction: column; gap: 8px;">
-                            <label class="neo-label">ARCHITECTURE</label>
-                            <select id="elem-type" class="modern-select neo-sunken">
-                                <option value="living">Living Room</option>
-                                <option value="bedroom">Bedroom</option>
-                                <option value="toilet">Toilet</option>
-                                <option value="kitchen">Kitchen</option>
-                                <option value="puja">Puja Room</option>
-                                <option value="staircase">Staircase</option>
-                                <option value="balcony">Balcony</option>
-                            </select>
-                            <button class="neo-btn" onclick="addElement()">+ ADD ROOM</button>
-                        </div>
-
-                        <div style="display: flex; flex-direction: column; gap: 8px;">
-                            <label class="neo-label">INTERIOR SCALE</label>
-                            <select id="furn-type" class="modern-select neo-sunken">
-                                <option value="bed">🛏️ King Bed (6'x7')</option>
-                                <option value="sofa">🛋️ 3-Seater Sofa (7'x3')</option>
-                                <option value="dining">🍽️ Dining Table (6'x4')</option>
-                                <option value="wardrobe">🚪 Wardrobe (4'x2')</option>
-                            </select>
-                            <button class="neo-btn primary-green" onclick="addElement(document.getElementById('furn-type').value)">
-                                + FURNITURE
-                            </button>
-                        </div>
-                    </div>
-                    <div class="neo-divider"></div>
-                    <div style="display: flex; flex-direction: column; gap: 10px;">
-                        <label class="neo-label">ROOM FIXTURES <span style="text-transform:none; font-weight:normal; opacity:0.5;">(Select Room First)</span></label>
-                        <div style="display: flex; gap: 12px;">
-                            <button class="neo-btn outline-yellow" onclick="addFixture('door')">🚪 DOOR</button>
-                            <button class="neo-btn outline-cyan" onclick="addFixture('window')">🪟 WINDOW</button>
-                        </div>
-                    </div>
-
-                    <!-- CRITICAL: Dynamic Editor renders -->
-                    <div id="element-controls" style="margin-top: 15px;"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-
-    <!-- ========================================== -->
     <!-- 🌟 MAIN SPLIT SCREEN WORKSPACE -->
     <!-- ========================================== -->
     <div class="canvas-area workspace-wrapper" id="main-workspace">
-        
-        <!-- ========================================== -->
         <!-- LEFT CANVAS (2D Engine & Overlays) -->
-        <!-- ========================================== -->
         <div id="canvas-wrapper" class="split-left">
-            <button id="open-sidebar-btn" onclick="toggleSidebar()" title="Expand Sidebar">▶</button>
             <!-- Context Menu -->
             <div id="context-menu">
                 <div class="ctx-item" onclick="if(selectedElIndex !== -1) cloneElement(selectedElIndex)"><span>📋 Duplicate</span><span class="ctx-shortcut">Ctrl+D</span></div>
@@ -947,52 +521,51 @@
                 <div style="height:1px; background:rgba(255,255,255,0.1); margin:4px 0;"></div>
                 <div class="ctx-item" onclick="if(selectedElIndex !== -1) deleteElement(selectedElIndex)" style="color:#ef4444;"><span>🗑️ Delete</span><span class="ctx-shortcut">Del</span></div>
             </div>
-<!--abc-->
             <!-- 🌟 QUICK CONVERTER WIDGET (Top Left) -->
-<div id="qc-widget-wrapper" class="canvas-widget-top-left qc-wrapper">
-    
-    <!-- Minimized Micro-Input Pill -->
-    <div id="qc-min-btn" class="qc-min-btn">
-        <button onclick="toggleQuickConverter()" style="background:transparent; border:none; cursor:pointer; padding:0; display:flex;" title="Maximize Converter">
-            <span class="icon" style="font-size: 1.1rem; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">📏</span>
-        </button>
-        <div style="display:flex; align-items:center; gap:2px; margin-left:6px;">
-            <!-- Tiny Feet Input -->
-            <input type="number" id="minFt" class="qc-min-input" placeholder="0" oninput="document.getElementById('calcFt').value = this.value; calcInches();">
-            <span style="color:#94a3b8; font-weight:bold;">'</span>
-            
-            <!-- Tiny Inches Input -->
-            <input type="number" id="minIn" class="qc-min-input" placeholder="0" oninput="document.getElementById('calcIn').value = this.value; calcInches();">
-            <span style="color:#94a3b8; font-weight:bold;">"</span>
-            
-            <span style="color:#38bdf8; margin: 0 4px; font-weight:bold;">=</span>
-            <span id="qc-min-text" style="color:#f8fafc; font-family:monospace; font-weight:bold; font-size:0.9rem;">0"</span>
-        </div>
-    </div>
-    
-    <!-- Maximized Full Widget (Uses your original .sidebar-converter class!) -->
-    <div id="qc-full-widget" class="sidebar-converter">
-        <div class="converter-header">
-            <div><span class="icon">📏</span> QUICK CONVERTER</div>
-            <button onclick="toggleQuickConverter()" title="Minimize Converter" class="converter-close-btn">&times;</button>
-        </div>
-        <div class="converter-row">
-            <div class="converter-input-group">
-                <input type="number" id="calcFt" placeholder="0" oninput="calcInches()">
-                <span class="unit">FT</span>
+            <div id="qc-widget-wrapper" class="canvas-widget-top-left qc-wrapper">
+                
+                <!-- Minimized Micro-Input Pill -->
+                <div id="qc-min-btn" class="qc-min-btn">
+                    <button onclick="toggleQuickConverter()" style="background:transparent; border:none; cursor:pointer; padding:0; display:flex;" title="Maximize Converter">
+                        <span class="icon" style="font-size: 1.1rem; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">📏</span>
+                    </button>
+                    <div style="display:flex; align-items:center; gap:2px; margin-left:6px;">
+                        <!-- Tiny Feet Input -->
+                        <input type="number" id="minFt" class="qc-min-input" placeholder="0" oninput="document.getElementById('calcFt').value = this.value; calcInches();">
+                        <span style="color:#94a3b8; font-weight:bold;">'</span>
+                        
+                        <!-- Tiny Inches Input -->
+                        <input type="number" id="minIn" class="qc-min-input" placeholder="0" oninput="document.getElementById('calcIn').value = this.value; calcInches();">
+                        <span style="color:#94a3b8; font-weight:bold;">"</span>
+                        
+                        <span style="color:#38bdf8; margin: 0 4px; font-weight:bold;">=</span>
+                        <span id="qc-min-text" style="color:#f8fafc; font-family:monospace; font-weight:bold; font-size:0.9rem;">0"</span>
+                    </div>
+                </div>
+                
+                <!-- Maximized Full Widget (Uses your original .sidebar-converter class!) -->
+                <div id="qc-full-widget" class="sidebar-converter">
+                    <div class="converter-header">
+                        <div><span class="icon">📏</span> QUICK CONVERTER</div>
+                        <button onclick="toggleQuickConverter()" title="Minimize Converter" class="converter-close-btn">&times;</button>
+                    </div>
+                    <div class="converter-row">
+                        <div class="converter-input-group">
+                            <input type="number" id="calcFt" placeholder="0" oninput="calcInches()">
+                            <span class="unit">FT</span>
+                        </div>
+                        <div class="converter-input-group">
+                            <input type="number" id="calcIn" placeholder="0" oninput="calcInches()">
+                            <span class="unit">IN</span>
+                        </div>
+                        <span class="converter-equals">=</span>
+                        <div class="converter-input-group result-group">
+                            <input type="text" id="resIn" placeholder="Total" readonly>
+                            <span class="unit">IN</span>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="converter-input-group">
-                <input type="number" id="calcIn" placeholder="0" oninput="calcInches()">
-                <span class="unit">IN</span>
-            </div>
-            <span class="converter-equals">=</span>
-            <div class="converter-input-group result-group">
-                <input type="text" id="resIn" placeholder="Total" readonly>
-                <span class="unit">IN</span>
-            </div>
-        </div>
-    </div>
-</div>
         
             <!-- VASTU SCORE block -->
             <div id="vastu-floating-widget" class="canvas-widget-bottom-left neo-sunken vastu-widget">
@@ -1071,14 +644,10 @@
             </svg>
         </div> <!-- END LEFT SPLIT -->
 
-        <!-- ========================================== -->
         <!-- THE DRAGGABLE DIVIDER -->
-        <!-- ========================================== -->
         <div class="split-resizer" id="split-resizer"></div>
 
-        <!-- ========================================== -->
-        <!-- RIGHT CANVAS -->
-        <!-- ========================================== -->
+        <!-- RIGHT CANVAS (3D Engine & Overlays)-->
         <div id="right-canvas-wrapper" class="split-right">
             <div style="text-align: center;">
                 <span style="font-size: 3rem; opacity: 0.2;">🏗️</span>
@@ -1198,7 +767,7 @@
         </div>
     </div>
 
-
+    <script src="core/events.js"></script>
     <script src="core/config.js"></script>
     <script src="core/constants.js"></script>
     <script src="core/state.js"></script>
@@ -1214,14 +783,14 @@
     <script src="core/actions.js"></script>
     <!-- Feature Modules -->
     <script src="features/vastu/vastu.js"></script>
-    <script src="features/section-cut/elevation.js"></script>
+    <script src="core/elevation.js"></script>
     <script src="features/export/export.js"></script>
     <script src="features/cinematic-tour/tour.js"></script> 
     <script src="features/showcase/showcase.js"></script>
     <script src="features/furniture-factory/furniture3d.js"></script>
     <script src="features/room-studio/studio.js"></script>
     <script src="features/advanced-3d/advanced3d.js"></script>
-    <script src="features/ai-agent/ai-agent.js"></script>
+    <script src="core/ai-agent.js"></script>
     <script src="features/onboarding/onboarding.js"></script>
 
 </body>

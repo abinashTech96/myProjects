@@ -23,12 +23,8 @@ window.calculateVastuScore = function() {
             const cy = el.y + (el.h / 2);
             
             // Determine Compass Zone
-            let zoneStr = "";
-            if (cx > cellW * 2) zoneStr += "N";
-            else if (cx < cellW) zoneStr += "S";
-            if (cy > cellH * 2) zoneStr += "E";
-            else if (cy < cellH) zoneStr += "W";
-            if (zoneStr === "") zoneStr = "CENTER";
+            const compassDir = document.getElementById('compassDir')?.value || 'West';
+            let zoneStr = getDynamicVastuZone(cx, cy, cellW, cellH, compassDir);
             
             // Apply Global Rules
             if (el.type === 'kitchen') {
@@ -95,4 +91,38 @@ function toggleVastuWidget() {
             toggleBtn.style.transform = 'translateY(-2px)'; // subtle alignment tweak for the minus sign
         }
     }
+}
+
+function getDynamicVastuZone(cx, cy, cellW, cellH, topDirection) {
+    let gridX = cx < cellW ? 0 : (cx > cellW * 2 ? 2 : 1);
+    let gridY = cy < cellH ? 0 : (cy > cellH * 2 ? 2 : 1);
+
+    // If perfectly in the middle box
+    if (gridX === 1 && gridY === 1) return "CENTER";
+    
+    // Map the 4 edges based on what the user set as "Top"
+    let up = "", down = "", left = "", right = "";
+    switch (topDirection) {
+        case 'North': up="N"; down="S"; left="W"; right="E"; break;
+        case 'East':  up="E"; down="W"; left="N"; right="S"; break;
+        case 'South': up="S"; down="N"; left="E"; right="W"; break;
+        case 'West':  up="W"; down="E"; left="S"; right="N"; break;
+        default:      up="W"; down="E"; left="S"; right="N"; break;
+    }
+
+    let zone = "";
+    
+    // Calculate N/S component first
+    if (gridY === 0 && (up === 'N' || up === 'S')) zone += up;
+    else if (gridY === 2 && (down === 'N' || down === 'S')) zone += down;
+    else if (gridX === 0 && (left === 'N' || left === 'S')) zone += left;
+    else if (gridX === 2 && (right === 'N' || right === 'S')) zone += right;
+
+    // Calculate E/W component second
+    if (gridY === 0 && (up === 'E' || up === 'W')) zone += up;
+    else if (gridY === 2 && (down === 'E' || down === 'W')) zone += down;
+    else if (gridX === 0 && (left === 'E' || left === 'W')) zone += left;
+    else if (gridX === 2 && (right === 'E' || right === 'W')) zone += right;
+
+    return zone;
 }

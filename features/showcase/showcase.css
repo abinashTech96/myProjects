@@ -12,11 +12,12 @@
 .showcase-btn:hover { box-shadow: 0 6px 15px rgba(56, 189, 248, 0.25); border-color: #38bdf8 !important; }
 
 /* --- 1. Hide all distractions --- */
-body.showcase-active .sidebar,
 body.showcase-active .pro-studio-navbar,
-body.showcase-active #mode-switch-container,
+body.showcase-active .navbar-toggle-btn,
+body.showcase-active .nav-drawer-panel,
+body.showcase-active .adv-btn-container,
 body.showcase-active .neo-panel:not(#presentation-controls),
-body.showcase-active .ui-toggles {
+body.showcase-active #cheat-sheet-panel {
     display: none !important;
 }
 

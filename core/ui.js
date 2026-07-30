@@ -191,9 +191,10 @@ function renderSidebar() {
     let animClass = isGoingBack ? 'slide-in-left' : (isGoingDeeper ? 'slide-in-right' : 'fade-in-ui');
     UI.prevSelected = selectedElIndex;
     if (selectedElIndex !== -1) {
-        const contentInt = document.getElementById('content-interiors');
-        if (contentInt && !contentInt.classList.contains('active')) {
-            if (typeof toggleHybrid === 'function') toggleHybrid('interiors');
+        const tabInteriors = document.getElementById('drawer-tab-interiors');
+        const tabBtn = document.querySelector('.drawer-tab-btn:nth-child(3)');
+        if (tabInteriors && !tabInteriors.classList.contains('active') && tabBtn) {
+            if (typeof switchDrawerTab === 'function') switchDrawerTab({ currentTarget: tabBtn }, 'interiors');
         }
     }
     if (selectedElIndex === -1) {
@@ -331,7 +332,7 @@ function buildEditorView(i, el) {
 
                     <div class="neo-color-wrapper" title="Change Room Color">
                         <input type="color" value="${el.customColor || defaultHex}" 
-                            oninput="elements[${i}].customColor=this.value; updateCanvas();">
+                            oninput="elements[${i}].customColor=this.value; updateCanvas(false); updateRoomMaterial3D(${i}, parseInt(this.value.replace('#', '0x')));">
                     </div>
                 </div>
             </div>
@@ -684,40 +685,6 @@ window.toggleWidget = function(widgetId, isVisible) {
         }, 200); 
     }
 };
-window.toggleSidebar = function() {
-    const sidebar = document.querySelector('.sidebar');
-    const neoPanel = document.querySelector('.neo-panel');
-    const openBtn = document.getElementById('open-sidebar-btn');
-
-    let isCollapsed = false;
-    // 1. Toggle the main Sidebar
-    if (sidebar) {
-        if (!sidebar.classList.contains('collapsed')) {
-            sidebar.style.left = '20px';
-            sidebar.style.top = '155px';
-        }
-        sidebar.classList.toggle('collapsed');
-        isCollapsed = sidebar.classList.contains('collapsed');
-    }
-    // 2. Sync the Workspace UI (.neo-panel) with the Sidebar
-    if (neoPanel) {
-        if (isCollapsed) {
-            neoPanel.classList.add('collapsed');
-        } else {
-            neoPanel.classList.remove('collapsed');
-        }
-    }
-    // 3. Handle the tiny Expand button visibility
-    if (openBtn) {
-        if (isCollapsed) {
-            openBtn.style.display = 'block';
-            setTimeout(() => openBtn.style.opacity = '1', 10);
-        } else {
-            openBtn.style.opacity = '0';
-            setTimeout(() => openBtn.style.display = 'none', 200); // Wait for fade out
-        }
-    }
-};
 window.toggleCheatSheet = function() {
     const panel = document.getElementById('cheat-sheet-panel');
     if (!panel) return;
@@ -779,16 +746,76 @@ window.renderTimeMachine = function() {
         </div>
     `;
 };
-window.toggleHybrid = function(sectionId) {
-    const targetContent = document.getElementById(`content-${sectionId}`);
-    const targetBtn = document.getElementById(`btn-${sectionId}`);
-    if (!targetContent || !targetBtn) return;
-    const isOpen = targetContent.classList.contains('active');
-    document.querySelectorAll('.hybrid-content').forEach(el => el.classList.remove('active'));
-    document.querySelectorAll('.hybrid-btn').forEach(el => el.classList.remove('active'));
-    if (!isOpen) {
-        targetContent.classList.add('active');
-        targetBtn.classList.add('active');
+
+// =========================================
+// 🌟 DROPDOWN DRAWER (TABBED_LAYOUT)
+// =========================================
+window.toggleNavbarDrawer = function() {
+    const drawer = document.getElementById('nav-drawer');
+    const btn = document.getElementById('navbar-toggle-btn');
+    if (drawer && btn) {
+        const isOpen = drawer.classList.toggle('drawer-open');
+        btn.classList.toggle('drawer-open', isOpen);
+        if (isOpen) {
+            setTimeout(() => {
+              //btn.style.top = `${drawer.offsetHeight + 15}px`;
+                btn.style.top = `${60 + drawer.offsetHeight - 10}px`;
+            }, 50);
+        } else {
+            btn.style.top = '48px'; 
+        }
+    }
+};
+window.switchDrawerTab = function(event, tabId) {
+    const clickedBtn = event.currentTarget;
+    const targetPanel = document.getElementById(`drawer-tab-${tabId}`);
+    const contentContainer = document.querySelector('.drawer-tabs-content');
+    if (!targetPanel || !contentContainer) return;
+    const isAlreadyActive = clickedBtn.classList.contains('active');
+    document.querySelectorAll('.drawer-tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.drawer-tab-panel').forEach(panel => panel.classList.remove('active'));
+    if (isAlreadyActive) {
+        contentContainer.style.display = 'none';
+    } else {
+        clickedBtn.classList.add('active');
+        targetPanel.classList.add('active');
+        contentContainer.style.display = 'block';
+    }
+    setTimeout(() => {
+        const drawerPanel = document.getElementById('nav-drawer');
+        const pullTab = document.getElementById('navbar-toggle-btn');
+        
+        if (drawerPanel && pullTab && drawerPanel.classList.contains('drawer-open')) {
+            pullTab.style.top = `${60 + drawerPanel.offsetHeight - 10}px`;
+        }
+    }, 50); 
+}
+// =========================================
+// 🌟 TOOLBAR WIDGET VISIBILITY TOGGLE (ANIMATED)
+// =========================================
+window.toggleNavTool = function(btnId, isVisible) {
+    const btn = document.getElementById(btnId);
+    if (btn) {
+        if (isVisible) {
+            btn.style.display = 'flex';
+            setTimeout(() => {
+                btn.classList.remove('hidden-tool');
+            }, 10);
+        } else {
+            btn.classList.add('hidden-tool');
+            setTimeout(() => {
+                if (btn.classList.contains('hidden-tool')) {
+                    btn.style.display = 'none';
+                }
+            }, 300);
+            const overlayId = btnId.replace('-btn', '-overlay'); 
+            const overlay = document.getElementById(overlayId);
+            if (overlay) {
+                overlay.style.display = 'none';
+                overlay.style.opacity = '0';
+                overlay.style.transform = 'scale(0)';
+            }
+        }
     }
 };
 
@@ -876,62 +903,6 @@ window.toggleSettings = function() {
     toggleOverlayPanel('settings-overlay', 'settings-btn', 'rgba(148, 163, 184, 0.4)', 'rgba(148, 163, 184, 0.15)');
 };
 
-// =========================================
-// 🌟 SIDEBAR DRAG ENGINE
-// =========================================
-function initSidebarDrag() {
-    const sidebar = document.querySelector('.sidebar');
-    const handle = document.getElementById('sidebar-drag-handle');
-    if (!sidebar || !handle) return;
-
-    let isDragging = false;
-    let startX, startY, initialLeft, initialTop;
-
-    handle.addEventListener('mousedown', (e) => {
-        if (e.target.closest('.neo-min-btn')) return;
-        isDragging = true;
-        const rect = sidebar.getBoundingClientRect();
-        initialLeft = rect.left;
-        initialTop = rect.top;
-        startX = e.clientX;
-        startY = e.clientY;
-        sidebar.style.transition = 'none'; 
-        document.body.style.cursor = 'grabbing';
-    });
-
-    document.addEventListener('mousemove', (e) => {
-        if (!isDragging) return;
-        
-        // Calculate how far the mouse has moved
-        const dx = e.clientX - startX;
-        const dy = e.clientY - startY;
-        
-        let newLeft = initialLeft + dx;
-        let newTop = initialTop + dy;
-        
-        // 🌟 BOUNDARIES: Prevent the user from dragging it off the screen
-        if (newLeft < 0) newLeft = 0;
-        if (newTop < 0) newTop = 0;
-        if (newLeft + sidebar.offsetWidth > window.innerWidth) newLeft = window.innerWidth - sidebar.offsetWidth;
-        if (newTop + sidebar.offsetHeight > window.innerHeight) newTop = window.innerHeight - sidebar.offsetHeight;
-
-        sidebar.style.left = `${newLeft}px`;
-        sidebar.style.top = `${newTop}px`;
-    });
-
-    document.addEventListener('mouseup', () => {
-        if (isDragging) {
-            isDragging = false;
-            document.body.style.cursor = 'default';
-            
-            // Re-enable smooth CSS transitions for when it expands/collapses later
-            sidebar.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), height 0.4s ease, left 0.4s ease, top 0.4s ease';
-        }
-    });
-}
-document.addEventListener('DOMContentLoaded', initSidebarDrag);
-
-
 // ==========================================
 // 🧠 PHASE 4: WEB WORKER (Background Math)
 // ==========================================
@@ -955,14 +926,14 @@ window.mathWorker.onmessage = function(e) {
 window.requestBackgroundMath = debounce(() => {
     if (!window.mathWorker || !elements) return;
     
-    // Package up the current state of the house and send it to the background thread
     window.mathWorker.postMessage({
         type: 'CALCULATE_MATH',
         payload: {
             elements: elements,
             currentFloor: currentFloor,
             inW: parseFloat(document.getElementById('inW')?.value || 272),
-            inH: parseFloat(document.getElementById('inH')?.value || 400)
+            inH: parseFloat(document.getElementById('inH')?.value || 400),
+            compassDir: document.getElementById('compassDir')?.value || 'West' // 🌟 NEW: Pass direction
         }
     });
 }, 50);

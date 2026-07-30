@@ -97,8 +97,6 @@ function getProceduralTexture(type) {
                 for(let k = 0; k < 30; k++) {
                     ctx.fillRect(x + offset + Math.random()*(sW-2), y + Math.random()*(sH-2), 2, 2);
                 }
-                
-                // Add a shadow ridge at the bottom of each shingle for 3D depth
                 ctx.fillStyle = 'rgba(0,0,0,0.3)';
                 ctx.fillRect(x + offset, y + sH - 6, sW - 2, 4);
             }
@@ -140,3 +138,29 @@ function getFloorMaterial(texType) {
     }
     return FAST_COLORS[texType] || FAST_COLORS['concrete'];
 }
+// 🌟 NEW: Global Texture Cache Cleanup
+window.clearTextureCache = function() {
+    for (const key in textureCache) {
+        if (textureCache[key]) {
+            textureCache[key].dispose();
+        }
+    }
+    for (const key in textureCache) delete textureCache[key];
+    console.log("🧹 Texture Cache Cleared");
+};
+
+// =========================================
+// 🚀 IDLE TEXTURE PRE-CACHING
+// =========================================
+function preloadProceduralTextures() {
+    const runWhenIdle = window.requestIdleCallback || ((cb) => setTimeout(cb, 1));
+    runWhenIdle(() => {
+        console.log("⏳ Pre-generating procedural 3D textures in background...");
+        const textureTypes = ['wood', 'bathroom-tile', 'kitchen-tile', 'grass', 'shingle', 'concrete'];
+        textureTypes.forEach(type => {
+            getProceduralTexture(type);
+        });
+        console.log("✅ 3D Textures ready!");
+    });
+}
+document.addEventListener('DOMContentLoaded', preloadProceduralTextures);

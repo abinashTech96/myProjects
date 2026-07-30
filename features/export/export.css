@@ -12,7 +12,7 @@
         background: #0f172a !important; 
     }
     /* Hide all UI elements from the final PDF */
-    .sidebar, .glass-panel, #open-sidebar-btn, #camera-controls { 
+    .glass-panel, #camera-controls { 
         display: none !important; 
     }
     /* Expand the canvas to perfectly fill the PDF page */

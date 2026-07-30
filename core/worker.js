@@ -5,14 +5,14 @@
 self.onmessage = function(e) {
     const { type, payload } = e.data;
     if (type === 'CALCULATE_MATH') {
-        const vastuResult = calculateVastu(payload.elements, payload.inW, payload.inH);
+        // 🌟 FIX: Pass payload.compassDir into calculateVastu
+        const vastuResult = calculateVastu(payload.elements, payload.inW, payload.inH, payload.compassDir);
         const areaResult = calculateArea(payload.elements, payload.currentFloor);
-        // Send the finalized data back to the main UI thread
         self.postMessage({ type: 'MATH_COMPLETE', vastu: vastuResult, area: areaResult });
     }
 };
 
-function calculateVastu(elements, inW, inH) {
+function calculateVastu(elements, inW, inH, compassDir) {
     let score = 0;
     let mainText = "Add rooms to calculate Vastu.";
     let color = "#94a3b8";
@@ -27,12 +27,7 @@ function calculateVastu(elements, inW, inH) {
             if (el.isFurniture || el.floor > 0) return;
             const cx = el.x + (el.w / 2);
             const cy = el.y + (el.h / 2);
-            let zoneStr = "";
-            if (cx > cellW * 2) zoneStr += "N";
-            else if (cx < cellW) zoneStr += "S";
-            if (cy > cellH * 2) zoneStr += "E";
-            else if (cy < cellH) zoneStr += "W";
-            if (zoneStr === "") zoneStr = "CENTER";
+            let zoneStr = getDynamicVastuZone(cx, cy, cellW, cellH, compassDir);
 
             if (el.type === 'kitchen') {
                 if (zoneStr === "SE") { score += 20; feedback.push("Kitchen perfectly in SE (+20)"); }
@@ -83,4 +78,38 @@ function calculateArea(elements, currentFloor) {
     sortedRooms.forEach(room => sortedTotals[room] = currentFloorTotals[room]);
 
     return { currentFloorTotals: sortedTotals, currentFloorGrandTotal, totalBuiltUpAreaAllFloors };
+}
+
+function getDynamicVastuZone(cx, cy, cellW, cellH, topDirection) {
+    let gridX = cx < cellW ? 0 : (cx > cellW * 2 ? 2 : 1);
+    let gridY = cy < cellH ? 0 : (cy > cellH * 2 ? 2 : 1);
+
+    // If perfectly in the middle box
+    if (gridX === 1 && gridY === 1) return "CENTER";
+    
+    // Map the 4 edges based on what the user set as "Top"
+    let up = "", down = "", left = "", right = "";
+    switch (topDirection) {
+        case 'North': up="N"; down="S"; left="W"; right="E"; break;
+        case 'East':  up="E"; down="W"; left="N"; right="S"; break;
+        case 'South': up="S"; down="N"; left="E"; right="W"; break;
+        case 'West':  up="W"; down="E"; left="S"; right="N"; break;
+        default:      up="W"; down="E"; left="S"; right="N"; break;
+    }
+
+    let zone = "";
+    
+    // Calculate N/S component first
+    if (gridY === 0 && (up === 'N' || up === 'S')) zone += up;
+    else if (gridY === 2 && (down === 'N' || down === 'S')) zone += down;
+    else if (gridX === 0 && (left === 'N' || left === 'S')) zone += left;
+    else if (gridX === 2 && (right === 'N' || right === 'S')) zone += right;
+
+    // Calculate E/W component second
+    if (gridY === 0 && (up === 'E' || up === 'W')) zone += up;
+    else if (gridY === 2 && (down === 'E' || down === 'W')) zone += down;
+    else if (gridX === 0 && (left === 'E' || left === 'W')) zone += left;
+    else if (gridX === 2 && (right === 'E' || right === 'W')) zone += right;
+
+    return zone;
 }

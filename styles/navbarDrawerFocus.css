@@ -1,0 +1,182 @@
+/* =========================================
+   🌟 SECONDARY NAVBAR DRAWER (PIXEL-PERFECT CLONE)
+========================================= */
+
+/* 1. Main Drawer Panel - EXACT MATCH to .pro-studio-navbar */
+.nav-drawer-panel {
+    position: absolute;
+    top: 60px; /* Snug under the main navbar */
+    left: 50%;
+    transform: translateX(-50%) translateY(-20px);
+    
+    /* 🌟 THE PRO-STUDIO-NAVBAR DNA 🌟 */
+    background: #1e293b;
+    border: none;
+    padding: 8px 12px; /* Tight padding to maintain pill shape */
+    border-radius: 50px; /* Perfect pill shape */
+    box-shadow: 6px 6px 12px rgba(0, 0, 0, 0.4),
+               -6px -6px 12px rgba(255, 255, 255, 0.04);
+               
+    z-index: 998; 
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    
+    /* Shrink-wraps the panel to hug the 3 columns */
+    width: max-content; 
+    max-width: 95vw;
+}
+
+.nav-drawer-panel.drawer-open {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* 2. Horizontal Layout for the 3 Accordions */
+.drawer-horizontal-layout {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 12px; 
+    width: max-content;
+    margin: 0;
+    padding: 0;
+    transition: gap 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); /* Smoothly animates gap */
+}
+/* Removes the gap when in focus mode so it centers perfectly */
+.drawer-horizontal-layout.focus-mode {
+    gap: 0px; 
+}
+
+.drawer-acc-wrapper {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    width: 290px; /* Symmetrical locked width */
+    opacity: 1;
+    overflow: hidden; /* Prevents contents from spilling out while shrinking */
+    
+    /* 🌟 Smooth animation for the width and fade out */
+    transition: width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), 
+                opacity 0.3s ease;
+}
+/* 🌟 FOCUS MODE: Shrinks inactive columns to zero */
+.drawer-acc-wrapper.hidden-by-focus {
+    width: 0px !important;
+    opacity: 0;
+    pointer-events: none; /* Stops accidental clicks while invisible */
+}
+
+/* 3. Accordion Buttons - EXACT MATCH to .floor-btn */
+.drawer-acc-btn {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    
+    /* 🌟 THE FLOOR-BTN DNA 🌟 */
+    background: #1e293b;
+    color: #64748b;
+    border: none;
+    padding: 8px 16px; 
+    border-radius: 50px; /* Pill-shaped inner buttons */
+    cursor: pointer;
+    margin: 0;
+    transition: all 0.2s ease;
+    box-shadow: 3px 3px 6px rgba(0, 0, 0, 0.3),
+               -3px -3px 6px rgba(255, 255, 255, 0.06);
+}
+
+.drawer-acc-title {
+    font-size: 0.65rem;
+    font-weight: 800;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin: 0;
+}
+
+.drawer-acc-chevron {
+    font-size: 0.6rem;
+    transition: transform 0.3s ease;
+}
+
+.drawer-acc-btn:hover {
+    color: #38bdf8;
+}
+
+/* Active Button State */
+.drawer-acc-btn.active {
+    color: #fbbf24; /* Matches active floor tab */
+    box-shadow: inset 3px 3px 6px rgba(0, 0, 0, 0.5),
+                inset -3px -3px 6px rgba(255, 255, 255, 0.03);
+}
+
+.drawer-acc-btn.active .drawer-acc-chevron {
+    transform: rotate(180deg);
+}
+
+/* 4. Dropdown Content Area - EXACT MATCH to .nav-stats-hud */
+.drawer-acc-content {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    margin-top: 8px; 
+}
+
+.drawer-acc-content.active {
+    grid-template-rows: 1fr;
+}
+
+.drawer-acc-inner {
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    
+    /* 🌟 THE NAV-STATS-HUD DNA (Carved inset look) 🌟 */
+    background: #0f172a; 
+    border-radius: 20px; 
+    box-shadow: inset 3px 3px 6px rgba(0, 0, 0, 0.6), 
+                inset -3px -3px 6px rgba(255, 255, 255, 0.03); 
+    border: 1px solid rgba(255, 255, 255, 0.05); 
+    padding: 0 12px;
+}
+
+.drawer-acc-content.active .drawer-acc-inner {
+    padding-top: 15px;
+    padding-bottom: 15px;
+}
+
+/* =========================================
+   🌟 PULL TAB / TOGGLE BUTTON
+========================================= */
+.navbar-toggle-btn {
+    position: absolute;
+    top: 48px; 
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1e293b;
+    color: #38bdf8;
+    border: none;
+    padding: 2px 16px 4px 16px;
+    border-radius: 0 0 12px 12px;
+    cursor: pointer;
+    z-index: 997; 
+    font-size: 0.6rem;
+    box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.4);
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.navbar-toggle-btn:hover {
+    color: #ffffff;
+    text-shadow: 0 0 8px rgba(56, 189, 248, 0.8);
+}
+
+/* JavaScript handles pushing the 'top' value down dynamically */
+.navbar-toggle-btn.drawer-open {
+    background: #1e293b;
+    transform: translateX(-50%) rotate(180deg);
+    box-shadow: -4px -4px 8px rgba(0, 0, 0, 0.4);
+}

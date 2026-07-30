@@ -16,6 +16,12 @@
     <link rel="stylesheet" href="styles/converter.css">
     <link rel="stylesheet" href="styles/camera.css">
     <link rel="stylesheet" href="styles/navbar.css">
+    <link rel="stylesheet" href="styles/navbarDrawerTabbed.css">
+    <!--
+    <link rel="stylesheet" href="styles/navbarDrawer.css">
+    <link rel="stylesheet" href="styles/navbarDrawerFocus.css">
+    <link rel="stylesheet" href="styles/navbarDrawerStag.css">
+    -->
     <link rel="stylesheet" href="styles/settings.css">
     <link rel="stylesheet" href="styles/presentation.css">
     <link rel="stylesheet" href="styles/sidebar.css">
@@ -124,92 +130,422 @@
             </div>
 
             <!-- 🌟 SETTINGS NAVBAR BUTTON -->
-<button id="settings-btn" class="nav-add-floor-btn nav-settings-btn" title="Settings" onclick="toggleSettings()">
-    <span class="nav-settings-icon">⚙️</span>
-</button>
+            <button id="settings-btn" class="nav-add-floor-btn nav-settings-btn" title="Settings" onclick="toggleSettings()">
+                <span class="nav-settings-icon">⚙️</span>
+            </button>
 
-<!-- 🌟 SETTINGS DROPDOWN PANEL -->
-<div id="settings-overlay" class="glass-panel settings-dropdown">
-    <div class="panel-header settings-header">
-        <span class="icon settings-icon-color">⚙️</span>
-        <h2 class="settings-title">SETTINGS</h2>
+            <!-- 🌟 SETTINGS DROPDOWN PANEL -->
+            <div id="settings-overlay" class="glass-panel settings-dropdown">
+                <div class="panel-header settings-header">
+                    <span class="icon settings-icon-color">⚙️</span>
+                    <h2 class="settings-title">SETTINGS</h2>
+                </div>
+                
+                <!-- 🌟 THE MISSING CONTENT WRAPPER -->
+                <div id="settings-content" class="settings-content">
+                    
+                    <!-- 🌟 WIDGET CONTROLS (ACCORDION) -->
+                    <div class="settings-accordion-wrapper">
+                        <button class="settings-accordion-btn active" id="btn-widget-visibility">
+                            <!-- 🌟 The flex wrapper to keep the chevron on the right -->
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="font-size: 0.85rem; opacity: 0.8;">👁️</span>
+                                <span class="settings-category" style="margin: 0;">WIDGET VISIBILITY</span>
+                            </div>
+                            <span class="settings-chevron">▼</span>
+                        </button>                    
+                        <div class="settings-accordion-content active" id="content-widget-visibility">
+                            <div class="settings-accordion-inner">
+                                <!-- Control Panel Toggle -->
+                                <label class="ui-toggle">
+                                    <span class="settings-label-text">◀ Control Panel</span>
+                                    <input type="checkbox" id="toggle-sidebar-cb" checked>
+                                    <div class="slider"></div>
+                                </label>
+
+                                <!-- Quick Converter Toggle -->
+                                <label class="ui-toggle">
+                                    <span class="settings-label-text">📏 Quick Converter</span>
+                                    <input type="checkbox" id="toggle-qc-cb" checked>
+                                    <div class="slider"></div>
+                                </label>
+
+                                <!-- Vastu Score Toggle -->
+                                <label class="ui-toggle">
+                                    <span class="settings-label-text">🧭 Vastu Score</span>
+                                    <input type="checkbox" id="toggle-vastu-cb" checked>
+                                    <div class="slider"></div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 🌟 DATA CONTROLS (ACCORDION) -->
+                    <div class="settings-accordion-wrapper">
+                        <button class="settings-accordion-btn" id="btn-data-controls">
+                            <!-- 🌟 The flex wrapper to keep the chevron on the right -->
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="font-size: 0.85rem; opacity: 0.8;">💾</span>
+                                <span class="settings-category" style="margin: 0;">DATA CONTROLS</span>
+                            </div>
+                            <span class="settings-chevron">▼</span>
+                        </button>
+                        <div class="settings-accordion-content" id="content-data-controls">
+                            <div class="settings-accordion-inner" style="display: flex; gap: 8px; flex-wrap: wrap; padding-bottom: 10px;">
+                                
+                                <div style="display: flex; gap: 8px; width: 100%;">
+                                    <button class="neo-btn outline-cyan" onclick="exportJSON()" style="flex: 1; padding: 8px; font-size: 0.7rem; justify-content: center;">
+                                        💾 Save JSON
+                                    </button>
+                                    <button class="neo-btn outline-cyan" onclick="document.getElementById('importFile').click()" style="flex: 1; padding: 8px; font-size: 0.7rem; justify-content: center;">
+                                        📂 Load JSON
+                                    </button>
+                                </div>
+                                
+                                <button class="neo-btn danger" onclick="resetWorkspace()" style="width: 100%; padding: 8px; font-size: 0.7rem; justify-content: center; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #ef4444;">
+                                    ⚠️ FACTORY RESET
+                                </button>
+                                
+                                <input type="file" id="importFile" style="display:none" onchange="importJSON(event)">
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <!-- 🌟 TOOLBAR CONTROLS (ACCORDION) -->
+                    <div class="settings-accordion-wrapper">
+                        <button class="settings-accordion-btn" id="btn-toolbar-controls" onclick="this.classList.toggle('active'); this.nextElementSibling.classList.toggle('active');">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="font-size: 0.85rem; opacity: 0.8;">🛠️</span>
+                                <span class="settings-category" style="margin: 0;">TOOLBAR TOOLS</span>
+                            </div>
+                            <span class="settings-chevron">▼</span>
+                        </button>
+                        <div class="settings-accordion-content" id="content-toolbar-controls">
+                            <div class="settings-accordion-inner">
+                                
+                                <!-- Project Info Toggle -->
+                                <label class="ui-toggle">
+                                    <span class="settings-label-text">ℹ️ Project Info</span>
+                                    <input type="checkbox" id="toggle-project-info-cb" checked onchange="toggleNavTool('project-info-btn', this.checked)">
+                                    <div class="slider"></div>
+                                </label>
+
+                                <!-- Auto-Builder Toggle -->
+                                <label class="ui-toggle">
+                                    <span class="settings-label-text">✨ Auto-Builder</span>
+                                    <input type="checkbox" id="toggle-auto-builder-cb" checked onchange="toggleNavTool('auto-builder-btn', this.checked)">
+                                    <div class="slider"></div>
+                                </label>
+
+                                <!-- AI Agent Toggle -->
+                                <label class="ui-toggle">
+                                    <span class="settings-label-text">🤖 AI Agent</span>
+                                    <input type="checkbox" id="toggle-ai-agent-cb" checked onchange="toggleNavTool('ai-agent-btn', this.checked)">
+                                    <div class="slider"></div>
+                                </label>
+
+                            </div>
+                        </div>
+                    </div>
+
+
+
+
+
+                </div> <!-- End of settings-content -->
+            </div> <!-- End of settings-overlay -->
+        </div>
+
     </div>
     
-    <!-- 🌟 THE MISSING CONTENT WRAPPER -->
-    <div id="settings-content" class="settings-content">
-        
-        <!-- 🌟 WIDGET CONTROLS (ACCORDION) -->
-        <div class="settings-accordion-wrapper">
-            <button class="settings-accordion-btn active" id="btn-widget-visibility">
-                <!-- 🌟 The flex wrapper to keep the chevron on the right -->
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <span style="font-size: 0.85rem; opacity: 0.8;">👁️</span>
-                    <span class="settings-category" style="margin: 0;">WIDGET VISIBILITY</span>
-                </div>
-                <span class="settings-chevron">▼</span>
-            </button>                    
-            <div class="settings-accordion-content active" id="content-widget-visibility">
-                <div class="settings-accordion-inner">
-                    <!-- Control Panel Toggle -->
-                    <label class="ui-toggle">
-                        <span class="settings-label-text">◀ Control Panel</span>
-                        <input type="checkbox" id="toggle-sidebar-cb" checked>
-                        <div class="slider"></div>
-                    </label>
+    
 
-                    <!-- Quick Converter Toggle -->
-                    <label class="ui-toggle">
-                        <span class="settings-label-text">📏 Quick Converter</span>
-                        <input type="checkbox" id="toggle-qc-cb" checked>
-                        <div class="slider"></div>
-                    </label>
 
-                    <!-- Vastu Score Toggle -->
-                    <label class="ui-toggle">
-                        <span class="settings-label-text">🧭 Vastu Score</span>
-                        <input type="checkbox" id="toggle-vastu-cb" checked>
-                        <div class="slider"></div>
-                    </label>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <!-- 🌟 NAVBAR EXPAND/COLLAPSE PULL TAB WITH DOWN ARROW -->
+    <button id="navbar-toggle-btn" class="navbar-toggle-btn" onclick="toggleNavbarDrawer()" title="Expand Secondary Drawer">
+        ▼
+    </button>
+<!-- 🌟 DROPDOWN DRAWER (TABBED_LAYOUT) -->
+
+    <div id="nav-drawer" class="nav-drawer-panel">
+        <div class="drawer-tabs-header">
+            <button class="drawer-tab-btn" onclick="switchDrawerTab(event, 'plot')">🏗️ PLOT</button>
+            <button class="drawer-tab-btn" onclick="switchDrawerTab(event, 'floors')">🏢 FLOORS</button>
+            <button class="drawer-tab-btn" onclick="switchDrawerTab(event, 'interiors')">🛋️ INTERIORS</button>
+        </div>
+        <div class="drawer-tabs-content">
+            
+            <div id="drawer-tab-plot" class="drawer-tab-panel">
+                <div class="input-grid">
+                    <div class="field"><label>Width:</label><input type="number" id="inW" value="278" oninput="updateCanvas()"></div>
+                    <div class="field"><label>Depth:</label><input type="number" id="inH" value="417" oninput="updateCanvas()"></div>
+                    <div class="field" style="grid-column: span 2;">
+                        <label>Main Road Placement:</label>
+                        <select id="roadSide" onchange="updateCanvas()" class="modern-select">
+                            <option value="east">⬇ East (Bottom)</option>
+                            <option value="west">⬆ West (Top)</option>
+                            <option value="north">➡ North (Right)</option>
+                            <option value="south">⬅ South (Left)</option>
+                            <option value="none">None</option>
+                        </select>
+                    </div>
+                    <div class="field"><label>A (L / U):</label><div style="display: flex; gap: 4px;"><input type="number" id="aL" value="26" oninput="updateCanvas()"><input type="number" id="aU" value="28" oninput="updateCanvas()"></div></div>
+                    <div class="field"><label>B (R / U):</label><div style="display: flex; gap: 4px;"><input type="number" id="bR" value="75" oninput="updateCanvas()"><input type="number" id="bU" value="35" oninput="updateCanvas()"></div></div>
+                    <div class="field"><label>C (R / D):</label><div style="display: flex; gap: 4px;"><input type="number" id="cR" value="22" oninput="updateCanvas()"><input type="number" id="cD" value="33" oninput="updateCanvas()"></div></div>
+                    <div class="field"><label>D (L / D):</label><div style="display: flex; gap: 4px;"><input type="number" id="dL" value="51" oninput="updateCanvas()"><input type="number" id="dD" value="41" oninput="updateCanvas()"></div></div>
                 </div>
             </div>
-        </div>
-
-        <!-- 🌟 DATA CONTROLS (ACCORDION) -->
-        <div class="settings-accordion-wrapper">
-            <button class="settings-accordion-btn" id="btn-data-controls">
-                <!-- 🌟 The flex wrapper to keep the chevron on the right -->
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <span style="font-size: 0.85rem; opacity: 0.8;">💾</span>
-                    <span class="settings-category" style="margin: 0;">DATA CONTROLS</span>
+            
+            <div id="drawer-tab-floors" class="drawer-tab-panel">
+                <div class="setting-card" style="padding: 8px; margin-bottom: 8px;">
+                    <div class="setting-group">
+                        <label class="setting-label">PARAPET STYLE</label>
+                        <select id="parapetStyleSelect" class="modern-select neo-sunken" onchange="if(typeof request3DUpdate === 'function') request3DUpdate();">
+                            <option value="premium-canopy">Premium Facade</option>
+                            <option value="modern-brown">Modern Brown & White</option>
+                            <option value="standard">Standard Capped Wall</option>
+                            <option value="none">None (Flat Edge)</option>
+                        </select>
+                    </div>
                 </div>
-                <span class="settings-chevron">▼</span>
-            </button>
-            <div class="settings-accordion-content" id="content-data-controls">
-                <div class="settings-accordion-inner" style="display: flex; gap: 8px; flex-wrap: wrap; padding-bottom: 10px;">
-                    
-                    <div style="display: flex; gap: 8px; width: 100%;">
-                        <button class="neo-btn outline-cyan" onclick="exportJSON()" style="flex: 1; padding: 8px; font-size: 0.7rem; justify-content: center;">
-                            💾 Save JSON
-                        </button>
-                        <button class="neo-btn outline-cyan" onclick="document.getElementById('importFile').click()" style="flex: 1; padding: 8px; font-size: 0.7rem; justify-content: center;">
-                            📂 Load JSON
+
+                <div class="setting-card" style="padding: 8px; margin-bottom: 8px; display: flex; justify-content: space-between;">
+                    <div class="setting-group" style="flex: 1;">
+                        <label class="setting-label">Measurement</label>
+                        <select id="unitSelect" class="modern-select" onchange="updateCanvas()">
+                            <option value="in">Inches</option>
+                            <option value="cm">Centimeters</option>
+                            <option value="ftin">Ft & In</option>
+                        </select>
+                    </div>
+                    <div class="setting-group toggle-group" style="justify-content: flex-end; padding-bottom: 5px;">
+                        <label class="ui-toggle" style="justify-content: flex-end; gap: 10px;">
+                            <span style="font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;">Show Dims</span>
+                            <input type="checkbox" id="showDims" onchange="updateCanvas()">
+                            <div class="slider"></div>
+                        </label>                        
+                    </div>
+                </div>
+
+                <div style="display:flex; align-items:center; justify-content: space-between; gap: 4px; margin-bottom: 8px;">
+                    <div id="floor-tabs" style="display:flex; flex-wrap: wrap; gap:4px;">
+                        <button class="floor-btn active" data-floor="0" onclick="setFloor(0)">G</button>
+                    </div>
+                    <div style="display:flex; gap: 4px;">
+                        <button class="action-btn" onclick="addManualFloor()" style="padding: 4px 6px; font-weight: bold; background: rgba(56, 189, 248, 0.1); color: #38bdf8; border: 1px dashed #38bdf8;">+ ADD</button>
+                        <button class="action-btn" onclick="deleteCurrentFloor()" style="padding: 4px 6px; font-weight: bold; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px dashed #ef4444;">🗑️ DEL</button>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 8px;">
+                    <button class="action-btn" onclick="toggle3D()" style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 6px; font-size: 0.7rem;">👁️ 3D</button>
+                    <button class="action-btn" onclick="cloneEntireFloor()" style="background: #6366f1; color: white; padding: 6px; font-size: 0.7rem;">🚀 Clone</button>
+                    <button class="action-btn" onclick="toggleTheme()" style="background: #6366f1; color: white; padding: 6px; font-size: 0.7rem;">🎨 Theme</button>
+                </div>
+            </div>
+            
+            <div id="drawer-tab-interiors" class="drawer-tab-panel">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <label class="neo-label">ARCHITECTURE</label>
+                        <select id="elem-type" class="modern-select neo-sunken">
+                            <option value="living">Living Room</option>
+                            <option value="bedroom">Bedroom</option>
+                            <option value="toilet">Toilet</option>
+                            <option value="kitchen">Kitchen</option>
+                        </select>
+                        <button class="neo-btn" onclick="addElement()">+ ADD ROOM</button>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <label class="neo-label">INTERIOR SCALE</label>
+                        <select id="furn-type" class="modern-select neo-sunken">
+                            <option value="bed">🛏️ King Bed</option>
+                            <option value="sofa">🛋️ 3-Seater Sofa</option>
+                        </select>
+                        <button class="neo-btn primary-green" onclick="addElement(document.getElementById('furn-type').value)">
+                            + FURNITURE
                         </button>
                     </div>
-                    
-                    <button class="neo-btn danger" onclick="resetWorkspace()" style="width: 100%; padding: 8px; font-size: 0.7rem; justify-content: center; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #ef4444;">
-                        ⚠️ FACTORY RESET
-                    </button>
-                    
-                    <input type="file" id="importFile" style="display:none" onchange="importJSON(event)">
+                </div>
+                
+                <div class="neo-divider" style="margin: 10px 0;"></div>
+                
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <label class="neo-label">ROOM FIXTURES</label>
+                    <div style="display: flex; gap: 12px;">
+                        <button class="neo-btn outline-yellow" style="flex:1;" onclick="addFixture('door')">🚪 DOOR</button>
+                        <button class="neo-btn outline-cyan" style="flex:1;" onclick="addFixture('window')">🪟 WINDOW</button>
+                    </div>
+                </div>
+                <div id="element-controls" style="margin-top: 15px;"></div>
+            </div>
+
+        </div>
+    </div>
+
+<!-- 🌟 DROPDOWN DRAWER (FOCUS_LAYOUT) -->
+<!--
+
+    <div id="nav-drawer" class="nav-drawer-panel">
+        <div id="drawer-horizontal-layout" class="drawer-horizontal-layout">
+            
+            <div id="acc-wrap-plot" class="drawer-acc-wrapper">
+                <button class="drawer-acc-btn" onclick="toggleDrawerAccordion('plot')">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span class="drawer-acc-title">🏗️ PLOT SETTINGS</span>
+                    </div>
+                    <span class="drawer-acc-chevron">▼</span>
+                </button>
+                <div id="drawer-content-plot" class="drawer-acc-content">
+                    <div class="drawer-acc-inner">
+                        <div class="input-grid">
+                            <div class="field"><label>Width:</label><input type="number" id="inW" value="278" oninput="updateCanvas()"></div>
+                            <div class="field"><label>Depth:</label><input type="number" id="inH" value="417" oninput="updateCanvas()"></div>
+                            <div class="field" style="grid-column: span 2;">
+                                <label>Main Road Placement:</label>
+                                <select id="roadSide" onchange="updateCanvas()" class="modern-select">
+                                    <option value="east">⬇ East (Bottom)</option>
+                                    <option value="west">⬆ West (Top)</option>
+                                    <option value="north">➡ North (Right)</option>
+                                    <option value="south">⬅ South (Left)</option>
+                                    <option value="none">None</option>
+                                </select>
+                            </div>
+                            <div class="field"><label>A (L / U):</label><div style="display: flex; gap: 4px;"><input type="number" id="aL" value="26" oninput="updateCanvas()"><input type="number" id="aU" value="28" oninput="updateCanvas()"></div></div>
+                            <div class="field"><label>B (R / U):</label><div style="display: flex; gap: 4px;"><input type="number" id="bR" value="75" oninput="updateCanvas()"><input type="number" id="bU" value="35" oninput="updateCanvas()"></div></div>
+                            <div class="field"><label>C (R / D):</label><div style="display: flex; gap: 4px;"><input type="number" id="cR" value="22" oninput="updateCanvas()"><input type="number" id="cD" value="33" oninput="updateCanvas()"></div></div>
+                            <div class="field"><label>D (L / D):</label><div style="display: flex; gap: 4px;"><input type="number" id="dL" value="51" oninput="updateCanvas()"><input type="number" id="dD" value="41" oninput="updateCanvas()"></div></div>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
+            
+            <div id="acc-wrap-floors" class="drawer-acc-wrapper">
+                <button class="drawer-acc-btn" onclick="toggleDrawerAccordion('floors')">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span class="drawer-acc-title">🏢 FLOORS & VIEWS</span>
+                    </div>
+                    <span class="drawer-acc-chevron">▼</span>
+                </button>
+                <div id="drawer-content-floors" class="drawer-acc-content">
+                    <div class="drawer-acc-inner">
+                        <div class="setting-card" style="padding: 8px; margin-bottom: 8px;">
+                            <div class="setting-group">
+                                <label class="setting-label">PARAPET STYLE</label>
+                                <select id="parapetStyleSelect" class="modern-select neo-sunken" onchange="if(typeof request3DUpdate === 'function') request3DUpdate();">
+                                    <option value="premium-canopy">Premium Facade</option>
+                                    <option value="modern-brown">Modern Brown & White</option>
+                                    <option value="standard">Standard Capped Wall</option>
+                                    <option value="none">None (Flat Edge)</option>
+                                </select>
+                            </div>
+                        </div>
 
-    </div> <!-- End of settings-content -->
-</div> <!-- End of settings-overlay -->
-        </div>
+                        <div class="setting-card" style="padding: 8px; margin-bottom: 8px; display: flex; justify-content: space-between;">
+                            <div class="setting-group" style="flex: 1;">
+                                <label class="setting-label">Measurement</label>
+                                <select id="unitSelect" class="modern-select" onchange="updateCanvas()">
+                                    <option value="in">Inches</option>
+                                    <option value="cm">Centimeters</option>
+                                    <option value="ftin">Ft & In</option>
+                                </select>
+                            </div>
+                            <div class="setting-group toggle-group" style="justify-content: flex-end; padding-bottom: 5px;">
+                                <label class="ui-toggle" style="justify-content: flex-end; gap: 10px;">
+                                    <span style="font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;">Show Dims</span>
+                                    <input type="checkbox" id="showDims" onchange="updateCanvas()">
+                                    <div class="slider"></div>
+                                </label>                        
+                            </div>
+                        </div>
 
+                        <div style="display:flex; align-items:center; justify-content: space-between; gap: 4px; margin-bottom: 8px;">
+                            <div id="floor-tabs" style="display:flex; flex-wrap: wrap; gap:4px;">
+                                <button class="floor-btn active" data-floor="0" onclick="setFloor(0)">G</button>
+                            </div>
+                            <div style="display:flex; gap: 4px;">
+                                <button class="action-btn" onclick="addManualFloor()" style="padding: 4px 6px; font-weight: bold; background: rgba(56, 189, 248, 0.1); color: #38bdf8; border: 1px dashed #38bdf8;">+ ADD</button>
+                                <button class="action-btn" onclick="deleteCurrentFloor()" style="padding: 4px 6px; font-weight: bold; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px dashed #ef4444;">🗑️ DEL</button>
+                            </div>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 8px;">
+                            <button class="action-btn" onclick="toggle3D()" style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 6px; font-size: 0.7rem;">👁️ 3D</button>
+                            <button class="action-btn" onclick="cloneEntireFloor()" style="background: #6366f1; color: white; padding: 6px; font-size: 0.7rem;">🚀 Clone</button>
+                            <button class="action-btn" onclick="toggleTheme()" style="background: #6366f1; color: white; padding: 6px; font-size: 0.7rem;">🎨 Theme</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="acc-wrap-interiors" class="drawer-acc-wrapper">
+                <button class="drawer-acc-btn" onclick="toggleDrawerAccordion('interiors')">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span class="drawer-acc-title">🛋️ INTERIORS & FIXTURES</span>
+                    </div>
+                    <span class="drawer-acc-chevron">▼</span>
+                </button>
+                <div id="drawer-content-interiors" class="drawer-acc-content">
+                    <div class="drawer-acc-inner">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                            <div style="display: flex; flex-direction: column; gap: 8px;">
+                                <label class="neo-label">ARCHITECTURE</label>
+                                <select id="elem-type" class="modern-select neo-sunken">
+                                    <option value="living">Living Room</option>
+                                    <option value="bedroom">Bedroom</option>
+                                    <option value="toilet">Toilet</option>
+                                    <option value="kitchen">Kitchen</option>
+                                </select>
+                                <button class="neo-btn" onclick="addElement()">+ ADD ROOM</button>
+                            </div>
+
+                            <div style="display: flex; flex-direction: column; gap: 8px;">
+                                <label class="neo-label">INTERIOR SCALE</label>
+                                <select id="furn-type" class="modern-select neo-sunken">
+                                    <option value="bed">🛏️ King Bed</option>
+                                    <option value="sofa">🛋️ 3-Seater Sofa</option>
+                                </select>
+                                <button class="neo-btn primary-green" onclick="addElement(document.getElementById('furn-type').value)">
+                                    + FURNITURE
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="neo-divider" style="margin: 10px 0;"></div>
+                        
+                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                            <label class="neo-label">ROOM FIXTURES</label>
+                            <div style="display: flex; gap: 12px;">
+                                <button class="neo-btn outline-yellow" style="flex:1;" onclick="addFixture('door')">🚪 DOOR</button>
+                                <button class="neo-btn outline-cyan" style="flex:1;" onclick="addFixture('window')">🪟 WINDOW</button>
+                            </div>
+                        </div>
+                        <div id="element-controls" style="margin-top: 15px;"></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
     </div>
+
+-->
 
     <!-- FLOATING ADVANCED BUTTONS -->
     <div class="adv-btn-container">

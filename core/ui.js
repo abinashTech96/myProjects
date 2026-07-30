@@ -793,6 +793,209 @@ window.toggleHybrid = function(sectionId) {
 };
 
 // =========================================
+// 🌟 SECONDARY NAVBAR DRAWER TOGGLE & HORIZONTAL DRAWER ACCORDION TOGGLE
+// =========================================
+window.toggleNavbarDrawerOld = function() {
+    const drawer = document.getElementById('nav-drawer');
+    const btn = document.getElementById('navbar-toggle-btn');
+    
+    if (drawer && btn) {
+        const isOpen = drawer.classList.toggle('drawer-open');
+        btn.classList.toggle('drawer-open', isOpen);
+        
+        if (isOpen) {
+            btn.title = "Collapse Drawer";
+            // Calculate height immediately when opening
+            btn.style.top = `${drawer.offsetHeight + 15}px`; 
+        } else {
+            btn.title = "Expand Secondary Drawer";
+            // Reset to default top position when closed
+            btn.style.top = '54px'; 
+        }
+    }
+};
+window.toggleDrawerAccordionOld = function(sectionId) {
+    const targetWrap = document.getElementById(`acc-wrap-${sectionId}`);
+    const targetBtn = targetWrap.querySelector('.drawer-acc-btn');
+    const targetContent = document.getElementById(`drawer-content-${sectionId}`);
+    const drawerPanel = document.getElementById('nav-drawer');
+    const pullTab = document.getElementById('navbar-toggle-btn');
+    
+    // Check if the clicked section is already open
+    const isOpen = targetBtn.classList.contains('active');
+    
+    // 1. Exclusive Open: Close all other accordions first
+    document.querySelectorAll('.drawer-acc-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.drawer-acc-content').forEach(content => content.classList.remove('active'));
+    
+    // 2. Open the requested accordion if it was closed
+    if (!isOpen) {
+        targetBtn.classList.add('active');
+        targetContent.classList.add('active');
+    }
+
+    // 3. Dynamic Drawer Sizing (.single-mode trigger)
+    const openCount = document.querySelectorAll('.drawer-acc-btn.active').length;
+    if (openCount <= 1) {
+        drawerPanel.classList.add('single-mode'); // Shrinks drawer width if only 1 or 0 open
+    } else {
+        drawerPanel.classList.remove('single-mode'); // Expands to full width
+    }
+    
+    // 4. Dynamically push the pull-tab down to match the new content height
+    // We wait 400ms for the CSS grid transition to finish opening/closing
+    setTimeout(() => {
+        if (drawerPanel.classList.contains('drawer-open')) {
+            pullTab.style.top = `${drawerPanel.offsetHeight + 15}px`;
+        }
+    }, 400); 
+};
+
+
+// =========================================
+// 🌟 DROPDOWN DRAWER (FOCUS_LAYOUT)
+// =========================================
+window.toggleDrawerAccordionFocus = function(sectionId) {
+    const targetWrap = document.getElementById(`acc-wrap-${sectionId}`);
+    const targetBtn = targetWrap.querySelector('.drawer-acc-btn');
+    const targetContent = document.getElementById(`drawer-content-${sectionId}`);
+    
+    const drawerPanel = document.getElementById('nav-drawer');
+    const horizontalLayout = document.getElementById('drawer-horizontal-layout');
+    const pullTab = document.getElementById('navbar-toggle-btn');
+    const allWrappers = document.querySelectorAll('.drawer-acc-wrapper');
+    
+    // Check if the clicked section is already open
+    const isOpen = targetBtn.classList.contains('active');
+    
+    // 1. Reset everything first
+    document.querySelectorAll('.drawer-acc-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.drawer-acc-content').forEach(content => content.classList.remove('active'));
+    
+    // 2. Apply Focus Mode or Reset to Normal
+    if (!isOpen) {
+        // OPENING: Activate focus mode
+        targetBtn.classList.add('active');
+        targetContent.classList.add('active');
+        horizontalLayout.classList.add('focus-mode'); // Removes gaps
+        
+        // Hide the other columns
+        allWrappers.forEach(wrap => {
+            if (wrap.id === `acc-wrap-${sectionId}`) {
+                wrap.classList.remove('hidden-by-focus');
+            } else {
+                wrap.classList.add('hidden-by-focus');
+            }
+        });
+    } else {
+        // CLOSING: Return to the 3-column view
+        horizontalLayout.classList.remove('focus-mode');
+        allWrappers.forEach(wrap => wrap.classList.remove('hidden-by-focus'));
+    }
+    
+    // 3. Dynamically push the pull-tab down to match the new content height
+    setTimeout(() => {
+        if (drawerPanel.classList.contains('drawer-open')) {
+            // Calculates height after the CSS animation completes
+            pullTab.style.top = `${drawerPanel.offsetHeight + 15}px`;
+        }
+    }, 400); 
+};
+window.toggleNavbarDrawerFocus = function() {
+    const drawer = document.getElementById('nav-drawer');
+    const btn = document.getElementById('navbar-toggle-btn');
+    
+    if (drawer && btn) {
+        const isOpen = drawer.classList.toggle('drawer-open');
+        btn.classList.toggle('drawer-open', isOpen);
+        
+        if (isOpen) {
+            btn.title = "Collapse Drawer";
+            // Calculate height immediately when opening
+            btn.style.top = `${drawer.offsetHeight + 15}px`; 
+        } else {
+            btn.title = "Expand Secondary Drawer";
+            // Reset to default top position when closed
+            btn.style.top = '54px'; 
+        }
+    }
+};
+// =========================================
+// 🌟 DROPDOWN DRAWER (TABBED_LAYOUT)
+// =========================================
+window.switchDrawerTabOld = function(event, tabId) {
+    document.querySelectorAll('.drawer-tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.drawer-tab-panel').forEach(panel => panel.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+    document.getElementById(`drawer-tab-${tabId}`).classList.add('active');
+    const drawerPanel = document.getElementById('nav-drawer');
+    const pullTab = document.getElementById('navbar-toggle-btn');
+    setTimeout(() => {
+        if (drawerPanel.classList.contains('drawer-open')) {
+            pullTab.style.top = `${drawerPanel.offsetHeight + 15}px`;
+        }
+    }, 50);
+}
+window.toggleNavbarDrawer = function() {
+    const drawer = document.getElementById('nav-drawer');
+    const btn = document.getElementById('navbar-toggle-btn');
+    if (drawer && btn) {
+        const isOpen = drawer.classList.toggle('drawer-open');
+        btn.classList.toggle('drawer-open', isOpen);
+        if (isOpen) {
+            setTimeout(() => {
+              //btn.style.top = `${drawer.offsetHeight + 15}px`;
+                btn.style.top = `${60 + drawer.offsetHeight - 10}px`;
+            }, 50);
+        } else {
+            btn.style.top = '48px'; 
+        }
+    }
+};
+window.switchDrawerTab = function(event, tabId) {
+    const clickedBtn = event.currentTarget;
+    const targetPanel = document.getElementById(`drawer-tab-${tabId}`);
+    const contentContainer = document.querySelector('.drawer-tabs-content');
+    const isAlreadyActive = clickedBtn.classList.contains('active');
+    document.querySelectorAll('.drawer-tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.drawer-tab-panel').forEach(panel => panel.classList.remove('active'));
+    if (isAlreadyActive) {
+        contentContainer.style.display = 'none';
+    } else {
+        clickedBtn.classList.add('active');
+        targetPanel.classList.add('active');
+        contentContainer.style.display = 'block';
+    }
+    const drawerPanel = document.getElementById('nav-drawer');
+    const pullTab = document.getElementById('navbar-toggle-btn');
+    setTimeout(() => {
+        if (drawerPanel.classList.contains('drawer-open')) {
+          //pullTab.style.top = `${drawerPanel.offsetHeight + 15}px`;
+            pullTab.style.top = `${60 + drawerPanel.offsetHeight - 10}px`;
+        }
+    }, 50); 
+}
+// =========================================
+// 🌟 TOOLBAR WIDGET VISIBILITY TOGGLE
+// =========================================
+window.toggleNavTool = function(btnId, isVisible) {
+    const btn = document.getElementById(btnId);
+    if (btn) {
+        btn.style.display = isVisible ? 'flex' : 'none';
+        if (!isVisible) {
+            // Converts "ai-agent-btn" -> "ai-agent-overlay"
+            const overlayId = btnId.replace('-btn', '-overlay'); 
+            const overlay = document.getElementById(overlayId);
+            if (overlay) {
+                overlay.style.display = 'none';
+                overlay.style.opacity = '0';
+                overlay.style.transform = 'scale(0)';
+            }
+        }
+    }
+};
+
+// =========================================
 // VASTU UI DASHBOARD UPDATER (Worker Receiver)
 // =========================================
 window.renderVastuUI = function(vastuData) {

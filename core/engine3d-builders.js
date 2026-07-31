@@ -705,7 +705,11 @@ function disposeScene() {
         }
     });
     
-    Engine3D.buildingGroup.clear(); 
+    Engine3D.buildingGroup.clear();
+    // 🧹 MEMORY LEAK FIX: Explicitly clear the global procedural texture cache
+    if (typeof clearTextureCache === 'function') {
+        clearTextureCache();
+    }
 }
 
 function update3DTransforms() {

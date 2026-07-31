@@ -10,24 +10,19 @@ const ProjectState = {
         selectedElIndex: -1
     },
     history: {
-        stack: [],       // Now stores lightweight deltas: { action, time, delta }
+        stack: [],       
         redoStack: [],
-        baseState: null, // A single full snapshot to build upon
+        baseState: null, 
         clipboard: null,
-        MAX_HISTORY: 50  // Increased to 50 because deltas take virtually no RAM!
+        MAX_HISTORY: 50  
     },
 
-    // --- DELTA ENGINE HELPERS ---
     _clone(obj) { 
-        //return JSON.parse(JSON.stringify(obj));
         return structuredClone(obj);  
     },
 
-    // 🌟 1. ADD THESE TWO NEW HELPER METHODS
     _isElementChanged(oldEl, newEl) {
-        if (!oldEl || !newEl) return true; // If one is null, it was added or deleted
-        
-        // Check the core properties that change during drafting
+        if (!oldEl || !newEl) return true;
         return oldEl.x !== newEl.x || 
                oldEl.y !== newEl.y || 
                oldEl.w !== newEl.w || 
@@ -44,7 +39,6 @@ const ProjectState = {
 
     _isFixtureChanged(oldFix, newFix) {
         if (!oldFix || !newFix) return true;
-        
         return oldFix.offset !== newFix.offset ||
                oldFix.size !== newFix.size ||
                oldFix.edge !== newFix.edge ||
@@ -52,7 +46,6 @@ const ProjectState = {
                oldFix.type !== newFix.type;
     },
 
-    // 🌟 2. UPDATE THE _getDelta METHOD
     _getDelta(oldState, newState) {
         const delta = { elements: { length: newState.elements.length }, fixtures: { length: newState.fixtures.length } };
         let hasChanges = false;
@@ -80,7 +73,6 @@ const ProjectState = {
         return hasChanges ? delta : null;
     },
 
-    // Applies a delta patch onto a state to reconstruct it
     _applyDelta(state, delta) {
         const newState = this._clone(state);
         if (delta.elements) {
@@ -152,7 +144,6 @@ const ProjectState = {
 
             this.data.elements = this._clone(restoredState.elements);
             this.data.fixtures = this._clone(restoredState.fixtures);
-            this._syncGlobals();
             return true;
         }
         return false;
@@ -165,7 +156,6 @@ const ProjectState = {
             const restoredState = this._buildStateFromHistory(this.history.stack.length - 1);
             this.data.elements = this._clone(restoredState.elements);
             this.data.fixtures = this._clone(restoredState.fixtures);
-            this._syncGlobals();
             return true;
         }
         return false;
@@ -178,7 +168,6 @@ const ProjectState = {
         const restoredState = this._buildStateFromHistory(index);
         this.data.elements = this._clone(restoredState.elements);
         this.data.fixtures = this._clone(restoredState.fixtures);
-        this._syncGlobals();
         if (typeof renderSidebar === 'function') renderSidebar();
         if (typeof updateCanvas === 'function') updateCanvas(true);
         if (typeof renderTimeMachine === 'function') renderTimeMachine();
@@ -189,26 +178,29 @@ const ProjectState = {
     deleteElement(idx) {
         const el = this.data.elements[idx];
         const elName = el ? (el.customName || el.type.toUpperCase()) : "Element";
-        this.saveState(`Deleted ${elName}`);
         
-        this.data.elements.splice(idx, 1);
-        this.data.fixtures = this.data.fixtures.filter(f => f.roomId !== idx);
-        this.data.fixtures.forEach(f => { if (f.roomId > idx) f.roomId--; });
-        
-        if (this.data.selectedElIndex === idx) this.data.selectedElIndex = -1;
-        else if (this.data.selectedElIndex > idx) this.data.selectedElIndex--;
-        
-        this._syncGlobals();
+        // 🧱 Use the new commit pattern for deletion!
+        this.commit(`Deleted ${elName}`, () => {
+            this.data.elements.splice(idx, 1);
+            this.data.fixtures = this.data.fixtures.filter(f => f.roomId !== idx);
+            this.data.fixtures.forEach(f => { if (f.roomId > idx) f.roomId--; });
+            
+            if (this.data.selectedElIndex === idx) this.data.selectedElIndex = -1;
+            else if (this.data.selectedElIndex > idx) this.data.selectedElIndex--;
+        });
     },
-    
-    _syncGlobals() {
-        if (typeof elements !== 'undefined') {
-            elements.length = 0;
-            elements.push(...this.data.elements);
-        }
-        if (typeof fixtures !== 'undefined') {
-            fixtures.length = 0;
-            fixtures.push(...this.data.fixtures);
+
+    // 🧱 The Secure State Mutator
+    commit(actionName, mutationCallback) {
+        // 1. Save the state BEFORE the mutation happens
+        this.saveState(actionName);
+        
+        // 2. Execute the data mutation (updates elements/fixtures)
+        mutationCallback();
+        
+        // 3. Alert the rest of the app to re-render
+        if (typeof AppEvents !== 'undefined') {
+            AppEvents.triggerStateChange();
         }
     }
 };

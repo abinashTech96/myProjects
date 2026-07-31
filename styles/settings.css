@@ -24,7 +24,7 @@
     top: calc(100% + 15px); 
     right: 0; 
     width: 260px; 
-    z-index: 10000; 
+    z-index: var(--z-modal);  /* Replaced z-index: 10000; */
     transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); 
     margin: 0;
     /* 🌌 Midnight Aurora Glass Effect */

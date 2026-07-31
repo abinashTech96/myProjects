@@ -503,10 +503,10 @@ function toggleTheme() {
 // =========================================
 // CUSTOM DROPDOWN ENGINE
 // =========================================
-document.addEventListener('DOMContentLoaded', () => {
-    const btn = document.getElementById('ai-generate-btn');
-    if (btn) btn.addEventListener('click', handleAICommand);
-});
+// document.addEventListener('DOMContentLoaded', () => {
+//     const btn = document.getElementById('ai-generate-btn');
+//     if (btn) btn.addEventListener('click', handleAICommand);
+// });
 document.addEventListener('click', () => {
     document.querySelectorAll('.pro-dropdown-wrapper').forEach(w => w.classList.remove('open'));
 });

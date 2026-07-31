@@ -140,7 +140,7 @@ const ParapetModule = {
                             <span id="val-heightOffset" class="parapet-val-badge">${this.config.heightOffset}</span>
                         </div>
                         <input type="range" class="parapet-slider" min="-15" max="30" value="${this.config.heightOffset}" 
-                            oninput="window._updateParapetConfig('heightOffset', this.value, parseInt)">
+                            oninput="window._updateParapetConfig('heightOffset', this.value, 'int')">
                     </div>
                     
                     <div class="parapet-group">
@@ -149,7 +149,7 @@ const ParapetModule = {
                             <span id="val-thicknessOffset" class="parapet-val-badge">${this.config.thicknessOffset}</span>
                         </div>
                         <input type="range" class="parapet-slider" min="0" max="15" value="${this.config.thicknessOffset}" 
-                            oninput="window._updateParapetConfig('thicknessOffset', this.value, parseInt)">
+                            oninput="window._updateParapetConfig('thicknessOffset', this.value, 'int')">
                     </div>
 
                     <div class="parapet-group">
@@ -158,7 +158,7 @@ const ParapetModule = {
                             <span id="val-elevationOffset" class="parapet-val-badge">${this.config.elevationOffset}</span>
                         </div>
                         <input type="range" class="parapet-slider" min="-10" max="25" value="${this.config.elevationOffset}" 
-                            oninput="window._updateParapetConfig('elevationOffset', this.value, parseInt)">
+                            oninput="window._updateParapetConfig('elevationOffset', this.value, 'int')">
                     </div>
 
                     <div class="parapet-group">
@@ -167,7 +167,7 @@ const ParapetModule = {
                             <span id="val-glassOpacity" class="parapet-val-badge">${this.config.glassOpacity}</span>
                         </div>
                         <input type="range" class="parapet-slider" min="0.1" max="1.0" step="0.05" value="${this.config.glassOpacity}" 
-                            oninput="window._updateParapetConfig('glassOpacity', this.value, parseFloat)">
+                            oninput="window._updateParapetConfig('glassOpacity', this.value, 'float')">
                     </div>
                 </div>
 
@@ -188,7 +188,7 @@ const ParapetModule = {
                 <div class="parapet-row">
                     <label class="parapet-label">Accent Color</label>
                     <input type="color" class="parapet-color-picker" value="${this.config.accentColor}" 
-                        onchange="window._updateParapetConfig('accentColor', this.value, String)">
+                        onchange="window._updateParapetConfig('accentColor', this.value, 'string')">
                 </div>
 
                 <div class="parapet-group" style="margin-bottom: 5px;">
@@ -197,7 +197,7 @@ const ParapetModule = {
                         <span id="val-glowIntensity" class="parapet-val-badge">${this.config.glowIntensity}</span>
                     </div>
                     <input type="range" class="parapet-slider" min="0.0" max="3.0" step="0.1" value="${this.config.glowIntensity}" 
-                        oninput="window._updateParapetConfig('glowIntensity', this.value, parseFloat)">
+                        oninput="window._updateParapetConfig('glowIntensity', this.value, 'float')">
                 </div>
             </div>
         `;
@@ -211,10 +211,18 @@ const ParapetModule = {
             document.body.appendChild(popup);
         }
 
-        // ✨ THE FIX: Debouncing for ultra-smooth sliders
+        // ✨ THE FIX: Debouncing for ultra-smooth sliders with SAFE type parsing
         let renderTimeout;
-        window._updateParapetConfig = (key, val, parseFn = parseFloat) => {
-            ParapetModule.config[key] = parseFn(val);
+        window._updateParapetConfig = (key, val, parseType = 'float') => {
+            let parsedVal = val;
+            if (parseType === 'int') {
+                parsedVal = parseInt(val, 10);
+            } else if (parseType === 'float') {
+                parsedVal = parseFloat(val);
+            } else if (parseType === 'string') {
+                parsedVal = String(val);
+            }
+            ParapetModule.config[key] = parsedVal;
             
             // 1. Instantly update the text value in the UI (feels responsive)
             const displayEl = document.getElementById(`val-${key}`);

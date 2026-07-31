@@ -1,10 +1,9 @@
 // =========================================
-// 🚀 TOOLBAR & ROOM ACTIONS (actions.js)
-// Now powered by the Event Bus!
+// 🚀 TOOLBAR & ROOM ACTIONS (actions.js) powered by the Event Bus!
 // =========================================
-
 function addElement(overrideType = null) {
     const type = overrideType || document.getElementById('elem-type').value;
+    
     if (type === 'door' || type === 'window') {
         if (typeof selectedElIndex === 'undefined' || selectedElIndex === -1) {
             return alert("Please click on a room first to select it before adding a door or window!");
@@ -12,24 +11,23 @@ function addElement(overrideType = null) {
         addFixture(type);
         return;
     }
-    if (typeof saveState === 'function') saveState();
-    let w = ARCH_CONFIG.DEFAULTS.ROOM_W, h = ARCH_CONFIG.DEFAULTS.ROOM_H, isFurniture = false;
-    
-    if (ARCH_CONFIG && ARCH_CONFIG.DEFAULTS.FURNITURE[type]) {
-        w = ARCH_CONFIG.DEFAULTS.FURNITURE[type].w;
-        h = ARCH_CONFIG.DEFAULTS.FURNITURE[type].h;
-        isFurniture = true;
-    }
-    
-    elements.push({ 
-        type: type, w: w, h: h,
-        x: ARCH_CONFIG.DEFAULTS.SPAWN_X,
-        y: ARCH_CONFIG.DEFAULTS.SPAWN_Y,
-        floor: currentFloor, locked: false, 
-        dir: type === 'staircase' ? 'up' : null,
-        isFurniture: isFurniture
+    // 🧱 ARCHITECTURE FIX: Route the mutation through the State Manager
+    ProjectState.commit(`Added ${type}`, () => {
+        let w = ARCH_CONFIG.DEFAULTS.ROOM_W, h = ARCH_CONFIG.DEFAULTS.ROOM_H, isFurniture = false;
+        if (ARCH_CONFIG && ARCH_CONFIG.DEFAULTS.FURNITURE[type]) {
+            w = ARCH_CONFIG.DEFAULTS.FURNITURE[type].w;
+            h = ARCH_CONFIG.DEFAULTS.FURNITURE[type].h;
+            isFurniture = true;
+        }
+        elements.push({ 
+            type: type, w: w, h: h,
+            x: ARCH_CONFIG.DEFAULTS.SPAWN_X,
+            y: ARCH_CONFIG.DEFAULTS.SPAWN_Y,
+            floor: currentFloor, locked: false, 
+            dir: type === 'staircase' ? 'up' : null,
+            isFurniture: isFurniture
+        });
     });
-    AppEvents.triggerStateChange();
 }
 
 function deleteElement(idx) {

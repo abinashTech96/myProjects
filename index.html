@@ -102,11 +102,10 @@
                 </button>
             </div>
 
-            <!-- 🌟 AI AGENT -->
+            <!-- 🌟 AI AGENT 
             <button id="ai-agent-btn" class="nav-add-floor-btn tool-btn theme-purple" onclick="toggleAIAgent()" title="AI Design Assistant">
                 <span class="tool-icon">🤖</span>
             </button>
-            
             <div id="ai-agent-overlay" class="glass-panel nav-dropdown-panel width-md">
                 <div class="panel-header drop-header-purple">
                     <span class="icon">🤖</span>
@@ -114,9 +113,54 @@
                 </div>
                 
                 <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                        <label style="font-size: 0.65rem; color: #94a3b8; font-weight: bold; letter-spacing: 0.5px;">ACTIVE MODEL</label>
+                        <select id="ai-model-select" class="modern-select neo-sunken" onchange="CONFIG.ACTIVE_LLM = this.value; console.log('AI Switched to:', this.value);">
+                            <optgroup label="Google Gemini">
+                                <option value="gemini-3.6-flash">Gemini 3.6 Flash (Fastest)</option>
+                                <option value="gemini-3.5-flash" selected>Gemini 3.5 Flash (Balanced Draft)</option>
+                                <option value="gemini-3.5-flash-lite">Gemini 3.5 Flash Lite (Low Cost)</option>
+                                <option value="gemini-3.1-pro">Gemini 3.1 Pro (Advanced Reasoning)</option>
+                                <option value="gemini-3.0-ultra">Gemini 3.0 Ultra (Heavy Architecture)</option>
+                            </optgroup>
+                            
+                            <optgroup label="Other Providers">
+                                <option value="openai">OpenAI GPT-4o (Complex Layouts)</option>
+                                <option value="perplexity">Perplexity Sonar (Vastu Code Search)</option>
+                            </optgroup>
+                        </select>
+                    </div>
+
                     <textarea id="ai-input" class="neo-sunken ai-textarea" placeholder="e.g., Add a 10x12 master bedroom on the left..."></textarea>
                     
                     <button id="ai-generate-btn" class="btn-generate theme-purple-btn">
+                        <span class="btn-icon">✨</span><span class="btn-text">GENERATE</span>
+                    </button>
+                </div>
+            </div>
+            -->
+            <!-- 🌟 AI AGENT -->
+            <button id="ai-agent-btn" class="nav-add-floor-btn tool-btn theme-purple" onclick="toggleAIAgent(); window.populateAIModelDropdown();" title="AI Design Assistant">
+                <span class="tool-icon">🤖</span>
+            </button>
+
+            <div id="ai-agent-overlay" class="glass-panel nav-dropdown-panel width-md">
+                <div class="panel-header drop-header-purple">
+                    <span class="icon">🤖</span>
+                    <h2>AI ASSISTANT</h2>
+                </div>
+                
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    
+                    <!-- 🚀 Clean Model Selection Dropdown -->
+                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                        <label style="font-size: 0.65rem; color: #94a3b8; font-weight: bold; letter-spacing: 0.5px;">ACTIVE MODEL</label>
+                        <select id="ai-model-select" class="modern-select neo-sunken"></select>
+                    </div>
+
+                    <textarea id="ai-input" class="neo-sunken ai-textarea" placeholder="e.g., Add a 10x12 master bedroom on the left..."></textarea>
+                    
+                    <button id="ai-generate-btn" class="btn-generate theme-purple-btn" onclick="handleAICommand()">
                         <span class="btn-icon">✨</span><span class="btn-text">GENERATE</span>
                     </button>
                 </div>
@@ -770,6 +814,7 @@
 
 	<script src="core/event.js"></script>
     <script src="core/config.js"></script>
+    <script src="core/ai-agent.js"></script>
     <script src="core/constants.js"></script>
     <script src="core/state.js"></script>
     <script src="core/utils.js"></script>
@@ -791,7 +836,6 @@
     <script src="core/elevation.js"></script>
     <script src="features/export/export.js"></script>
     <script src="features/showcase/showcase.js"></script>
-    <script src="core/ai-agent.js"></script>
     <script src="features/onboarding/onboarding.js"></script>
 
 </body>

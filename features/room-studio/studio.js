@@ -22,7 +22,6 @@ const RoomStudio = {
 
     // 🌟 1. NEW: Store the HTML inside the feature script
     buildUI() {
-        // Only build if it doesn't already exist
         if (document.getElementById('room-studio-modal')) return;
 
         const uiTemplate = `
@@ -176,7 +175,7 @@ const RoomStudio = {
         this.close();
         if (typeof updateCanvas === 'function') updateCanvas();
         if (typeof renderSidebar === 'function') renderSidebar();
-        if (typeof is3DMode !== 'undefined' && is3DMode && typeof generate3DModel === 'function') generate3DModel();
+        if (typeof window.is3DMode !== 'undefined' && window.is3DMode && typeof generate3DModel === 'function') generate3DModel();
     },
 
     getSVGPos(evt) {

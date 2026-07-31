@@ -14,135 +14,38 @@ function getCachedSolidMaterial(hexColor, opacity) {
     }
     return SOLID_MAT_CACHE[key];
 }
+
 function generate3DModel() {
-    if (typeof scene3D === 'undefined' || !scene3D) return;
+    // 🌟 1. Point to the new encapsulated Engine3D.scene
+    if (!Engine3D || !Engine3D.scene) return; 
+
     const real3DToggle = document.getElementById('real3DToggle');
     const useReal3D = real3DToggle ? real3DToggle.checked : false;
-    if (!buildingGroup) {
-        buildingGroup = new THREE.Group();
-        scene3D.add(buildingGroup);
+    if (!Engine3D.buildingGroup) {
+        Engine3D.buildingGroup = new THREE.Group();
+        Engine3D.scene.add(Engine3D.buildingGroup);
     } else {
-        disposeScene(); 
+        if (typeof disposeScene === 'function') disposeScene(); 
     }
+
     const { SCALE, unit, inW, inH, I, WALL_HEIGHT } = get3DEnvironmentParams();
+
     if (typeof elements !== 'undefined' && elements.length > 0) {
         build3DRooms(SCALE, I, WALL_HEIGHT, useReal3D);
-        build3DSlabs(SCALE, I, WALL_HEIGHT, useReal3D);
-        build3DFixtures(SCALE, I, WALL_HEIGHT, useReal3D);
+        if (typeof build3DSlabs === 'function') build3DSlabs(SCALE, I, WALL_HEIGHT, useReal3D);
+        if (typeof build3DRoof === 'function') build3DRoof(SCALE, I, WALL_HEIGHT); // 🌟 ADDED ROOF BUILDER CALL
+        if (typeof build3DFixtures === 'function') build3DFixtures(SCALE, I, WALL_HEIGHT, useReal3D);
         if (typeof build3DParapet === 'function') {
             build3DParapet(useReal3D);
         }
     }
-    build3DBoundaries(SCALE, unit, I, inW, inH);
-    scene3D.add(buildingGroup);
-    // 🌟 Trigger a single shadow frame when the building rebuilds
-    if (typeof renderer3D !== 'undefined') {
-        renderer3D.shadowMap.needsUpdate = true;
+    if (typeof build3DBoundaries === 'function') build3DBoundaries(SCALE, unit, I, inW, inH);
+    Engine3D.scene.add(Engine3D.buildingGroup);
+    if (Engine3D.renderer && Engine3D.renderer.shadowMap) {
+        Engine3D.renderer.shadowMap.needsUpdate = true;
     }
 }
-function build3DRoomsOld(SCALE, I, WALL_HEIGHT, useReal3D) {
-    const smartMerge = document.getElementById('smartMergeToggle')?.checked;
-    elements.forEach((el, i) => {
-        const center = getRoomCenter(el, SCALE, I);
-        const isColliding = !smartMerge && !el.isFurniture && typeof checkCollision === 'function' ? checkCollision(el, i) : false;
-        let roomColor = isColliding ? 0xef4444 : (typeof ARCH_CONFIG !== 'undefined' && ARCH_CONFIG.COLORS[el.type]?.hex || 0xffffff);
-        if (!isColliding && el.customColor) {
-            roomColor = parseInt(el.customColor.replace('#', '0x'));
-        }
-        let mesh;
-        if (el.isFurniture) {
-            mesh = createFurniture3D(el.type, center.width, center.depth);
-            mesh.position.set(center.x, el.floor * WALL_HEIGHT, center.z);
-        } else if (el.type === 'staircase') {
-            mesh = buildStaircase(el, center, WALL_HEIGHT, isColliding);
-        } else if (el.type === 'balcony') {
-            mesh = buildBalcony(el, center, WALL_HEIGHT, useReal3D, isColliding, SCALE);
-        } else if (el.type === 'living') {
-            mesh = buildLivingRoom(el, center, WALL_HEIGHT, useReal3D, isColliding, SCALE);
-        } else if (el.type === 'living2') {
-            mesh = buildIsolatedLivingRoom(el, center, WALL_HEIGHT, useReal3D, isColliding, SCALE);
-        } else {
-            mesh = buildStandardRoom(el, center, WALL_HEIGHT, useReal3D, isColliding, SCALE, roomColor);
-        }
-        if (mesh) {
-            mesh.traverse(child => { if (child.isMesh) child.userData = { roomIndex: i, isRoom: true }; });
-            buildingGroup.add(mesh);
-        }
-    });
-}
-function build3DRooms2(SCALE, I, WALL_HEIGHT, useReal3D) {
-    const smartMerge = document.getElementById('smartMergeToggle')?.checked;
-    
-    // 🌟 PERFORMANCE: BATCH ARRAYS FOR FURNITURE
-    const furnitureGeoms = {
-        wood: [], fabricLight: [], fabricDark: [], metal: [], 
-        glass: [], ceramic: [], blackPlastic: [], marble: []
-    };
 
-    elements.forEach((el, i) => {
-        const center = getRoomCenter(el, SCALE, I);
-        const isColliding = !smartMerge && !el.isFurniture && typeof checkCollision === 'function' ? checkCollision(el, i) : false;
-        let roomColor = isColliding ? 0xef4444 : (typeof ARCH_CONFIG !== 'undefined' && ARCH_CONFIG.COLORS[el.type]?.hex || 0xffffff);
-        
-        if (!isColliding && el.customColor) {
-            roomColor = parseInt(el.customColor.replace('#', '0x'));
-        }
-
-        if (el.isFurniture) {
-            // 🌟 1. Build the furniture mathematically in a dummy group
-            const mesh = createFurniture3D(el.type, center.width, center.depth);
-            mesh.position.set(center.x, el.floor * WALL_HEIGHT, center.z);
-            if (el.rot) mesh.rotation.y = el.rot * (Math.PI / 180);
-            mesh.updateMatrixWorld(true);
-
-            // 🌟 2. Extract and sort the geometries by material for batching!
-            mesh.traverse(child => {
-                if (child.isMesh && child.geometry) {
-                    const geom = child.geometry.clone();
-                    geom.applyMatrix4(child.matrixWorld); // Convert to global 3D space
-                    
-                    // Identify material and push to the correct batch array
-                    const matColor = child.material.color.getHex();
-                    if (matColor === 0x8b5a2b) furnitureGeoms.wood.push(geom);
-                    else if (matColor === 0xf1f5f9) furnitureGeoms.fabricLight.push(geom);
-                    else if (matColor === 0x475569) furnitureGeoms.fabricDark.push(geom);
-                    else if (matColor === 0x94a3b8) furnitureGeoms.metal.push(geom);
-                    else if (matColor === 0xbae6fd) furnitureGeoms.glass.push(geom);
-                    else if (matColor === 0x111111) furnitureGeoms.blackPlastic.push(geom);
-                    else if (matColor === 0xf8fafc) furnitureGeoms.marble.push(geom);
-                    else furnitureGeoms.ceramic.push(geom); // Fallback
-                }
-            });
-            return; // Skip adding the raw mesh to the scene to save GPU draw calls
-        } 
-        
-        // Build Architecture (Rooms, Stairs, Balconies) normally
-        let mesh;
-        if (el.type === 'staircase') mesh = buildStaircase(el, center, WALL_HEIGHT, isColliding);
-        else if (el.type === 'balcony') mesh = buildBalcony(el, center, WALL_HEIGHT, useReal3D, isColliding, SCALE);
-        else if (el.type === 'living') mesh = buildLivingRoom(el, center, WALL_HEIGHT, useReal3D, isColliding, SCALE);
-        else if (el.type === 'living2') mesh = buildIsolatedLivingRoom(el, center, WALL_HEIGHT, useReal3D, isColliding, SCALE);
-        else mesh = buildStandardRoom(el, center, WALL_HEIGHT, useReal3D, isColliding, SCALE, roomColor);
-        
-        if (mesh) {
-            mesh.traverse(child => { if (child.isMesh) child.userData = { roomIndex: i, isRoom: true }; });
-            Engine3D.buildingGroup.add(mesh);
-        }
-    });
-
-    // 🌟 3. MERGE AND ADD FURNITURE TO GPU (Massive Frame Rate Boost!)
-    Object.keys(furnitureGeoms).forEach(matKey => {
-        if (furnitureGeoms[matKey].length > 0) {
-            const mergedGeom = THREE.BufferGeometryUtils.mergeBufferGeometries(furnitureGeoms[matKey]);
-            const batchedMesh = new THREE.Mesh(mergedGeom, FurnitureFactory.mats[matKey]);
-            batchedMesh.castShadow = true;
-            batchedMesh.receiveShadow = true;
-            // Tag it so the raycaster ignores it during isolation mode
-            batchedMesh.userData = { isBatchedFurniture: true }; 
-            Engine3D.buildingGroup.add(batchedMesh);
-        }
-    });
-}
 function build3DRooms(SCALE, I, WALL_HEIGHT, useReal3D) {
     const smartMerge = document.getElementById('smartMergeToggle')?.checked;
     
@@ -226,6 +129,7 @@ function build3DRooms(SCALE, I, WALL_HEIGHT, useReal3D) {
         }
     });
 }
+
 // ==========================================
 // 🧩 PHASE 1: STATIC GEOMETRY BATCHING
 // ==========================================
@@ -246,6 +150,7 @@ function createRoomWalls(width, height, depth, thickness, material) {
     group.add(wallMesh);
     return group;
 }
+
 function buildStaircase(el, center, WALL_HEIGHT, isColliding) {
     const group = new THREE.Group();
     const direction = el.dir || 'up';
@@ -274,6 +179,7 @@ function buildStaircase(el, center, WALL_HEIGHT, isColliding) {
     group.position.set(center.x - (width / 2), el.floor * WALL_HEIGHT, center.z - (depth / 2));
     return group;
 }
+
 function buildBalcony(el, center, WALL_HEIGHT, useReal3D, isColliding, SCALE) {
     if (!useReal3D || isColliding) return buildStandardRoom(el, center, WALL_HEIGHT, useReal3D, isColliding, SCALE, 0x10b981);
 
@@ -324,6 +230,7 @@ function buildBalcony(el, center, WALL_HEIGHT, useReal3D, isColliding, SCALE) {
     mesh.position.set(center.x, (el.floor * WALL_HEIGHT) + 2, center.z);
     return mesh;
 }
+
 function buildLivingRoom(el, center, WALL_HEIGHT, useReal3D, isColliding, SCALE) {
     if (!useReal3D || isColliding) return buildStandardRoom(el, center, WALL_HEIGHT, useReal3D, isColliding, SCALE, 0xd898a8);
 
@@ -351,6 +258,7 @@ function buildLivingRoom(el, center, WALL_HEIGHT, useReal3D, isColliding, SCALE)
     mesh.position.set(center.x, (el.floor * WALL_HEIGHT) + 2, center.z);
     return mesh;
 }
+
 function buildIsolatedLivingRoom(el, center, WALL_HEIGHT, useReal3D, isColliding, SCALE) {
     if (!useReal3D || isColliding) return buildStandardRoom(el, center, WALL_HEIGHT, useReal3D, isColliding, SCALE, 0xffffff);
 
@@ -378,6 +286,7 @@ function buildIsolatedLivingRoom(el, center, WALL_HEIGHT, useReal3D, isColliding
     mesh.position.set(center.x, el.floor * WALL_HEIGHT, center.z);
     return mesh;
 }
+
 function buildStandardRoom(el, center, WALL_HEIGHT, useReal3D, isColliding, SCALE, roomColor) {
     const mesh = new THREE.Group();
     const t = 4 * SCALE;
@@ -419,6 +328,7 @@ function buildStandardRoom(el, center, WALL_HEIGHT, useReal3D, isColliding, SCAL
     mesh.position.set(center.x, el.floor * WALL_HEIGHT, center.z);
     return mesh;
 }
+
 function build3DSlabs(SCALE, I, WALL_HEIGHT, useReal3D) {
     const floors = elements.map(e => e.floor);
     const maxFloor = floors.length > 0 ? Math.max(...floors) : 0;
@@ -479,7 +389,8 @@ function build3DSlabs(SCALE, I, WALL_HEIGHT, useReal3D) {
         slab.receiveShadow = true;
         
         slab.position.set(CX, slabY, CY); 
-        buildingGroup.add(slab);
+        // 🌟 FIXED GHOST VARIABLE:
+        Engine3D.buildingGroup.add(slab);
     }
 }
 
@@ -576,24 +487,26 @@ function build3DFixtures(SCALE, I, WALL_HEIGHT, useReal3D) {
     });
 
     // 4. Batch and push to GPU!
+    // 🌟 FIXED GHOST VARIABLES:
     if (frameGeoms.length) {
         const merged = THREE.BufferGeometryUtils.mergeBufferGeometries(frameGeoms);
         const mesh = new THREE.Mesh(merged, frameMat);
         mesh.castShadow = true; mesh.receiveShadow = true;
-        buildingGroup.add(mesh);
+        Engine3D.buildingGroup.add(mesh);
     }
     if (woodGeoms.length) {
         const merged = THREE.BufferGeometryUtils.mergeBufferGeometries(woodGeoms);
         const mesh = new THREE.Mesh(merged, woodMat);
         mesh.castShadow = true; mesh.receiveShadow = true;
-        buildingGroup.add(mesh);
+        Engine3D.buildingGroup.add(mesh);
     }
     if (glassGeoms.length) {
         const merged = THREE.BufferGeometryUtils.mergeBufferGeometries(glassGeoms);
         const mesh = new THREE.Mesh(merged, glassMat);
-        buildingGroup.add(mesh);
+        Engine3D.buildingGroup.add(mesh);
     }
 }
+
 function build3DBoundaries(SCALE, unit, I, inW, inH) {
     const toInches3D = (val, u) => u === 'cm' ? parseFloat(val) / 2.54 : parseFloat(val);
     const val = (id) => toInches3D(document.getElementById(id)?.value || 0, unit) * SCALE;
@@ -606,14 +519,17 @@ function build3DBoundaries(SCALE, unit, I, inW, inH) {
         new THREE.Vector3(plotC.x, 0, plotC.z), new THREE.Vector3(plotD.x, 0, plotD.z)
     ]);
     const plotLine = new THREE.LineLoop(plotGeom, new THREE.LineBasicMaterial({ color: 0xff4d4d }));
-    buildingGroup.add(plotLine);
+    Engine3D.buildingGroup.add(plotLine);
+    
     const buildGeom = new THREE.BufferGeometry().setFromPoints([
         new THREE.Vector3(I.x, 0.5, I.z), new THREE.Vector3(I.x + inW, 0.5, I.z),
         new THREE.Vector3(I.x + inW, 0.5, I.z + inH), new THREE.Vector3(I.x, 0.5, I.z + inH)
     ]);
     const buildLine = new THREE.LineLoop(buildGeom, new THREE.LineBasicMaterial({ color: 0x38bdf8 }));
-    buildingGroup.add(buildLine);
+    // 🌟 FIXED GHOST VARIABLE:
+    Engine3D.buildingGroup.add(buildLine);
 }
+
 function build3DRoof(SCALE, I, WALL_HEIGHT) {
     let maxFloor = -1;
     elements.forEach(el => {
@@ -656,8 +572,10 @@ function build3DRoof(SCALE, I, WALL_HEIGHT) {
     roofMesh.castShadow = true;
     roofMesh.receiveShadow = true;
     roofMesh.userData = { isRoof: true };
-    buildingGroup.add(roofMesh);
+    // 🌟 FIXED GHOST VARIABLE:
+    Engine3D.buildingGroup.add(roofMesh);
 }
+
 function createStraightStaircaseGroup(run, height, width, material) {
     const group = new THREE.Group();
     const steps = Math.round(height / 7.5); // 7.5 inch max riser
@@ -675,6 +593,7 @@ function createStraightStaircaseGroup(run, height, width, material) {
     }
     return group;
 }
+
 function createLShapedGroup(run, height, extWidth, material) {
     const group = new THREE.Group();
     
@@ -722,6 +641,7 @@ function createLShapedGroup(run, height, extWidth, material) {
 
     return group;
 }
+
 function createUShapedGroup(run, height, extWidth, material) {
     const group = new THREE.Group();
     const halfW = extWidth / 2; 
@@ -757,13 +677,15 @@ function createUShapedGroup(run, height, extWidth, material) {
     }
     return group;
 }
+
 // ==========================================
 // 🧹 UPGRADED ENGINE OPTIMIZATION: MEMORY CLEANUP
 // ==========================================
 function disposeScene() {
-    if (!buildingGroup) return;
+    // 🌟 FIXED GHOST VARIABLE:
+    if (!Engine3D || !Engine3D.buildingGroup) return;
     
-    buildingGroup.traverse((child) => {
+    Engine3D.buildingGroup.traverse((child) => {
         if (child.isMesh) {
             // 1. Destroy Geometry
             if (child.geometry) child.geometry.dispose();
@@ -783,12 +705,14 @@ function disposeScene() {
         }
     });
     
-    buildingGroup.clear(); 
+    Engine3D.buildingGroup.clear(); 
 }
+
 function update3DTransforms() {
-    if (!is3DMode || !buildingGroup) return;
+    // 🌟 FIXED GHOST VARIABLES:
+    if (!window.is3DMode || !Engine3D.buildingGroup) return;
     const { SCALE, I } = get3DEnvironmentParams();
-    buildingGroup.children.forEach(mesh => {
+    Engine3D.buildingGroup.children.forEach(mesh => {
         if (mesh.userData && mesh.userData.isRoom) {
             const index = mesh.userData.roomIndex;
             const el = elements[index];
@@ -803,6 +727,7 @@ function update3DTransforms() {
         }
     });
 }
+
 // =========================================
 // 3D FURNITURE GENERATOR
 // =========================================
@@ -841,6 +766,7 @@ function createFurniture3D(type, w, d) {
 
     return group;
 }
+
 let showBalconyExtras = true; 
 function createBalconyChair() {
     const group = new THREE.Group();
@@ -866,6 +792,7 @@ function createBalconyChair() {
     
     return group;
 }
+
 function createBalconyPlant() {
     const group = new THREE.Group();
     const potMat = new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.9 }); 
@@ -878,6 +805,7 @@ function createBalconyPlant() {
     group.add(leaves);    
     return group;
 }
+
 function getRoomCenter(el, SCALE, I) {
     const width = el.w * SCALE;
     const depth = el.h * SCALE;
@@ -888,6 +816,7 @@ function getRoomCenter(el, SCALE, I) {
         depth
     };
 }
+
 // =========================================
 // 🌟 3D ENVIRONMENT MATH HELPER 
 // =========================================
@@ -908,8 +837,9 @@ function get3DEnvironmentParams() {
 
 // 🌟 NEW: Targeted 3D Material Updater
 window.updateRoomMaterial3D = function(roomIndex, newHexColor) {
-    if (!buildingGroup || !is3DMode) return;
-    const roomMesh = buildingGroup.children.find(child => 
+    // 🌟 FIXED GHOST VARIABLES:
+    if (!Engine3D.buildingGroup || !window.is3DMode) return;
+    const roomMesh = Engine3D.buildingGroup.children.find(child => 
         child.userData && child.userData.roomIndex === roomIndex
     );
     if (roomMesh) {

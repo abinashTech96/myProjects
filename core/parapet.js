@@ -105,7 +105,7 @@ const ParapetModule = {
                 child.userData = { isParapet: true };
             }
         });
-        buildingGroup.add(mesh);
+        Engine3D.buildingGroup.add(mesh)
     },
 
     buildTerraceSlab(w, d, centerX, centerZ, baseY, SCALE) {
@@ -523,7 +523,7 @@ const ParapetModule = {
 
             [bN, bS, bE, bW, rN, rS, rE, rW, gN, gS, gE, gW].forEach(m => { 
                 if (m.material !== matGlass) { m.castShadow = true; m.receiveShadow = true; }
-                buildingGroup.add(m); 
+                Engine3D.buildingGroup.add(m); 
             });
         },
 
@@ -679,7 +679,7 @@ const ParapetModule = {
             const wE = new THREE.Mesh(new THREE.BoxGeometry(wallT, wallH, d - capT*2 + inset), wallMat); wE.position.set(centerX + w/2 - capT/2, wallY, centerZ);
             const wW = new THREE.Mesh(new THREE.BoxGeometry(wallT, wallH, d - capT*2 + inset), wallMat); wW.position.set(centerX - w/2 + capT/2, wallY, centerZ);
 
-            [cN, cS, cE, cW, wN, wS, wE, wW].forEach(m => { m.castShadow = true; m.receiveShadow = true; buildingGroup.add(m); });
+            [cN, cS, cE, cW, wN, wS, wE, wW].forEach(m => { m.castShadow = true; m.receiveShadow = true; Engine3D.buildingGroup.add(m); });
         }
     }
 };

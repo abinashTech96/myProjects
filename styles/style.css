@@ -4,6 +4,15 @@
     --accent: #38bdf8; 
     --text: #f1f5f9; 
     --red: #ef4444; 
+
+    /* New Z-Index Hierarchy */
+    --z-background: 0;
+    --z-canvas: 10;
+    --z-floating-hud: 100;
+    --z-sidebar: 1000;
+    --z-modal: 10000;
+    --z-tooltip: 50000;
+    --z-overlay: 99999;
 }
 
 /* 1. Add this to fix input sizing */
@@ -848,7 +857,7 @@ button:active {
     letter-spacing: 0.5px;
     text-transform: uppercase;
 }
-
+/*here*/
 /* --- MODERN SELECT DROPDOWN --- */
 .modern-select {
     background: #0f172a;
@@ -866,6 +875,22 @@ button:active {
 .modern-select:hover, .modern-select:focus {
     border-color: #38bdf8;
     box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.1);
+}
+/* =========================================
+   FIX: NATIVE DROPDOWN OPTION VISIBILITY
+========================================= */
+select option, 
+select optgroup {
+    background-color: #0f172a; /* Deep slate to match your blueprint theme */
+    color: #e2e8f0;            /* Crisp light text */
+    font-weight: 600;
+}
+
+/* Enhances contrast for the optgroup headers (e.g., 'Google Gemini') */
+select optgroup {
+    color: #38bdf8;            /* Neon cyan headers */
+    font-style: normal;
+    background-color: #1e293b; 
 }
 
 /* =========================================
@@ -1238,6 +1263,7 @@ button:active {
     text-transform: uppercase;
     text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
 }
+/*here*/
 .neo-sunken {
     background: #151f32 !important;
     border: none !important;

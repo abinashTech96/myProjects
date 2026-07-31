@@ -7,14 +7,14 @@ window.isPlayingTour = false;
 window.tourAnimationId = null;
 
 window.captureWaypoint = function() {
-    if (typeof camera3D === 'undefined' || typeof controls3D === 'undefined') {
+    if (!window.Engine3D || !Engine3D.camera || !Engine3D.controls) {
         console.warn("3D Engine not fully initialized yet.");
         return;
     }
     
     const point = {
-        position: { x: camera3D.position.x, y: camera3D.position.y, z: camera3D.position.z },
-        target: { x: controls3D.target.x, y: controls3D.target.y, z: controls3D.target.z }
+        position: { x: Engine3D.camera.position.x, y: Engine3D.camera.position.y, z: Engine3D.camera.position.z },
+        target: { x: Engine3D.controls.target.x, y: Engine3D.controls.target.y, z: Engine3D.controls.target.z }
     };
     
     window.tourWaypoints.push(point);
@@ -45,7 +45,7 @@ window.playCinematicTour = function() {
         return;
     }
     
-    if (typeof camera3D === 'undefined' || typeof controls3D === 'undefined') {
+    if (!window.Engine3D || !Engine3D.camera || !Engine3D.controls) {
         console.warn("3D Engine not fully initialized yet.");
         return;
     }
@@ -53,7 +53,7 @@ window.playCinematicTour = function() {
     if (window.isPlayingTour) return;
     window.isPlayingTour = true;
     
-    controls3D.enabled = false; 
+    Engine3D.controls.enabled = false; 
     
     let currentWpIndex = 0;
     const durationPerPoint = 3000;
@@ -71,30 +71,30 @@ window.playCinematicTour = function() {
         if (rawProgress < 1) {
             let progress = rawProgress * rawProgress * (3 - 2 * rawProgress); 
             
-            camera3D.position.lerpVectors(
+            Engine3D.camera.position.lerpVectors(
                 new THREE.Vector3(startWp.position.x, startWp.position.y, startWp.position.z), 
                 new THREE.Vector3(endWp.position.x, endWp.position.y, endWp.position.z), 
                 progress
             );
             
-            controls3D.target.lerpVectors(
+            Engine3D.controls.target.lerpVectors(
                 new THREE.Vector3(startWp.target.x, startWp.target.y, startWp.target.z), 
                 new THREE.Vector3(endWp.target.x, endWp.target.y, endWp.target.z), 
                 progress
             );
             
-            controls3D.update(); 
+            Engine3D.controls.update(); 
             window.tourAnimationId = requestAnimationFrame(animateTour);
         } else {
-            camera3D.position.set(endWp.position.x, endWp.position.y, endWp.position.z);
-            controls3D.target.set(endWp.target.x, endWp.target.y, endWp.target.z);
-            controls3D.update();
+            Engine3D.camera.position.set(endWp.position.x, endWp.position.y, endWp.position.z);
+            Engine3D.controls.target.set(endWp.target.x, endWp.target.y, endWp.target.z);
+            Engine3D.controls.update();
 
             currentWpIndex++;
             
             if (currentWpIndex >= window.tourWaypoints.length - 1) {
                 window.isPlayingTour = false;
-                controls3D.enabled = true;
+                Engine3D.controls.enabled = true;
             } else {
                 startTime = time; 
                 window.tourAnimationId = requestAnimationFrame(animateTour);

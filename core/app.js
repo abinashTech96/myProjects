@@ -1167,7 +1167,7 @@ document.addEventListener('keydown', (e) => {
 });
 
 document.addEventListener('keydown', (e) => {
-    if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'SELECT') return;
+    if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'SELECT' || document.activeElement.tagName === 'TEXTAREA') return;
     if (e.code === 'Space') { e.preventDefault(); UI.isSpacePanMode = true; if(UI.blueprint) UI.blueprint.style.cursor = 'grab'; }
 });
 document.addEventListener('keyup', (e) => {
@@ -1277,13 +1277,11 @@ window.renderAreaUI = function(areaData) {
 // 📡 EVENT BUS LISTENERS
 // =========================================
 AppEvents.onStateChange(() => {
-    // Whenever data changes, the UI automatically updates itself
     if (typeof updateCanvas === 'function') updateCanvas();
     if (typeof renderSidebar === 'function') renderSidebar();
 });
 
 AppEvents.onSelectionChange(() => {
-    // Whenever selection changes, update the sidebar
     if (typeof renderSidebar === 'function') renderSidebar();
 });
 // ==========================================

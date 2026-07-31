@@ -3,8 +3,7 @@
 // =========================================
 
 // 🌟 REFACTORED: 3D Mode is now PERMANENTLY TRUE for the Split Screen live preview!
-window.is3DMode = true;
-
+let is3DMode = true;
 // =========================================
 // 🛑 PHASE 1: DEMAND-DRIVEN RENDERING
 // =========================================
@@ -26,10 +25,10 @@ document.addEventListener('visibilitychange', () => {
 // 🌟 AUTO-START THE DUAL ENGINE
 // =========================================
 document.addEventListener('DOMContentLoaded', () => {
-    window.is3DMode = false;
+    is3DMode = false;
     setTimeout(() => {
-        if (!Engine3D.scene) Engine3D.init();
-        if (typeof generate3DModel === 'function') generate3DModel();
+        if (!scene3D) init3D();
+        generate3DModel();
         if (typeof setWorkspaceLayout === 'function') {
             setWorkspaceLayout('2d'); 
         }
@@ -44,26 +43,37 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+
+
+
+
+
+
+
 // --- 3D RAYCASTER STATE & SELECTION ---
 let isRaycasterActive = false;
 const raycaster = new THREE.Raycaster();
 const mouse3D = new THREE.Vector2();
 
+
+
 // --- 🌟 NEW: 3D PERFORMANCE DEBOUNCER ---
 let render3DTimeout = null;
-window.request3DUpdate = function() {
+function request3DUpdate() {
+    //if (!is3DMode) return;
     if (render3DTimeout) clearTimeout(render3DTimeout);
     render3DTimeout = setTimeout(() => {
         if (typeof generate3DModel === 'function') generate3DModel();
     }, 50); 
-};
+}
+
 
 // =========================================
 // 3D UTILITIES 
 // =========================================
 
-window.pan = function(direction) {
-    if (!Engine3D.controls || !Engine3D.camera) return;
+function pan(direction) {
+    if (!controls3D || !camera3D) return;
     const speed = 50; 
     const offset = new THREE.Vector3();
     
@@ -72,25 +82,43 @@ window.pan = function(direction) {
     if (direction === 'left') offset.set(-speed, 0, 0);
     if (direction === 'right') offset.set(speed, 0, 0);
 
-    Engine3D.controls.target.add(offset);
-    Engine3D.camera.position.add(offset);
-    Engine3D.controls.update();
-};
+    controls3D.target.add(offset);
+    camera3D.position.add(offset);
+    controls3D.update();
+}
 
-window.resetCamera3D = function() {
-    if (!Engine3D.camera || !Engine3D.controls) return;
-    Engine3D.camera.position.set(500, 800, 1000);
-    Engine3D.controls.target.set(500, 0, 500);
-    Engine3D.controls.update();
-};
+function resetCamera3D() {
+    camera3D.position.set(500, 800, 1000);
+    controls3D.target.set(500, 0, 500);
+    controls3D.update();
+}
 
-window.startWalkthrough = function() {
-    if (!window.is3DMode || !Engine3D.fpsControls) return;
+function startWalkthrough() {
+    if (!is3DMode) return;
     
-    Engine3D.isWalkthrough = true;
-    Engine3D.controls.enabled = false; 
-    const navPad = document.getElementById('nav-pad');
-    if(navPad) navPad.style.display = 'none';
+    if (!fpsControls) {
+        fpsControls = new THREE.PointerLockControls(camera3D, document.body);
+        scene3D.add(fpsControls.getObject());
+        
+        fpsControls.addEventListener('unlock', () => {
+            isWalkthrough = false;
+            controls3D.enabled = true; 
+            document.getElementById('nav-pad').style.display = 'flex'; 
+            
+            // Clean up the premium UI when exiting
+            const hint = document.getElementById('fly-hint');
+            if(hint) hint.remove();
+            const crosshair = document.getElementById('walk-crosshair');
+            if(crosshair) crosshair.remove();
+
+            // Kill momentum instantly when exiting
+            moveState = { forward: false, backward: false, left: false, right: false, up: false, down: false };
+        });
+    }
+
+    isWalkthrough = true;
+    controls3D.enabled = false; 
+    document.getElementById('nav-pad').style.display = 'none';
 
     // 🌟 PREMIUM UPGRADE: Glassmorphism HUD overlay
     if (!document.getElementById('fly-hint')) {
@@ -119,15 +147,15 @@ window.startWalkthrough = function() {
     // Lock camera perfectly to human eye level on start
     const scaleInput = document.getElementById('scaleInput');
     const SCALE = scaleInput ? parseFloat(scaleInput.value) || 1.2 : 1.2;
-    Engine3D.camera.position.set(Engine3D.camera.position.x, 65 * SCALE, Engine3D.camera.position.z); 
+    camera3D.position.set(camera3D.position.x, 65 * SCALE, camera3D.position.z); 
     
-    Engine3D.fpsControls.lock();
-};
+    fpsControls.lock();
+}
 
-window.toggleRaycaster = function() {
+function toggleRaycaster() {
     isRaycasterActive = !isRaycasterActive;
     const btn = document.getElementById('btn-raycaster');
-    const textSpan = btn.querySelector('.text');
+    const textSpan = btn.querySelector('.text'); // Safely target just the text
     
     if (isRaycasterActive) {
         if(textSpan) textSpan.innerHTML = '3D SELECTION: ON';
@@ -138,63 +166,67 @@ window.toggleRaycaster = function() {
         btn.style.background = 'rgba(15, 23, 42, 0.85)';
         btn.style.color = '#38bdf8';
         
-        if (typeof selectedElIndex !== 'undefined') window.selectedElIndex = -1;
+        if (typeof selectedElIndex !== 'undefined') selectedElIndex = -1;
         if (typeof renderSidebar === 'function') renderSidebar();
         if (typeof updateCanvas === 'function') updateCanvas();
     }
-};
+}
 
 // =========================================
-// 3D EVENT LISTENERS 
+// 3D EVENT LISTENERS (Keyboard Safety Fixed)
 // =========================================
 document.addEventListener('keydown', (e) => {
-    if (!Engine3D.isWalkthrough) return;
+    if (!isWalkthrough) return;
     
+    // Ignore input if user is typing in a text box
     if (document.activeElement.tagName === 'INPUT' || 
         document.activeElement.tagName === 'SELECT' || 
         document.activeElement.tagName === 'TEXTAREA') return;
 
-    if (e.key.toLowerCase() === 'w') Engine3D.moveState.forward = true;
-    if (e.key.toLowerCase() === 's') Engine3D.moveState.backward = true;
-    if (e.key.toLowerCase() === 'a') Engine3D.moveState.left = true;
-    if (e.key.toLowerCase() === 'd') Engine3D.moveState.right = true;
-    if (e.key.toLowerCase() === 'e') Engine3D.moveState.up = true;   
-    if (e.key.toLowerCase() === 'q') Engine3D.moveState.down = true; 
+    if (e.key.toLowerCase() === 'w') moveState.forward = true;
+    if (e.key.toLowerCase() === 's') moveState.backward = true;
+    if (e.key.toLowerCase() === 'a') moveState.left = true;
+    if (e.key.toLowerCase() === 'd') moveState.right = true;
+    if (e.key.toLowerCase() === 'e') moveState.up = true;   
+    if (e.key.toLowerCase() === 'q') moveState.down = true; 
 });
 
 document.addEventListener('keyup', (e) => {
-    if (!Engine3D.isWalkthrough) return;
+    if (!isWalkthrough) return;
     
-    if (e.key.toLowerCase() === 'w') Engine3D.moveState.forward = false;
-    if (e.key.toLowerCase() === 's') Engine3D.moveState.backward = false;
-    if (e.key.toLowerCase() === 'a') Engine3D.moveState.left = false;
-    if (e.key.toLowerCase() === 'd') Engine3D.moveState.right = false;
-    if (e.key.toLowerCase() === 'e') Engine3D.moveState.up = false;
-    if (e.key.toLowerCase() === 'q') Engine3D.moveState.down = false;
+    if (e.key.toLowerCase() === 'w') moveState.forward = false;
+    if (e.key.toLowerCase() === 's') moveState.backward = false;
+    if (e.key.toLowerCase() === 'a') moveState.left = false;
+    if (e.key.toLowerCase() === 'd') moveState.right = false;
+    if (e.key.toLowerCase() === 'e') moveState.up = false;
+    if (e.key.toLowerCase() === 'q') moveState.down = false;
 });
 
 document.addEventListener('DOMContentLoaded', () => {
     const threeContainer = document.getElementById('three-container');
     if (threeContainer) {
         threeContainer.addEventListener('click', (event) => {
-            if (!window.is3DMode || !isRaycasterActive || Engine3D.isWalkthrough) return;
+            if (!is3DMode || !isRaycasterActive || isWalkthrough) return;
 
-            const rect = Engine3D.renderer.domElement.getBoundingClientRect();
+            const rect = renderer3D.domElement.getBoundingClientRect();
             mouse3D.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
             mouse3D.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
-            raycaster.setFromCamera(mouse3D, Engine3D.camera);
-            const intersects = raycaster.intersectObjects(Engine3D.buildingGroup.children, true);
+            raycaster.setFromCamera(mouse3D, camera3D);
+            const intersects = raycaster.intersectObjects(buildingGroup.children, true);
 
             let clickedRoomIndex = -1;
             let clickedParapet = false;
 
+            // Loop through all clicked elements to find matches
             for (let i = 0; i < intersects.length; i++) {
                 const object = intersects[i].object;
+                
                 if (object.userData && object.userData.isParapet) {
                     clickedParapet = true;
                     break;
                 }
+                
                 if (object.userData && object.userData.isRoom) {
                     clickedRoomIndex = object.userData.roomIndex;
                     break; 
@@ -202,19 +234,26 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (clickedParapet) {
-                if (typeof ParapetModule !== 'undefined' && typeof ParapetModule.openEditor === 'function') ParapetModule.openEditor();
-                return; 
+                if (typeof ParapetModule !== 'undefined' && typeof ParapetModule.openEditor === 'function') {
+                    ParapetModule.openEditor();
+                }
+                return; // Stop execution so it doesn't clear room selection
             } else {
-                if (typeof ParapetModule !== 'undefined' && typeof ParapetModule.closeEditor === 'function') ParapetModule.closeEditor();
+                if (typeof ParapetModule !== 'undefined' && typeof ParapetModule.closeEditor === 'function') {
+                    ParapetModule.closeEditor();
+                }
             }
 
+            // Existing Room Selection Logic
             if (typeof selectedElIndex !== 'undefined') {
-                window.selectedElIndex = clickedRoomIndex;
+                selectedElIndex = clickedRoomIndex;
 
+                // 🌟 THE FIX 3: Auto-switch the 2D UI to the exact floor of the clicked 3D room!
                 if (clickedRoomIndex !== -1 && typeof elements !== 'undefined' && elements[clickedRoomIndex]) {
                     const targetFloor = elements[clickedRoomIndex].floor;
-                    if (window.currentFloor !== targetFloor) {
-                        window.currentFloor = targetFloor; 
+                    if (currentFloor !== targetFloor) {
+                        currentFloor = targetFloor; 
+                        // Update the floor tabs in the UI without wiping the selection
                         if (typeof renderFloorSelectors === 'function') renderFloorSelectors();
                     }
                 }
@@ -223,20 +262,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (typeof updateCanvas === 'function') updateCanvas();  
             }
         });
-
         let hoveredObject = null;
         let hoveredOriginalEmissive = new THREE.Color(0x000000);
-        
         threeContainer.addEventListener('mousemove', (event) => {
-            if (!window.is3DMode || !isRaycasterActive || Engine3D.isWalkthrough) {
+            if (!is3DMode || !isRaycasterActive || isWalkthrough) {
                 if (threeContainer.style.cursor === 'pointer') threeContainer.style.cursor = 'default';
                 return;
             }
-            const rect = Engine3D.renderer.domElement.getBoundingClientRect();
+            const rect = renderer3D.domElement.getBoundingClientRect();
             mouse3D.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
             mouse3D.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-            raycaster.setFromCamera(mouse3D, Engine3D.camera);
-            const intersects = raycaster.intersectObjects(Engine3D.buildingGroup.children, true);
+            raycaster.setFromCamera(mouse3D, camera3D);
+            const intersects = raycaster.intersectObjects(buildingGroup.children, true);
             let foundHover = null;
             for (let i = 0; i < intersects.length; i++) {
                 const object = intersects[i].object;
@@ -259,28 +296,27 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
-
 // =========================================
 // 3D PERFORMANCE MANAGEMENT
 // =========================================
 let isPerformanceMode = false;
 
-window.togglePerformanceMode = function() {
+function togglePerformanceMode() {
     isPerformanceMode = !isPerformanceMode;
     const btn = document.getElementById('btn-performance');
     
     if (btn) {
-        const textSpan = btn.querySelector('.text');
+        const textSpan = btn.querySelector('.text'); // Target the text span
         if(textSpan) textSpan.innerHTML = isPerformanceMode ? 'PERF MODE: ON' : 'PERF MODE: OFF';
         btn.style.background = isPerformanceMode ? 'rgba(234, 179, 8, 0.2)' : 'rgba(15, 23, 42, 0.85)';
         btn.style.color = isPerformanceMode ? '#facc15' : '#facc15';
     }
 
-    if (!Engine3D.scene || !Engine3D.renderer) return;
+    if (!scene3D || !renderer3D) return;
 
-    Engine3D.renderer.setPixelRatio(isPerformanceMode ? 1 : window.devicePixelRatio);
+    renderer3D.setPixelRatio(isPerformanceMode ? 1 : window.devicePixelRatio);
 
-    Engine3D.scene.traverse((object) => {
+    scene3D.traverse((object) => {
         if (object.isDirectionalLight) {
             object.castShadow = !isPerformanceMode;
         }
@@ -291,56 +327,61 @@ window.togglePerformanceMode = function() {
         }
     });
 
-    if (window.is3DMode && !Engine3D.isWalkthrough) {
-        Engine3D.controls.update();
-        Engine3D.renderer.render(Engine3D.scene, Engine3D.camera);
+    if (is3DMode && !isWalkthrough) {
+        controls3D.update();
+        renderer3D.render(scene3D, camera3D);
     }
-};
+}
 
-window.updateSunlight = function(hour) {
-    if (!Engine3D.sunLight || !Engine3D.scene) return; 
+function updateSunlight(hour) {
+    // 🌟 FIXED: Changed 'scene' to 'scene3D'
+    if (!sunLight || !scene3D) return; 
     
+    // Map hour (6 to 18) to an angle in radians (0 to PI)
     const normalizedTime = (hour - 6) / 12; 
     const angle = normalizedTime * Math.PI;
+    
     const radius = 1000;
     
+    // Calculate sun position in an arc
     const x = Math.cos(angle) * -radius; 
     const y = Math.sin(angle) * radius;
     const z = 300; 
     
-    Engine3D.sunLight.position.set(x, y, z);
+    sunLight.position.set(x, y, z);
     
+    // Update visual aesthetics based on time
     const timeDisplay = document.getElementById('time-display');
     if (timeDisplay) {
         if (hour < 8) {
             timeDisplay.innerText = "Morning Glow";
             timeDisplay.style.color = "#fb923c"; 
-            Engine3D.sunLight.color.setHex(0xffedd5); 
+            sunLight.color.setHex(0xffedd5); 
         } else if (hour > 16) {
             timeDisplay.innerText = "Golden Hour";
             timeDisplay.style.color = "#f59e0b";
-            Engine3D.sunLight.color.setHex(0xfef3c7);
+            sunLight.color.setHex(0xfef3c7);
         } else {
             timeDisplay.innerText = "Midday";
             timeDisplay.style.color = "#38bdf8";
-            Engine3D.sunLight.color.setHex(0xffffff); 
+            sunLight.color.setHex(0xffffff); 
         }
     }
 
-    if (typeof Engine3D.renderer !== 'undefined') {
-        Engine3D.renderer.shadowMap.needsUpdate = true;
+    // 🌟 NEW: Trigger a single shadow frame because the sun moved
+    if (typeof renderer3D !== 'undefined') {
+        renderer3D.shadowMap.needsUpdate = true;
     }
-};
+}
 
 // =========================================
 // 🌟 EXPLODED AXONOMETRIC VIEW ENGINE
 // =========================================
 let isExploded = false;
-const OFFSET_PER_FLOOR = 350; 
+const OFFSET_PER_FLOOR = 350; // How high each floor lifts, Adjust spacing as needed
 let explodeAnimation = null;
-
 window.toggleExplodeView = function() {
-    if (!Engine3D.buildingGroup || !window.is3DMode) return;
+    if (!buildingGroup || !is3DMode) return;
     isExploded = !isExploded;
     const btn = document.getElementById('btn-explode');
     if (btn) {
@@ -352,11 +393,14 @@ window.toggleExplodeView = function() {
 
     const { WALL_HEIGHT } = get3DEnvironmentParams();
 
-    Engine3D.buildingGroup.children.forEach(child => {
+    // 1. Calculate Target Positions for every single mesh
+    buildingGroup.children.forEach(child => {
         if (child.userData.originalY === undefined) {
             child.userData.originalY = child.position.y;
         }
 
+        // 🌟 Mathematical trick: Adding a +5 epsilon ensures that the ceiling slab 
+        // perfectly binds to the floor ABOVE it and lifts off the walls below it!
         const floorLevel = Math.floor((child.userData.originalY + 5) / WALL_HEIGHT);
         const targetFloor = Math.max(0, floorLevel);
 
@@ -365,15 +409,17 @@ window.toggleExplodeView = function() {
             : child.userData.originalY;
     });
 
+    // 2. RequestAnimationFrame Lerp Loop
     if (explodeAnimation) cancelAnimationFrame(explodeAnimation);
 
     function animateExplode() {
         let allArrived = true;
-        Engine3D.buildingGroup.children.forEach(child => {
+        buildingGroup.children.forEach(child => {
             const target = child.userData.targetY;
             const current = child.position.y;
             const diff = target - current;
 
+            // Smooth easing interpolation
             if (Math.abs(diff) > 0.5) {
                 child.position.y += diff * 0.08; 
                 allArrived = false;
@@ -385,46 +431,53 @@ window.toggleExplodeView = function() {
         if (!allArrived) {
             explodeAnimation = requestAnimationFrame(animateExplode);
         } else {
-            explodeAnimation = null;
+            explodeAnimation = null; // 🌟 FIX 3: PREVENT MEMORY LEAK
         }
     }
     animateExplode();
 };
+// =========================================
+// 🌟 EXPLODED AXONOMETRIC VIEW ENGINE
+// =========================================
+
 
 // =========================================
-// 🌟 NIGHT MODE DYNAMIC SHADOWS
+// 🌟 FIX 7: NIGHT MODE DYNAMIC SHADOWS
 // =========================================
 let isNightMode = false;
+
 window.toggleNightMode = function() {
     isNightMode = !isNightMode;
     const btn = document.getElementById('btn-night-mode'); 
     if (btn) btn.style.background = isNightMode ? '#3b82f6' : '';
     
     if (isNightMode) {
-        if (Engine3D.sunLight) {
-            Engine3D.sunLight.intensity = ARCH_CONFIG.REFINEMENTS.NIGHT_MODE_SUN_INTENSITY;
-            Engine3D.sunLight.castShadow = false;
+        if (sunLight) {
+            sunLight.intensity = ARCH_CONFIG.REFINEMENTS.NIGHT_MODE_SUN_INTENSITY;
+            sunLight.castShadow = false; // Save GPU budget
         }
-        if (Engine3D.hemiLight) Engine3D.hemiLight.intensity = 0.1;
-        Engine3D.scene.background = new THREE.Color(0x020617);
-        if (Engine3D.scene.fog) Engine3D.scene.fog.color.setHex(0x020617);
+        if (hemiLight) hemiLight.intensity = 0.1;
+        scene3D.background = new THREE.Color(0x020617);
+        if (scene3D.fog) scene3D.fog.color.setHex(0x020617);
     } else {
-        if (Engine3D.sunLight) {
-            Engine3D.sunLight.intensity = ARCH_CONFIG.REFINEMENTS.DAY_MODE_SUN_INTENSITY;
-            Engine3D.sunLight.castShadow = true;
+        if (sunLight) {
+            sunLight.intensity = ARCH_CONFIG.REFINEMENTS.DAY_MODE_SUN_INTENSITY;
+            sunLight.castShadow = true;
         }
-        if (Engine3D.hemiLight) Engine3D.hemiLight.intensity = 0.6;
+        if (hemiLight) hemiLight.intensity = 0.6;
         const isClassic = document.body.classList.contains('classic-theme');
         const bgColor = isClassic ? 0xe2e8f0 : 0x0f172a;
-        Engine3D.scene.background = new THREE.Color(bgColor);
-        if (Engine3D.scene.fog) Engine3D.scene.fog.color.setHex(bgColor);
+        scene3D.background = new THREE.Color(bgColor);
+        if (scene3D.fog) scene3D.fog.color.setHex(bgColor);
     }
     
-    if (Engine3D.buildingGroup) {
-        Engine3D.buildingGroup.traverse(child => {
+    // Toggle interior artificial lights
+    if (buildingGroup) {
+        buildingGroup.traverse(child => {
             if (child.isPointLight) {
                 child.intensity = isNightMode ? 1.0 : 0;
             }
         });
     }
 };
+

@@ -22,7 +22,6 @@ const RoomStudio = {
 
     // 🌟 1. NEW: Store the HTML inside the feature script
     buildUI() {
-        // Only build if it doesn't already exist
         if (document.getElementById('room-studio-modal')) return;
 
         const uiTemplate = `
@@ -176,7 +175,7 @@ const RoomStudio = {
         this.close();
         if (typeof updateCanvas === 'function') updateCanvas();
         if (typeof renderSidebar === 'function') renderSidebar();
-        if (typeof is3DMode !== 'undefined' && is3DMode && typeof generate3DModel === 'function') generate3DModel();
+        if (typeof window.is3DMode !== 'undefined' && window.is3DMode && typeof generate3DModel === 'function') generate3DModel();
     },
 
     getSVGPos(evt) {
@@ -665,8 +664,6 @@ const RoomStudio = {
 
     on3DPointerMove(event) {
         if (!this.is3DDragging || this.selectedFixtureIndex === -1 || !this.is3DActive) return;
-        
-        // 🚀 THROTTLE: If a frame is already waiting to be drawn, skip this mouse event!
         if (this._raycastPending) return;
         this._raycastPending = true;
         
@@ -675,36 +672,30 @@ const RoomStudio = {
             const rect = container.getBoundingClientRect();
             this.mouse3D.x = ((event.clientX - rect.left) / container.clientWidth) * 2 - 1;
             this.mouse3D.y = -((event.clientY - rect.top) / container.clientHeight) * 2 + 1;
-            
             this.raycaster.setFromCamera(this.mouse3D, this.camera3D);
-            
             const intersectPoint = new THREE.Vector3();
             this.raycaster.ray.intersectPlane(this.dragPlane, intersectPoint);
-            
             if (intersectPoint) {
                 const fix = this.sandboxFixtures[this.selectedFixtureIndex];
-                
-                // Calculate new X/Z position minus the offset we started the drag with
                 let newX = intersectPoint.x - this.dragOffset3D.x - (fix.w/2);
                 let newY = intersectPoint.z - this.dragOffset3D.z - (fix.h/2); 
-                
-                // Apply grid snap
                 const snap = typeof STUDIO_CONFIG !== 'undefined' ? STUDIO_CONFIG.GRID_SNAP_INCHES : 6;
                 newX = Math.round(newX / snap) * snap;
                 newY = Math.round(newY / snap) * snap;
-                
-                // Boundaries
                 newX = Math.max(0, Math.min(newX, this.activeRoom.w - fix.w));
                 newY = Math.max(0, Math.min(newY, this.activeRoom.h - fix.h));
-                
                 fix.x = newX;
                 fix.y = newY;
-                
-                // Sync UI panel and rebuild scene
+
                 this.renderProperties();
-                this.build3DScene();
+                // 🚀 PERFORMANCE FIX: Only update the specific mesh's position, DO NOT rebuild the scene
+                const activeMesh = this.scene3D.children.find(child => 
+                    child.userData && child.userData.index === this.selectedFixtureIndex
+                );
+                if (activeMesh) {
+                    activeMesh.position.set(fix.x + (fix.w/2), 0, fix.y + (fix.h/2));
+                }
             }
-            
             // 🚀 Unlock the throttle so the next frame can process
             this._raycastPending = false; 
         });

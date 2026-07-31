@@ -173,21 +173,21 @@ function toggleAdvGhostMode(isActive) {
 }
 
 function resetAdvIsolation() {
-    if (!is3DMode || !buildingGroup) {
+    if (!window.is3DMode || !Engine3D.buildingGroup) {
         toggleAdvWorkspace(false);
         return;
     }
 
     // 1. Capture current positions
-    const startCam = camera3D.position.clone();
-    const startTarget = controls3D.target.clone();
+    const startCam = Engine3D.camera.position.clone();
+    const startTarget = Engine3D.controls.target.clone();
     
     // 2. Calculate "Home" destinations
     const { pos: endCam, target: endTarget } = getHomeViewCamera();
     
     // 3. Find current clipping height and calculate safe roof height
-    const startCutY = renderer3D.localClippingEnabled && buildingGroup.children[0]?.material?.clippingPlanes 
-                      ? buildingGroup.children[0].material.clippingPlanes[0].constant : 0;
+    const startCutY = Engine3D.renderer.localClippingEnabled && Engine3D.buildingGroup.children[0]?.material?.clippingPlanes 
+                      ? Engine3D.buildingGroup.children[0].material.clippingPlanes[0].constant : 0;
     const endCutY = getRoofClippingHeight();
 
     // 4. Create dummy plane for reverse animation
@@ -212,12 +212,12 @@ function executeIsolation() {
     sync2DToAdv3D();
 
     setTimeout(() => {
-        if (!buildingGroup || typeof renderer3D === 'undefined') return;
+        if (!Engine3D.buildingGroup || typeof Engine3D.renderer === 'undefined') return;
 
-        renderer3D.localClippingEnabled = true;
+        Engine3D.renderer.localClippingEnabled = true;
 
-        const startCamPos = camera3D.position.clone();
-        const startTarget = controls3D.target.clone();
+        const startCamPos = Engine3D.camera.position.clone();
+        const startTarget = Engine3D.controls.target.clone();
 
         const targetCutY = calculateClippingPlaneY();
         // 🌟 REFACTORED: Dynamic sweep offset
@@ -228,7 +228,7 @@ function executeIsolation() {
         const isolatedBox = new THREE.Box3();
         let hasValidBounds = false;
 
-        buildingGroup.traverse(child => {
+        Engine3D.buildingGroup.traverse(child => {
             if (child.isMesh) {
                 const isValid = processMeshNode(child, clipPlane, ghostMat, isolatedBox);
                 if (isValid) hasValidBounds = true;
@@ -244,9 +244,9 @@ function executeIsolation() {
 
 // Fired automatically by animateCinematicReset when it finishes
 function finalizeReset() {
-    if (typeof renderer3D !== 'undefined') renderer3D.localClippingEnabled = false;
+    if (typeof Engine3D.renderer !== 'undefined') Engine3D.renderer.localClippingEnabled = false;
 
-    buildingGroup.traverse(child => {
+    Engine3D.buildingGroup.traverse(child => {
         if (child.isMesh) {
             child.visible = true;
             if (Adv3DState.originalMaterials.has(child.uuid)) {
@@ -256,7 +256,7 @@ function finalizeReset() {
             }
         }
     });
-    controls3D.enabled = true;
+    Engine3D.controls.enabled = true;
 }
 
 
@@ -265,7 +265,7 @@ function sync2DToAdv3D() {
     if (typeof setFloor === 'function' && currentFloor !== Adv3DState.selectedFloor) setFloor(Adv3DState.selectedFloor);
     if (typeof selectedElIndex !== 'undefined') selectedElIndex = Adv3DState.selectedElement !== null ? Adv3DState.selectedElement : -1;
     if (typeof renderSidebar === 'function') renderSidebar();
-    if (typeof is3DMode !== 'undefined' && !is3DMode) toggle3D();
+    if (typeof window.is3DMode !== 'undefined' && !window.is3DMode) toggle3D();
 }
 
 function calculateClippingPlaneY() {
@@ -353,7 +353,7 @@ function calculateCameraTargets(isolatedBox) {
     isolatedBox.getSize(size);
 
     const maxDim = Math.max(size.x, size.y, size.z);
-    const fov = camera3D.fov * (Math.PI / 180);
+    const fov = Engine3D.camera.fov * (Math.PI / 180);
     let cameraZ = Math.abs(maxDim / 2 * Math.tan(fov * 2)); 
     const camConfig = ARCH3D_CONFIG.ADVANCED_UI.CAMERA;
 
@@ -394,9 +394,9 @@ function getRoofClippingHeight() {
 
 // --- 6. ANIMATION CONTROLLERS ---
 function animateCinematicSweep(startCam, endCam, startTarget, endTarget, clipPlane, startCutY, endCutY) {
-    if (typeof controls3D === 'undefined' || !camera3D) return;
+    if (typeof Engine3D.controls === 'undefined' || !Engine3D.camera) return;
 
-    controls3D.enabled = false; 
+    Engine3D.controls.enabled = false; 
     // 🌟 REFACTORED
     const duration = ARCH3D_CONFIG.ADVANCED_UI.CINEMATIC.SWEEP_DURATION_MS;
     const startTime = performance.now();
@@ -408,27 +408,27 @@ function animateCinematicSweep(startCam, endCam, startTarget, endTarget, clipPla
 
         if (progress < 1) {
             const easedProgress = easeInOutCubic(progress);
-            camera3D.position.lerpVectors(startCam, endCam, easedProgress);
-            controls3D.target.lerpVectors(startTarget, endTarget, easedProgress);
-            controls3D.update();
+            Engine3D.camera.position.lerpVectors(startCam, endCam, easedProgress);
+            Engine3D.controls.target.lerpVectors(startTarget, endTarget, easedProgress);
+            Engine3D.controls.update();
             clipPlane.constant = startCutY + (endCutY - startCutY) * easedProgress;
 
             requestAnimationFrame(updateFrame);
         } else {
-            camera3D.position.copy(endCam);
-            controls3D.target.copy(endTarget);
+            Engine3D.camera.position.copy(endCam);
+            Engine3D.controls.target.copy(endTarget);
             clipPlane.constant = endCutY;
-            controls3D.update();
-            controls3D.enabled = true; 
+            Engine3D.controls.update();
+            Engine3D.controls.enabled = true; 
         }
     }
     requestAnimationFrame(updateFrame);
 }
 
 function animateCinematicReset(startCam, endCam, startTarget, endTarget, clipPlane, startCutY, endCutY) {
-    if (typeof controls3D === 'undefined' || !camera3D) return;
+    if (typeof Engine3D.controls === 'undefined' || !Engine3D.camera) return;
 
-    controls3D.enabled = false;
+    Engine3D.controls.enabled = false;
     // 🌟 REFACTORED
     const duration = ARCH3D_CONFIG.ADVANCED_UI.CINEMATIC.RESET_DURATION_MS;
     const startTime = performance.now();
@@ -439,9 +439,9 @@ function animateCinematicReset(startCam, endCam, startTarget, endTarget, clipPla
         let progress = Math.min(elapsed / duration, 1);
         const eased = easeInOutCubic(progress);
 
-        camera3D.position.lerpVectors(startCam, endCam, eased);
-        controls3D.target.lerpVectors(startTarget, endTarget, eased);
-        controls3D.update();
+        Engine3D.camera.position.lerpVectors(startCam, endCam, eased);
+        Engine3D.controls.target.lerpVectors(startTarget, endTarget, eased);
+        Engine3D.controls.update();
         clipPlane.constant = startCutY + (endCutY - startCutY) * eased;
 
         if (progress < 1) {
@@ -455,7 +455,7 @@ function animateCinematicReset(startCam, endCam, startTarget, endTarget, clipPla
 
 // 🌟 MISSING MECHANICS: Render Modes & Clipping
 function setAdvRenderMode(mode, btnElement) {
-    if (!buildingGroup) return;
+    if (!Engine3D.buildingGroup) return;
 
     // Update UI button styles
     const tabs = document.querySelectorAll('#render-mode-tabs .adv-tab');
@@ -463,7 +463,7 @@ function setAdvRenderMode(mode, btnElement) {
     if (btnElement) btnElement.classList.add('active');
 
     // Loop through all 3D meshes
-    buildingGroup.traverse(child => {
+    Engine3D.buildingGroup.traverse(child => {
         if (child.isMesh && child.material) {
             let mats = Array.isArray(child.material) ? child.material : [child.material];
             
@@ -492,14 +492,14 @@ function setAdvRenderMode(mode, btnElement) {
 }
 
 function updateClippingPlane(val) {
-    if (!buildingGroup || typeof renderer3D === 'undefined') return;
+    if (!Engine3D.buildingGroup || typeof Engine3D.renderer === 'undefined') return;
     
     // Ensure Three.js allows clipping
-    renderer3D.localClippingEnabled = true;
+    Engine3D.renderer.localClippingEnabled = true;
 
     // Try to find the existing clipping plane if isolation has occurred
     let globalClipPlane = null;
-    buildingGroup.traverse(child => {
+    Engine3D.buildingGroup.traverse(child => {
         if (child.isMesh && child.material && child.material.clippingPlanes && child.material.clippingPlanes.length > 0) {
             globalClipPlane = child.material.clippingPlanes[0];
         }
@@ -508,7 +508,7 @@ function updateClippingPlane(val) {
     // If no plane exists, create one and apply it to everything
     if (!globalClipPlane) {
         globalClipPlane = new THREE.Plane(new THREE.Vector3(0, -1, 0), val);
-        buildingGroup.traverse(child => {
+        Engine3D.buildingGroup.traverse(child => {
             if (child.isMesh && child.material) {
                 if (Array.isArray(child.material)) {
                     child.material.forEach(m => { m.clippingPlanes = [globalClipPlane]; m.needsUpdate = true; });

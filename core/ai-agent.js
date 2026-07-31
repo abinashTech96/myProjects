@@ -1,16 +1,54 @@
 // ai-agent.js
 const AIAgent = {
+    // 1. THE ORCHESTRATOR (Main Entry Point)
     async processCommand(userPrompt) {
-        const plotBounds = {
-            inW: parseFloat(document.getElementById('inW').value) || AI_CONFIG.DEFAULT_PLOT_W,
-            inH: parseFloat(document.getElementById('inH').value) || AI_CONFIG.DEFAULT_PLOT_H
-        };
+        const selectEl = document.getElementById('ai-model-select');
+        const selectedKey = selectEl ? selectEl.value : (CONFIG.DEFAULT_MODEL || 'gemini-3.5-flash');
 
+        const modelConfig = CONFIG.MODELS ? CONFIG.MODELS[selectedKey] : null;
+
+        if (!modelConfig || !modelConfig.endpoint) {
+            alert(`Error: AI Model '${selectedKey}' is not properly configured in config.js.`);
+            return;
+        }
+
+        try {
+            // 1. Prepare Data
+            const systemPrompt = this._buildSystemPrompt();
+            const requestPayload = this._buildPayload(modelConfig, systemPrompt, userPrompt);
+
+            console.log(`🚀 [${selectedKey.toUpperCase()}] REQUEST:`, JSON.stringify(requestPayload.body, null, 2));
+
+            // 2. Network Call
+            const response = await fetch(requestPayload.url, {
+                method: 'POST',
+                headers: requestPayload.headers,
+                body: JSON.stringify(requestPayload.body)
+            });
+
+            const data = await response.json();
+            console.log(`📥 [${selectedKey.toUpperCase()}] RAW RESPONSE:`, JSON.stringify(data, null, 2));
+
+            if (data.error) {
+                throw new Error(data.error.message || JSON.stringify(data.error));
+            }
+
+            // 3. Parse and Execute
+            const actionPlan = this._parseResponse(modelConfig, data);
+            this._executePlan(actionPlan);
+
+        } catch (error) {
+            console.error("AI processing failed:", error);
+            alert(`AI Processing Failed: ${error.message}`);
+        }
+    },
+    // 2. PROMPT & SCHEMA BUILDERS
+    _buildSystemPrompt() {
         const layoutContext = JSON.stringify(elements.map((el, index) => ({
             id: index, type: el.type, x: el.x, y: el.y, w: el.w, h: el.h
         })));
 
-        const systemPrompt = `You are a high-precision Architectural CAD Engine layout planner specializing in Vastu Shastra.
+        return `You are a high-precision Architectural CAD Engine layout planner specializing in Vastu Shastra.
         Existing items on canvas: ${layoutContext}
 
         CRITICAL DESIGN DIRECTIONS (VASTU MANDALA):
@@ -20,13 +58,34 @@ const AIAgent = {
         - North-West: Use for second 'bedroom' or 'toilet'.
 
         TASK REQUIREMENTS:
-        Output an array of architectural modifications. Instead of guessing pixel coordinates, output the logical Vastu 'zone' where the room should be placed.
+        Output a valid JSON array of architectural modifications. Instead of guessing pixel coordinates, output the logical Vastu 'zone' where the room should be placed.
         Available zones: "NE", "NW", "SE", "SW", "CENTER".
         
+        DIMENSION CONVERSION (CRITICAL): 
+        The user will frequently request room sizes in feet (e.g., 5ft x 8ft). The JSON schema 'w' and 'h' parameters ONLY accept inches. You MUST multiply feet by 12 before outputting the JSON (e.g., 5ft x 8ft becomes "w": 60, "h": 96).
+
         RELOCATION:
-        If you are commanded to move a room to a specific Vastu zone, check the "Existing items on canvas". If a room is occupying that space, you must output an array of 2 actions: FIRST move the blocking room to the "CENTER", THEN move the new room to the desired zone.`;
+        If you are commanded to move a room to a specific Vastu zone, check the "Existing items on canvas". If a room is occupying that space, you must output an array of 2 actions: FIRST move the blocking room to the "CENTER", THEN move the new room to the desired zone.
         
-        const jsonSchema = {
+        IMPORTANT: Only output the EXACT modifications requested by the user. Do not duplicate actions.
+        
+        ACTION FORMAT:
+        Each element in the JSON array must strictly follow this structure:
+        [
+          {
+            "action": "addRoom" | "moveElement" | "deleteElementAI",
+            "params": {
+              "zone": "NE" | "NW" | "SE" | "SW" | "CENTER",
+              "type": "bedroom" | "kitchen" | "puja" | "living" | "toilet" | "balcony",
+              "id": 0,
+              "w": 120,
+              "h": 120
+            }
+          }
+        ]`;
+    },
+    _getSchema() {
+        return {
             type: "ARRAY",
             description: "List of architectural modifications to execute.",
             items: {
@@ -41,68 +100,79 @@ const AIAgent = {
                             id: { type: "INTEGER", description: "The index element id (only required for move/delete)." },
                             w: { type: "INTEGER", description: "Width in inches (default 120 if omitted)" },
                             h: { type: "INTEGER", description: "Height in inches (default 120 if omitted)" }
-                        },
-                        required: ["action", "params"]
+                        }
+                        // 🌟 FIX: Removed the invalid inner 'required' array here
                     }
                 },
-                required: ["action", "params"]
+                required: ["action", "params"] // Keep this outer one!
             }
         };
+    },
+    // 3. NETWORK PAYLOAD ROUTER
+    _buildPayload(modelConfig, systemPrompt, userPrompt) {
+        let payload = {
+            url: modelConfig.endpoint,
+            headers: { 'Content-Type': 'application/json' },
+            body: {}
+        };
 
-        try {
-            const requestBody = {
-                system_instruction: { parts: [{ text: systemPrompt }] }, 
+        if (modelConfig.protocol === 'gemini') {
+            payload.url = `${modelConfig.endpoint}?key=${modelConfig.key}`;
+            payload.body = {
+                system_instruction: { parts: [{ text: systemPrompt }] },
                 contents: [{ parts: [{ text: userPrompt }] }],
-                generationConfig: { 
+                generationConfig: {
                     responseMimeType: "application/json",
-                    responseSchema: jsonSchema 
+                    responseSchema: this._getSchema()
                 }
             };
+        } else if (modelConfig.protocol === 'openai') {
+            payload.headers['Authorization'] = `Bearer ${modelConfig.key}`;
+            payload.body = {
+                model: modelConfig.apiModelName || 'gpt-4o',
+                messages: [
+                    { role: 'system', content: systemPrompt },
+                    { role: 'user', content: userPrompt }
+                ],
+                response_format: { type: 'json_object' }
+            };
+        }
+        return payload;
+    },
+    // 4. RESPONSE UNWRAPPER
+    _parseResponse(modelConfig, data) {
+        let aiResponseText = '';
+        
+        if (modelConfig.protocol === 'gemini' && data.candidates?.[0]?.content?.parts?.[0]?.text) {
+            aiResponseText = data.candidates[0].content.parts[0].text;
+        } else if (data.choices?.[0]?.message?.content) {
+            aiResponseText = data.choices[0].message.content;
+        }
 
-            console.log("🚀 AI REQUEST BODY:", JSON.stringify(requestBody, null, 2));
+        if (!aiResponseText) return null;
 
-            const url = `${CONFIG.AI_ENDPOINT}?key=${CONFIG.GEMINI_API_KEY}`;
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(requestBody)
-            });
+        let actionPlan = JSON.parse(aiResponseText);
+        
+        if (!Array.isArray(actionPlan) && typeof actionPlan === 'object') {
+            actionPlan = actionPlan.actions || actionPlan.modifications || Object.values(actionPlan)[0];
+        }
+        
+        return actionPlan;
+    },
 
-            const data = await response.json();
-            console.log("📥 AI RAW RESPONSE:", JSON.stringify(data, null, 2));
-
-            if (data.error) {
-                console.error("Gemini API Error:", data.error.message);
-                alert(`AI Error: ${data.error.message}`);
-                return;
-            }
-
-            if (data.candidates && data.candidates[0] && data.candidates[0].content) {
-                const aiResponseText = data.candidates[0].content.parts[0].text;
-                const actionPlan = JSON.parse(aiResponseText);
-                
-                if (Array.isArray(actionPlan)) {
-                    actionPlan.forEach(plan => this.execute(plan));
-                } else {
-                    this.execute(actionPlan);
-                }
-            }
-        } catch (error) {
-            console.error("AI processing failed:", error);
+    _executePlan(actionPlan) {
+        if (!actionPlan) return;
+        if (Array.isArray(actionPlan)) {
+            actionPlan.forEach(plan => this.execute(plan));
+        } else if (actionPlan.action) {
+            this.execute(actionPlan);
         }
     },
 
+    // 5. EXECUTION & MATH ENGINES
     calculateZoneCoordinates(zone, roomW, roomH) {
         const plotW = parseFloat(document.getElementById('inW').value) || AI_CONFIG.DEFAULT_PLOT_W;
         const plotH = parseFloat(document.getElementById('inH').value) || AI_CONFIG.DEFAULT_PLOT_H;
-        
-        // Compass Mapping: Top is West(y=0), Bottom is East(y=max), Right is North(x=max), Left is South(x=0)
-        // Therefore:
-        // NE = Bottom-Right (Max X, Max Y)
-        // NW = Top-Right (Max X, Min Y)
-        // SE = Bottom-Left (Min X, Max Y)
-        // SW = Top-Left (Min X, Min Y)
-
         const padding = AI_CONFIG.VASTU_PADDING_INCHES;
         
         switch (zone) {
@@ -114,7 +184,6 @@ const AIAgent = {
             default: return { x: padding, y: padding };
         }
     },
-
     execute(plan) {
         console.log("🤖 AI Executing Room:", plan);
         
@@ -123,11 +192,9 @@ const AIAgent = {
             const plotW = parseFloat(document.getElementById('inW').value) || AI_CONFIG.DEFAULT_PLOT_W;
             const plotH = parseFloat(document.getElementById('inH').value) || AI_CONFIG.DEFAULT_PLOT_H;
             
-            // 1. Determine safe Width and Height (fallback to globals if missing)
             let checkW = p.w || (plan.action === "moveElement" && elements[p.id] ? elements[p.id].w : (typeof ARCH_CONFIG !== 'undefined' ? ARCH_CONFIG.DEFAULTS.ROOM_W : 120));
             let checkH = p.h || (plan.action === "moveElement" && elements[p.id] ? elements[p.id].h : (typeof ARCH_CONFIG !== 'undefined' ? ARCH_CONFIG.DEFAULTS.ROOM_H : 120));
             
-            // 2. 🚀 THE UPGRADE: Calculate exact X and Y based on Vastu Zone, or fallback to exact coords
             let checkX, checkY;
             if (p.zone && typeof this.calculateZoneCoordinates === 'function') {
                 const coords = this.calculateZoneCoordinates(p.zone, checkW, checkH);
@@ -138,17 +205,13 @@ const AIAgent = {
                 checkY = plan.action === "moveElement" ? p.newY : p.y;
             }
 
-            // 3. Gatekeeper: Boundary Check
             if (checkX < 0 || checkY < 0 || (checkX + checkW) > plotW || (checkY + checkH) > plotH) {
-                console.error(`🚨 Gatekeeper Blocked AI: Outside boundaries.`);
-                return;
+                return console.error(`🚨 Gatekeeper Blocked AI: Outside boundaries.`);
             }
 
-            // 4. 🚀 Gatekeeper & Evasion: Collision Check
             let tempEl = { x: checkX, y: checkY, w: checkW, h: checkH, floor: currentFloor };
             const ignoreIndex = plan.action === "moveElement" ? p.id : -1;
             
-            // If it collides, attempt to find a nearby safe spot by nudging it around
             if (typeof checkCollision === 'function' && checkCollision(tempEl, ignoreIndex)) {
                 console.warn(`⚠️ AI Collision detected at [${checkX}, ${checkY}]. Attempting evasion...`);
                 let resolved = false;
@@ -171,12 +234,10 @@ const AIAgent = {
                 }
 
                 if (!resolved) {
-                    console.error(`🛑 Gatekeeper Blocked AI: Could not find safe placement.`);
-                    return;
+                    return console.error(`🛑 Gatekeeper Blocked AI: Could not find safe placement.`);
                 }
             }
 
-            // 5. Execute Safe Action
             if (plan.action === 'addRoom' && typeof window.addRoom === 'function') {
                 window.addRoom(checkX, checkY, checkW, checkH, p.type);
             } 
@@ -196,10 +257,66 @@ function handleAICommand() {
     if (!prompt) return;
     
     const btn = document.getElementById('ai-generate-btn');
-    if (btn) btn.innerText = "Thinking...";
+    const originalHTML = btn ? btn.innerHTML : ''; 
+    
+    if (btn) {
+        btn.disabled = true; // 🌟 Lock the button
+        btn.style.cursor = 'not-allowed';
+        btn.style.opacity = '0.6';
+        btn.innerText = "⏳ Thinking...";
+    }
     
     AIAgent.processCommand(prompt).then(() => {
-        if (btn) btn.innerText = "Generate";
+        if (btn) {
+            btn.disabled = false; // 🌟 Unlock the button
+            btn.style.cursor = 'pointer';
+            btn.style.opacity = '1';
+            btn.innerHTML = originalHTML; 
+        }
         input.value = ""; 
     });
 }
+
+// =========================================
+// 🌟 AI UI INITIALIZATION
+// =========================================
+window.populateAIModelDropdown = function() {
+    const selectEl = document.getElementById('ai-model-select');
+    if (!selectEl) return;
+    if (selectEl.options.length > 0) return;
+    selectEl.innerHTML = '';
+    if (typeof CONFIG === 'undefined' || !CONFIG.MODELS) {
+        console.error("❌ CONFIG.MODELS is missing. Check config.js!");
+        const errOpt = document.createElement('option');
+        errOpt.textContent = "⚠️ Error: Check config.js";
+        selectEl.appendChild(errOpt);
+        return;
+    }
+    const groups = {};
+    Object.entries(CONFIG.MODELS).forEach(([key, model]) => {
+        const groupName = model.group || 'General';
+        if (!groups[groupName]) {
+            groups[groupName] = document.createElement('optgroup');
+            groups[groupName].label = groupName;
+        }
+        const opt = document.createElement('option');
+        opt.value = key;
+        opt.textContent = model.label;
+        if (key === CONFIG.DEFAULT_MODEL) opt.selected = true;
+
+        groups[groupName].appendChild(opt);
+    });
+    Object.values(groups).forEach(groupEl => selectEl.appendChild(groupEl));
+    selectEl.addEventListener('change', function() {
+        CONFIG.ACTIVE_LLM = this.value;
+        console.log('🔄 AI Model Switched to:', this.value);
+    });
+    const customUIHeader = selectEl.nextElementSibling;
+    if (customUIHeader && customUIHeader.classList.contains('select-selected')) {
+        customUIHeader.innerHTML = selectEl.options[selectEl.selectedIndex].textContent;
+    }
+};
+
+// 🚀 THE FIX: Run this synchronously IMMEDIATELY. 
+// Do not wait for DOMContentLoaded, otherwise the UI script will build an empty box first!
+window.populateAIModelDropdown();

@@ -1,8 +1,4 @@
 // config.js
-const GEMINI_API_KEY = '';
-const OPENAI_API_KEY = '';
-const PERPLEXITY_API_KEY = '';
-
 const CONFIG = {
     // 1. THE SWITCH: Change this string to route traffic to a different AI
     ACTIVE_LLM: 'gemini-3.5-flash',

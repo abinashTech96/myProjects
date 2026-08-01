@@ -303,7 +303,6 @@ window.populateAIModelDropdown = function() {
         opt.value = key;
         opt.textContent = model.label;
         if (key === CONFIG.DEFAULT_MODEL) opt.selected = true;
-
         groups[groupName].appendChild(opt);
     });
     Object.values(groups).forEach(groupEl => selectEl.appendChild(groupEl));
@@ -311,12 +310,19 @@ window.populateAIModelDropdown = function() {
         CONFIG.ACTIVE_LLM = this.value;
         console.log('🔄 AI Model Switched to:', this.value);
     });
-    const customUIHeader = selectEl.nextElementSibling;
-    if (customUIHeader && customUIHeader.classList.contains('select-selected')) {
-        customUIHeader.innerHTML = selectEl.options[selectEl.selectedIndex].textContent;
+    if (selectEl.hasAttribute('data-customized')) {
+        const wrapper = selectEl.parentNode;
+        if (wrapper && wrapper.classList.contains('pro-dropdown-wrapper')) {
+            wrapper.parentNode.insertBefore(selectEl, wrapper);
+            wrapper.remove();
+            selectEl.removeAttribute('data-customized');
+            selectEl.style.display = '';
+            if (typeof initAnimatedDropdowns === 'function') {
+                initAnimatedDropdowns();
+            }
+        }
     }
 };
-
 // 🚀 THE FIX: Run this synchronously IMMEDIATELY. 
-// Do not wait for DOMContentLoaded, otherwise the UI script will build an empty box first!
+// Don't wait for DOMContentLoaded, otherwise the UI script will build an empty box first!
 window.populateAIModelDropdown();

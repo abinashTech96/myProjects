@@ -827,6 +827,71 @@ function startDragFixture(evt, index) {
     isDraggingFixture = true; dragFixtureIndex = index; hasDragged = false;
 }
 
+// ==========================================
+// 📏 DYNAMIC DISTANCE TO NEIGHBORS HELPER
+// ==========================================
+function renderDynamicDistances(guideLayer, SCALE, Ix, Iy, draggedBounds) {
+    const { dLeft, dRight, dTop, dBottom, dCenter, dMiddle } = draggedBounds;
+
+    const drawDist = (x1, y1, x2, y2, distVal) => {
+        const ft = Math.floor(distVal / 12);
+        const inc = Math.round(distVal % 12);
+        if (ft === 0 && inc === 0) return; // Don't show 0"
+        
+        const textStr = ft > 0 ? `${ft}' ${inc}"` : `${inc}"`;
+        const cx = (x1 + x2) / 2;
+        const cy = (y1 + y2) / 2;
+        
+        // Draw Dashed Line
+        const dLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        dLine.setAttribute('x1', Ix + (x1 * SCALE)); dLine.setAttribute('x2', Ix + (x2 * SCALE));
+        dLine.setAttribute('y1', Iy + (y1 * SCALE)); dLine.setAttribute('y2', Iy + (y2 * SCALE));
+        dLine.setAttribute('style', 'stroke: #ef4444; stroke-width: 1.5; stroke-dasharray: 4,4;');
+        guideLayer.appendChild(dLine);
+        
+        // Draw Text Background Pill
+        const bg = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        bg.setAttribute('x', Ix + (cx * SCALE) - 15); bg.setAttribute('y', Iy + (cy * SCALE) - 8);
+        bg.setAttribute('width', 30); bg.setAttribute('height', 16);
+        bg.setAttribute('fill', '#0f172a'); bg.setAttribute('rx', 4);
+        guideLayer.appendChild(bg);
+
+        // Draw Text
+        const dText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        dText.setAttribute('x', Ix + (cx * SCALE)); dText.setAttribute('y', Iy + (cy * SCALE) + 3);
+        dText.setAttribute('fill', '#ef4444'); dText.setAttribute('font-size', '10');
+        dText.setAttribute('font-weight', 'bold'); dText.setAttribute('text-anchor', 'middle');
+        dText.textContent = textStr;
+        guideLayer.appendChild(dText);
+    };
+
+    // cachedSnapBoundaries is a global variable populated in startDrag()
+    cachedSnapBoundaries.forEach((boundary) => {
+        if (!boundary) return;
+        
+        // Check if rooms overlap vertically
+        const overlapY = (dTop < boundary.bottom && dBottom > boundary.top);
+        if (overlapY) {
+            const distRight = boundary.left - dRight; 
+            const distLeft = dLeft - boundary.right;  
+            
+            if (distRight > 0 && distRight < 120) drawDist(dRight, dMiddle, boundary.left, dMiddle, distRight);
+            if (distLeft > 0 && distLeft < 120) drawDist(dLeft, dMiddle, boundary.right, dMiddle, distLeft);
+        }
+        
+        // Check if rooms overlap horizontally
+        const overlapX = (dLeft < boundary.right && dRight > boundary.left);
+        if (overlapX) {
+            const distBottom = boundary.top - dBottom; 
+            const distTop = dTop - boundary.bottom;    
+            
+            if (distBottom > 0 && distBottom < 120) drawDist(dCenter, dBottom, dCenter, boundary.top, distBottom);
+            if (distTop > 0 && distTop < 120) drawDist(dCenter, dTop, dCenter, boundary.bottom, distTop);
+        }
+    });
+}
+
+
 const handleMove = (currentMouse, e) => {
     if (!hasDragged) {
         if (typeof saveState === 'function') saveState();
@@ -930,6 +995,8 @@ const handleMove = (currentMouse, e) => {
 
             // Render Guides
             const Ix = 500 - ((inW * SCALE)/2); const Iy = 500 - ((inH * SCALE)/2);
+            
+            // 1. Draw alignment snap lines
             guideLines.forEach(line => {
                 const svgLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
                 svgLine.setAttribute('class', 'smart-guide');
@@ -943,6 +1010,19 @@ const handleMove = (currentMouse, e) => {
                 guideLayer.appendChild(svgLine);
             });
 
+            // 🌟 2. CALL THE NEW DYNAMIC DISTANCE METHOD
+            // We use el.x and el.y here so the distances are accurate AFTER snapping!
+            const draggedBounds = {
+                dLeft: el.x, 
+                dRight: el.x + el.w, 
+                dCenter: el.x + (el.w / 2),
+                dTop: el.y, 
+                dBottom: el.y + el.h, 
+                dMiddle: el.y + (el.h / 2)
+            };
+            renderDynamicDistances(guideLayer, SCALE, Ix, Iy, draggedBounds);
+
+            // 3. Update Input Sliders
             const rx = document.getElementById(`range-x-${dragElIndex}`); const ry = document.getElementById(`range-y-${dragElIndex}`);
             const nx = document.getElementById(`num-x-${dragElIndex}`); const ny = document.getElementById(`num-y-${dragElIndex}`);
             if(rx) rx.value = newX; if(ry) ry.value = newY;

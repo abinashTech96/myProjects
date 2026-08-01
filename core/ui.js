@@ -37,6 +37,7 @@ function initDOMCache() {
     UI.real3DToggle = document.getElementById('real3DToggle');
     UI.showLabelsToggle = document.getElementById('showLabelsToggle');
     UI.showOffsetsToggle = document.getElementById('showOffsetsToggle');
+    UI.showColsToggle = document.getElementById('showColsToggle');
     UI.showDims = document.getElementById('showDims');
     
     UI.blueprint = document.getElementById('blueprint');
@@ -190,13 +191,14 @@ function renderSidebar() {
     let isGoingDeeper = UI.prevSelected === -1 && selectedElIndex !== -1;
     let animClass = isGoingBack ? 'slide-in-left' : (isGoingDeeper ? 'slide-in-right' : 'fade-in-ui');
     UI.prevSelected = selectedElIndex;
-    if (selectedElIndex !== -1) {
-        const tabInteriors = document.getElementById('drawer-tab-interiors');
-        const tabBtn = document.querySelector('.drawer-tab-btn:nth-child(3)');
-        if (tabInteriors && !tabInteriors.classList.contains('active') && tabBtn) {
-            if (typeof switchDrawerTab === 'function') switchDrawerTab({ currentTarget: tabBtn }, 'interiors');
-        }
-    }
+    // 🌟 THE FIX: The auto-switching logic that forced the "Interiors" tab to open has been removed.
+    // if (selectedElIndex !== -1) {
+    //     const tabInteriors = document.getElementById('drawer-tab-interiors');
+    //     const tabBtn = document.querySelector('.drawer-tab-btn:nth-child(3)');
+    //     if (tabInteriors && !tabInteriors.classList.contains('active') && tabBtn) {
+    //         if (typeof switchDrawerTab === 'function') switchDrawerTab({ currentTarget: tabBtn }, 'interiors');
+    //     }
+    // }
     if (selectedElIndex === -1) {
         ctrl.innerHTML = buildExplorerView(animClass);
     } else {

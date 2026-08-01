@@ -79,154 +79,67 @@ function createOrUpdateText(id, container, x, y, text, color, fontSize, isBold) 
     t.textContent = text; t.style.display = 'block';
 }
 
-function drawColumnsOld(geom) {
-    const toggle = UI.showColsToggle || document.getElementById('showColsToggle');
-    if (!toggle || !toggle.checked) return; 
+function drawColumns() {
+    const toggle = document.getElementById('showColsToggle');
+    if (!toggle) return; 
+
     let group = getOrCreateSVG('g', 'column-container', UI.elementContainer || UI.blueprint);
+    
+    if (!toggle.checked) { 
+        group.style.display = 'none'; 
+        return; 
+    }
     group.style.display = '';
-    const SCALE = geom ? geom.SCALE : (parseFloat(UI.scaleInput?.value) || 1.2);
-    const I = geom ? geom.I : { 
-        x: 500 - (toInches(UI.inW?.value || 0, UI.unitSelect?.value || 'in') * SCALE / 2), 
-        y: 500 - (toInches(UI.inH?.value || 0, UI.unitSelect?.value || 'in') * SCALE / 2) 
-    };
+
+    const SCALE = parseFloat(UI.scaleInput.value) || 1.2;
+    const inW = toInches(UI.inW.value, UI.unitSelect.value);
+    const inH = toInches(UI.inH.value, UI.unitSelect.value);
+    const I = { x: 500 - (inW * SCALE / 2), y: 500 - (inH * SCALE / 2) };
+    
     const placedColumns = new Set();
     let displayIdx = 0;
+
     elements.forEach(el => {
-        // 🌟 FIX: Always calculate columns from the Ground Floor (Foundation)
-        if (el.floor !== 0 || el.isFurniture) return;
-        const corners = [ 
-            { x: el.x, y: el.y }, 
-            { x: el.x + el.w, y: el.y }, 
-            { x: el.x, y: el.y + el.h }, 
-            { x: el.x + el.w, y: el.y + el.h } 
-        ];
+        if (el.floor !== currentFloor || el.isFurniture) return;
+        const corners = [ { x: el.x, y: el.y }, { x: el.x + el.w, y: el.y }, { x: el.x, y: el.y + el.h }, { x: el.x + el.w, y: el.y + el.h } ];
+
         corners.forEach(pos => {
             const key = `${Math.round(pos.x)}_${Math.round(pos.y)}`;
             if (!placedColumns.has(key)) {
                 placedColumns.add(key);
+                // 🚀 DIFF ENGINE
                 const col = getOrCreateSVG('circle', `col-${displayIdx}`, group);
                 col.setAttribute('cx', I.x + (pos.x * SCALE)); 
                 col.setAttribute('cy', I.y + (pos.y * SCALE));
                 col.setAttribute('r', 6 * SCALE); 
                 col.setAttribute('fill', '#94a3b8');
-                col.setAttribute('stroke', '#0f172a');
-                col.setAttribute('stroke-width', '1.5');
                 displayIdx++;
             }
         });
     });
     hideExcessSVG('col', displayIdx);
 }
-function drawColumns(geom) {
-    const toggle = UI.showColsToggle || document.getElementById('showColsToggle');
-    if (!toggle || !toggle.checked) return; 
-
-    let group = getOrCreateSVG('g', 'column-container', UI.elementContainer || UI.blueprint);
-    group.style.display = '';
-
-    const SCALE = geom ? geom.SCALE : (parseFloat(UI.scaleInput?.value) || 1.2);
-    const I = geom ? geom.I : { 
-        x: 500 - (toInches(UI.inW?.value || 0, UI.unitSelect?.value || 'in') * SCALE / 2), 
-        y: 500 - (toInches(UI.inH?.value || 0, UI.unitSelect?.value || 'in') * SCALE / 2) 
-    };
-    
-    // Foundation level only
-    const groundRooms = elements.filter(el => el.floor === 0 && !el.isFurniture);
-    
-    // 🌟 ADVANCED STRUCTURAL RULES 🌟
-    const MAX_SPAN = 180; // 15 feet (180 inches) max structural span before requiring a support column
-    let potentialPoints = [];
-
-    // 1. Collect all structural load nodes (Corners + Mid-Span Supports)
-    groundRooms.forEach(el => {
-        // A. Base Corners
-        potentialPoints.push(
-            { x: el.x, y: el.y }, 
-            { x: el.x + el.w, y: el.y }, 
-            { x: el.x, y: el.y + el.h }, 
-            { x: el.x + el.w, y: el.y + el.h }
-        );
-
-        // B. Calculate Span Supports for Horizontal Walls
-        if (el.w > MAX_SPAN) {
-            const splits = Math.ceil(el.w / MAX_SPAN);
-            const step = el.w / splits;
-            for (let i = 1; i < splits; i++) {
-                potentialPoints.push({ x: el.x + (step * i), y: el.y });           // Top Wall
-                potentialPoints.push({ x: el.x + (step * i), y: el.y + el.h });    // Bottom Wall
-            }
-        }
-
-        // C. Calculate Span Supports for Vertical Walls
-        if (el.h > MAX_SPAN) {
-            const splits = Math.ceil(el.h / MAX_SPAN);
-            const step = el.h / splits;
-            for (let i = 1; i < splits; i++) {
-                potentialPoints.push({ x: el.x, y: el.y + (step * i) });           // Left Wall
-                potentialPoints.push({ x: el.x + el.w, y: el.y + (step * i) });    // Right Wall
-            }
-        }
-    });
-
-    // 2. Intersection Merging (Deduplication)
-    let finalColumns = [];
-    potentialPoints.forEach(pt => {
-        // If a column already exists within 12 inches (wall thickness tolerance), do not place another one.
-        const isDuplicate = finalColumns.some(col => 
-            Math.hypot(col.x - pt.x, col.y - pt.y) < 12
-        );
-        if (!isDuplicate) {
-            finalColumns.push(pt);
-        }
-    });
-
-    // 3. Purge "Floating" Internal Columns
-    // If rooms overlap during drafting, this ensures columns are strictly placed on valid walls,
-    // destroying any points that fall completely inside the open floor space of another room.
-    const isStrictlyInside = (px, py) => {
-        return groundRooms.some(el => 
-            px > el.x + 2 && px < el.x + el.w - 2 && 
-            py > el.y + 2 && py < el.y + el.h - 2
-        );
-    };
-    finalColumns = finalColumns.filter(pt => !isStrictlyInside(pt.x, pt.y));
-
-    // 4. Render the structural grid to the canvas
-    let displayIdx = 0;
-    finalColumns.forEach(pos => {
-        const col = getOrCreateSVG('circle', `col-${displayIdx}`, group);
-        col.setAttribute('cx', I.x + (pos.x * SCALE)); 
-        col.setAttribute('cy', I.y + (pos.y * SCALE));
-        col.setAttribute('r', 6 * SCALE); 
-        col.setAttribute('fill', '#94a3b8');
-        col.setAttribute('stroke', '#0f172a');
-        col.setAttribute('stroke-width', '1.5');
-        displayIdx++;
-    });
-    
-    hideExcessSVG('col', displayIdx);
-}
 
 // =========================================
 // FULL RENDERING ENGINE (Modularized)
 // =========================================
+
 // 🌟 1. The Main Orchestrator
 function updateCanvas(force3D = true) {
-    // PHASE 1: PRE-PROCESSING & MATH
     syncStaircasesIfNeeded();
-    updateCompass();
-    
     const unit = UI.unitSelect ? UI.unitSelect.value : 'in';
     const SCALE = parseFloat(UI.scaleInput ? UI.scaleInput.value : 1.2) || 1.2;
+    updateCompass();
     const geom = calculateGeometry(SCALE, unit); 
-
-    // PHASE 2: 2D RENDER PIPELINE
-    renderSiteEnvironment(geom);
-    renderArchitecture(geom);
-    renderOverlaysAndStats(geom);
+    renderPlotBoundaries(geom);
+    renderSiteOffsets(geom);
+    renderRoad(geom);
+    renderRooms(geom);
+    renderFixtures(geom);
     cleanupExcessSVG();
+    handleColumnToggle();
+    renderOverlaysAndStats(geom);
     
-    // PHASE 3: POST-PROCESSING & SIDE EFFECTS
     if (force3D && typeof request3DUpdate === 'function') request3DUpdate();
     if (typeof markStateDirty === 'function') markStateDirty();
     if (typeof updateAreaDashboard === 'function') updateAreaDashboard();
@@ -255,50 +168,53 @@ function calculateGeometry(SCALE, unit) {
         D: { x: L.x - val('dL'), y: L.y + val('dD') }
     };
 }
-// --- RENDER MANAGERS ---
-
-// Handles everything related to the plot, land, and outside environment
-function renderSiteEnvironment(geom) {
-    renderPlotBoundaries(geom); // Draws the Plot & Built-up shapes, badges, and corner measurements
-    renderSiteOffsets(geom);    // Draws the dashed measurement lines between them
-    renderRoad(geom);           // Draws the road outside the plot
-}
-
-// Handles everything related to the physical building elements
-function renderArchitecture(geom) {
-    renderRooms(geom);          // Draws walls, floors, and smart-merge logic
-    renderFixtures(geom);       // Draws doors and windows
-    handleColumnToggle(geom);   // Draws structural columns
-}
 
 // -----------------------------------------
 // 🏗️ 3. Environment & Plot Modules
 // -----------------------------------------
-function renderPlotBoundaries(geom) {
-    const showLabels = UI.showLabelsToggle ? UI.showLabelsToggle.checked : true;
-
-    // 1. Draw the physical SVG shapes
-    drawInnerBuiltUpArea(geom);
-    drawOuterPlotArea(geom);
-
-    // 2. Overlay the UI text and badges
-    renderPlotCornerBadges(geom, showLabels);
-    renderPlotMeasurements(geom, showLabels);
-}
-function drawInnerBuiltUpArea(geom) {
-    const { I, inW, inH } = geom;
+function renderPlotBoundariesOld(geom) {
+    const { I, inW, inH, A, B, C, D } = geom;
+    
     if (UI.innerRect) {
-        UI.innerRect.setAttribute('x', I.x); 
-        UI.innerRect.setAttribute('y', I.y);
-        UI.innerRect.setAttribute('width', inW); 
-        UI.innerRect.setAttribute('height', inH);
+        UI.innerRect.setAttribute('x', I.x); UI.innerRect.setAttribute('y', I.y);
+        UI.innerRect.setAttribute('width', inW); UI.innerRect.setAttribute('height', inH);
+    }
+    if (UI.outerPoly) UI.outerPoly.setAttribute('points', `${A.x},${A.y} ${B.x},${B.y} ${C.x},${C.y} ${D.x},${D.y}`);
+
+    const showLabels = UI.showLabelsToggle ? UI.showLabelsToggle.checked : true;
+    
+    // Safe updates using your existing badge/label functions
+    if (typeof drawProBadge === 'function') {
+        drawProBadge('A', A.x - 15, A.y - 15, 'A', '#94a3b8', showLabels, CanvasState.zoomLvl, UI.viewport);
+        drawProBadge('B', B.x + 15, B.y - 15, 'B', '#94a3b8', showLabels, CanvasState.zoomLvl, UI.viewport);
+        drawProBadge('C', C.x + 15, C.y + 15, 'C', '#94a3b8', showLabels, CanvasState.zoomLvl, UI.viewport);
+        drawProBadge('D', D.x - 15, D.y + 15, 'D', '#94a3b8', showLabels, CanvasState.zoomLvl, UI.viewport);
+        drawProBadge('I', I.x - 15, I.y - 15, 'I', '#38bdf8', showLabels, CanvasState.zoomLvl, UI.viewport);
+        drawProBadge('J', geom.J.x + 15, geom.J.y - 15, 'J', '#38bdf8', showLabels, CanvasState.zoomLvl, UI.viewport);
+        drawProBadge('K', geom.K.x + 15, geom.K.y + 15, 'K', '#38bdf8', showLabels, CanvasState.zoomLvl, UI.viewport);
+        drawProBadge('L', geom.L.x - 15, geom.L.y + 15, 'L', '#38bdf8', showLabels, CanvasState.zoomLvl, UI.viewport);
     }
 }
-function drawOuterPlotArea(geom) {
-    const { A, B, C, D } = geom;
+function renderPlotBoundaries(geom) {
+    const { I, inW, inH, A, B, C, D } = geom; 
+    
+    // 1. Draw Inner Built-up Rect
+    if (UI.innerRect) {
+        UI.innerRect.setAttribute('x', I.x); UI.innerRect.setAttribute('y', I.y);
+        UI.innerRect.setAttribute('width', inW); UI.innerRect.setAttribute('height', inH);
+    }
+    
+    // 2. Draw Outer Plot Polygon
     if (UI.outerPoly) {
         UI.outerPoly.setAttribute('points', `${A.x},${A.y} ${B.x},${B.y} ${C.x},${C.y} ${D.x},${D.y}`);
     }
+
+    // 3. Get Toggle State
+    const showLabels = UI.showLabelsToggle ? UI.showLabelsToggle.checked : true;
+    
+    // 4. Delegate to our new Modular Helpers
+    renderPlotCornerBadges(geom, showLabels);
+    renderPlotMeasurements(geom, showLabels);
 }
 
 function renderPlotCornerBadges(geom, showLabels) {
@@ -468,7 +384,7 @@ function renderRooms(geom) {
 
     // 🌟 SMART MERGE LOGIC CAPTURED HERE
     const smartMerge = UI.smartMergeToggle && UI.smartMergeToggle.checked;
-    window.renderedLabels = [];
+    window.renderedLabels = []; // 🌟 FIX 6: Reset label tracking array
 
     elements.forEach((el, i) => {
         let r = document.getElementById(`rect-${i}`) || createSVGRect(`rect-${i}`, gRooms);
@@ -478,6 +394,7 @@ function renderRooms(geom) {
         // 🌟 FIX 1: GHOST FLOOR SILHOUETTE
         if (el.floor !== currentFloor) {
             if (el.floor === currentFloor - 1 && !el.isFurniture) {
+                // Show floor below faintly
                 r.style.display = 'block'; rb.style.display = 'none'; rh.style.display = 'none';
                 r.setAttribute('style', `fill: transparent; stroke: #94a3b8; stroke-width: 1.5; stroke-dasharray: 6,4; opacity: ${ARCH_CONFIG.REFINEMENTS.GHOST_FLOOR_OPACITY}; pointer-events: none;`);
             } else {
@@ -514,12 +431,13 @@ function renderRooms(geom) {
         } else if (smartMerge) {
             r.style.display = 'block'; rb.style.display = 'block'; rh.style.display = 'block';
             rb.setAttribute('style', `fill: ${strokeColor}; stroke: none;`);
-            rh.setAttribute('style', `fill: #0f172a; stroke: none;`);
+            rh.setAttribute('style', `fill: #0f172a; stroke: none;`); // Hollows mask overlapping borders!
             r.setAttribute('style', `fill: ${fillColor}; stroke: none;`);
         } else {
             r.style.display = 'block'; rb.style.display = 'none'; rh.style.display = 'none';
             r.setAttribute('style', `fill: ${fillColor}; stroke: ${strokeColor}; stroke-width: ${isSelected ? '3' : '1.5'}; ${el.type === 'balcony' ? 'stroke-dasharray: 6, 4;' : ''}`);
         }
+
         applyRoomTooltips(r, el);
         renderRoomText(i, el, rx, ry, w, h, I.x, I.y);
     });
@@ -528,7 +446,9 @@ function renderRooms(geom) {
 function renderFixtures(geom) {
     const { I, SCALE } = geom;
     let fixtureGroup = getOrCreateSVG('g', 'fixture-container', UI.elementContainer || UI.blueprint);
-    let displayIdx = 0;
+    
+    let displayIdx = 0; // Track exactly how many fixtures we need to draw
+    
     fixtures.forEach((fix, i) => {
         const room = elements[fix.roomId];
         if (!room || room.floor !== currentFloor) return;
@@ -541,9 +461,12 @@ function renderFixtures(geom) {
         else if (fix.edge === 'top') { fx = rx + offset; fy = ry - 3; fw = fixSize; fh = 6; }
         else if (fix.edge === 'left') { fx = rx - 3; fy = ry + offset; fw = 6; fh = fixSize; }
         else if (fix.edge === 'right') { fx = rx + (room.w * SCALE) - 3; fy = ry + offset; fw = 6; fh = fixSize; }
+
+        // 🚀 DIFF ENGINE: Fetch existing SVG nodes instead of creating new ones!
         const rect = getOrCreateSVG('rect', `fix-rect-${displayIdx}`, fixtureGroup);
         const path = getOrCreateSVG('path', `fix-swing-${displayIdx}`, fixtureGroup);
-        path.style.display = 'none';
+        path.style.display = 'none'; // Hide swing path by default
+
         if (fix.type === 'window') {
             rect.setAttribute('x', fx); rect.setAttribute('y', fy); rect.setAttribute('width', fw); rect.setAttribute('height', fh);
             rect.setAttribute('fill', 'rgba(251, 191, 36, 0.2)');
@@ -553,17 +476,21 @@ function renderFixtures(geom) {
             rect.setAttribute('x', fx); rect.setAttribute('y', fy); rect.setAttribute('width', fw); rect.setAttribute('height', fh);
             rect.setAttribute('fill', '#0f172a'); rect.setAttribute('stroke', 'none');
             rect.onmousedown = (e) => { e.stopPropagation(); startDragFixture(e, i); };
+
             let d = '';
             if (fix.edge === 'bottom') d = `M ${fx} ${fy+3} L ${fx} ${fy+3 - fixSize} A ${fixSize} ${fixSize} 0 0 1 ${fx + fixSize} ${fy+3}`;
             else if (fix.edge === 'top') d = `M ${fx} ${fy+3} L ${fx} ${fy+3 + fixSize} A ${fixSize} ${fixSize} 0 0 0 ${fx + fixSize} ${fy+3}`;
             else if (fix.edge === 'left') d = `M ${fx+3} ${fy} L ${fx+3 + fixSize} ${fy} A ${fixSize} ${fixSize} 0 0 1 ${fx+3} ${fy + fixSize}`;
             else if (fix.edge === 'right') d = `M ${fx+3} ${fy} L ${fx+3 - fixSize} ${fy} A ${fixSize} ${fixSize} 0 0 0 ${fx+3} ${fy + fixSize}`;
+            
             path.setAttribute('d', d); path.setAttribute('fill', 'rgba(251, 191, 36, 0.1)'); 
             path.setAttribute('stroke', '#fbbf24'); path.setAttribute('stroke-width', '1.5');
-            path.style.display = '';
+            path.style.display = ''; // Show the swing!
         }
         displayIdx++;
     });
+
+    // 🚀 DIFF ENGINE: Hide any old fixtures that were deleted
     hideExcessSVG('fix-rect', displayIdx);
     hideExcessSVG('fix-swing', displayIdx);
 }
@@ -571,11 +498,12 @@ function renderFixtures(geom) {
 // -----------------------------------------
 // 📊 5. Overlays, Stats & Toggles
 // -----------------------------------------
-function handleColumnToggle(geom) {
-    const toggle = UI.showColsToggle || document.getElementById('showColsToggle');
-    const showCols = toggle && toggle.checked;
+function handleColumnToggle() {
+    const showCols = UI.showColsToggle && UI.showColsToggle.checked;
+    
+    // 🌟 SHOW COLS LOGIC ENFORCED HERE
     if (showCols && typeof drawColumns === 'function') {
-        drawColumns(geom);
+        drawColumns();
     } else {
         const colContainer = document.getElementById('column-container');
         if (colContainer) colContainer.innerHTML = '';

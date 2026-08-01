@@ -120,3 +120,72 @@ window.exportPDF = function() {
     `);
     printWindow.document.close();
 };
+
+
+function exportDXF() {
+    const unit = UI.unitSelect ? UI.unitSelect.value : 'in';
+    const SCALE = parseFloat(UI.scaleInput ? UI.scaleInput.value : 1.2) || 1.2;
+    const geom = typeof calculateGeometry === 'function' ? calculateGeometry(SCALE, unit) : null;
+    
+    if (!geom) {
+        alert("Geometry engine not ready!");
+        return;
+    }
+
+    let dxf = "";
+    
+    // DXF Header & Entities Section Start
+    dxf += "  0\nSECTION\n  2\nHEADER\n  0\nENDSEC\n";
+    dxf += "  0\nSECTION\n  2\nENTITIES\n";
+
+    // Helper to draw a DXF Line
+    const addLine = (x1, y1, x2, y2, layer = "0") => {
+        dxf += `  0\nLINE\n  8\n${layer}\n`;
+        dxf += ` 10\n${x1.toFixed(2)}\n 20\n${y1.toFixed(2)}\n 30\n0.0\n`;
+        dxf += ` 11\n${x2.toFixed(2)}\n 21\n${y2.toFixed(2)}\n 31\n0.0\n`;
+    };
+
+    // 1. Export Plot Boundaries (Convert back to real-world inches)
+    const { A, B, C, D, I, J, K, L } = geom;
+    const toReal = (val, origin) => (val - origin) / SCALE;
+
+    // Outer Plot (Layer: PLOT)
+    addLine(toReal(A.x, 500), toReal(A.y, 500), toReal(B.x, 500), toReal(B.y, 500), "PLOT");
+    addLine(toReal(B.x, 500), toReal(B.y, 500), toReal(C.x, 500), toReal(C.y, 500), "PLOT");
+    addLine(toReal(C.x, 500), toReal(C.y, 500), toReal(D.x, 500), toReal(D.y, 500), "PLOT");
+    addLine(toReal(D.x, 500), toReal(D.y, 500), toReal(A.x, 500), toReal(A.y, 500), "PLOT");
+
+    // Inner Built-up Area (Layer: BUILT_UP)
+    addLine(toReal(I.x, 500), toReal(I.y, 500), toReal(J.x, 500), toReal(J.y, 500), "BUILT_UP");
+    addLine(toReal(J.x, 500), toReal(J.y, 500), toReal(K.x, 500), toReal(K.y, 500), "BUILT_UP");
+    addLine(toReal(K.x, 500), toReal(K.y, 500), toReal(L.x, 500), toReal(L.y, 500), "BUILT_UP");
+    addLine(toReal(L.x, 500), toReal(L.y, 500), toReal(I.x, 500), toReal(I.y, 500), "BUILT_UP");
+
+    // 2. Export Rooms (Layer: WALLS)
+    elements.forEach(el => {
+        if (el.floor !== currentFloor || el.isFurniture) return;
+        
+        // Calculate real-world coordinates relative to the inner plot (I)
+        const rx = toReal(I.x, 500) + el.x;
+        const ry = toReal(I.y, 500) + el.y;
+        const rw = el.w;
+        const rh = el.h;
+
+        addLine(rx, ry, rx + rw, ry, "WALLS");
+        addLine(rx + rw, ry, rx + rw, ry + rh, "WALLS");
+        addLine(rx + rw, ry + rh, rx, ry + rh, "WALLS");
+        addLine(rx, ry + rh, rx, ry, "WALLS");
+    });
+
+    // Close DXF File
+    dxf += "  0\nENDSEC\n  0\nEOF\n";
+
+    // Trigger Download
+    const blob = new Blob([dxf], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ArchCAD_Export_${new Date().getTime()}.dxf`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+}

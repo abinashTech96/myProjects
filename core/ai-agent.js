@@ -280,7 +280,7 @@ function handleAICommand() {
 // =========================================
 // 🌟 AI UI INITIALIZATION
 // =========================================
-window.populateAIModelDropdown = function() {
+window.populateAIModelDropdownOld = function() {
     const selectEl = document.getElementById('ai-model-select');
     if (!selectEl) return;
     if (selectEl.options.length > 0) return;
@@ -320,3 +320,47 @@ window.populateAIModelDropdown = function() {
 // 🚀 THE FIX: Run this synchronously IMMEDIATELY. 
 // Do not wait for DOMContentLoaded, otherwise the UI script will build an empty box first!
 window.populateAIModelDropdown();
+
+window.populateAIModelDropdown = function() {
+    const selectEl = document.getElementById('ai-model-select');
+    if (!selectEl) return;
+    if (selectEl.options.length > 0) return;
+    selectEl.innerHTML = '';
+    if (typeof CONFIG === 'undefined' || !CONFIG.MODELS) {
+        console.error("❌ CONFIG.MODELS is missing. Check config.js!");
+        const errOpt = document.createElement('option');
+        errOpt.textContent = "⚠️ Error: Check config.js";
+        selectEl.appendChild(errOpt);
+        return;
+    }
+    const groups = {};
+    Object.entries(CONFIG.MODELS).forEach(([key, model]) => {
+        const groupName = model.group || 'General';
+        if (!groups[groupName]) {
+            groups[groupName] = document.createElement('optgroup');
+            groups[groupName].label = groupName;
+        }
+        const opt = document.createElement('option');
+        opt.value = key;
+        opt.textContent = model.label;
+        if (key === CONFIG.DEFAULT_MODEL) opt.selected = true;
+        groups[groupName].appendChild(opt);
+    });
+    Object.values(groups).forEach(groupEl => selectEl.appendChild(groupEl));
+    selectEl.addEventListener('change', function() {
+        CONFIG.ACTIVE_LLM = this.value;
+        console.log('🔄 AI Model Switched to:', this.value);
+    });
+    if (selectEl.hasAttribute('data-customized')) {
+        const wrapper = selectEl.parentNode;
+        if (wrapper && wrapper.classList.contains('pro-dropdown-wrapper')) {
+            wrapper.parentNode.insertBefore(selectEl, wrapper);
+            wrapper.remove();
+            selectEl.removeAttribute('data-customized');
+            selectEl.style.display = '';
+            if (typeof initAnimatedDropdowns === 'function') {
+                initAnimatedDropdowns();
+            }
+        }
+    }
+};

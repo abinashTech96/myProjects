@@ -14,6 +14,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (typeof toggleWidget === 'function') toggleWidget('qc-widget-wrapper', e.target.checked);
         });
     }
+    // ✨ NEW: Code Inspector Toggle Logic
+    const complianceCb = document.getElementById('toggle-compliance-cb');
+    if (complianceCb) {
+        complianceCb.addEventListener('change', (e) => {
+            if (typeof toggleWidget === 'function') toggleWidget('compliance-widget', e.target.checked);
+        });
+    }
 
     const vastuCb = document.getElementById('toggle-vastu-cb');
     if (vastuCb) {

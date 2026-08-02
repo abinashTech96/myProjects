@@ -232,6 +232,8 @@ function updateCanvas(force3D = true) {
     if (typeof updateAreaDashboard === 'function') updateAreaDashboard();
     if (typeof updateVastuHUD === 'function') updateVastuHUD();
     if (typeof calculateVastuScore === 'function') calculateVastuScore();
+    // ✨ ADD THIS LINE: Trigger the local math engine!
+    if (typeof requestBackgroundMath === 'function') requestBackgroundMath();
 }
 
 // -----------------------------------------

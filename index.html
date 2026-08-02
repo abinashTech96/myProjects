@@ -26,6 +26,7 @@
     <link rel="stylesheet" href="features/advanced-3d/advanced3d.css">
     <link rel="stylesheet" href="features/onboarding/onboarding.css">
     <link rel="stylesheet" href="styles/export.css">
+    <link rel="stylesheet" href="styles/compliance.css">
 </head>
 <body>
 
@@ -193,6 +194,12 @@
                                 <label class="ui-toggle">
                                     <span class="settings-label-text">📏 Quick Converter</span>
                                     <input type="checkbox" id="toggle-qc-cb" checked autocomplete="off">
+                                    <div class="slider"></div>
+                                </label>
+                                <!-- ✨ NEW: Code Inspector Toggle -->
+                                <label class="ui-toggle">
+                                    <span class="settings-label-text">✅ Code Inspector</span>
+                                    <input type="checkbox" id="toggle-compliance-cb" checked autocomplete="off">
                                     <div class="slider"></div>
                                 </label>
                                 <label class="ui-toggle">
@@ -620,6 +627,11 @@
                         </div>
                     </div>
                 </div>
+            </div>
+
+            <!-- ✨ NEW: COMPLIANCE DASHBOARD WIDGET -->
+            <div id="compliance-widget">
+                <div class="compliance-waiting">Waiting for compliance scan...</div>
             </div>
         
             <!-- VASTU SCORE block -->

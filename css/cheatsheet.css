@@ -1,0 +1,57 @@
+/* =========================================
+   ⌨️ SHORTCUTS GUIDE (cheatsheet.css)
+========================================= */
+
+/* The floating action button */
+#btn-cheat-sheet {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    z-index: 1000;
+}
+
+/* The actual cheat sheet panel */
+#cheat-sheet-panel {
+    position: fixed;
+    bottom: 80px;
+    left: 20px;
+    z-index: 1000;
+    width: 300px;
+    
+    /* Hidden by default, animated in via JS */
+    display: none;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Inner scroll area for the shortcuts list */
+.cheat-sheet-scroll {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 400px;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+/* Clean row layout for each shortcut */
+.cheat-sheet-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Clean description text */
+.cheat-sheet-desc {
+    color: #94a3b8;
+    font-size: 0.75rem;
+}
+
+/* Hide Keyboard Shortcuts entirely on Mobile / Tablet */
+@media (max-width: 1024px) {
+    #btn-cheat-sheet,
+    #cheat-sheet-panel {
+        display: none !important;
+    }
+}

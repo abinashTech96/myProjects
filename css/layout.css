@@ -210,9 +210,6 @@
     .adv-btn-container .adv-text { display: none !important; }
     .adv-btn-container .icon { margin: 0 !important; font-size: 1.2rem !important; }
 
-    /* --- 9. Hide Keyboard Shortcuts on Mobile --- */
-    #btn-cheat-sheet,
-    #cheat-sheet-panel { display: none !important; }
 }
 /* =========================================
    📱 RESPONSIVE DESIGN (MOBILE & TABLET <= 768px)

@@ -673,24 +673,6 @@ window.toggleWidget = function(widgetId, isVisible) {
         }, 200); 
     }
 };
-window.toggleCheatSheet = function() {
-    const panel = document.getElementById('cheat-sheet-panel');
-    if (!panel) return;
-    
-    if (panel.style.display === 'none') {
-        panel.style.display = 'block';
-        setTimeout(() => {
-            panel.style.opacity = '1';
-            panel.style.transform = 'translateY(0)';
-        }, 10);
-    } else {
-        panel.style.opacity = '0';
-        panel.style.transform = 'translateY(10px)';
-        setTimeout(() => {
-            panel.style.display = 'none';
-        }, 300);
-    }
-};
 window.toggleTimeMachine = function() {
     let panel = document.getElementById('time-machine-panel');
     if(!panel) {

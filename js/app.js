@@ -10,36 +10,6 @@ const CanvasState = {
     snapLines: []
 };
 
-function updateViewport() {
-    if (UI.viewport) UI.viewport.setAttribute('transform', `matrix(${CanvasState.zoomLvl}, 0, 0, ${CanvasState.zoomLvl}, ${CanvasState.panX}, ${CanvasState.panY})`);
-}
-function panCamera(dx, dy) {
-    CanvasState.panX += dx; CanvasState.panY += dy;
-    updateViewport();
-}
-function zoomCamera(factor, e = null) {
-    const newZoom = CanvasState.zoomLvl * factor;
-    if (newZoom < 0.2 || newZoom > 5) return;
-    let pointerX = 500;
-    let pointerY = 500;
-    if (e && UI.blueprint) {
-        const pt = UI.blueprint.createSVGPoint();
-        pt.x = e.clientX || (e.touches ? e.touches[0].clientX : 500);
-        pt.y = e.clientY || (e.touches ? e.touches[0].clientY : 500);
-        const svgP = pt.matrixTransform(UI.blueprint.getScreenCTM().inverse());
-        pointerX = svgP.x;
-        pointerY = svgP.y;
-    }
-    CanvasState.panX = pointerX - (pointerX - CanvasState.panX) * factor;
-    CanvasState.panY = pointerY - (pointerY - CanvasState.panY) * factor;
-    CanvasState.zoomLvl = newZoom;
-    updateViewport();
-}
-function resetCamera() {
-    CanvasState.panX = 0; CanvasState.panY = 0; CanvasState.zoomLvl = 1;
-    updateViewport();
-}
-
 // --- SVG DRAWING HELPERS ---
 function updateSVGPosition(id, x, y, labelText, isVisible) {
     const el = document.getElementById(id); 

@@ -785,14 +785,6 @@ button:active {
     opacity: 1;
     margin-left: 6px; /* Adds space between the icon and the text */
 }
-   
-
-/* --- CHEAT SHEET VISIBILITY --- */
-#cheat-sheet.active {
-    opacity: 1 !important;
-    pointer-events: auto !important;
-    transform: translateY(-5px);
-}
 
 /* --- TAPE MEASURE LINE --- */
 .measure-line {

@@ -104,43 +104,6 @@
                 </button>
             </div>
 
-            <!-- 🌟 AI AGENT 
-            <button id="ai-agent-btn" class="nav-add-floor-btn tool-btn theme-purple" onclick="toggleAIAgent()" title="AI Design Assistant">
-                <span class="tool-icon">🤖</span>
-            </button>
-            <div id="ai-agent-overlay" class="glass-panel nav-dropdown-panel width-md">
-                <div class="panel-header drop-header-purple">
-                    <span class="icon">🤖</span>
-                    <h2>AI ASSISTANT</h2>
-                </div>
-                
-                <div style="display: flex; flex-direction: column; gap: 10px;">
-                    <div style="display: flex; flex-direction: column; gap: 4px;">
-                        <label style="font-size: 0.65rem; color: #94a3b8; font-weight: bold; letter-spacing: 0.5px;">ACTIVE MODEL</label>
-                        <select id="ai-model-select" class="modern-select neo-sunken" onchange="CONFIG.ACTIVE_LLM = this.value; console.log('AI Switched to:', this.value);">
-                            <optgroup label="Google Gemini">
-                                <option value="gemini-3.6-flash">Gemini 3.6 Flash (Fastest)</option>
-                                <option value="gemini-3.5-flash" selected>Gemini 3.5 Flash (Balanced Draft)</option>
-                                <option value="gemini-3.5-flash-lite">Gemini 3.5 Flash Lite (Low Cost)</option>
-                                <option value="gemini-3.1-pro">Gemini 3.1 Pro (Advanced Reasoning)</option>
-                                <option value="gemini-3.0-ultra">Gemini 3.0 Ultra (Heavy Architecture)</option>
-                            </optgroup>
-                            
-                            <optgroup label="Other Providers">
-                                <option value="openai">OpenAI GPT-4o (Complex Layouts)</option>
-                                <option value="perplexity">Perplexity Sonar (Vastu Code Search)</option>
-                            </optgroup>
-                        </select>
-                    </div>
-
-                    <textarea id="ai-input" class="neo-sunken ai-textarea" placeholder="e.g., Add a 10x12 master bedroom on the left..."></textarea>
-                    
-                    <button id="ai-generate-btn" class="btn-generate theme-purple-btn">
-                        <span class="btn-icon">✨</span><span class="btn-text">GENERATE</span>
-                    </button>
-                </div>
-            </div>
-            -->
             <!-- 🌟 AI AGENT -->
             <button id="ai-agent-btn" class="nav-add-floor-btn tool-btn theme-purple" onclick="toggleAIAgent(); window.populateAIModelDropdown();" title="AI Design Assistant">
                 <span class="tool-icon">🤖</span>
@@ -197,7 +160,11 @@
                                     <input type="checkbox" id="toggle-qc-cb" checked autocomplete="off">
                                     <div class="slider"></div>
                                 </label>
-                                <!-- ✨ NEW: Code Inspector Toggle -->
+                                <label class="ui-toggle">
+                                    <span class="settings-label-text">📷 Camera Controls</span>
+                                    <input type="checkbox" id="toggle-camera-cb" checked autocomplete="off">
+                                    <div class="slider"></div>
+                                </label>
                                 <label class="ui-toggle">
                                     <span class="settings-label-text">✅ Code Inspector</span>
                                     <input type="checkbox" id="toggle-compliance-cb" checked autocomplete="off">
@@ -206,6 +173,11 @@
                                 <label class="ui-toggle">
                                     <span class="settings-label-text">🧭 Vastu Score</span>
                                     <input type="checkbox" id="toggle-vastu-cb" checked autocomplete="off">
+                                    <div class="slider"></div>
+                                </label>
+                                <label class="ui-toggle">
+                                    <span class="settings-label-text">⌨️ Shortcuts Guide</span>
+                                    <input type="checkbox" id="toggle-cheatsheet-cb" checked autocomplete="off">
                                     <div class="slider"></div>
                                 </label>
                             </div>
@@ -495,11 +467,10 @@
                     <div class="setting-group toggle-group" style="justify-content: flex-end; padding-bottom: 5px;">
                         <label class="ui-toggle" style="justify-content: flex-end; gap: 10px;">
                             <span style="font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;">
-                                📐 Project Data
-                            </span>
-                            <input type="checkbox" checked onchange="toggleWidget('area-overlay', this.checked)">
+                                🧩 Smart-Merge</span>
+                            <input type="checkbox" id="smartMergeToggle" onchange="updateCanvas()">
                             <div class="slider"></div>
-                        </label>                        
+                        </label>                      
                     </div>
                     <div class="setting-group toggle-group" style="justify-content: flex-end; padding-bottom: 5px;">
                         <label class="ui-toggle" style="justify-content: flex-end; gap: 10px;">
@@ -507,26 +478,6 @@
                                 📐 Snap to 1ft Grid
                             </span>
                             <input type="checkbox" id="gridSnapToggle" checked>
-                            <div class="slider"></div>
-                        </label>                        
-                    </div>
-                </div>
-                <div class="neo-divider" style="margin: 10px 0;"></div>
-                <div class="setting-card" style="padding: 8px; margin-bottom: 8px;">
-                    <div class="setting-group toggle-group" style="justify-content: flex-end; padding-bottom: 5px;">
-                        <label class="ui-toggle" style="justify-content: flex-end; gap: 10px;">
-                            <span style="font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;">
-                                📷 Camera Controls
-                            </span>
-                            <input type="checkbox" checked onchange="toggleWidget('camera-controls', this.checked)">
-                            <div class="slider"></div>
-                        </label>                        
-                    </div>
-                    <div class="setting-group toggle-group" style="justify-content: flex-end; padding-bottom: 5px;">
-                        <label class="ui-toggle" style="justify-content: flex-end; gap: 10px;">
-                            <span style="font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;">
-                                🧩 Smart-Merge</span>
-                            <input type="checkbox" id="smartMergeToggle" onchange="updateCanvas()">
                             <div class="slider"></div>
                         </label>                        
                     </div>
@@ -550,10 +501,6 @@
                         </label>                        
                     </div>
                 </div>
-                
-
-                
-                
                 <p style="font-size: 0.65rem; color: #10b981; margin-top: 8px; margin-bottom: 0; font-weight: bold; text-align: center;">🖱️ Scroll: Zoom | Mid-Click: Pan</p>
             </div>
 
@@ -782,7 +729,7 @@
     </div>
 
     <!-- FLOATING SHORTCUT MENU -->
-    <button id="btn-cheat-sheet" class="float-action-btn" onclick="toggleCheatSheet()">
+    <button id="btn-cheat-sheet" class="neo-action-btn" onclick="toggleCheatSheet()">
         <span class="icon">⌨️</span>
         <span class="text">Shortcuts Guide</span>
     </button>

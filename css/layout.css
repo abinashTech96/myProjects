@@ -158,7 +158,7 @@
     }
 
     /* --- 5. Camera Controls --- */
-    #camera-controls {
+    #toggle-camera-cb {
         bottom: 15px !important;
         right: 10px !important;
         transform: scale(0.8) !important;

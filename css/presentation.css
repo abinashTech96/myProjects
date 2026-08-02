@@ -1,5 +1,5 @@
 /* =========================================
-   🌟 PROFESSIONAL PRESENTATION CONTROLS
+   🌟 PROFESSIONAL PRESENTATION CONTROLS (presentation.css)
 ========================================= */
 
 /* --- Main Glass Pill --- */
@@ -15,8 +15,6 @@
     
     border: 1px solid rgba(56, 189, 248, 0.2); 
     border-radius: 50px; 
-    
-    /* 🌟 ADJUSTMENT 3: Decreased padding to save space */
     padding: 6px 14px; 
     
     z-index: 100; 
@@ -40,7 +38,7 @@
 .pres-sun-group { display: flex; align-items: center; gap: 10px; width: 140px; }
 .pres-btn-group { display: flex; align-items: center; gap: 8px; }
 
-/* 🌟 ADJUSTMENT 1: Gentle glowing breathing divider */
+/* Gentle glowing breathing divider */
 .pres-divider { 
     width: 2px; 
     height: 20px; 
@@ -71,15 +69,81 @@
     align-items: center;
     justify-content: center;
     gap: 6px;
-    /* 🌟 THE FIX: Forces icon and text to stay on one single line */
     white-space: nowrap;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
-/* Subtle hover physics */
-.pres-btn:hover {
-    transform: translateY(-2px);
+.pres-btn:hover { transform: translateY(-2px); }
+.pres-btn:active { transform: translateY(1px); }
+
+.showcase-btn { 
+    padding: 6px 10px !important; 
+    background: rgba(56, 189, 248, 0.1) !important; 
+    border: 1px solid rgba(56, 189, 248, 0.3) !important;
+    color: #bae6fd !important;
 }
-.pres-btn:active {
-    transform: translateY(1px);
+.showcase-btn:hover { box-shadow: 0 6px 15px rgba(56, 189, 248, 0.25); border-color: #38bdf8 !important; }
+
+/* =========================================
+   🎬 CLIENT SHOWCASE MODE (Fullscreen Overrides)
+========================================= */
+
+/* 1. Hide all UI distractions */
+body.showcase-active .pro-studio-navbar,
+body.showcase-active .navbar-toggle-btn,
+body.showcase-active .nav-drawer-panel,
+body.showcase-active .adv-btn-container,
+body.showcase-active .neo-panel:not(#presentation-controls),
+body.showcase-active #cheat-sheet-panel {
+    display: none !important;
 }
+
+/* 2. Stretch the 3D Canvas to fill the monitor */
+body.showcase-active #three-container {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 9000 !important;
+}
+
+/* 3. Re-position the Presentation Controls */
+body.showcase-active #presentation-controls {
+    position: fixed !important;
+    bottom: 30px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    z-index: 10000 !important;
+    background: rgba(15, 23, 42, 0.85) !important;
+    backdrop-filter: blur(10px) !important;
+    border: 1px solid #38bdf8 !important;
+    border-radius: 12px !important;
+    padding: 20px !important;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.9) !important;
+    width: auto !important;
+    max-width: 90vw !important;
+    display: flex !important;
+    justify-content: center !important;
+}
+
+/* 4. Style the Exit Button */
+#exit-showcase-btn {
+    display: none;
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 10001;
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+    border: 1px solid #ef4444;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    backdrop-filter: blur(5px);
+    transition: all 0.2s;
+}
+
+#exit-showcase-btn:hover { background: #ef4444; color: white; }
+body.showcase-active #exit-showcase-btn { display: block; }

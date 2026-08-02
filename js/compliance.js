@@ -46,6 +46,14 @@ window._calcCompliance = function(elements, fixtures) {
     return { score, warnings, totalChecks, passed };
 };
 
+// 🌟 NEW: Toggle function that adds/removes the CSS class
+window.toggleComplianceWidget = function() {
+    const widget = document.getElementById('compliance-widget');
+    if (widget) {
+        widget.classList.toggle('minimized');
+    }
+};
+
 window.renderComplianceUI = function(data) {
     if (!data) return;
     let widget = document.getElementById('compliance-widget');
@@ -67,13 +75,26 @@ window.renderComplianceUI = function(data) {
         ? data.warnings.map(w => `<div class="compliance-warning">${w}</div>`).join('')
         : `<div class="compliance-success">All elements meet standard building codes.</div>`;
 
+    // 🌟 UPDATED: Renders both views. The CSS handles which one is visible!
     widget.innerHTML = `
-        <div class="compliance-header">
-            <span class="compliance-title">${icon} CODE INSPECTOR</span>
-            <span class="compliance-score" style="color: ${color};">${data.score}%</span>
+        <!-- MAXIMIZED VIEW -->
+        <div class="compliance-max-view">
+            <div class="compliance-header">
+                <span class="compliance-title">${icon} CODE INSPECTOR</span>
+                <div style="display: flex; align-items: center;">
+                    <span class="compliance-score" style="color: ${color};">${data.score}%</span>
+                    <button class="compliance-close-btn" onclick="toggleComplianceWidget()" title="Minimize">&times;</button>
+                </div>
+            </div>
+            <div style="max-height: 180px; overflow-y: auto; padding-right: 4px;" class="explorer-scroll">
+                ${warningsHtml}
+            </div>
         </div>
-        <div style="max-height: 180px; overflow-y: auto; padding-right: 4px;" class="explorer-scroll">
-            ${warningsHtml}
+
+        <!-- MINIMIZED VIEW (Clicking this expands the widget) -->
+        <div class="compliance-min-view" onclick="toggleComplianceWidget()" title="Expand Code Inspector">
+            <span style="font-size: 1.1rem;">${icon}</span>
+            <span style="color: ${color}; font-family: monospace; font-weight: bold; font-size: 0.85rem;">${data.score}%</span>
         </div>
     `;
 };

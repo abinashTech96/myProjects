@@ -232,18 +232,6 @@ input:focus, .select-selected.select-arrow-active {
     border-color: #475569;
 }
 
-
-.canvas-area { 
-    flex-grow: 1; 
-    position: relative; 
-    background: #000; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    overflow: hidden; 
-    cursor: crosshair; 
-}
-
 /* --- PANEL STYLING --- */
 .panel { 
     background: linear-gradient(145deg, rgba(30, 41, 59, 0.6), rgba(15, 23, 42, 0.4));

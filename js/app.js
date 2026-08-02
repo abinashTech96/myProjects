@@ -2,13 +2,6 @@
 // APP.JS - CORE 2D ENGINE (Unabridged)
 // =================================================================
 let cachedSnapBoundaries = [];
-// --- CAMERA & VIEWPORT (Secured Namespace) ---
-const CanvasState = {
-    panX: 0,
-    panY: 0,
-    zoomLvl: 1,
-    snapLines: []
-};
 
 // --- SVG DRAWING HELPERS ---
 function updateSVGPosition(id, x, y, labelText, isVisible) {
@@ -276,7 +269,7 @@ function drawOuterPlotArea(geom) {
 function renderPlotCornerBadges(geom, showLabels) {
     if (typeof drawProBadge !== 'function') return;
     const { A, B, C, D, I, J, K, L } = geom;
-    const zoom = CanvasState.zoomLvl;
+    const zoom = window.CanvasState.zoomLvl;
     const vp = UI.viewport;
     drawProBadge('A', A.x - 15, A.y - 15, 'A', '#f59e0b', showLabels, zoom, vp);
     drawProBadge('B', B.x + 15, B.y - 15, 'B', '#f59e0b', showLabels, zoom, vp);
@@ -568,7 +561,7 @@ function renderOverlaysAndStats(geom) {
 
     // Draw Smart Alignment Guides
     const svg = document.getElementById('blueprint');
-    CanvasState.snapLines.forEach(line => {
+    window.CanvasState.snapLines.forEach(line => {
         const l = document.createElementNS("http://www.w3.org/2000/svg", "line");
         if (line.type === 'v') { l.setAttribute("x1", line.x); l.setAttribute("x2", line.x); l.setAttribute("y1", 0); l.setAttribute("y2", 1000); }
         else { l.setAttribute("y1", line.y); l.setAttribute("y2", line.y); l.setAttribute("x1", 0); l.setAttribute("x2", 1000); }
@@ -980,8 +973,8 @@ const handleMove = (currentMouse, e) => {
             
             // 🌟 DYNAMIC SNAP RESOLUTION
             let snapRes = 12; // Default: 1 foot
-            if (CanvasState.zoomLvl > 2.5) snapRes = 1;      // Deep Zoom: 1 inch precision
-            else if (CanvasState.zoomLvl > 1.2) snapRes = 6; // Mid Zoom: 6 inch precision
+            if (window.CanvasState.zoomLvl > 2.5) snapRes = 1;      // Deep Zoom: 1 inch precision
+            else if (window.CanvasState.zoomLvl > 1.2) snapRes = 6; // Mid Zoom: 6 inch precision
 
             if (!snappedX) newX = isStrictSnap ? Math.round(newX / snapRes) * snapRes : Math.round(newX);
             if (!snappedY) newY = isStrictSnap ? Math.round(newY / snapRes) * snapRes : Math.round(newY);
@@ -1054,9 +1047,8 @@ const endDrag = () => {
     isDragging = false; dragFixtureIndex = -1; isDraggingFixture = false; dragElIndex = -1;
     const guideLayer = document.getElementById('smart-guides');
     if (guideLayer) guideLayer.innerHTML = '';
-    CanvasState.snapLines = [];
-    updateCanvas(true);    
-    // 🌟 NEW: Calculate heavy math only after the drop
+    window.CanvasState.snapLines = [];
+    updateCanvas(true);
     if (typeof requestBackgroundMath === 'function') requestBackgroundMath();
 };
 
@@ -1106,7 +1098,7 @@ function initInteractions() {
         const guideLayer = document.getElementById('smart-guides');
         if (guideLayer) guideLayer.innerHTML = '';
         
-        snapLines = [];
+        window.CanvasState.snapLines = [];
         updateCanvas(true);
     };
     UI.blueprint.addEventListener('mouseup', window.endDrag);
@@ -1230,8 +1222,8 @@ function centerOnSelection() {
     const { SCALE, I } = Utils.getMetrics(); 
     const roomCenterX = I.x + (el.x * SCALE) + ((el.w * SCALE) / 2);
     const roomCenterY = I.y + (el.y * SCALE) + ((el.h * SCALE) / 2);
-    CanvasState.panX = 500 - (roomCenterX * CanvasState.zoomLvl);
-    CanvasState.panY = 500 - (roomCenterY * CanvasState.zoomLvl);
+    window.CanvasState.panX = 500 - (roomCenterX * window.CanvasState.zoomLvl);
+    window.CanvasState.panY = 500 - (roomCenterY * window.CanvasState.zoomLvl);
     updateViewport();
 }
 
@@ -1252,7 +1244,6 @@ function toggleMeasureMode() {
 function syncStaircases(sourceIndex) {
     const source = elements[sourceIndex];
     if (!source || source.type !== 'staircase') return;
-
     elements.forEach((el, index) => {
         if (el.type === 'staircase' && index !== sourceIndex) {
             el.x = source.x;

@@ -336,8 +336,8 @@ function buildEditorView(i, el) {
                 ` : ''}
                 <button class="neo-btn" onclick="rotateElement(${i})" title="Rotate">🔄</button>
                 <button class="neo-btn" onclick="cloneElement(${i})" title="Duplicate">📋</button>
-                <button class="neo-btn ${el.locked ? 'outline-yellow' : ''}" onclick="elements[${i}].locked = !elements[${i}].locked; renderSidebar();" title="Lock">${el.locked ? '🔒' : '🔓'}</button>
-                <button class="neo-btn outline-yellow" style="color: #ef4444;" onclick="deleteElement(${i})" title="Delete">🗑️</button>
+                <button class="neo-btn ${el.locked ? 'outline-yellow' : ''}" onclick="elements[${i}].locked = !elements[${i}].locked; renderSidebar();" title="Lock">${el.locked ? '🔒Unlock' : '🔓Lock'}</button>
+                <button class="neo-btn outline-yellow" style="color: #ef4444;" onclick="deleteElement(${i})" title="Delete">🗑️Delete</button>
             </div>  
 
             <div class="neo-sunken" style="padding: 15px;">

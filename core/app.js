@@ -7,7 +7,7 @@ const CanvasState = {
     panX: 0,
     panY: 0,
     zoomLvl: 1,
-    snapLines: [] // 🌟 ADD THIS HERE
+    snapLines: []
 };
 
 function updateViewport() {
@@ -611,10 +611,16 @@ function renderOverlaysAndStats(geom) {
 function cleanupExcessSVG() {
     let excessIndex = elements.length;
     while(document.getElementById(`rect-${excessIndex}`)) {
-        document.getElementById(`rect-${excessIndex}`).remove();
-        let rb = document.getElementById(`rect-border-${excessIndex}`); if (rb) rb.remove();
-        let rh = document.getElementById(`rect-hollow-${excessIndex}`); if (rh) rh.remove();
-        ['title', 'dims', 'area'].forEach(t => { let n = document.getElementById(`txt-${t}-${excessIndex}`); if(n) n.remove(); });
+        // 🛠️ PERFORMANCE FIX: Hide elements instead of calling .remove()
+        document.getElementById(`rect-${excessIndex}`).style.display = 'none';
+        let rb = document.getElementById(`rect-border-${excessIndex}`); 
+        if (rb) rb.style.display = 'none';
+        let rh = document.getElementById(`rect-hollow-${excessIndex}`); 
+        if (rh) rh.style.display = 'none';
+        ['title', 'dims', 'area'].forEach(t => { 
+            let n = document.getElementById(`txt-${t}-${excessIndex}`); 
+            if(n) n.style.display = 'none'; 
+        });
         excessIndex++;
     }
 }
@@ -671,26 +677,66 @@ function updateCompass() {
     }
 }
 
+//populate the room tooltip with relevant information and positioning near the mouse cursor
 function applyRoomTooltips(r, el) {
     r.onmouseover = function(e) {
         const tooltip = document.getElementById('room-tooltip');
         tooltip.style.display = 'block';
+        tooltip.style.background = 'rgba(15, 23, 42, 0.85)';
+        tooltip.style.backdropFilter = 'blur(10px)';
+        tooltip.style.border = '1px solid rgba(56, 189, 248, 0.5)';
+        tooltip.style.boxShadow = '0 10px 25px rgba(0,0,0,0.5), inset 0 0 15px rgba(56, 189, 248, 0.1)';
+        tooltip.style.borderRadius = '8px';
+        tooltip.style.padding = '6px 8px';
+        tooltip.style.minWidth = '160px';
         const area = ((el.w * el.h)/144).toFixed(1);
-        // 🌟 UPDATED TOOLTIP HTML
+        const floorName = el.floor === 0 ? 'Ground' : (el.floor === 1 ? '1st' : el.floor + 'th');
+        let icon = '🚪'; 
+        if (el.isFurniture) icon = '🛋️';
+        else if (el.type === 'staircase') icon = '🪜';
+        else if (el.type === 'kitchen') icon = '🍳';
+        else if (el.type === 'toilet') icon = '🚿';
+        else if (el.type === 'bedroom') icon = '🛏️';
+        else if (el.type === 'balcony') icon = '🌿';
+        else if (el.type === 'puja') icon = '🕉️';
         tooltip.innerHTML = `
-            <div class="tooltip-header">${el.customName || el.type.toUpperCase()}</div>
-            <div class="tooltip-body">
-                <span>📐 ${Math.floor(el.w/12)}'${Math.round(el.w%12)}" × ${Math.floor(el.h/12)}'${Math.round(el.h%12)}"</span>
-                <span>📏 ${area} sq.ft</span>
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+                <div style="display: flex; align-items: center; gap: 2px; border-bottom: 1px solid rgba(56, 189, 248, 0.3); padding-bottom: 6px;">
+                    <div style="background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.4); border-radius: 6px; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">
+                        ${icon}
+                    </div>
+                    <span style="font-weight: 800; color: #38bdf8; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; text-shadow: 0 1px 2px rgba(0,0,0,0.8);">
+                        ${el.customName || el.type}
+                    </span>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 4px; font-size: 0.7rem; color: #e2e8f0;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3); padding: 4px 6px; border-radius: 4px;">
+                        <span style="color: #94a3b8;">🏢 Level</span>
+                        <span style="font-weight: 600; color: #f1f5f9;">${floorName}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3); padding: 4px 6px; border-radius: 4px;">
+                        <span style="color: #94a3b8;">📐 Size</span>
+                        <span style="font-weight: 600; font-family: monospace; color: #f1f5f9;">${Math.floor(el.w/12)}'${Math.round(el.w%12)}" × ${Math.floor(el.h/12)}'${Math.round(el.h%12)}"</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); padding: 4px 6px; border-radius: 4px; margin-top: 2px;">
+                        <span style="color: #10b981; font-weight: 600;">📏 Area</span>
+                        <span style="font-weight: 700; color: #10b981; font-family: monospace;">${area} sq.ft</span>
+                    </div>
+                </div>
             </div>
         `;
     };
     r.onmousemove = function(e) {
         const tooltip = document.getElementById('room-tooltip');
-        tooltip.style.left = (e.clientX + 15) + 'px';
-        tooltip.style.top = (e.clientY + 15) + 'px';
+        tooltip.style.left = (e.clientX + 200) + 'px';
+        tooltip.style.top = (e.clientY + 0) + 'px';
     };
-    r.onmouseout = function() { document.getElementById('room-tooltip').style.display = 'none'; };
+    r.onmouseout = function() { 
+        const tooltip = document.getElementById('room-tooltip');
+        tooltip.style.display = 'none';
+        tooltip.style.backdropFilter = 'none';
+        tooltip.style.minWidth = 'auto';
+    };
 }
 
 function renderRoomText(i, el, rx, ry, w, h, IX, IY) {
@@ -757,8 +803,7 @@ function renderRoomText(i, el, rx, ry, w, h, IX, IY) {
 
 function fastUpdateDrag(index) {
     const el = elements[index];
-    const { SCALE, I } = Utils.getMetrics(); // 🚀 Uses centralized math
-    
+    const { SCALE, I } = Utils.getMetrics();
     const rx = I.x + (el.x * SCALE); 
     const ry = I.y + (el.y * SCALE);
 
@@ -1220,7 +1265,6 @@ function centerOnSelection() {
 
 // --- MEASUREMENT TOOL ---
 let isMeasuringMode = false, measureStart = null, tempMeasureLine = null, measureGroup = null;
-
 function toggleMeasureMode() {
     isMeasuringMode = !isMeasuringMode;
     if(UI.blueprint) UI.blueprint.style.cursor = isMeasuringMode ? 'crosshair' : 'default';

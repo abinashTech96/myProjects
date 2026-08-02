@@ -1,7 +1,6 @@
 // =========================================
 // 🖨️ EXPORT & DOCUMENT ENGINE (export.js)
 // =========================================
-
 // --- 1. EXPORT TO HIGH-RES PNG ---
 window.exportPNG = function() {
     const svgElement = document.getElementById('blueprint');
@@ -36,8 +35,6 @@ window.exportPNG = function() {
     };
     img.src = url;
 };
-
-
 // --- 2. EXPORT TO VECTOR PDF (Print Layout) ---
 window.exportPDF = function() {
     // 1. Clone the pristine SVG canvas directly
@@ -120,8 +117,6 @@ window.exportPDF = function() {
     `);
     printWindow.document.close();
 };
-
-
 function exportDXF() {
     const unit = UI.unitSelect ? UI.unitSelect.value : 'in';
     const SCALE = parseFloat(UI.scaleInput ? UI.scaleInput.value : 1.2) || 1.2;
@@ -188,4 +183,33 @@ function exportDXF() {
     a.download = `ArchCAD_Export_${new Date().getTime()}.dxf`;
     a.click();
     window.URL.revokeObjectURL(url);
+}
+window.exportGLB = function() {
+    if (!window.is3DMode || !Engine3D.buildingGroup) {
+        return alert("Please open the 3D Preview first to generate the mesh!");
+    }
+    
+    // Dynamically load the Three.js GLTFExporter if it isn't in the HTML
+    if (typeof THREE.GLTFExporter === 'undefined') {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/GLTFExporter.js';
+        script.onload = () => runGLTFExport();
+        document.head.appendChild(script);
+    } else {
+        runGLTFExport();
+    }
+};
+function runGLTFExport() {
+    const exporter = new THREE.GLTFExporter();
+    
+    // Export the entire building group
+    exporter.parse(Engine3D.buildingGroup, function (gltf) {
+        const blob = new Blob([gltf], { type: 'application/octet-stream' });
+        const url = window.URL.createObjectURL(blob);
+        const downloadLink = document.createElement('a');
+        downloadLink.href = url;
+        downloadLink.download = `ArchCAD_3D_Model_${new Date().getTime()}.glb`;
+        downloadLink.click();
+        window.URL.revokeObjectURL(url);
+    }, { binary: true }); // binary: true generates a .glb file instead of a text .gltf
 }

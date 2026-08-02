@@ -104,20 +104,61 @@ function setFloor(f) {
 }
 
 function addManualFloor() {
-    if (typeof saveState === 'function') saveState();
+    // 1. Use the new State Manager for the Undo/Redo history
+    if (typeof ProjectState !== 'undefined') {
+        ProjectState.saveState("Added Floor");
+    }
+    
     const bFloorsInput = document.getElementById('b-floors');
     let currentCount = parseInt(bFloorsInput.value) || 1;
     const newFloorNum = currentCount; 
     bFloorsInput.value = currentCount + 1; 
 
-    elements.filter(e => e.type === 'staircase' && e.floor === newFloorNum - 1).forEach(stair => {
-        const clone = structuredClone(stair);
-        clone.floor = newFloorNum; 
-        elements.push(clone);
-    });
+    // 2. Look for staircases on the floor directly below
+    const existingStairs = elements.filter(e => e.type === 'staircase' && e.floor === newFloorNum - 1);
+    
+    if (existingStairs.length > 0) {
+        // If staircases exist, clone them up to the new floor
+        existingStairs.forEach(stair => {
+            const clone = structuredClone(stair);
+            clone.floor = newFloorNum; 
+            elements.push(clone);
+        });
+    } else {
+        // 3. Auto-populate a default staircase safely INSIDE the plot boundary
+        const sConf = (typeof ARCH_CONFIG !== 'undefined') ? ARCH_CONFIG.DEFAULTS.STAIRCASE : { w: 84, h: 132 };
+        
+        // 🐛 FIX: Force the coordinates to the safe spawn points instead of the hardcoded 450
+        const spawnX = (typeof ARCH_CONFIG !== 'undefined') ? ARCH_CONFIG.DEFAULTS.SPAWN_X : 20;
+        const spawnY = (typeof ARCH_CONFIG !== 'undefined') ? ARCH_CONFIG.DEFAULTS.SPAWN_Y : 20;
+        
+        // Inject a staircase into the previous floor...
+        elements.push({ 
+            type: 'staircase', 
+            w: sConf.w, h: sConf.h, x: spawnX, y: spawnY, 
+            floor: newFloorNum - 1, locked: false, dir: 'up' 
+        });
+        
+        // ...and inject the matching staircase into the newly created floor
+        elements.push({ 
+            type: 'staircase', 
+            w: sConf.w, h: sConf.h, x: spawnX, y: spawnY, 
+            floor: newFloorNum, locked: false, dir: 'up' 
+        });
+    }
     
     if (typeof renderFloorSelectors === 'function') renderFloorSelectors();
-    setFloor(newFloorNum);
+    
+    // 4. Set the new floor and trigger the global event bus to update 2D & 3D canvases
+    currentFloor = newFloorNum;
+    selectedElIndex = -1;
+    
+    if (typeof AppEvents !== 'undefined') {
+        AppEvents.triggerStateChange();
+    } else {
+        if (typeof renderSidebar === 'function') renderSidebar();
+        if (typeof updateCanvas === 'function') updateCanvas();
+    }
 }
 
 function deleteCurrentFloor() {

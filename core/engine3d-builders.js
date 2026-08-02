@@ -65,8 +65,9 @@ function build3DRooms(SCALE, I, WALL_HEIGHT, useReal3D) {
         }
 
         if (el.isFurniture) {
-            // 🌟 1. Build the furniture mathematically in a dummy group
-            const mesh = createFurniture3D(el.type, center.width, center.depth);
+            // 🛠️ NEW: Pass the user's custom color to the factory
+            const customHex = el.customColor ? parseInt(el.customColor.replace('#', '0x')) : null;
+            const mesh = createFurniture3D(el.type, center.width, center.depth, customHex);
             mesh.position.set(center.x, el.floor * WALL_HEIGHT, center.z);
             if (el.rot) mesh.rotation.y = el.rot * (Math.PI / 180);
             mesh.updateMatrixWorld(true);
@@ -347,22 +348,26 @@ function build3DSlabs(SCALE, I, WALL_HEIGHT, useReal3D) {
         shape.lineTo(-inW/2, inH/2);
         shape.lineTo(-inW/2, -inH/2);
         
-        // Carve holes for staircases on the floor BELOW this slab
+        // Carve holes for staircases
         elements.forEach(el => {
-            if (el.type === 'staircase' && el.floor === f - 1) {
-                const hole = new THREE.Path();
-                // Map 2D coordinates to 3D center-origin coords
-                const hx = (el.x * SCALE) - (inW/2);
-                const hz = (el.y * SCALE) - (inH/2); 
-                const hw = el.w * SCALE;
-                const hd = el.h * SCALE;
-                
-                hole.moveTo(hx, hz);
-                hole.lineTo(hx + hw, hz);
-                hole.lineTo(hx + hw, hz + hd);
-                hole.lineTo(hx, hz + hd);
-                hole.lineTo(hx, hz);
-                shape.holes.push(hole);
+            if (el.type === 'staircase') {
+                // ✨ ENHANCEMENT: Cut hole if staircase is on the floor exactly below, 
+                // OR if cutAllFloors is true and the staircase originates below this slab
+                if (el.floor === f - 1 || (el.cutAllFloors && el.floor < f)) {
+                    const hole = new THREE.Path();
+                    // Map 2D coordinates to 3D center-origin coords
+                    const hx = (el.x * SCALE) - (inW/2);
+                    const hz = (el.y * SCALE) - (inH/2); 
+                    const hw = el.w * SCALE;
+                    const hd = el.h * SCALE;
+                    
+                    hole.moveTo(hx, hz);
+                    hole.lineTo(hx + hw, hz);
+                    hole.lineTo(hx + hw, hz + hd);
+                    hole.lineTo(hx, hz + hd);
+                    hole.lineTo(hx, hz);
+                    shape.holes.push(hole);
+                }
             }
         });
 
@@ -735,12 +740,10 @@ function update3DTransforms() {
 // =========================================
 // 3D FURNITURE GENERATOR
 // =========================================
-function createFurniture3D(type, w, d) {
+function createFurniture3D(type, w, d, customHexColor = null) { // 🛠️ NEW: Accept custom hex
     const group = new THREE.Group();
-    // A clean, soft gray material for all furniture (passed into the builders)
     const mat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.9 });
 
-    // Map the 2D 'type' string directly to the Factory function
     const builderMap = {
         'bed': FurnitureFactory.buildBed,
         'sofa': FurnitureFactory.buildSofa,
@@ -768,6 +771,16 @@ function createFurniture3D(type, w, d) {
         console.warn(`Furniture type '${type}' not found in FurnitureFactory.`);
     }
 
+    // 🛠️ NEW: Dynamically override the primary material if a custom color was set by the user
+    if (customHexColor !== null) {
+        const customMat = getCachedSolidMaterial(customHexColor, 1.0);
+        group.traverse(child => {
+            // Apply the custom color. (You can add logic here to ignore certain materials like glass or metal if desired).
+            if (child.isMesh) {
+                child.material = customMat;
+            }
+        });
+    }
     return group;
 }
 

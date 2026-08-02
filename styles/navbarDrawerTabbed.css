@@ -67,7 +67,26 @@
     padding: 15px 12px;
     position: relative;
     min-height: 250px;
-    display: none; /* 🌟 NEW: Hides the empty box by default */
+    display: none; 
+    /* 🐛 BUG FIX: Constrain height and enable scrolling */
+    max-height: 65vh; /* Uses 65% of the screen height */
+    overflow-y: auto; /* Allows scrolling when content is too long */
+}
+/* 🌟 CUSTOM SCROLLBAR FOR THE TABS */
+.drawer-tabs-content::-webkit-scrollbar { 
+    width: 6px; 
+}
+.drawer-tabs-content::-webkit-scrollbar-track { 
+    background: rgba(0, 0, 0, 0.2); 
+    border-radius: 4px; 
+    margin: 10px 0; /* Keeps the scrollbar from hitting the rounded corners */
+}
+.drawer-tabs-content::-webkit-scrollbar-thumb { 
+    background: #334155; 
+    border-radius: 4px; 
+}
+.drawer-tabs-content::-webkit-scrollbar-thumb:hover { 
+    background: #38bdf8; /* Glows cyan when hovering over the scrollbar */
 }
 /* 4. Individual Content Switching */
 .drawer-tab-panel {

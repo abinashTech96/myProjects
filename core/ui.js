@@ -301,6 +301,12 @@ function buildEditorView(i, el) {
                 <button class="neo-btn outline-cyan" style="padding: 6px; font-size: 0.7rem;" onclick="rotateStaircase(${i})" title="Rotate Staircase">
                     🔄 DIRECTION: ${el.dir ? el.dir.toUpperCase() : 'UP'}
                 </button>
+                <!-- ✨ ENHANCEMENT: Multi-Story Shaft Toggle -->
+                <label class="ui-toggle" style="margin-top: 5px;">
+                    <span class="neo-label">CUT ALL FLOORS (SHAFT)</span>
+                    <input type="checkbox" ${el.cutAllFloors ? 'checked' : ''} onchange="elements[${i}].cutAllFloors=this.checked; if(typeof ProjectState !== 'undefined') ProjectState.saveState(); updateCanvas(); if(typeof generate3DModel === 'function') generate3DModel();">
+                    <div class="slider"></div>
+                </label>
             </div>
         `;
     }
@@ -915,10 +921,12 @@ if (window.mathWorker) {
 
 // 🚀 MODULARIZED: Load the worker directly from the separate file!
 window.mathWorker = new Worker('core/worker.js');
+window.isWorkerBusy = false; // 🛠️ NEW: State lock for the worker
 
 // Listen for the results from the background core
 window.mathWorker.onmessage = function(e) {
     if (e.data.type === 'MATH_COMPLETE') {
+        window.isWorkerBusy = false; // 🛠️ Release the lock
         if (typeof renderVastuUI === 'function') renderVastuUI(e.data.vastu);
         if (typeof renderAreaUI === 'function') renderAreaUI(e.data.area);
     }
@@ -927,7 +935,8 @@ window.mathWorker.onmessage = function(e) {
 // A debounced trigger we can safely call 60 times a second without flooding the worker
 window.requestBackgroundMath = debounce(() => {
     if (!window.mathWorker || !elements) return;
-    
+    if (window.isWorkerBusy) return; // 🛠️ Drop the request if worker is still calculating
+    window.isWorkerBusy = true; // 🛠️ Lock the worker
     window.mathWorker.postMessage({
         type: 'CALCULATE_MATH',
         payload: {

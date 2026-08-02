@@ -64,19 +64,29 @@ function checkCollision(el, index) {
 }
 
 function applySmartSnap(el, index) {
-    snapLines = [];
+    CanvasState.snapLines = [];
     const TOLERANCE = 5; // Will snap if within 5 pixels
     
     elements.forEach((other, i) => {
         if (i === index || other.floor !== el.floor) return;
-        
         // Vertical Snapping (X-axis)
-        if (Math.abs(el.x - other.x) < TOLERANCE) { el.x = other.x; snapLines.push({x: el.x, type: 'v'}); }
-        else if (Math.abs((el.x + el.w) - (other.x + other.w)) < TOLERANCE) { el.x = other.x + other.w - el.w; snapLines.push({x: el.x + el.w, type: 'v'}); }
-        
+        if (Math.abs(el.x - other.x) < TOLERANCE) { 
+            el.x = other.x; 
+            CanvasState.snapLines.push({x: el.x, type: 'v'}); 
+        }
+        else if (Math.abs((el.x + el.w) - (other.x + other.w)) < TOLERANCE) { 
+            el.x = other.x + other.w - el.w; 
+            CanvasState.snapLines.push({x: el.x + el.w, type: 'v'}); 
+        }
         // Horizontal Snapping (Y-axis)
-        if (Math.abs(el.y - other.y) < TOLERANCE) { el.y = other.y; snapLines.push({y: el.y, type: 'h'}); }
-        else if (Math.abs((el.y + el.h) - (other.y + other.h)) < TOLERANCE) { el.y = other.y + other.h - el.h; snapLines.push({y: el.y + el.h, type: 'h'}); }
+        if (Math.abs(el.y - other.y) < TOLERANCE) { 
+            el.y = other.y; 
+            CanvasState.snapLines.push({y: el.y, type: 'h'}); 
+        }
+        else if (Math.abs((el.y + el.h) - (other.y + other.h)) < TOLERANCE) { 
+            el.y = other.y + other.h - el.h; 
+            CanvasState.snapLines.push({y: el.y + el.h, type: 'h'}); 
+        }
     });
 }
 

@@ -48,7 +48,8 @@ window.Engine3D = {
         this.controls.enableDamping = true; 
         this.controls.dampingFactor = 0.05;
         this.controls.target.set(500, 0, 500);
-        this.controls.maxPolarAngle = Math.PI / 2 - 0.05; 
+        //this.controls.maxPolarAngle = Math.PI / 2 - 0.05; // <-- This was the restriction for 360deg vertically
+        this.controls.maxPolarAngle = Math.PI; // Allows going completely underneath
 
         // 4. Setup Lighting
         this.hemiLight = new THREE.HemisphereLight(0xffffff, 0x444455, 0.6);

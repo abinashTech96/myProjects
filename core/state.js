@@ -144,6 +144,10 @@ const ProjectState = {
 
             this.data.elements = this._clone(restoredState.elements);
             this.data.fixtures = this._clone(restoredState.fixtures);
+            // 🐛 BUG FIX: Validate selected index to prevent 2D renderer crashes
+            if (this.data.selectedElIndex >= this.data.elements.length) {
+                this.data.selectedElIndex = -1;
+            }
             return true;
         }
         return false;
@@ -156,6 +160,10 @@ const ProjectState = {
             const restoredState = this._buildStateFromHistory(this.history.stack.length - 1);
             this.data.elements = this._clone(restoredState.elements);
             this.data.fixtures = this._clone(restoredState.fixtures);
+            // 🐛 BUG FIX: Validate selected index
+            if (this.data.selectedElIndex >= this.data.elements.length) {
+                this.data.selectedElIndex = -1;
+            }
             return true;
         }
         return false;

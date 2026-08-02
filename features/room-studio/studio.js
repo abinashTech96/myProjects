@@ -486,19 +486,18 @@ const RoomStudio = {
             this.controls3D = new THREE.OrbitControls(this.camera3D, this.renderer3D.domElement);
             this.controls3D.enableDamping = true;
             this.controls3D.dampingFactor = 0.05;
-            this.controls3D.maxPolarAngle = Math.PI / 2.1; 
+            //this.controls3D.maxPolarAngle = Math.PI / 2.1; // <-- This was the restriction for 360deg vertically
+            this.controls3D.maxPolarAngle = Math.PI; // Allows going completely underneath
 
             // 🌟 INIT RAYCASTER FOR 3D DRAG & DROP 🌟
             this.raycaster = new THREE.Raycaster();
             this.mouse3D = new THREE.Vector2();
             this.dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
             this.dragOffset3D = new THREE.Vector3();
-            
             container.addEventListener('pointerdown', this.on3DPointerDown.bind(this));
             container.addEventListener('pointermove', this.on3DPointerMove.bind(this));
             container.addEventListener('pointerup', this.on3DPointerUp.bind(this));
         }
-
         if (this.reqAnim) cancelAnimationFrame(this.reqAnim);
         
         const animate = () => {
@@ -540,32 +539,27 @@ const RoomStudio = {
         floor.rotation.x = -Math.PI / 2;
         floor.position.set(W/2, 0, D/2);
         this.scene3D.add(floor);
-
-        // 🌟 RESTORED: TRANSLUCENT WALLS
+        
         const wallMat = new THREE.MeshStandardMaterial({ color: 0x475569, transparent: true, opacity: STUDIO_CONFIG.WALL_OPACITY, side: THREE.DoubleSide });
         const wN = new THREE.Mesh(new THREE.BoxGeometry(W, H, T), wallMat); wN.position.set(W/2, H/2, -T/2);
         const wS = new THREE.Mesh(new THREE.BoxGeometry(W, H, T), wallMat); wS.position.set(W/2, H/2, D + T/2);
         const wE = new THREE.Mesh(new THREE.BoxGeometry(T, H, D), wallMat); wE.position.set(W + T/2, H/2, D/2);
         const wW = new THREE.Mesh(new THREE.BoxGeometry(T, H, D), wallMat); wW.position.set(-T/2, H/2, D/2);
         this.scene3D.add(wN, wS, wE, wW);
-
-        // 🌟 RESTORED: 3D DOORS & WINDOWS
+        
         this.sandboxDoorsWindows.forEach(fix => {
             const isDoor = fix.type === 'door';
             const fw = fix.size;
             const fh = isDoor ? 80 : 40;
             const fd = 8;
-            
             const frameMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.5 });
             const panelMat = new THREE.MeshStandardMaterial({ color: 0x8b4513, roughness: 0.9 });
-            
             const group = new THREE.Group();
             const frame = new THREE.Mesh(new THREE.BoxGeometry(fw, fh, fd), frameMat);
             const panel = new THREE.Mesh(new THREE.BoxGeometry(fw-4, fh-4, fd+1), panelMat);
             group.add(frame, panel);
 
             let px = 0, py = isDoor ? fh/2 : 40 + fh/2, pz = 0;
-            
             if (fix.edge === 'bottom') { px = fix.offset + fw/2; pz = D; }
             if (fix.edge === 'top') { px = fix.offset + fw/2; pz = 0; }
             if (fix.edge === 'left') { pz = fix.offset + fw/2; px = 0; group.rotation.y = Math.PI/2; }
@@ -574,25 +568,19 @@ const RoomStudio = {
             group.position.set(px, py, pz);
             this.scene3D.add(group);
         });
-
-        // RENDER FURNITURE WITH ROTATION SUPPORT
+        
         this.sandboxFixtures.forEach((fix, idx) => {
             if (typeof FurnitureFactory !== 'undefined') {
                 let drawW = fix.w;
                 let drawH = fix.h;
-                
                 if (Math.abs(fix.rot) === 90 || Math.abs(fix.rot) === 270) {
                     drawW = fix.h;
                     drawH = fix.w;
                 }
-                
                 const mesh = createFurniture3D(fix.type, drawW, drawH);
-                
                 if (fix.rot) mesh.rotation.y = fix.rot * (Math.PI / 180);
                 mesh.position.set(fix.x + (fix.w/2), 0, fix.y + (fix.h/2));
-                
                 mesh.userData = { isFurniture: true, index: idx };
-                
                 mesh.traverse(child => { 
                     if(child.isMesh){ 
                         child.castShadow = true; 
@@ -620,20 +608,14 @@ const RoomStudio = {
         if (!this.is3DActive) return;
         const container = document.getElementById('studio-3d-container');
         const rect = container.getBoundingClientRect();
-        
-        // Convert mouse position to normalized device coordinates (-1 to +1)
         this.mouse3D.x = ((event.clientX - rect.left) / container.clientWidth) * 2 - 1;
         this.mouse3D.y = -((event.clientY - rect.top) / container.clientHeight) * 2 + 1;
-        
         this.raycaster.setFromCamera(this.mouse3D, this.camera3D);
-        
-        // Intersect all children
         const intersects = this.raycaster.intersectObjects(this.scene3D.children, true);
         let selectedGroup = null;
         
         for (let i = 0; i < intersects.length; i++) {
             let obj = intersects[i].object;
-            // Climb up the hierarchy to find the parent group we tagged
             while (obj.parent && obj.parent !== this.scene3D) {
                 if (obj.userData && obj.userData.isFurniture) break;
                 obj = obj.parent;
@@ -647,14 +629,13 @@ const RoomStudio = {
         if (selectedGroup) {
             this.selectedFixtureIndex = selectedGroup.userData.index;
             this.is3DDragging = true;
-            this.controls3D.enabled = false; // Disable camera orbit while dragging object
+            this.controls3D.enabled = false;
             
-            // Calculate where we clicked on the plane to establish a drag offset
             this.raycaster.ray.intersectPlane(this.dragPlane, this.dragOffset3D);
             this.dragOffset3D.sub(selectedGroup.position);
             
             this.renderProperties();
-            this.build3DScene(); // Rebuild to apply blue glow
+            this.build3DScene();
         } else {
             this.selectedFixtureIndex = -1;
             this.renderProperties();
@@ -688,15 +669,17 @@ const RoomStudio = {
                 fix.y = newY;
 
                 this.renderProperties();
-                // 🚀 PERFORMANCE FIX: Only update the specific mesh's position, DO NOT rebuild the scene
                 const activeMesh = this.scene3D.children.find(child => 
                     child.userData && child.userData.index === this.selectedFixtureIndex
                 );
                 if (activeMesh) {
                     activeMesh.position.set(fix.x + (fix.w/2), 0, fix.y + (fix.h/2));
+                    // 🐛 BUG FIX: Force shadow map update so shadows track the dragged furniture
+                    if (this.renderer3D.shadowMap.enabled) {
+                        this.renderer3D.shadowMap.needsUpdate = true;
+                    }
                 }
             }
-            // 🚀 Unlock the throttle so the next frame can process
             this._raycastPending = false; 
         });
     },

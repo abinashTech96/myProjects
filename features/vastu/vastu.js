@@ -24,7 +24,7 @@ window.calculateVastuScore = function() {
             
             // Determine Compass Zone
             const compassDir = document.getElementById('compassDir')?.value || 'West';
-            let zoneStr = getDynamicVastuZone(cx, cy, cellW, cellH, compassDir);
+            let zoneStr = getDynamicVastuZone(cx, cy, inW, inH, compassDir);
             
             // Apply Global Rules
             if (el.type === 'kitchen') {
@@ -93,7 +93,7 @@ function toggleVastuWidget() {
     }
 }
 
-function getDynamicVastuZone(cx, cy, cellW, cellH, topDirection) {
+function getDynamicVastuZoneOld(cx, cy, cellW, cellH, topDirection) {
     let gridX = cx < cellW ? 0 : (cx > cellW * 2 ? 2 : 1);
     let gridY = cy < cellH ? 0 : (cy > cellH * 2 ? 2 : 1);
 
@@ -125,4 +125,38 @@ function getDynamicVastuZone(cx, cy, cellW, cellH, topDirection) {
     else if (gridX === 2 && (right === 'E' || right === 'W')) zone += right;
 
     return zone;
+}
+function getDynamicVastuZone(cx, cy, plotW, plotH, topDirection) {
+    // 1. Find Brahmasthan (Exact Center of Plot)
+    const centerX = plotW / 2;
+    const centerY = plotH / 2;
+    
+    // If the room is practically dead-center
+    if (Math.abs(cx - centerX) < (plotW * 0.1) && Math.abs(cy - centerY) < (plotH * 0.1)) {
+        return "CENTER";
+    }
+    
+    // 2. Calculate angle from center to room (in degrees, 0 to 360)
+    let angle = Math.atan2(cy - centerY, cx - centerX) * (180 / Math.PI);
+    if (angle < 0) angle += 360;
+
+    // 3. Adjust angle offset based on the user's Compass Top Direction
+    let offset = 0;
+    switch (topDirection) {
+        case 'North': offset = 270; break; // SVG Y grows downwards, so North is at 270 deg
+        case 'East':  offset = 0; break;
+        case 'South': offset = 90; break;
+        case 'West':  offset = 180; break;
+        default:      offset = 180; break;
+    }
+    
+    // Normalize the adjusted angle back to a 0-360 scale
+    let normalizedAngle = (angle - offset + 360) % 360;
+    
+    // 4. Map to the 16 Professional Vastu Zones (22.5 degrees each)
+    const zones = ["E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW", "N", "NNE", "NE", "ENE"];
+    
+    // Shift by 11.25 degrees so each zone is centered exactly on its primary angle
+    const index = Math.floor(((normalizedAngle + 11.25) % 360) / 22.5);
+    return zones[index];
 }

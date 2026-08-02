@@ -1,5 +1,5 @@
 // =========================================
-// 🌟 VASTU SHASTRA SCORING ENGINE (vastu.js)
+// 🧭 VASTU SHASTRA ENGINE & UI (vastu.js)
 // =========================================
 
 window.calculateVastuScore = function() {
@@ -12,10 +12,6 @@ window.calculateVastuScore = function() {
         let feedback = [];
         const inW = parseFloat(document.getElementById('inW')?.value || 272);
         const inH = parseFloat(document.getElementById('inH')?.value || 400);
-
-        // Divide plot into 3x3 grid (9 Mandala Zones)
-        const cellW = inW / 3;
-        const cellH = inH / 3;
 
         elements.forEach(el => {
             if (el.isFurniture || el.floor > 0) return; // Vastu is primarily evaluated on the Ground Floor
@@ -74,89 +70,96 @@ window.calculateVastuScore = function() {
     return { score, text: mainText, color };
 };
 
-// Toggles the Vastu widget between expanded and minimized states
-function toggleVastuWidget() {
+// Extracted from ui.js
+window.renderVastuUI = function(vastuData) {
+    let vastuContainer = document.getElementById('vastu-widget-container');
+    if (!vastuContainer) return;
+    vastuContainer.innerHTML = `
+        <div class="neo-sunken" style="margin-top: 20px; padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+            <div style="font-size: 0.75rem; color: #cbd5e1; font-weight: bold; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+                <span>🧭 VASTU SCORE</span>
+                <span style="color: ${vastuData.color}; background: rgba(0,0,0,0.3); padding: 2px 8px; border-radius: 10px; box-shadow: 0 0 8px ${vastuData.color}44;">${vastuData.score}/100</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <div style="width: 50px; height: 50px; border-radius: 50%; background: conic-gradient(${vastuData.color} ${vastuData.score}%, #1e293b 0); display: flex; justify-content: center; align-items: center; box-shadow: inset 0 4px 8px rgba(0,0,0,0.5); flex-shrink: 0;">
+                    <div style="width: 40px; height: 40px; background: #0f172a; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 0.9rem; font-weight: bold; color: #f1f5f9; box-shadow: 0 2px 4px rgba(0,0,0,0.5);">
+                        ${vastuData.score}
+                    </div>
+                </div>
+                <div style="font-size: 0.7rem; color: #94a3b8; flex: 1; line-height: 1.4;">
+                    ${vastuData.text}
+                </div>
+            </div>
+        </div>
+    `;
+
+    const badge = document.getElementById('vastu-score-badge');
+    const ring = document.getElementById('vastu-ring');
+    const circleText = document.getElementById('vastu-circle-text');
+    const feedbackText = document.getElementById('vastu-feedback-text');
+
+    if (badge && ring && circleText && feedbackText) {
+        badge.innerText = `${vastuData.score}/100`;
+        badge.style.color = vastuData.color;
+        badge.style.boxShadow = `0 0 8px ${vastuData.color}44`;
+        ring.style.background = `conic-gradient(${vastuData.color} ${vastuData.score}%, #1e293b 0)`;
+        circleText.innerText = vastuData.score;
+        feedbackText.innerText = vastuData.text;
+        feedbackText.title = vastuData.text; 
+    }
+};
+
+window.toggleVastuWidget = function() {
     const widget = document.getElementById('vastu-floating-widget');
     const toggleBtn = document.getElementById('vastu-toggle-btn');
     
     if (widget) {
         widget.classList.toggle('minimized');
         
-        // Update button text to visually indicate state ( + or - )
         if (widget.classList.contains('minimized')) {
             toggleBtn.innerHTML = '＋';
-            toggleBtn.style.transform = 'translateY(1px)'; // subtle alignment tweak for the plus sign
+            toggleBtn.style.transform = 'translateY(1px)'; 
         } else {
             toggleBtn.innerHTML = '—';
-            toggleBtn.style.transform = 'translateY(-2px)'; // subtle alignment tweak for the minus sign
+            toggleBtn.style.transform = 'translateY(-2px)'; 
         }
     }
-}
+};
 
-function getDynamicVastuZoneOld(cx, cy, cellW, cellH, topDirection) {
-    let gridX = cx < cellW ? 0 : (cx > cellW * 2 ? 2 : 1);
-    let gridY = cy < cellH ? 0 : (cy > cellH * 2 ? 2 : 1);
-
-    // If perfectly in the middle box
-    if (gridX === 1 && gridY === 1) return "CENTER";
-    
-    // Map the 4 edges based on what the user set as "Top"
-    let up = "", down = "", left = "", right = "";
-    switch (topDirection) {
-        case 'North': up="N"; down="S"; left="W"; right="E"; break;
-        case 'East':  up="E"; down="W"; left="N"; right="S"; break;
-        case 'South': up="S"; down="N"; left="E"; right="W"; break;
-        case 'West':  up="W"; down="E"; left="S"; right="N"; break;
-        default:      up="W"; down="E"; left="S"; right="N"; break;
-    }
-
-    let zone = "";
-    
-    // Calculate N/S component first
-    if (gridY === 0 && (up === 'N' || up === 'S')) zone += up;
-    else if (gridY === 2 && (down === 'N' || down === 'S')) zone += down;
-    else if (gridX === 0 && (left === 'N' || left === 'S')) zone += left;
-    else if (gridX === 2 && (right === 'N' || right === 'S')) zone += right;
-
-    // Calculate E/W component second
-    if (gridY === 0 && (up === 'E' || up === 'W')) zone += up;
-    else if (gridY === 2 && (down === 'E' || down === 'W')) zone += down;
-    else if (gridX === 0 && (left === 'E' || left === 'W')) zone += left;
-    else if (gridX === 2 && (right === 'E' || right === 'W')) zone += right;
-
-    return zone;
-}
 function getDynamicVastuZone(cx, cy, plotW, plotH, topDirection) {
-    // 1. Find Brahmasthan (Exact Center of Plot)
     const centerX = plotW / 2;
     const centerY = plotH / 2;
     
-    // If the room is practically dead-center
     if (Math.abs(cx - centerX) < (plotW * 0.1) && Math.abs(cy - centerY) < (plotH * 0.1)) {
         return "CENTER";
     }
     
-    // 2. Calculate angle from center to room (in degrees, 0 to 360)
     let angle = Math.atan2(cy - centerY, cx - centerX) * (180 / Math.PI);
     if (angle < 0) angle += 360;
 
-    // 3. Adjust angle offset based on the user's Compass Top Direction
     let offset = 0;
     switch (topDirection) {
-        case 'North': offset = 270; break; // SVG Y grows downwards, so North is at 270 deg
+        case 'North': offset = 270; break;
         case 'East':  offset = 0; break;
         case 'South': offset = 90; break;
         case 'West':  offset = 180; break;
         default:      offset = 180; break;
     }
     
-    // Normalize the adjusted angle back to a 0-360 scale
     let normalizedAngle = (angle - offset + 360) % 360;
-    
-    // 4. Map to the 16 Professional Vastu Zones (22.5 degrees each)
     const zones = ["E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW", "N", "NNE", "NE", "ENE"];
-    
-    // Shift by 11.25 degrees so each zone is centered exactly on its primary angle
     const index = Math.floor(((normalizedAngle + 11.25) % 360) / 22.5);
     return zones[index];
 }
+
+// --- Self-Contained Settings Toggle ---
+document.addEventListener('DOMContentLoaded', () => {
+    const vastuCb = document.getElementById('toggle-vastu-cb');
+    if (vastuCb) {
+        vastuCb.addEventListener('change', (e) => {
+            if (typeof window.toggleWidget === 'function') {
+                window.toggleWidget('vastu-floating-widget', e.target.checked);
+            }
+        });
+    }    
+});

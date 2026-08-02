@@ -137,27 +137,7 @@ function handleCompassChange() {
     globalCompassDir = document.getElementById('compassDir').value;
     if (typeof updateCanvas === 'function') updateCanvas();
 }
-const calcInches = () => { 
-    const ftInput = document.getElementById('calcFt');
-    const inInput = document.getElementById('calcIn');
-    
-    const ft = parseFloat(ftInput.value) || 0; 
-    const inc = parseFloat(inInput.value) || 0; 
-    const total = ft * 12 + inc;
-    
-    // Update the main big result
-    document.getElementById('resIn').value = total + " in"; 
 
-    // Update the micro-inputs and text in the minimized pill
-    const minFt = document.getElementById('minFt');
-    const minIn = document.getElementById('minIn');
-    const minText = document.getElementById('qc-min-text');
-    
-    // Check activeElement so we don't accidentally overwrite the input the user is currently typing in
-    if (minFt && document.activeElement !== minFt) minFt.value = ftInput.value;
-    if (minIn && document.activeElement !== minIn) minIn.value = inInput.value;
-    if (minText) minText.innerText = total + '"';
-};
 
 
 function getRoomDisplayName(index) {
@@ -827,77 +807,7 @@ window.toggleNavTool = function(btnId, isVisible) {
     }
 };
 
-// =========================================
-// VASTU UI DASHBOARD UPDATER (Worker Receiver)
-// =========================================
-window.renderVastuUI = function(vastuData) {
-    let vastuContainer = document.getElementById('vastu-widget-container');
-    if (!vastuContainer) return;
-    vastuContainer.innerHTML = `
-        <div class="neo-sunken" style="margin-top: 20px; padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
-            <div style="font-size: 0.75rem; color: #cbd5e1; font-weight: bold; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
-                <span>🧭 VASTU SCORE</span>
-                <span style="color: ${vastuData.color}; background: rgba(0,0,0,0.3); padding: 2px 8px; border-radius: 10px; box-shadow: 0 0 8px ${vastuData.color}44;">${vastuData.score}/100</span>
-            </div>
-            <div style="display: flex; align-items: center; gap: 15px;">
-                <div style="width: 50px; height: 50px; border-radius: 50%; background: conic-gradient(${vastuData.color} ${vastuData.score}%, #1e293b 0); display: flex; justify-content: center; align-items: center; box-shadow: inset 0 4px 8px rgba(0,0,0,0.5); flex-shrink: 0;">
-                    <div style="width: 40px; height: 40px; background: #0f172a; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 0.9rem; font-weight: bold; color: #f1f5f9; box-shadow: 0 2px 4px rgba(0,0,0,0.5);">
-                        ${vastuData.score}
-                    </div>
-                </div>
-                <div style="font-size: 0.7rem; color: #94a3b8; flex: 1; line-height: 1.4;">
-                    ${vastuData.text}
-                </div>
-            </div>
-        </div>
-    `;
 
-    const badge = document.getElementById('vastu-score-badge');
-    const ring = document.getElementById('vastu-ring');
-    const circleText = document.getElementById('vastu-circle-text');
-    const feedbackText = document.getElementById('vastu-feedback-text');
-
-    if (badge && ring && circleText && feedbackText) {
-        badge.innerText = `${vastuData.score}/100`;
-        badge.style.color = vastuData.color;
-        badge.style.boxShadow = `0 0 8px ${vastuData.color}44`;
-        ring.style.background = `conic-gradient(${vastuData.color} ${vastuData.score}%, #1e293b 0)`;
-        circleText.innerText = vastuData.score;
-        feedbackText.innerText = vastuData.text;
-        feedbackText.title = vastuData.text; 
-    }
-};
-
-// =========================================
-// 🌟 QUICK CONVERTER TOGGLE ENGINE (Animated)
-// =========================================
-window.toggleQuickConverter = function() {
-    const fullWidget = document.getElementById('qc-full-widget');
-    const minBtn = document.getElementById('qc-min-btn');
-    
-    if (!fullWidget || !minBtn) return;    
-    const isClosed = fullWidget.style.opacity === '0';
-    
-    if (isClosed) {
-        // 1. Shrink and hide the small button
-        minBtn.style.opacity = '0';
-        minBtn.style.transform = 'scale(0.5)';
-        minBtn.style.pointerEvents = 'none';        
-        // 2. Expand and show the full widget
-        fullWidget.style.opacity = '1';
-        fullWidget.style.transform = 'scale(1)';
-        fullWidget.style.pointerEvents = 'auto';
-    } else {
-        // 1. Shrink and hide the full widget
-        fullWidget.style.opacity = '0';
-        fullWidget.style.transform = 'scale(0.5)';
-        fullWidget.style.pointerEvents = 'none';        
-        // 2. Expand and show the small button
-        minBtn.style.opacity = '1';
-        minBtn.style.transform = 'scale(1)';
-        minBtn.style.pointerEvents = 'auto';
-    }
-};
 // =========================================
 // 🌟 AI AGENT DROPDOWN TOGGLE
 // =========================================

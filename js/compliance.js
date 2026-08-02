@@ -2,8 +2,7 @@
 // ✅ BUILDING CODE & COMPLIANCE ENGINE (compliance.js)
 // ==========================================
 
-// 1. The Math Algorithm
-function _calcCompliance(elements, fixtures) {
+window._calcCompliance = function(elements, fixtures) {
     let warnings = [];
     let passed = 0;
     let totalChecks = 0;
@@ -45,9 +44,8 @@ function _calcCompliance(elements, fixtures) {
     });
     const score = totalChecks > 0 ? Math.round((passed / totalChecks) * 100) : 100;
     return { score, warnings, totalChecks, passed };
-}
+};
 
-// 2. The UI Renderer
 window.renderComplianceUI = function(data) {
     if (!data) return;
     let widget = document.getElementById('compliance-widget');
@@ -79,3 +77,15 @@ window.renderComplianceUI = function(data) {
         </div>
     `;
 };
+
+// --- Self-Contained Settings Toggle ---
+document.addEventListener('DOMContentLoaded', () => {
+    const complianceCb = document.getElementById('toggle-compliance-cb');
+    if (complianceCb) {
+        complianceCb.addEventListener('change', (e) => {
+            if (typeof window.toggleWidget === 'function') {
+                window.toggleWidget('compliance-widget', e.target.checked);
+            }
+        });
+    }
+});

@@ -16,7 +16,8 @@
     <link rel="stylesheet" href="css/navbarDrawerTabbed.css">
     <link rel="stylesheet" href="css/sidebar.css">
     <link rel="stylesheet" href="css/settings.css">
-    <link rel="stylesheet" href="css/presentation.css">
+    <link rel="stylesheet" href="css/presentationcontrols.css">
+    <!-- <link rel="stylesheet" href="css/presentation.css"> -->
     <link rel="stylesheet" href="css/camera.css">
     <link rel="stylesheet" href="css/converter.css">
     <link rel="stylesheet" href="css/compliance.css">
@@ -24,17 +25,13 @@
     <link rel="stylesheet" href="css/cheatsheet.css">
     <link rel="stylesheet" href="css/parapet.css">
     <link rel="stylesheet" href="css/studio.css">
-    <link rel="stylesheet" href="css/tour.css">
+    <!-- <link rel="stylesheet" href="css/tour.css"> -->
     <link rel="stylesheet" href="css/advanced3d.css">
     <link rel="stylesheet" href="css/onboarding.css">
     <link rel="stylesheet" href="css/export.css">
 </head>
 <body>
 
-    <!-- CLIENT SHOWCASE MODE -->
-    <button id="exit-showcase-btn" onclick="toggleShowcaseMode()">
-        ✕ EXIT PRESENTATION
-    </button>
 
     <!-- TOP NAVBAR -->
     <div class="pro-studio-navbar">
@@ -266,9 +263,16 @@
             <!-- ========================================= -->
             <div id="drawer-tab-plot" class="drawer-tab-panel active">
                 <div class="input-grid">
-                    <div class="field"><label>Width:</label><input type="number" id="inW" value="278" oninput="updateCanvas()"></div>
-                    <div class="field"><label>Depth:</label><input type="number" id="inH" value="417" oninput="updateCanvas()"></div>
-                    <div class="field" style="grid-column: span 2;">
+                    <div class="field">
+                        <label>Width:</label>
+                        <input type="number" id="inW" value="278" oninput="updateCanvas()">
+                    </div>
+                    <div class="field">
+                        <label>Depth:</label>
+                        <input type="number" id="inH" value="417" oninput="updateCanvas()">
+                    </div>
+                    <!--here-->
+                    <div class="field">
                         <label>Main Road Placement:</label>
                         <select id="roadSide" onchange="updateCanvas()" class="modern-select">
                             <option value="east">⬇ East (Bottom)</option>
@@ -276,6 +280,15 @@
                             <option value="north">➡ North (Right)</option>
                             <option value="south">⬅ South (Left)</option>
                             <option value="none">None</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label>Top Direction:</label>
+                        <select id="compassDir" onchange="handleCompassChange()" class="modern-select">
+                            <option>West</option>
+                            <option>South</option>
+                            <option>East</option>
+                            <option>North</option>
                         </select>
                     </div>
                     <div class="field"><label>A (L / U):</label><div style="display: flex; gap: 4px;"><input type="number" id="aL" value="26" oninput="updateCanvas()"><input type="number" id="aU" value="28" oninput="updateCanvas()"></div></div>
@@ -291,7 +304,7 @@
             <div id="drawer-tab-floors" class="drawer-tab-panel">
                 
                 <div class="setting-card" style="padding: 8px; margin-bottom: 8px;">
-                    <div class="setting-group">
+                    <div class="setting-group" style="grid-column: span 2;">
                         <label class="setting-label">PARAPET STYLE</label>
                         <select id="parapetStyleSelect" class="modern-select neo-sunken" onchange="if(typeof request3DUpdate === 'function') request3DUpdate();">
                             <option value="premium-canopy">Premium Facade</option>
@@ -307,25 +320,6 @@
                         </select>
                     </div>
                 </div>
-                
-                <div class="setting-card" style="padding: 8px; margin-bottom: 8px;">
-                    <div class="setting-group">
-                        <label class="setting-label">Measurement</label>
-                        <select id="unitSelect" class="modern-select" onchange="updateCanvas()">
-                            <option value="in">Inches</option>
-                            <option value="cm">Centimeters</option>
-                            <option value="ftin">Ft & In</option>
-                        </select>
-                    </div>
-                    <div class="setting-group toggle-group" style="justify-content: flex-end; padding-bottom: 5px;">
-                        <label class="ui-toggle" style="justify-content: flex-end; gap: 10px;">
-                            <span style="font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;">Show Dims</span>
-                            <input type="checkbox" id="showDims" onchange="updateCanvas()">
-                            <div class="slider"></div>
-                        </label>                        
-                    </div>
-                </div>
-                
                 <div style="display:flex; align-items:center; justify-content: space-between; gap: 4px; margin-bottom: 8px;">
                     <div id="floor-tabs" style="display:flex; flex-wrap: wrap; gap:4px;">
                         <button class="floor-btn active" data-floor="0" onclick="setFloor(0)">G</button>
@@ -344,9 +338,19 @@
                     <button class="action-btn" onclick="toggleTheme()" style="background: #6366f1; color: white; padding: 6px; font-size: 0.7rem;">🎨 Theme</button>
                 </div>
 
-                <div class="input-grid">  
-                    <div class="field"><label>Top Direction:</label><select id="compassDir" onchange="handleCompassChange()"><option>West</option><option>South</option><option>East</option><option>North</option></select></div>
-                    <div class="field"><label>Scale:</label><input type="number" id="scaleInput" value="1.2" step="0.1" oninput="updateCanvas()"></div>
+                <div class="input-grid">
+                    <div class="field">
+                        <label>Measurement:</label>
+                        <select id="unitSelect" onchange="updateCanvas()" class="modern-select">
+                            <option value="in">Inches</option>
+                            <option value="cm">Centimeters</option>
+                            <option value="ftin">Ft & In</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label>Scale:</label>
+                        <input type="number" id="scaleInput" value="1.2" step="0.1" oninput="updateCanvas()">
+                    </div>
                 </div>
                 
                 <div class="neo-divider" style="margin: 10px 0;"></div>
@@ -500,6 +504,17 @@
                         </label>                        
                     </div>
                 </div>
+                <div class="setting-card" style="padding: 8px; margin-bottom: 8px;">
+                    <div class="setting-group toggle-group" style="justify-content: flex-end; padding-bottom: 5px;">
+                        <label class="ui-toggle" style="justify-content: flex-end; gap: 10px;">
+                            <span style="font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;">
+                                📏 Show Dimensions</span>
+                            <input type="checkbox" id="showDims" onchange="updateCanvas()">
+                            <div class="slider"></div>
+                        </label>                        
+                    </div>
+                </div>
+
                 <p style="font-size: 0.65rem; color: #10b981; margin-top: 8px; margin-bottom: 0; font-weight: bold; text-align: center;">🖱️ Scroll: Zoom | Mid-Click: Pan</p>
             </div>
 
@@ -693,18 +708,18 @@
     <!-- ========================================== -->
     <!-- 🌟 PRESENTATION CONTROLS (Pro Glass Pill)  -->
     <!-- ========================================== -->
+    <!-- CLIENT SHOWCASE MODE
+    <button id="exit-showcase-btn" onclick="toggleShowcaseMode()">
+        ✕ EXIT PRESENTATION
+    </button>
     <div id="presentation-controls" class="pres-controls-wrapper" style="display: none;">
         
-        <!-- Sun Controls -->
         <div class="pres-sun-group">
             <span class="pres-sun-icon dawn" title="Dawn">🌅</span>
             <input type="range" id="sun-slider" class="pres-sun-slider" min="6" max="18" step="0.1" value="12" oninput="updateSunlight(this.value)">
             <span class="pres-sun-icon dusk" title="Dusk">🌇</span>
         </div>
-        
         <div class="pres-divider"></div>
-        
-        <!-- Tour Controls (Labels Restored) -->
         <div class="pres-btn-group">
             <button class="action-btn pres-btn waypoint-btn" onclick="captureWaypoint()">
                 📷 Set (<span id="wp-count">0</span>)
@@ -716,16 +731,66 @@
                 🗑️
             </button>
         </div>
-        
         <div class="pres-divider"></div>
-        
-        <!-- View Controls -->
         <div class="pres-btn-group">
             <button class="neo-btn outline-cyan pres-btn showcase-btn" onclick="toggleShowcaseMode()">🎬SHOW</button>
             <button id="btn-explode" class="neo-btn outline-cyan pres-btn showcase-btn" onclick="toggleExplodeView()">💥EXPLODE</button>
         </div>
-        
     </div>
+     -->
+
+
+    <!-- ========================================== -->
+    <!-- 🌟 PRESENTATION CONTROLS (Pro Glass Pill)  -->
+    <!-- ========================================== -->
+    
+    <!-- CLIENT SHOWCASE MODE -->
+    <button id="exit-showcase-btn" onclick="toggleShowcaseMode()">
+        ✕ EXIT PRESENTATION
+    </button>
+    
+    <div id="presentation-controls" class="pc-wrapper" style="display: none;">
+        <!-- Sun Controls -->
+        <div class="pc-sun-group">
+            <span class="pc-sun-icon pc-dawn" title="Dawn">🌅</span>
+            <input type="range" id="sun-slider" class="pc-sun-slider" min="6" max="18" step="0.1" value="12" oninput="updateSunlight(this.value)">
+            <span class="pc-sun-icon pc-dusk" title="Dusk">🌇</span>
+        </div>
+        <div class="pc-divider"></div>
+        <!-- Tour Controls -->
+        <div class="pc-btn-group">
+            <button class="pc-btn pc-btn-set" onclick="captureWaypoint()">
+                <span class="pc-icon">📷</span> Set (<span id="wp-count">0</span>)
+            </button>
+            <button class="pc-btn pc-btn-play" onclick="playCinematicTour()">
+                <span class="pc-icon">▶️</span> Play
+            </button>
+            <button class="pc-btn pc-btn-clear" onclick="clearTour()" title="Clear All">
+                <span class="pc-icon">🗑️</span>
+            </button>
+        </div>
+        <div class="pc-divider"></div>
+        <!-- View Controls -->
+        <div class="pc-btn-group">
+            <button class="pc-btn pc-btn-view" onclick="toggleShowcaseMode()">
+                <span class="pc-icon">🎬</span> SHOW
+            </button>
+            <button id="btn-explode" class="pc-btn pc-btn-view" onclick="toggleExplodeView()">
+                <span class="pc-icon">💥</span> EXPLODE
+            </button>
+        </div>
+    </div>
+
+
+
+
+
+
+
+
+
+
+
 
     <!-- FLOATING SHORTCUT MENU -->
     <button id="btn-cheat-sheet" class="neo-action-btn" onclick="toggleCheatSheet()">
@@ -816,10 +881,11 @@
     <script src="js/studio.js"></script>
     <script src="js/parapet.js"></script>
     <script src="js/advanced3d.js"></script>
-    <script src="js/tour.js"></script>
+    <!-- <script src="js/tour.js"></script> -->
     <script src="js/elevation.js"></script>
     <script src="js/export.js"></script>
-    <script src="js/presentation.js"></script>
+    <script src="js/presentationcontrols.js"></script>
+    <!-- <script src="js/presentation.js"></script> -->
     <script src="js/onboarding.js"></script>
     <script src="js/app.js"></script>
 

@@ -1,0 +1,108 @@
+/* =========================================
+   🏗️ SPLIT SCREEN WORKSPACE LAYOUT (workspace.css)
+========================================= */
+.canvas-area { 
+    flex-grow: 1; 
+    position: relative; 
+    background: #000; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    overflow: hidden; 
+    cursor: crosshair; 
+}
+
+.workspace-wrapper {
+    display: flex !important;
+    flex-direction: row;
+    overflow: hidden;
+}
+
+/* --- Override the old absolute position of canvas-wrapper --- */
+#canvas-wrapper {
+    position: relative !important;
+    left: 0 !important;
+    top: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: auto !important;
+    height: 100% !important;
+}
+
+/* --- Left Canvas Area (2D) --- */
+.split-left {
+    flex: 1;
+    position: relative;
+    height: 100%;
+    min-width: 15%;
+    transition: flex 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+/* --- Right Canvas Area (3D) --- */
+.split-right {
+    flex: 1;
+    position: relative;
+    height: 100%;
+    min-width: 15%;
+    background: #020617;
+    border-left: 1px solid rgba(56, 189, 248, 0.2);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: inset 15px 0 30px rgba(0,0,0,0.5); 
+    transition: flex 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+/* --- The Draggable Handle --- */
+.split-resizer {
+    width: 10px;
+    background: #1e293b;
+    border-left: 1px solid rgba(255, 255, 255, 0.05);
+    border-right: 1px solid rgba(0, 0, 0, 0.5);
+    cursor: col-resize;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9000;
+    transition: background 0.2s ease;
+}
+
+.split-resizer:hover, .split-resizer.dragging {
+    background: #38bdf8;
+}
+
+/* The vertical dots on the handle */
+.split-resizer::after {
+    content: "⋮";
+    color: #94a3b8;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.split-resizer:hover::after, .split-resizer.dragging::after {
+    color: #0f172a;
+}
+
+/* =========================================
+   📱 MOBILE & TABLET STACKING (<= 1024px)
+========================================= */
+@media (max-width: 1024px) {
+    /* Hide the draggable handle on mobile */
+    #split-resizer {
+        display: none !important;
+    }
+
+    /* Stack the split screens vertically instead of horizontally */
+    #main-workspace {
+        flex-direction: column !important;
+    }
+
+    /* Force both canvases to take up exactly 50% of the screen height */
+    #canvas-wrapper, 
+    #right-canvas-wrapper {
+        width: 100vw !important;
+        height: 50vh !important;
+        flex: none !important; 
+        position: relative !important;
+    }
+}

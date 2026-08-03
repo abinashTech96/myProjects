@@ -1,0 +1,31 @@
+/* =========================================
+   🖨️ NATIVE PDF EXPORT ENGINE (export.css)
+   ========================================= */
+@media print {
+    @page { 
+        margin: 0; 
+        size: landscape; 
+    }
+    body { 
+        -webkit-print-color-adjust: exact !important; 
+        print-color-adjust: exact !important; 
+        background: #0f172a !important; 
+    }
+    /* Hide all UI elements from the final PDF */
+    .glass-panel, #toggle-camera-cb { 
+        display: none !important; 
+    }
+    /* Expand the canvas to perfectly fill the PDF page */
+    .canvas-area { 
+        position: fixed; 
+        top: 0; left: 0; 
+        width: 100vw; 
+        height: 100vh; 
+        z-index: 9999; 
+        background: #0f172a !important;
+    }
+    #blueprint {
+        width: 100% !important;
+        height: 100% !important;
+    }
+}

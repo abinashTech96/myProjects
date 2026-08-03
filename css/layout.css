@@ -1,0 +1,142 @@
+/* =========================================
+   FLOATING ADVANCED BUTTONS
+========================================= */
+.adv-btn-container {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    display: flex;
+    gap: 10px;
+    z-index: 1000;
+    align-items: center;
+}
+.adv-btn-container .btn-adv-3d {
+    position: static;
+}
+#btn-room-studio {
+    display: none; 
+    background: linear-gradient(135deg, #ec4899, #e11d48);
+    border-color: #f43f5e;
+}
+/* =========================================
+   FLOATING ADVANCED BUTTONS
+========================================= */
+
+/* =========================================
+   📱 RESPONSIVE DESIGN (MOBILE & TABLET <= 1024px)
+========================================= */
+@media (max-width: 1024px) {
+    /* --- 1. Navbar Adjustments --- */
+    .pro-studio-navbar {
+        width: 95% !important;
+        padding: 4px 8px !important;
+        top: 10px !important;
+    }
+    
+    /* --- 2. Quick Converter Auto-Minimize & Positioning --- */
+    .canvas-widget-top-left {
+        top: 65px !important; 
+        left: 10px !important;
+        width: auto !important;
+        max-width: calc(100vw - 20px) !important;
+        z-index: 900 !important;
+    }
+    
+    /* Force Quick Converter into Minimized Micro-Input State */
+    .qc-wrapper #qc-full-widget,
+    #qc-full-widget {
+        opacity: 0 !important;
+        transform: scale(0.5) !important;
+        pointer-events: none !important;
+    }
+    
+    .qc-wrapper .qc-min-btn,
+    #qc-min-btn {
+        opacity: 1 !important;
+        transform: scale(1) !important;
+        pointer-events: auto !important;
+    }
+
+    /* --- 3. Parapet Studio Editor Mobile Positioning --- */
+    .parapet-panel,
+    #parapet-editor-popup {
+        top: 65px !important;
+        right: 10px !important;
+        width: calc(100vw - 20px) !important;
+        max-width: 280px !important;
+        max-height: 70vh !important;
+        z-index: 950 !important;
+    }
+
+    /* --- 4. Vastu Widget Mobile Adjustments --- */
+    .canvas-widget-bottom-left {
+        left: 10px !important;
+        bottom: 70px !important; 
+        z-index: 900 !important;
+    }
+    .vastu-widget {
+        width: calc(100vw - 20px) !important;
+        max-width: 260px !important;
+        padding: 10px 12px !important;
+    }
+    .vastu-widget.minimized {
+        width: 180px !important;
+    }
+
+    /* --- 5. Camera Controls --- */
+    #toggle-camera-cb {
+        bottom: 15px !important;
+        right: 10px !important;
+        transform: scale(0.8) !important;
+        transform-origin: bottom right !important;
+        z-index: 900 !important;
+    }
+
+    /* --- 6. Drawer Controls & Grid Stacking --- */
+    .input-grid, 
+    .setting-card,
+    .toggle-list {
+        grid-template-columns: 1fr !important;
+        gap: 8px !important;
+    }
+
+    /* --- 7. Vertical Split-Screen Mobile Stack --- */
+    #split-resizer {
+        display: none !important;
+    }
+
+    #main-workspace {
+        flex-direction: column !important;
+    }
+
+    #canvas-wrapper, 
+    #right-canvas-wrapper {
+        width: 100vw !important;
+        height: 50vh !important;
+        flex: none !important; 
+        position: relative !important;
+    }
+
+    /* --- 8. Advanced Floating Buttons (Micro-Icon Stack) --- */
+    .adv-btn-container {
+        top: 65px !important; /* Drops below the mobile navbar */
+        right: 10px !important;
+        flex-direction: column !important; /* Stacks vertically */
+        gap: 8px !important;
+    }
+    .adv-btn-container .btn-adv-3d {
+        padding: 0 !important;
+        width: 42px !important;
+        height: 42px !important;
+        border-radius: 10px !important; 
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+    }
+    .adv-btn-container .adv-text { display: none !important; }
+    .adv-btn-container .icon { margin: 0 !important; font-size: 1.2rem !important; }
+
+}
+/* =========================================
+   📱 RESPONSIVE DESIGN (MOBILE & TABLET <= 768px)
+========================================= */

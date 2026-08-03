@@ -1,0 +1,149 @@
+/* =========================================
+   🌟 PROFESSIONAL PRESENTATION CONTROLS (presentation.css)
+========================================= */
+
+/* --- Main Glass Pill --- */
+.pres-controls-wrapper {
+    position: absolute; 
+    bottom: 25px; 
+    left: 50%; 
+    
+    /* Ultra-premium frosted glass */
+    background: rgba(15, 23, 42, 0.75); 
+    backdrop-filter: blur(16px) saturate(180%); 
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    
+    border: 1px solid rgba(56, 189, 248, 0.2); 
+    border-radius: 50px; 
+    padding: 6px 14px; 
+    
+    z-index: 100; 
+    display: flex;
+    align-items: center;
+    gap: 10px; 
+    
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), 
+                inset 0 1px 1px rgba(255, 255, 255, 0.05);
+    
+    /* Gentle floating entrance animation */
+    animation: presFloatUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+@keyframes presFloatUp {
+    0% { transform: translate(-50%, 20px); opacity: 0; }
+    100% { transform: translate(-50%, 0); opacity: 1; }
+}
+
+/* --- Layout Groups --- */
+.pres-sun-group { display: flex; align-items: center; gap: 10px; width: 140px; }
+.pres-btn-group { display: flex; align-items: center; gap: 8px; }
+
+/* Gentle glowing breathing divider */
+.pres-divider { 
+    width: 2px; 
+    height: 20px; 
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.2); 
+    animation: presDividerBreathe 4s infinite ease-in-out;
+}
+
+@keyframes presDividerBreathe {
+    0%, 100% { box-shadow: 0 0 4px rgba(255, 255, 255, 0.1); }
+    50% { box-shadow: 0 0 10px rgba(255, 255, 255, 0.4); }
+}
+
+/* --- Sun Slider Elements --- */
+.pres-sun-icon { font-size: 1.1rem; cursor: pointer; transition: all 0.3s ease; }
+.pres-sun-icon.dawn { filter: grayscale(100%); opacity: 0.7; }
+.pres-sun-icon.dawn:hover { filter: grayscale(0%); opacity: 1; transform: scale(1.15) rotate(-10deg); }
+.pres-sun-icon.dusk:hover { transform: scale(1.15) rotate(10deg); }
+.pres-sun-slider { flex-grow: 1; height: 4px; margin: 0; accent-color: #fbbf24; cursor: pointer; }
+
+/* --- Professional Button Styling --- */
+.pres-btn {
+    border-radius: 50px !important; 
+    font-size: 0.75rem !important; 
+    margin: 0 !important;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    white-space: nowrap;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.pres-btn:hover { transform: translateY(-2px); }
+.pres-btn:active { transform: translateY(1px); }
+
+.showcase-btn { 
+    padding: 6px 10px !important; 
+    background: rgba(56, 189, 248, 0.1) !important; 
+    border: 1px solid rgba(56, 189, 248, 0.3) !important;
+    color: #bae6fd !important;
+}
+.showcase-btn:hover { box-shadow: 0 6px 15px rgba(56, 189, 248, 0.25); border-color: #38bdf8 !important; }
+
+/* =========================================
+   🎬 CLIENT SHOWCASE MODE (Fullscreen Overrides)
+========================================= */
+
+/* 1. Hide all UI distractions */
+body.showcase-active .pro-studio-navbar,
+body.showcase-active .navbar-toggle-btn,
+body.showcase-active .nav-drawer-panel,
+body.showcase-active .adv-btn-container,
+body.showcase-active .neo-panel:not(#presentation-controls),
+body.showcase-active #cheat-sheet-panel {
+    display: none !important;
+}
+
+/* 2. Stretch the 3D Canvas to fill the monitor */
+body.showcase-active #three-container {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 9000 !important;
+}
+
+/* 3. Re-position the Presentation Controls */
+body.showcase-active #presentation-controls {
+    position: fixed !important;
+    bottom: 30px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    z-index: 10000 !important;
+    background: rgba(15, 23, 42, 0.85) !important;
+    backdrop-filter: blur(10px) !important;
+    border: 1px solid #38bdf8 !important;
+    border-radius: 12px !important;
+    padding: 20px !important;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.9) !important;
+    width: auto !important;
+    max-width: 90vw !important;
+    display: flex !important;
+    justify-content: center !important;
+}
+
+/* 4. Style the Exit Button */
+#exit-showcase-btn {
+    display: none;
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 10001;
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+    border: 1px solid #ef4444;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    backdrop-filter: blur(5px);
+    transition: all 0.2s;
+}
+
+#exit-showcase-btn:hover { background: #ef4444; color: white; }
+body.showcase-active #exit-showcase-btn { display: block; }

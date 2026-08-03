@@ -1,0 +1,126 @@
+/* =========================================
+   🌟 navbarDrawerTabbed.css
+========================================= */
+/* 1. Main Drawer Shell */
+.nav-drawer-panel {
+    position: absolute;
+    top: 60px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-20px);
+    display: flex;
+    flex-direction: column;
+    background: #1e293b;
+    border: none;
+    padding: 10px 10px; 
+    border-radius: 24px; 
+    box-shadow: 6px 6px 12px rgba(0, 0, 0, 0.4),
+               -6px -6px 12px rgba(255, 255, 255, 0.04);
+    z-index: 998; 
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    width: 350px; /*tab width*/
+}
+.nav-drawer-panel.drawer-open {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+}
+/* 2. Top Tab Buttons Row */
+.drawer-tabs-header {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 1px;
+    justify-content: center;
+}
+.drawer-tab-btn {
+    flex: 1;
+    background: #1e293b;
+    color: #64748b;
+    border: none;
+    padding: 8px 6px; 
+    font-size: 0.65rem;
+    font-weight: 800;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 3px 3px 6px rgba(0, 0, 0, 0.3),
+               -3px -3px 6px rgba(255, 255, 255, 0.06);
+    text-align: center;
+    white-space: nowrap;
+}
+.drawer-tab-btn:hover {
+    color: #38bdf8;
+}
+.drawer-tab-btn.active {
+    color: #fbbf24;
+    box-shadow: inset 3px 3px 6px rgba(0, 0, 0, 0.5),
+                inset -3px -3px 6px rgba(255, 255, 255, 0.03);
+}
+/* 3. The Screen (Content Container) */
+.drawer-tabs-content {
+    background: #0f172a; 
+    border-radius: 16px; 
+    box-shadow: inset 3px 3px 6px rgba(0, 0, 0, 0.6), 
+                inset -3px -3px 6px rgba(255, 255, 255, 0.03); 
+    border: 1px solid rgba(255, 255, 255, 0.05); 
+    padding: 15px 12px;
+    position: relative;
+    min-height: 250px;
+    display: none; 
+    /* 🐛 BUG FIX: Constrain height and enable scrolling */
+    max-height: 65vh; /* Uses 65% of the screen height */
+    overflow-y: auto; /* Allows scrolling when content is too long */
+}
+/* 🌟 CUSTOM SCROLLBAR FOR THE TABS */
+.drawer-tabs-content::-webkit-scrollbar { 
+    width: 6px; 
+}
+.drawer-tabs-content::-webkit-scrollbar-track { 
+    background: rgba(0, 0, 0, 0.2); 
+    border-radius: 4px; 
+    margin: 10px 0; /* Keeps the scrollbar from hitting the rounded corners */
+}
+.drawer-tabs-content::-webkit-scrollbar-thumb { 
+    background: #334155; 
+    border-radius: 4px; 
+}
+.drawer-tabs-content::-webkit-scrollbar-thumb:hover { 
+    background: #38bdf8; /* Glows cyan when hovering over the scrollbar */
+}
+/* 4. Individual Content Switching */
+.drawer-tab-panel {
+    display: none;
+    animation: fadeInTab 0.3s ease;
+}
+.drawer-tab-panel.active {
+    display: block;
+}
+@keyframes fadeInTab {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* 🌟 PULL TAB (DRAWER TOGGLE BUTTON)*/
+.navbar-toggle-btn {
+    position: absolute;
+    top: 48px; 
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1e293b;
+    color: #38bdf8;
+    border: none;
+    padding: 2px 16px 4px 16px;
+    border-radius: 0 0 12px 12px;
+    cursor: pointer;
+    z-index: 997; 
+    font-size: 0.6rem;
+    box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.4);
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.navbar-toggle-btn.drawer-open {
+    background: #1e293b;
+    transform: translateX(-50%) rotate(180deg);
+    box-shadow: -4px -4px 8px rgba(0, 0, 0, 0.4);
+}

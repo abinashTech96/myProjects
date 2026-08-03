@@ -1,0 +1,154 @@
+/* =========================================
+   🌟 PROFESSIONAL PRESENTATION CONTROLS
+========================================= */
+/* --- Main Glass Pill --- */
+.pc-wrapper {
+    position: fixed; /* ✨ CHANGED: fixed prevents layout snapping */
+    bottom: 25px; 
+    left: 50%; 
+    background: rgba(15, 23, 42, 0.75); 
+    backdrop-filter: blur(16px) saturate(180%); 
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border: 1px solid rgba(56, 189, 248, 0.2); 
+    border-radius: 50px; 
+    padding: 6px 14px; 
+    z-index: 100; 
+    display: flex;
+    align-items: center;
+    gap: 10px; 
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), 
+                inset 0 1px 1px rgba(255, 255, 255, 0.05);
+    animation: pcFloatUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+    
+    /* ✨ ADDED: Smooth transition for when Showcase Mode activates */
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+@keyframes pcFloatUp {
+    0% { transform: translate(-50%, 20px); opacity: 0; }
+    100% { transform: translate(-50%, 0); opacity: 1; }
+}
+/* --- Layout Groups --- */
+.pc-sun-group { display: flex; align-items: center; gap: 10px; width: 140px; }
+.pc-btn-group { display: flex; align-items: center; gap: 8px; }
+/* Gentle glowing breathing divider */
+.pc-divider { 
+    width: 2px; 
+    height: 20px; 
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.2); 
+    animation: pcDividerBreathe 4s infinite ease-in-out;
+}
+@keyframes pcDividerBreathe {
+    0%, 100% { box-shadow: 0 0 4px rgba(255, 255, 255, 0.1); }
+    50% { box-shadow: 0 0 10px rgba(255, 255, 255, 0.4); }
+}
+/* --- Sun Slider Elements --- */
+.pc-sun-icon { font-size: 1.1rem; cursor: pointer; transition: all 0.3s ease; }
+.pc-dawn { filter: grayscale(100%); opacity: 0.7; }
+.pc-dawn:hover { filter: grayscale(0%); opacity: 1; transform: scale(1.15) rotate(-10deg); }
+.pc-dusk:hover { transform: scale(1.15) rotate(10deg); }
+.pc-sun-slider { flex-grow: 1; height: 4px; margin: 0; accent-color: #fbbf24; cursor: pointer; }
+/* --- Base Button Styling --- */
+.pc-btn {
+    border-radius: 50px; 
+    font-size: 0.75rem; 
+    margin: 0;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    white-space: nowrap;
+    cursor: pointer;
+    color: #e2e8f0;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+/* --- Button Icon Animation --- */
+.pc-icon {
+    display: inline-block; /* Required for transforms (scale/rotate) to work */
+    transition: all 0.3s ease;
+}
+
+/* When the button is hovered, target the icon inside and animate it */
+.pc-btn:hover .pc-icon {
+    transform: scale(1.15) rotate(10deg);
+}
+.pc-btn:hover { transform: translateY(-2px); }
+.pc-btn:active { transform: translateY(1px); }
+/* --- Specific Button Variants (Restored Exact Colors) --- */
+/* 1. Tour Set Button (Purple) */
+.pc-btn-set { padding: 6px 14px; background: rgba(168, 85, 247, 0.1); border: 1px solid rgba(168, 85, 247, 0.3); color: #e9d5ff; }
+.pc-btn-set:hover { box-shadow: 0 6px 15px rgba(168, 85, 247, 0.25); border-color: #a855f7; }
+#wp-count { color: #c084fc; font-weight: 900; }
+/* 2. Tour Play Button (Green) */
+.pc-btn-play { padding: 6px 16px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); color: #a7f3d0; }
+.pc-btn-play:hover { box-shadow: 0 6px 15px rgba(16, 185, 129, 0.25); border-color: #10b981; }
+/* 3. Tour Clear Button (Red) */
+.pc-btn-clear { padding: 6px 12px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); }
+.pc-btn-clear:hover { box-shadow: 0 6px 15px rgba(239, 68, 68, 0.25); border-color: #ef4444; }
+/* 4. View / Explode / Showcase Buttons (Cyan Glass) */
+.pc-btn-view { padding: 6px 10px; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3); color: #bae6fd; }
+.pc-btn-view:hover { box-shadow: 0 6px 15px rgba(56, 189, 248, 0.25); border-color: #38bdf8; }
+
+/* =========================================
+   🎬 CLIENT SHOWCASE MODE (Fullscreen Overrides)
+========================================= */
+/* Add a base transition to the UI elements so they fade back in smoothly too */
+.pro-studio-navbar, .navbar-toggle-btn, .nav-drawer-panel,
+#qc-widget-wrapper, .adv-btn-container, .neo-panel, #cheat-sheet-panel {
+    transition: opacity 0.5s ease, transform 0.5s ease !important;
+}
+/* 1. Smoothly fade out UI distractions instead of harsh display:none */
+body.showcase-active .pro-studio-navbar,
+body.showcase-active .navbar-toggle-btn,
+body.showcase-active .nav-drawer-panel,
+body.showcase-active #qc-widget-wrapper,
+body.showcase-active .adv-btn-container,
+body.showcase-active .neo-panel:not(#presentation-controls),
+body.showcase-active #cheat-sheet-panel {
+    opacity: 0 !important;
+    pointer-events: none !important; /* Prevents clicking invisible buttons */
+    transform: translateY(-20px) !important; /* Gentle cinematic slide up */
+}
+/* 2. Stretch the 3D Canvas */
+body.showcase-active #three-container {
+    position: fixed !important; top: 0 !important; left: 0 !important;
+    width: 100vw !important; height: 100vh !important; z-index: 9000 !important;
+}
+/* 3. Re-position the Presentation Controls (Compact & Smooth) */
+body.showcase-active #presentation-controls {
+    position: fixed !important; 
+    bottom: 15px !important; /* Push it lower to save screen space */
+    left: 50% !important;
+    
+    /* ✨ CHANGED: Scales the entire bar down to 85% size to be highly compact */
+    transform: translateX(-50%) scale(0.85) !important; 
+    
+    z-index: 10000 !important;
+    background: rgba(15, 23, 42, 0.9) !important; 
+    backdrop-filter: blur(16px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
+    border: 1px solid rgba(56, 189, 248, 0.3) !important; 
+    border-radius: 50px !important; 
+    
+    /* ✨ CHANGED: Tighter padding and gaps */
+    padding: 4px 12px !important; 
+    gap: 6px !important;
+    
+    box-shadow: 0 20px 50px rgba(0,0,0,0.8), 
+                inset 0 1px 1px rgba(255, 255, 255, 0.1) !important;
+    width: auto !important; 
+    max-width: 90vw !important;
+    display: flex !important; 
+    justify-content: center !important;
+    align-items: center !important;
+}
+/* 4. Style the Exit Button */
+#exit-showcase-btn {
+    display: none; position: fixed; top: 20px; right: 20px; z-index: 10001;
+    background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444;
+    padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer;
+    backdrop-filter: blur(5px); transition: all 0.2s;
+}
+#exit-showcase-btn:hover { background: #ef4444; color: white; }
+body.showcase-active #exit-showcase-btn { display: block; }

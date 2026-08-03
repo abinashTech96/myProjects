@@ -9,30 +9,29 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/BufferGeometryUtils.js"></script>
 
-    <link rel="stylesheet" href="styles/style.css">
-    <link rel="stylesheet" href="styles/layout.css">
-    <link rel="stylesheet" href="styles/converter.css">
-    <link rel="stylesheet" href="styles/camera.css">
-    <link rel="stylesheet" href="styles/navbar.css">
-    <link rel="stylesheet" href="styles/navbarDrawerTabbed.css">
-    <link rel="stylesheet" href="styles/settings.css">
-    <link rel="stylesheet" href="styles/presentation.css">
-    <link rel="stylesheet" href="styles/sidebar.css">
-    <link rel="stylesheet" href="styles/parapet.css">
-    <link rel="stylesheet" href="features/room-studio/studio.css">
-    <link rel="stylesheet" href="features/showcase/showcase.css">
-    <link rel="stylesheet" href="features/cinematic-tour/tour.css">
-    <link rel="stylesheet" href="features/vastu/vastu.css">
-    <link rel="stylesheet" href="features/advanced-3d/advanced3d.css">
-    <link rel="stylesheet" href="features/onboarding/onboarding.css">
-    <link rel="stylesheet" href="styles/export.css">
+    <link rel="stylesheet" href="css/style.css">
+    <!-- <link rel="stylesheet" href="css/layout.css"> -->
+    <link rel="stylesheet" href="css/workspace.css">
+    <link rel="stylesheet" href="css/navbar.css">
+    <link rel="stylesheet" href="css/navbarDrawerTabbed.css">
+    <link rel="stylesheet" href="css/sidebar.css">
+    <link rel="stylesheet" href="css/settings.css">
+    <link rel="stylesheet" href="css/presentationcontrols.css">
+    <!-- <link rel="stylesheet" href="css/presentation.css"> -->
+    <link rel="stylesheet" href="css/camera.css">
+    <link rel="stylesheet" href="css/converter.css">
+    <link rel="stylesheet" href="css/compliance.css">
+    <link rel="stylesheet" href="css/vastu.css">
+    <link rel="stylesheet" href="css/cheatsheet.css">
+    <link rel="stylesheet" href="css/parapet.css">
+    <link rel="stylesheet" href="css/studio.css">
+    <!-- <link rel="stylesheet" href="css/tour.css"> -->
+    <link rel="stylesheet" href="css/advanced3d.css">
+    <link rel="stylesheet" href="css/onboarding.css">
+    <link rel="stylesheet" href="css/export.css">
 </head>
 <body>
 
-    <!-- CLIENT SHOWCASE MODE -->
-    <button id="exit-showcase-btn" onclick="toggleShowcaseMode()">
-        ✕ EXIT PRESENTATION
-    </button>
 
     <!-- TOP NAVBAR -->
     <div class="pro-studio-navbar">
@@ -102,43 +101,6 @@
                 </button>
             </div>
 
-            <!-- 🌟 AI AGENT 
-            <button id="ai-agent-btn" class="nav-add-floor-btn tool-btn theme-purple" onclick="toggleAIAgent()" title="AI Design Assistant">
-                <span class="tool-icon">🤖</span>
-            </button>
-            <div id="ai-agent-overlay" class="glass-panel nav-dropdown-panel width-md">
-                <div class="panel-header drop-header-purple">
-                    <span class="icon">🤖</span>
-                    <h2>AI ASSISTANT</h2>
-                </div>
-                
-                <div style="display: flex; flex-direction: column; gap: 10px;">
-                    <div style="display: flex; flex-direction: column; gap: 4px;">
-                        <label style="font-size: 0.65rem; color: #94a3b8; font-weight: bold; letter-spacing: 0.5px;">ACTIVE MODEL</label>
-                        <select id="ai-model-select" class="modern-select neo-sunken" onchange="CONFIG.ACTIVE_LLM = this.value; console.log('AI Switched to:', this.value);">
-                            <optgroup label="Google Gemini">
-                                <option value="gemini-3.6-flash">Gemini 3.6 Flash (Fastest)</option>
-                                <option value="gemini-3.5-flash" selected>Gemini 3.5 Flash (Balanced Draft)</option>
-                                <option value="gemini-3.5-flash-lite">Gemini 3.5 Flash Lite (Low Cost)</option>
-                                <option value="gemini-3.1-pro">Gemini 3.1 Pro (Advanced Reasoning)</option>
-                                <option value="gemini-3.0-ultra">Gemini 3.0 Ultra (Heavy Architecture)</option>
-                            </optgroup>
-                            
-                            <optgroup label="Other Providers">
-                                <option value="openai">OpenAI GPT-4o (Complex Layouts)</option>
-                                <option value="perplexity">Perplexity Sonar (Vastu Code Search)</option>
-                            </optgroup>
-                        </select>
-                    </div>
-
-                    <textarea id="ai-input" class="neo-sunken ai-textarea" placeholder="e.g., Add a 10x12 master bedroom on the left..."></textarea>
-                    
-                    <button id="ai-generate-btn" class="btn-generate theme-purple-btn">
-                        <span class="btn-icon">✨</span><span class="btn-text">GENERATE</span>
-                    </button>
-                </div>
-            </div>
-            -->
             <!-- 🌟 AI AGENT -->
             <button id="ai-agent-btn" class="nav-add-floor-btn tool-btn theme-purple" onclick="toggleAIAgent(); window.populateAIModelDropdown();" title="AI Design Assistant">
                 <span class="tool-icon">🤖</span>
@@ -196,8 +158,23 @@
                                     <div class="slider"></div>
                                 </label>
                                 <label class="ui-toggle">
+                                    <span class="settings-label-text">📷 Camera Controls</span>
+                                    <input type="checkbox" id="toggle-camera-cb" checked autocomplete="off">
+                                    <div class="slider"></div>
+                                </label>
+                                <label class="ui-toggle">
+                                    <span class="settings-label-text">✅ Code Inspector</span>
+                                    <input type="checkbox" id="toggle-compliance-cb" checked autocomplete="off">
+                                    <div class="slider"></div>
+                                </label>
+                                <label class="ui-toggle">
                                     <span class="settings-label-text">🧭 Vastu Score</span>
                                     <input type="checkbox" id="toggle-vastu-cb" checked autocomplete="off">
+                                    <div class="slider"></div>
+                                </label>
+                                <label class="ui-toggle">
+                                    <span class="settings-label-text">⌨️ Shortcuts Guide</span>
+                                    <input type="checkbox" id="toggle-cheatsheet-cb" checked autocomplete="off">
                                     <div class="slider"></div>
                                 </label>
                             </div>
@@ -268,7 +245,6 @@
     <button id="navbar-toggle-btn" class="navbar-toggle-btn" onclick="toggleNavbarDrawer()" title="Expand Secondary Drawer">
         ▼
     </button>
-
     <!-- 🌟 DROPDOWN DRAWER (TABBED_LAYOUT) -->
     <div id="nav-drawer" class="nav-drawer-panel">
         
@@ -287,9 +263,16 @@
             <!-- ========================================= -->
             <div id="drawer-tab-plot" class="drawer-tab-panel active">
                 <div class="input-grid">
-                    <div class="field"><label>Width:</label><input type="number" id="inW" value="278" oninput="updateCanvas()"></div>
-                    <div class="field"><label>Depth:</label><input type="number" id="inH" value="417" oninput="updateCanvas()"></div>
-                    <div class="field" style="grid-column: span 2;">
+                    <div class="field">
+                        <label>Width:</label>
+                        <input type="number" id="inW" value="278" oninput="updateCanvas()">
+                    </div>
+                    <div class="field">
+                        <label>Depth:</label>
+                        <input type="number" id="inH" value="417" oninput="updateCanvas()">
+                    </div>
+                    <!--here-->
+                    <div class="field">
                         <label>Main Road Placement:</label>
                         <select id="roadSide" onchange="updateCanvas()" class="modern-select">
                             <option value="east">⬇ East (Bottom)</option>
@@ -297,6 +280,15 @@
                             <option value="north">➡ North (Right)</option>
                             <option value="south">⬅ South (Left)</option>
                             <option value="none">None</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label>Top Direction:</label>
+                        <select id="compassDir" onchange="handleCompassChange()" class="modern-select">
+                            <option>West</option>
+                            <option>South</option>
+                            <option>East</option>
+                            <option>North</option>
                         </select>
                     </div>
                     <div class="field"><label>A (L / U):</label><div style="display: flex; gap: 4px;"><input type="number" id="aL" value="26" oninput="updateCanvas()"><input type="number" id="aU" value="28" oninput="updateCanvas()"></div></div>
@@ -312,7 +304,7 @@
             <div id="drawer-tab-floors" class="drawer-tab-panel">
                 
                 <div class="setting-card" style="padding: 8px; margin-bottom: 8px;">
-                    <div class="setting-group">
+                    <div class="setting-group" style="grid-column: span 2;">
                         <label class="setting-label">PARAPET STYLE</label>
                         <select id="parapetStyleSelect" class="modern-select neo-sunken" onchange="if(typeof request3DUpdate === 'function') request3DUpdate();">
                             <option value="premium-canopy">Premium Facade</option>
@@ -328,25 +320,6 @@
                         </select>
                     </div>
                 </div>
-                
-                <div class="setting-card" style="padding: 8px; margin-bottom: 8px;">
-                    <div class="setting-group">
-                        <label class="setting-label">Measurement</label>
-                        <select id="unitSelect" class="modern-select" onchange="updateCanvas()">
-                            <option value="in">Inches</option>
-                            <option value="cm">Centimeters</option>
-                            <option value="ftin">Ft & In</option>
-                        </select>
-                    </div>
-                    <div class="setting-group toggle-group" style="justify-content: flex-end; padding-bottom: 5px;">
-                        <label class="ui-toggle" style="justify-content: flex-end; gap: 10px;">
-                            <span style="font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;">Show Dims</span>
-                            <input type="checkbox" id="showDims" onchange="updateCanvas()">
-                            <div class="slider"></div>
-                        </label>                        
-                    </div>
-                </div>
-                
                 <div style="display:flex; align-items:center; justify-content: space-between; gap: 4px; margin-bottom: 8px;">
                     <div id="floor-tabs" style="display:flex; flex-wrap: wrap; gap:4px;">
                         <button class="floor-btn active" data-floor="0" onclick="setFloor(0)">G</button>
@@ -365,9 +338,19 @@
                     <button class="action-btn" onclick="toggleTheme()" style="background: #6366f1; color: white; padding: 6px; font-size: 0.7rem;">🎨 Theme</button>
                 </div>
 
-                <div class="input-grid">  
-                    <div class="field"><label>Top Direction:</label><select id="compassDir" onchange="handleCompassChange()"><option>West</option><option>South</option><option>East</option><option>North</option></select></div>
-                    <div class="field"><label>Scale:</label><input type="number" id="scaleInput" value="1.2" step="0.1" oninput="updateCanvas()"></div>
+                <div class="input-grid">
+                    <div class="field">
+                        <label>Measurement:</label>
+                        <select id="unitSelect" onchange="updateCanvas()" class="modern-select">
+                            <option value="in">Inches</option>
+                            <option value="cm">Centimeters</option>
+                            <option value="ftin">Ft & In</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label>Scale:</label>
+                        <input type="number" id="scaleInput" value="1.2" step="0.1" oninput="updateCanvas()">
+                    </div>
                 </div>
                 
                 <div class="neo-divider" style="margin: 10px 0;"></div>
@@ -385,8 +368,18 @@
                         <button class="tool-btn" onclick="toggleMeasureMode()" title="Tape Measure"><span class="icon">📏</span><span class="btn-label">Measure</span></button>
                     </div>
                     <div style="display: flex; gap: 4px; width: 100%;">
-                        <button class="tool-btn" onclick="exportPNG()" title="Export PNG" style="border-bottom: 2px solid #a855f7;"><span class="icon">🖼️</span><span class="btn-label">PNG</span></button>
-                        <button class="tool-btn" onclick="exportPDF()" title="Export PDF" style="border-bottom: 2px solid #f43f5e;"><span class="icon">📄</span><span class="btn-label">PDF</span></button>
+                        <button class="tool-btn" onclick="exportPNG()" title="Export PNG" style="border-bottom: 2px solid #a855f7;">
+                            <span class="icon">🖼️</span><span class="btn-label">PNG</span>
+                        </button>
+                        <button class="tool-btn" onclick="exportPDF()" title="Export PDF" style="border-bottom: 2px solid #f43f5e;">
+                            <span class="icon">📄</span><span class="btn-label">PDF</span>
+                        </button>
+                        <button class="tool-btn" onclick="exportDXF()" title="Export AutoCAD DXF" style="border-bottom: 2px solid #f59e0b;">
+                            <span class="icon">📐</span><span class="btn-label">DXF</span>
+                        </button>
+                        <button class="tool-btn" onclick="exportGLB()" title="Export 3D Model GLB" style="border-bottom: 2px solid #10b981;">
+                            <span class="icon">🧊</span><span class="btn-label">GLB</span>
+                        </button>
                     </div>
                     <div style="display: flex; gap: 4px; width: 100%;">
                         <button class="tool-btn" onclick="exportPDF()" title="Export PDF" style="border-bottom: 2px solid #f43f5e;">
@@ -477,11 +470,10 @@
                     <div class="setting-group toggle-group" style="justify-content: flex-end; padding-bottom: 5px;">
                         <label class="ui-toggle" style="justify-content: flex-end; gap: 10px;">
                             <span style="font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;">
-                                📐 Project Data
-                            </span>
-                            <input type="checkbox" checked onchange="toggleWidget('area-overlay', this.checked)">
+                                🧩 Smart-Merge</span>
+                            <input type="checkbox" id="smartMergeToggle" onchange="updateCanvas()">
                             <div class="slider"></div>
-                        </label>                        
+                        </label>                      
                     </div>
                     <div class="setting-group toggle-group" style="justify-content: flex-end; padding-bottom: 5px;">
                         <label class="ui-toggle" style="justify-content: flex-end; gap: 10px;">
@@ -489,26 +481,6 @@
                                 📐 Snap to 1ft Grid
                             </span>
                             <input type="checkbox" id="gridSnapToggle" checked>
-                            <div class="slider"></div>
-                        </label>                        
-                    </div>
-                </div>
-                <div class="neo-divider" style="margin: 10px 0;"></div>
-                <div class="setting-card" style="padding: 8px; margin-bottom: 8px;">
-                    <div class="setting-group toggle-group" style="justify-content: flex-end; padding-bottom: 5px;">
-                        <label class="ui-toggle" style="justify-content: flex-end; gap: 10px;">
-                            <span style="font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;">
-                                📷 Camera Controls
-                            </span>
-                            <input type="checkbox" checked onchange="toggleWidget('camera-controls', this.checked)">
-                            <div class="slider"></div>
-                        </label>                        
-                    </div>
-                    <div class="setting-group toggle-group" style="justify-content: flex-end; padding-bottom: 5px;">
-                        <label class="ui-toggle" style="justify-content: flex-end; gap: 10px;">
-                            <span style="font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;">
-                                🧩 Smart-Merge</span>
-                            <input type="checkbox" id="smartMergeToggle" onchange="updateCanvas()">
                             <div class="slider"></div>
                         </label>                        
                     </div>
@@ -532,10 +504,17 @@
                         </label>                        
                     </div>
                 </div>
-                
+                <div class="setting-card" style="padding: 8px; margin-bottom: 8px;">
+                    <div class="setting-group toggle-group" style="justify-content: flex-end; padding-bottom: 5px;">
+                        <label class="ui-toggle" style="justify-content: flex-end; gap: 10px;">
+                            <span style="font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;">
+                                📏 Show Dimensions</span>
+                            <input type="checkbox" id="showDims" onchange="updateCanvas()">
+                            <div class="slider"></div>
+                        </label>                        
+                    </div>
+                </div>
 
-                
-                
                 <p style="font-size: 0.65rem; color: #10b981; margin-top: 8px; margin-bottom: 0; font-weight: bold; text-align: center;">🖱️ Scroll: Zoom | Mid-Click: Pan</p>
             </div>
 
@@ -610,6 +589,11 @@
                         </div>
                     </div>
                 </div>
+            </div>
+
+            <!-- ✨ NEW: COMPLIANCE DASHBOARD WIDGET -->
+            <div id="compliance-widget">
+                <div class="compliance-waiting">Waiting for compliance scan...</div>
             </div>
         
             <!-- VASTU SCORE block -->
@@ -724,18 +708,18 @@
     <!-- ========================================== -->
     <!-- 🌟 PRESENTATION CONTROLS (Pro Glass Pill)  -->
     <!-- ========================================== -->
+    <!-- CLIENT SHOWCASE MODE
+    <button id="exit-showcase-btn" onclick="toggleShowcaseMode()">
+        ✕ EXIT PRESENTATION
+    </button>
     <div id="presentation-controls" class="pres-controls-wrapper" style="display: none;">
         
-        <!-- Sun Controls -->
         <div class="pres-sun-group">
             <span class="pres-sun-icon dawn" title="Dawn">🌅</span>
             <input type="range" id="sun-slider" class="pres-sun-slider" min="6" max="18" step="0.1" value="12" oninput="updateSunlight(this.value)">
             <span class="pres-sun-icon dusk" title="Dusk">🌇</span>
         </div>
-        
         <div class="pres-divider"></div>
-        
-        <!-- Tour Controls (Labels Restored) -->
         <div class="pres-btn-group">
             <button class="action-btn pres-btn waypoint-btn" onclick="captureWaypoint()">
                 📷 Set (<span id="wp-count">0</span>)
@@ -747,97 +731,163 @@
                 🗑️
             </button>
         </div>
-        
         <div class="pres-divider"></div>
-        
-        <!-- View Controls -->
         <div class="pres-btn-group">
             <button class="neo-btn outline-cyan pres-btn showcase-btn" onclick="toggleShowcaseMode()">🎬SHOW</button>
             <button id="btn-explode" class="neo-btn outline-cyan pres-btn showcase-btn" onclick="toggleExplodeView()">💥EXPLODE</button>
         </div>
-        
+    </div>
+     -->
+
+
+    <!-- ========================================== -->
+    <!-- 🌟 PRESENTATION CONTROLS (Pro Glass Pill)  -->
+    <!-- ========================================== -->
+    
+    <!-- CLIENT SHOWCASE MODE -->
+    <button id="exit-showcase-btn" onclick="toggleShowcaseMode()">
+        ✕ EXIT PRESENTATION
+    </button>
+    
+    <div id="presentation-controls" class="pc-wrapper" style="display: none;">
+        <!-- Sun Controls -->
+        <div class="pc-sun-group">
+            <span class="pc-sun-icon pc-dawn" title="Dawn">🌅</span>
+            <input type="range" id="sun-slider" class="pc-sun-slider" min="6" max="18" step="0.1" value="12" oninput="updateSunlight(this.value)">
+            <span class="pc-sun-icon pc-dusk" title="Dusk">🌇</span>
+        </div>
+        <div class="pc-divider"></div>
+        <!-- Tour Controls -->
+        <div class="pc-btn-group">
+            <button class="pc-btn pc-btn-set" onclick="captureWaypoint()">
+                <span class="pc-icon">📷</span> Set (<span id="wp-count">0</span>)
+            </button>
+            <button class="pc-btn pc-btn-play" onclick="playCinematicTour()">
+                <span class="pc-icon">▶️</span> Play
+            </button>
+            <button class="pc-btn pc-btn-clear" onclick="clearTour()" title="Clear All">
+                <span class="pc-icon">🗑️</span>
+            </button>
+        </div>
+        <div class="pc-divider"></div>
+        <!-- View Controls -->
+        <div class="pc-btn-group">
+            <button class="pc-btn pc-btn-view" onclick="toggleShowcaseMode()">
+                <span class="pc-icon">🎬</span> SHOW
+            </button>
+            <button id="btn-explode" class="pc-btn pc-btn-view" onclick="toggleExplodeView()">
+                <span class="pc-icon">💥</span> EXPLODE
+            </button>
+        </div>
     </div>
 
 
-    <!-- ========================================== -->
+
+
+
+
+
+
+
+
+
+
     <!-- FLOATING SHORTCUT MENU -->
-    <!-- ========================================== -->
-    <button id="btn-cheat-sheet" class="float-action-btn" style="position: fixed; bottom: 20px; left: 20px; z-index: 1000;" onclick="toggleCheatSheet()">
+    <button id="btn-cheat-sheet" class="neo-action-btn" onclick="toggleCheatSheet()">
         <span class="icon">⌨️</span>
         <span class="text">Shortcuts Guide</span>
     </button>
-
-    <div id="cheat-sheet-panel" class="neo-panel" style="position: fixed; bottom: 80px; left: 20px; z-index: 1000; width: 300px; display: none; opacity: 0; transform: translateY(10px); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);">
+    <div id="cheat-sheet-panel" class="neo-panel">
         <div class="neo-panel-header">
             <h2>⌨️ KEYBOARD SHORTCUTS</h2>
             <button class="neo-minimize-btn" onclick="toggleCheatSheet()">✕</button>
         </div>
         <div class="neo-divider"></div>
-        <div style="display: flex; flex-direction: column; gap: 8px; max-height: 400px; overflow-y: auto; padding-right: 5px;">
+        
+        <div class="cheat-sheet-scroll">
             <span class="neo-label" style="color: #38bdf8; margin-top: 5px;">GENERAL EDITING</span>
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="color: #94a3b8; font-size: 0.75rem;">Copy / Paste</span><span class="ctx-shortcut" style="color: #38bdf8;">Ctrl+C / Ctrl+V</span>
+            
+            <div class="cheat-sheet-row">
+                <span class="cheat-sheet-desc">Copy / Paste</span>
+                <span class="ctx-shortcut" style="color: #38bdf8;">Ctrl+C / Ctrl+V</span>
             </div>
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="color: #94a3b8; font-size: 0.75rem;">Undo Action</span><span class="ctx-shortcut" style="color: #38bdf8;">Ctrl+Z</span>
+            <div class="cheat-sheet-row">
+                <span class="cheat-sheet-desc">Undo Action</span>
+                <span class="ctx-shortcut" style="color: #38bdf8;">Ctrl+Z</span>
             </div>
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="color: #94a3b8; font-size: 0.75rem;">Duplicate Room</span><span class="ctx-shortcut" style="color: #38bdf8;">Ctrl+D</span>
+            <div class="cheat-sheet-row">
+                <span class="cheat-sheet-desc">Duplicate Room</span>
+                <span class="ctx-shortcut" style="color: #38bdf8;">Ctrl+D</span>
             </div>
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="color: #94a3b8; font-size: 0.75rem;">Lock/Unlock</span><span class="ctx-shortcut" style="color: #38bdf8;">Ctrl+L</span>
+            <div class="cheat-sheet-row">
+                <span class="cheat-sheet-desc">Lock/Unlock</span>
+                <span class="ctx-shortcut" style="color: #38bdf8;">Ctrl+L</span>
             </div>
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="color: #94a3b8; font-size: 0.75rem;">Delete Item</span><span class="ctx-shortcut" style="color: #ef4444;">Del / Bksp</span>
+            <div class="cheat-sheet-row">
+                <span class="cheat-sheet-desc">Delete Item</span>
+                <span class="ctx-shortcut" style="color: #ef4444;">Del / Bksp</span>
             </div>
+            
             <div class="neo-divider" style="margin: 5px 0;"></div>
             <span class="neo-label" style="color: #10b981;">2D CANVAS CONTROLS</span>
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="color: #94a3b8; font-size: 0.75rem;">Pan View</span><span class="ctx-shortcut" style="color: #10b981;">Hold Space</span>
+            
+            <div class="cheat-sheet-row">
+                <span class="cheat-sheet-desc">Pan View</span>
+                <span class="ctx-shortcut" style="color: #10b981;">Hold Space</span>
             </div>
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="color: #94a3b8; font-size: 0.75rem;">Zoom In / Out</span><span class="ctx-shortcut" style="color: #10b981;">Mouse Scroll</span>
+            <div class="cheat-sheet-row">
+                <span class="cheat-sheet-desc">Zoom In / Out</span>
+                <span class="ctx-shortcut" style="color: #10b981;">Mouse Scroll</span>
             </div>
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="color: #94a3b8; font-size: 0.75rem;">Straight Line Drag</span><span class="ctx-shortcut" style="color: #10b981;">Shift + Drag</span>
+            <div class="cheat-sheet-row">
+                <span class="cheat-sheet-desc">Straight Line Drag</span>
+                <span class="ctx-shortcut" style="color: #10b981;">Shift + Drag</span>
             </div>
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="color: #94a3b8; font-size: 0.75rem;">Nudge Item</span><span class="ctx-shortcut" style="color: #10b981;">Arrow Keys</span>
+            <div class="cheat-sheet-row">
+                <span class="cheat-sheet-desc">Nudge Item</span>
+                <span class="ctx-shortcut" style="color: #10b981;">Arrow Keys</span>
             </div>
+            
             <div class="neo-divider" style="margin: 5px 0;"></div>
             <span class="neo-label" style="color: #f59e0b;">DRONE MODE (3D)</span>
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="color: #94a3b8; font-size: 0.75rem;">Fly / Navigate</span><span class="ctx-shortcut" style="color: #f59e0b;">WASD + QE</span>
+            
+            <div class="cheat-sheet-row">
+                <span class="cheat-sheet-desc">Fly / Navigate</span>
+                <span class="ctx-shortcut" style="color: #f59e0b;">WASD + QE</span>
             </div>
         </div>
     </div>
 
-	<script src="core/event.js"></script>
+    <script src="js/event.js"></script>
     <script src="secrets.js"></script>
-    <script src="core/config.js"></script>
-    <script src="core/ai-agent.js"></script>
-    <script src="core/constants.js"></script>
-    <script src="core/state.js"></script>
-    <script src="core/utils.js"></script>
-    <script src="features/furniture-factory/furniture3d.js"></script>
-    <script src="core/engine3d-setup.js"></script>
-    <script src="core/engine3d-materials.js"></script>
-    <script src="core/engine3d-builders.js"></script>
-    <script src="core/engine3d.js"></script>
-    <script src="features/room-studio/studio.js"></script>
-    <script src="core/parapet.js"></script>
-    <script src="features/advanced-3d/advanced3d.js"></script>
-    <script src="features/cinematic-tour/tour.js"></script>
-    <script src="core/actions.js"></script>
-    <script src="core/ui.js"></script>
-    <script src="core/app.js"></script>
-    <script src="core/settings.js"></script>
-    <!-- Feature Modules -->
-    <script src="features/vastu/vastu.js"></script>
-    <script src="core/elevation.js"></script>
-    <script src="features/export/export.js"></script>
-    <script src="features/showcase/showcase.js"></script>
-    <script src="features/onboarding/onboarding.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/constants.js"></script>
+    <script src="js/state.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/furniture3d.js"></script>
+    <script src="js/engine3d-setup.js"></script>
+    <script src="js/engine3d-materials.js"></script>
+    <script src="js/engine3d-builders.js"></script>
+    <script src="js/engine3d.js"></script>
+    <script src="js/actions.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/settings.js"></script>
+    <script src="js/ai-agent.js"></script>
+    <script src="js/camera.js"></script>
+    <script src="js/converter.js"></script>
+    <script src="js/compliance.js"></script>
+    <script src="js/vastu.js"></script>
+    <script src="js/cheatsheet.js"></script>
+    <script src="js/studio.js"></script>
+    <script src="js/parapet.js"></script>
+    <script src="js/advanced3d.js"></script>
+    <!-- <script src="js/tour.js"></script> -->
+    <script src="js/elevation.js"></script>
+    <script src="js/export.js"></script>
+    <script src="js/presentationcontrols.js"></script>
+    <!-- <script src="js/presentation.js"></script> -->
+    <script src="js/onboarding.js"></script>
+    <script src="js/app.js"></script>
 
 </body>
 </html>

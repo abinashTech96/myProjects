@@ -23,7 +23,7 @@
     <link rel="stylesheet" href="css/compliance.css">
     <link rel="stylesheet" href="css/vastu.css">
     <link rel="stylesheet" href="css/cheatsheet.css">
-    <link rel="stylesheet" href="css/parapet.css">
+    <!-- <link rel="stylesheet" href="css/parapet.css"> -->
     <link rel="stylesheet" href="css/studio.css">
     <!-- <link rel="stylesheet" href="css/tour.css"> -->
     <link rel="stylesheet" href="css/advanced3d.css">
@@ -140,98 +140,7 @@
                 </div>
                 
                 <div id="settings-content" class="settings-content">
-                    
-                    <!-- WIDGET VISIBILITY -->
-                    <div class="settings-accordion-wrapper">
-                        <button class="settings-accordion-btn active" id="btn-widget-vis-new" onclick="this.classList.toggle('active'); this.nextElementSibling.classList.toggle('active');">
-                            <div class="accordion-title-wrap">
-                                <span class="accordion-emoji">👁️</span>
-                                <span class="settings-category">WIDGET VISIBILITY</span>
-                            </div>
-                            <span class="settings-chevron">▼</span>
-                        </button>                    
-                        <div class="settings-accordion-content active" id="content-widget-visibility">
-                            <div class="settings-accordion-inner">
-                                <label class="ui-toggle">
-                                    <span class="settings-label-text">📏 Quick Converter</span>
-                                    <input type="checkbox" id="toggle-qc-cb" checked autocomplete="off">
-                                    <div class="slider"></div>
-                                </label>
-                                <label class="ui-toggle">
-                                    <span class="settings-label-text">📷 Camera Controls</span>
-                                    <input type="checkbox" id="toggle-camera-cb" checked autocomplete="off">
-                                    <div class="slider"></div>
-                                </label>
-                                <label class="ui-toggle">
-                                    <span class="settings-label-text">✅ Code Inspector</span>
-                                    <input type="checkbox" id="toggle-compliance-cb" checked autocomplete="off">
-                                    <div class="slider"></div>
-                                </label>
-                                <label class="ui-toggle">
-                                    <span class="settings-label-text">🧭 Vastu Score</span>
-                                    <input type="checkbox" id="toggle-vastu-cb" checked autocomplete="off">
-                                    <div class="slider"></div>
-                                </label>
-                                <label class="ui-toggle">
-                                    <span class="settings-label-text">⌨️ Shortcuts Guide</span>
-                                    <input type="checkbox" id="toggle-cheatsheet-cb" checked autocomplete="off">
-                                    <div class="slider"></div>
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- DATA CONTROLS -->
-                    <div class="settings-accordion-wrapper">
-                        <button class="settings-accordion-btn" id="btn-data-ctrl-new" onclick="this.classList.toggle('active'); this.nextElementSibling.classList.toggle('active');">
-                            <div class="accordion-title-wrap">
-                                <span class="accordion-emoji">💾</span>
-                                <span class="settings-category">DATA CONTROLS</span>
-                            </div>
-                            <span class="settings-chevron">▼</span>
-                        </button>
-                        <div class="settings-accordion-content" id="content-data-controls">
-                            <div class="settings-accordion-inner btn-grid">
-                                <div class="flex-row">
-                                    <button class="sidebar-btn secondary" style="flex:1; padding: 5px;" onclick="exportJSON()">💾 Save</button>
-                                    <button class="sidebar-btn secondary" style="flex:1; padding: 5px;" onclick="document.getElementById('importFile').click()">📂 Load</button>
-                                </div>
-                                <button class="sidebar-btn secondary danger-override" onclick="resetWorkspace()">⚠️ FACTORY RESET</button>
-                                <input type="file" id="importFile" style="display:none" onchange="importJSON(event)">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- TOOLBAR CONTROLS -->
-                    <div class="settings-accordion-wrapper">
-                        <button class="settings-accordion-btn" id="btn-toolbar-controls" onclick="this.classList.toggle('active'); this.nextElementSibling.classList.toggle('active');">
-                            <div class="accordion-title-wrap">
-                                <span class="accordion-emoji">🛠️</span>
-                                <span class="settings-category">TOOLBAR TOOLS</span>
-                            </div>
-                            <span class="settings-chevron">▼</span>
-                        </button>
-                        <div class="settings-accordion-content" id="content-toolbar-controls">
-                            <div class="settings-accordion-inner">
-                                <label class="ui-toggle">
-                                    <span class="settings-label-text">ℹ️ Project Info</span>
-                                    <input type="checkbox" id="toggle-project-info-cb" checked autocomplete="off" onchange="toggleNavTool('project-info-btn', this.checked)">
-                                    <div class="slider"></div>
-                                </label>
-                                <label class="ui-toggle">
-                                    <span class="settings-label-text">✨ Auto-Builder</span>
-                                    <input type="checkbox" id="toggle-auto-builder-cb" checked autocomplete="off" onchange="toggleNavTool('auto-builder-btn', this.checked)">
-                                    <div class="slider"></div>
-                                </label>
-                                <label class="ui-toggle">
-                                    <span class="settings-label-text">🤖 AI Agent</span>
-                                    <input type="checkbox" id="toggle-ai-agent-cb" checked autocomplete="off" onchange="toggleNavTool('ai-agent-btn', this.checked)">
-                                    <div class="slider"></div>
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-
+                    <!-- Automatically populated by settings.js -->
                 </div>
             </div>
 

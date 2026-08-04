@@ -64,6 +64,7 @@ function initDOMCache() {
 
     UI.gridSnapToggle = document.getElementById('gridSnapToggle');
 
+    initDynamicCatalogs();
     initAnimatedDropdowns();
 }
 
@@ -73,12 +74,14 @@ function getFloorLabel(index) {
     if (index === 2) return '2nd';
     return `${index}th`;
 }
+
 function getFloorDisplayName(index) {
     if (index === 0) return 'Ground Floor';
     if (index === 1) return '1st Floor';
     if (index === 2) return '2nd Floor';
     return `${index}th Floor`;
 }
+
 function renderFloorButtons(containerId, count, activeFloor, callback) {
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -96,6 +99,7 @@ function renderFloorButtons(containerId, count, activeFloor, callback) {
         container.appendChild(btn);
     }
 }
+
 function toggleOverlayPanel(panelId, buttonId, activeColor, inactiveColor) {
     const panel = document.getElementById(panelId);
     const btn = document.getElementById(buttonId);
@@ -137,8 +141,6 @@ function handleCompassChange() {
     globalCompassDir = document.getElementById('compassDir').value;
     if (typeof updateCanvas === 'function') updateCanvas();
 }
-
-
 
 function getRoomDisplayName(index) {
     const el = elements[index];
@@ -259,7 +261,6 @@ function buildExplorerView(animClass) {
 // =========================================
 function buildEditorView(i, el) {
     let staircaseControls = '';
-    // 🌟 NEW: PARAMETRIC STAIRCASE UI
     if (el.type === 'staircase') {
         const wallH = typeof ARCH_CONFIG !== 'undefined' ? ARCH_CONFIG.DEFAULTS.WALL_HEIGHT_3D : 120;
         const steps = Math.round(wallH / 7.5); // Standard 7.5 inch riser height
@@ -281,7 +282,6 @@ function buildEditorView(i, el) {
                 <button class="neo-btn outline-cyan" style="padding: 6px; font-size: 0.7rem;" onclick="rotateStaircase(${i})" title="Rotate Staircase">
                     🔄 DIRECTION: ${el.dir ? el.dir.toUpperCase() : 'UP'}
                 </button>
-                <!-- ✨ ENHANCEMENT: Multi-Story Shaft Toggle -->
                 <label class="ui-toggle" style="margin-top: 5px;">
                     <span class="neo-label">CUT ALL FLOORS (SHAFT)</span>
                     <input type="checkbox" ${el.cutAllFloors ? 'checked' : ''} onchange="elements[${i}].cutAllFloors=this.checked; if(typeof ProjectState !== 'undefined') ProjectState.saveState(); updateCanvas(); if(typeof generate3DModel === 'function') generate3DModel();">
@@ -306,7 +306,6 @@ function buildEditorView(i, el) {
                         oninput="elements[${i}].customName=this.value; updateCanvas();" 
                         style="width: 85px; font-size: 0.75rem; padding: 6px;">
                     
-                    <!-- 🌟 NEW: MATERIAL DROPDOWN 🌟 -->
                     <select class="neo-sunken" style="width: 85px; padding: 4px; font-size: 0.65rem;" 
                             onchange="elements[${i}].material=this.value; updateCanvas(); if(typeof is3DMode !== 'undefined' && is3DMode && typeof generate3DModel === 'function') generate3DModel();">
                         <option value="auto" ${!el.material || el.material === 'auto' ? 'selected' : ''}>Auto</option>
@@ -382,7 +381,7 @@ function buildEditorView(i, el) {
 // =========================================
 function buildFixturesView(i, el) {
     const roomFixtures = fixtures.filter(f => f.roomId === i);
-    if (roomFixtures.length === 0) return ''; // No fixtures, return empty
+    if (roomFixtures.length === 0) return ''; 
 
     let html = `
         <div style="display: flex; align-items: center; gap: 6px; margin-top: 20px; margin-bottom: 10px;">
@@ -442,11 +441,6 @@ function buildFixturesView(i, el) {
     return html;
 }
 
-
-
-
-
-
 function renderFloorSelectors() {
     let count = parseInt(document.getElementById('b-floors').value);
     if (count < 1 || isNaN(count)) count = 1;
@@ -477,7 +471,6 @@ function renderFloorSelectors() {
     }
 }
 
-/*UI TOGGLES & THEMES*/
 function toggleTheme() {
     const isClassic = document.body.classList.toggle('classic-theme');
     if (typeof updateCanvas === 'function') updateCanvas(); 
@@ -491,19 +484,12 @@ function toggleTheme() {
 // =========================================
 // CUSTOM DROPDOWN ENGINE
 // =========================================
-// document.addEventListener('DOMContentLoaded', () => {
-//     const btn = document.getElementById('ai-generate-btn');
-//     if (btn) btn.addEventListener('click', handleAICommand);
-// });
 document.addEventListener('click', () => {
     document.querySelectorAll('.pro-dropdown-wrapper').forEach(w => w.classList.remove('open'));
 });
 
-
-
-
 // =========================================
-// PRO ANIMATED DROPDOWNS ENGINE (Upgraded)
+// PRO ANIMATED DROPDOWNS ENGINE
 // =========================================
 function initAnimatedDropdowns() {
     const selects = document.querySelectorAll('select:not([data-customized])');
@@ -534,10 +520,9 @@ function initAnimatedDropdowns() {
         
         const list = document.createElement('div');
         list.className = 'pro-dropdown-list';
-        list.style.maxHeight = '300px'; // Prevents list from overflowing screen
-        list.style.overflowY = 'auto';  // Adds scrollbar to the dropdown
+        list.style.maxHeight = '300px'; 
+        list.style.overflowY = 'auto';  
         
-        // Helper function to build clickable items
         const createOptionItem = (option) => {
             const item = document.createElement('div');
             item.className = 'pro-dropdown-item';
@@ -559,13 +544,11 @@ function initAnimatedDropdowns() {
             list.appendChild(item);
         };
 
-        // Parse standard options AND optgroups
         Array.from(select.children).forEach(child => {
             if (child.tagName === 'OPTGROUP') {
                 const groupLabel = document.createElement('div');
                 groupLabel.className = 'pro-dropdown-group';
                 groupLabel.textContent = child.label;
-                // Premium styling for the category headers
                 groupLabel.style.cssText = 'font-size: 0.65rem; color: #38bdf8; padding: 10px 12px 4px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; background: rgba(0,0,0,0.5); pointer-events: none;';
                 list.appendChild(groupLabel);
                 
@@ -586,6 +569,7 @@ function initAnimatedDropdowns() {
         });
     });
 }
+
 // =========================================
 // 🌟 SPLIT SCREEN RESIZER ENGINE
 // =========================================
@@ -602,18 +586,14 @@ function initSplitScreen() {
         isDragging = true;
         resizer.classList.add('dragging');
         document.body.style.cursor = 'col-resize';
-        
-        // Disable pointer events to stop the mouse from catching on elements
         leftSide.style.pointerEvents = 'none';
         rightSide.style.pointerEvents = 'none';
     });
     document.addEventListener('mousemove', function(e) {
         if (!isDragging) return;
-        
         const rect = workspace.getBoundingClientRect();
         let newWidthPercent = ((e.clientX - rect.left) / rect.width) * 100;
         
-        // Min 15%, Max 85% limits
         if (newWidthPercent < 15) newWidthPercent = 15;
         if (newWidthPercent > 85) newWidthPercent = 85;
         
@@ -625,36 +605,30 @@ function initSplitScreen() {
             isDragging = false;
             resizer.classList.remove('dragging');
             document.body.style.cursor = 'default';
-            
             leftSide.style.pointerEvents = 'auto';
             rightSide.style.pointerEvents = 'auto';
-            
-            // Forces canvas elements to adjust their aspect ratios
             window.dispatchEvent(new Event('resize'));
         }
     });
 }
 document.addEventListener('DOMContentLoaded', initSplitScreen);
-// =========================================
-// 🌟 SPLIT SCREEN RESIZER ENGINE ends
-// =========================================
-// =========================================
-// 🌟 AUTO-BUILDER DROPDOWN TOGGLE (Squeeze Effect)
-// =========================================
-window.toggleAutoBuilder = function() {
-    toggleOverlayPanel('template-builder-overlay', 'auto-builder-btn', 'rgba(245, 158, 11, 0.4)', 'rgba(245, 158, 11, 0.15)');
-};
-
-// =========================================
-// 🌟 PROJECT INFO DROPDOWN TOGGLE
-// =========================================
-window.toggleProjectInfo = function() {
-    toggleOverlayPanel('project-info-overlay', 'project-info-btn', 'rgba(56, 189, 248, 0.4)', 'rgba(56, 189, 248, 0.15)');
-};
 
 // ==========================================
 // WORKSPACE UI TOGGLES (Floating Panels)
 // ==========================================
+window.toggleAutoBuilder = function() {
+    toggleOverlayPanel('template-builder-overlay', 'auto-builder-btn', 'rgba(245, 158, 11, 0.4)', 'rgba(245, 158, 11, 0.15)');
+};
+window.toggleProjectInfo = function() {
+    toggleOverlayPanel('project-info-overlay', 'project-info-btn', 'rgba(56, 189, 248, 0.4)', 'rgba(56, 189, 248, 0.15)');
+};
+window.toggleAIAgent = function() {
+    toggleOverlayPanel('ai-agent-overlay', 'ai-agent-btn', 'rgba(168, 85, 247, 0.4)', 'rgba(168, 85, 247, 0.15)');
+};
+window.toggleSettings = function() {
+    toggleOverlayPanel('settings-overlay', 'settings-btn', 'rgba(148, 163, 184, 0.4)', 'rgba(148, 163, 184, 0.15)');
+};
+
 window.toggleWidget = function(widgetId, isVisible) {
     const widget = document.getElementById(widgetId);
     if (!widget) return;
@@ -673,6 +647,7 @@ window.toggleWidget = function(widgetId, isVisible) {
         }, 200); 
     }
 };
+
 window.toggleTimeMachine = function() {
     let panel = document.getElementById('time-machine-panel');
     if(!panel) {
@@ -690,6 +665,7 @@ window.toggleTimeMachine = function() {
         panel.style.transform = 'translateY(150%)';
     }
 };
+
 window.renderTimeMachine = function() {
     const panel = document.getElementById('time-machine-panel');
     if(!panel) return;
@@ -728,7 +704,6 @@ window.toggleNavbarDrawer = function() {
         btn.classList.toggle('drawer-open', isOpen);
         if (isOpen) {
             setTimeout(() => {
-              //btn.style.top = `${drawer.offsetHeight + 15}px`;
                 btn.style.top = `${60 + drawer.offsetHeight - 10}px`;
             }, 50);
         } else {
@@ -754,15 +729,12 @@ window.switchDrawerTab = function(event, tabId) {
     setTimeout(() => {
         const drawerPanel = document.getElementById('nav-drawer');
         const pullTab = document.getElementById('navbar-toggle-btn');
-        
         if (drawerPanel && pullTab && drawerPanel.classList.contains('drawer-open')) {
             pullTab.style.top = `${60 + drawerPanel.offsetHeight - 10}px`;
         }
     }, 50); 
 }
-// =========================================
-// 🌟 TOOLBAR WIDGET VISIBILITY TOGGLE (ANIMATED)
-// =========================================
+
 window.toggleNavTool = function(btnId, isVisible) {
     const btn = document.getElementById(btnId);
     if (btn) {
@@ -789,133 +761,26 @@ window.toggleNavTool = function(btnId, isVisible) {
     }
 };
 
-
-// =========================================
-// 🌟 AI AGENT DROPDOWN TOGGLE
-// =========================================
-window.toggleAIAgent = function() {
-    toggleOverlayPanel('ai-agent-overlay', 'ai-agent-btn', 'rgba(168, 85, 247, 0.4)', 'rgba(168, 85, 247, 0.15)');
-};
-// =========================================
-// 🌟 SETTINGS DROPDOWN TOGGLE
-// =========================================
-window.toggleSettings = function() {
-    toggleOverlayPanel('settings-overlay', 'settings-btn', 'rgba(148, 163, 184, 0.4)', 'rgba(148, 163, 184, 0.15)');
-};
-
 // ==========================================
-// 🧠 MAIN THREAD MATH ENGINE (Replaces Web Worker for Local Files)
+// 🌟 DYNAMIC UI GENERATORS
 // ==========================================
-
-// 1. The Debounced Trigger
-window.requestBackgroundMath = debounce(() => {
-    if (typeof elements === 'undefined' || !elements) return;
-    
-    const inW = parseFloat(document.getElementById('inW')?.value || 272);
-    const inH = parseFloat(document.getElementById('inH')?.value || 400);
-    const compassDir = document.getElementById('compassDir')?.value || 'West';
-    const currentFixtures = typeof fixtures !== 'undefined' ? fixtures : [];
-
-    // Run calculations directly on the main thread
-    const vastuResult = _calcVastu(elements, inW, inH, compassDir);
-    const areaResult = _calcArea(elements, currentFloor);
-    const complianceResult = _calcCompliance(elements, currentFixtures);
-
-    // Update the UI
-    if (typeof renderVastuUI === 'function') renderVastuUI(vastuResult);
-    if (typeof renderAreaUI === 'function') renderAreaUI(areaResult);
-    if (typeof renderComplianceUI === 'function') renderComplianceUI(complianceResult);
-}, 50);
-
-
-// 3. The Math Algorithms (Ported from worker)
-function _calcVastu(elements, inW, inH, compassDir) {
-    let score = 0;
-    let mainText = "Add rooms to calculate Vastu.";
-    let color = "#94a3b8";
-
-    if (elements.length > 0) {
-        score = 50;
-        let feedback = [];
-        const cellW = inW / 3;
-        const cellH = inH / 3;
-
-        elements.forEach(el => {
-            if (el.isFurniture || el.floor > 0) return;
-            const cx = el.x + (el.w / 2);
-            const cy = el.y + (el.h / 2);
-            
-            let gridX = cx < cellW ? 0 : (cx > cellW * 2 ? 2 : 1);
-            let gridY = cy < cellH ? 0 : (cy > cellH * 2 ? 2 : 1);
-            let zoneStr = "CENTER";
-            
-            if (!(gridX === 1 && gridY === 1)) {
-                let up = "", down = "", left = "", right = "";
-                switch (compassDir) {
-                    case 'North': up="N"; down="S"; left="W"; right="E"; break;
-                    case 'East':  up="E"; down="W"; left="N"; right="S"; break;
-                    case 'South': up="S"; down="N"; left="E"; right="W"; break;
-                    case 'West':  up="W"; down="E"; left="S"; right="N"; break;
-                    default:      up="W"; down="E"; left="S"; right="N"; break;
-                }
-                zoneStr = "";
-                if (gridY === 0 && (up === 'N' || up === 'S')) zoneStr += up;
-                else if (gridY === 2 && (down === 'N' || down === 'S')) zoneStr += down;
-                else if (gridX === 0 && (left === 'N' || left === 'S')) zoneStr += left;
-                else if (gridX === 2 && (right === 'N' || right === 'S')) zoneStr += right;
-
-                if (gridY === 0 && (up === 'E' || up === 'W')) zoneStr += up;
-                else if (gridY === 2 && (down === 'E' || down === 'W')) zoneStr += down;
-                else if (gridX === 0 && (left === 'E' || left === 'W')) zoneStr += left;
-                else if (gridX === 2 && (right === 'E' || right === 'W')) zoneStr += right;
-            }
-
-            if (el.type === 'kitchen') {
-                if (zoneStr === "SE") { score += 20; feedback.push("Kitchen perfectly in SE (+20)"); }
-                else if (zoneStr === "NW") { score += 10; feedback.push("Kitchen acceptable in NW (+10)"); }
-                else { score -= 15; feedback.push("Kitchen in " + zoneStr + " (Should be SE) (-15)"); }
-            }
-            if (el.type === 'puja') {
-                if (zoneStr === "NE") { score += 20; feedback.push("Puja perfectly in NE (+20)"); }
-                else { score -= 10; feedback.push("Puja in " + zoneStr + " (Should be NE) (-10)"); }
-            }
-            if (el.type === 'bedroom') {
-                if (zoneStr === "SW") { score += 15; feedback.push("Master Bed perfectly in SW (+15)"); }
-            }
-            if (el.type === 'toilet') {
-                if (zoneStr === "NE" || zoneStr === "SW") { score -= 25; feedback.push("Toilet prohibited in " + zoneStr + " (-25)"); }
-                else { score += 10; }
-            }
-        });
-        score = Math.max(0, Math.min(100, score));
-        color = "#10b981";
-        if (score < 40) color = "#ef4444";
-        else if (score < 70) color = "#f59e0b";
-        mainText = feedback.length > 0 ? feedback[0] : "Good overall spatial flow.";
-        if (score === 50 && feedback.length === 0) mainText = "Add specific rooms (Kitchen, Puja, Toilets) for scoring.";
+function initDynamicCatalogs() {
+    const roomSelect = document.getElementById('elem-type');
+    if (roomSelect && typeof ROOM_CATALOG !== 'undefined') {
+        roomSelect.innerHTML = ROOM_CATALOG.map(room => 
+            `<option value="${room.id}">${room.label}</option>`
+        ).join('');
     }
-    return { score, text: mainText, color };
-}
-
-function _calcArea(elements, currentFloor) {
-    let currentFloorTotals = {};
-    let currentFloorGrandTotal = 0;
-    let totalBuiltUpAreaAllFloors = 0;
-
-    elements.forEach(el => {
-        if (el.isFurniture || el.type === 'staircase') return;
-        const sqft = (el.w * el.h) / 144;
-        totalBuiltUpAreaAllFloors += sqft;
-        if (el.floor === currentFloor) {
-            currentFloorGrandTotal += sqft;
-            const typeName = el.customName || el.type.toUpperCase();
-            if (!currentFloorTotals[typeName]) currentFloorTotals[typeName] = 0;
-            currentFloorTotals[typeName] += sqft;
-        }
-    });
-    const sortedRooms = Object.keys(currentFloorTotals).sort((a, b) => currentFloorTotals[b] - currentFloorTotals[a]);
-    let sortedTotals = {};
-    sortedRooms.forEach(room => sortedTotals[room] = currentFloorTotals[room]);
-
-    return { currentFloorTotals: sortedTotals, currentFloorGrandTotal, totalBuiltUpAreaAllFloors };
+    const furnSelect = document.getElementById('furn-type');
+    if (furnSelect && typeof FURNITURE_CATALOG !== 'undefined') {
+        furnSelect.innerHTML = FURNITURE_CATALOG.map(furn => {
+            let sizeStr = '';
+            if (typeof ARCH_CONFIG !== 'undefined' && ARCH_CONFIG.DEFAULTS.FURNITURE[furn.id]) {
+                const w = ARCH_CONFIG.DEFAULTS.FURNITURE[furn.id].w / 12;
+                const h = ARCH_CONFIG.DEFAULTS.FURNITURE[furn.id].h / 12;
+                sizeStr = ` (${Math.floor(w)}'x${Math.floor(h)}')`;
+            }
+            return `<option value="${furn.id}">${furn.icon} ${furn.label}${sizeStr}</option>`;
+        }).join('');
+    }
 }

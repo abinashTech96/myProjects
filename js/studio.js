@@ -1,8 +1,51 @@
 // =========================================
-// ROOM STUDIO ENGINE (studio.js)
+// ROOM STUDIO ENGINE (studio.js) - REFACTORED
 // Local Sandbox Editor with Resizing, Realism & 3D Preview
 // =========================================
 
+// 1. DATA-DRIVEN CONFIGURATION
+const ROOM_STUDIO_CONFIG = {
+    header: {
+        icon: '🛋️',
+        title: 'ROOM STUDIO',
+        hint: "Drag to add. Click to select. 'R' to Rotate. 'Del' to Remove."
+    },
+    labels: {
+        catalogTitle: 'CATALOG',
+        editPrefix: '⚙️ EDIT',
+        btnDelete: '✕ Del',
+        btnRotate: '🔄 Rotate 90°'
+    },
+    actions: [
+        { 
+            id: 'std-toggle-3d-btn',
+            class: 'std-btn std-btn-3d',
+            text: '👁️ 3D PREVIEW',
+            action: 'RoomStudio.toggle3D()' 
+        },
+        { 
+            id: 'std-discard-btn',
+            class: 'std-btn cancel',
+            text: 'Discard',
+            action: 'RoomStudio.close()' 
+        },
+        {
+            id: 'std-save-btn',
+            class: 'std-btn save',
+            text: '💾 Save to Plan',
+            action: 'RoomStudio.save()' 
+        }
+    ],
+    propertyFields: [
+        { prop: 'x', label: 'POS X (in)', step: 6, min: 0 },
+        { prop: 'y', label: 'POS Y (in)', step: 6, min: 0 },
+        { prop: 'w', label: 'WIDTH (in)', step: 6, min: 12 },
+        { prop: 'h', label: 'DEPTH (in)', step: 6, min: 12 }
+    ],
+    catalog: typeof FURNITURE_CATALOG !== 'undefined' ? FURNITURE_CATALOG : []
+};
+
+// 2. CORE ENGINE
 const RoomStudio = {
     activeRoomIndex: null,
     activeRoom: null,
@@ -10,6 +53,8 @@ const RoomStudio = {
     sandboxDoorsWindows: [], 
     selectedFixtureIndex: -1, 
     boundKeyHandler: null,
+    boundDragMove: null,
+    boundDragUp: null,
 
     // Drag State (2D)
     isDragging: false,
@@ -20,50 +65,52 @@ const RoomStudio = {
     scene3D: null, camera3D: null, renderer3D: null, controls3D: null, reqAnim: null,
     raycaster: null, mouse3D: null, dragPlane: null, is3DDragging: false, dragOffset3D: null,
 
-    // 🌟 1. NEW: Store the HTML inside the feature script
+    // 🌟 DATA-DRIVEN UI GENERATOR
     buildUI() {
         if (document.getElementById('room-studio-modal')) return;
 
+        const buttonsHTML = ROOM_STUDIO_CONFIG.actions.map(btn => 
+            `<button id="${btn.id}" class="${btn.class}" onclick="${btn.action}">${btn.text}</button>`
+        ).join('');
+
         const uiTemplate = `
             <div id="room-studio-modal" style="display: none;">
-                <div class="rs-backdrop"></div>
-                <div class="rs-container">
-                    <div class="rs-header">
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <span style="font-size: 1.5rem;">🛋️</span>
+                <div class="std-backdrop"></div>
+                <div class="std-container">
+                    <div class="std-header">
+                        <div class="std-header-left">
+                            <span class="std-header-icon">${ROOM_STUDIO_CONFIG.header.icon}</span>
                             <div>
-                                <div id="rs-room-title" style="font-weight: 900; font-size: 1.1rem; color: white;">ROOM STUDIO</div>
-                                <div id="rs-room-dims" style="font-size: 0.7rem; color: #38bdf8; font-weight: bold;"></div>
+                                <div id="std-room-title" class="std-room-title">${ROOM_STUDIO_CONFIG.header.title}</div>
+                                <div id="std-room-dims" class="std-room-dims"></div>
                             </div>
                         </div>
-                        <div style="display: flex; gap: 10px;">
-                            <button id="rs-toggle-3d-btn" class="rs-btn" style="background: rgba(56, 189, 248, 0.1); color: #38bdf8;" onclick="RoomStudio.toggle3D()">👁️ 3D PREVIEW</button>
-                            <button class="rs-btn cancel" onclick="RoomStudio.close()">Discard</button>
-                            <button class="rs-btn save" onclick="RoomStudio.save()">💾 Save to Plan</button>
+                        <div class="std-header-right">
+                            ${buttonsHTML}
                         </div>
                     </div>
                     
-                    <div class="rs-workspace">
-                        <div class="rs-canvas-wrapper">
-                            <div id="studio-3d-container" style="display: none; width: 100%; height: 100%;"></div>
-                            <svg id="studio-svg" style="width: 100%; height: 100%;">
+                    <div class="std-workspace">
+                        <div class="std-canvas-wrapper">
+                            <div id="studio-3d-container" class="std-3d-container" style="display: none;"></div>
+                            <svg id="studio-svg" class="std-svg-canvas">
                                 <defs>
-                                    <pattern id="rs-grid" width="24" height="24" patternUnits="userSpaceOnUse">
+                                    <pattern id="std-grid" width="24" height="24" patternUnits="userSpaceOnUse">
                                         <path d="M 24 0 L 0 0 0 24" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
                                     </pattern>
                                 </defs>
-                                <rect width="100%" height="100%" fill="url(#rs-grid)" />
-                                <g id="rs-ghost-group"></g>
-                                <g id="rs-room-group"></g>
-                                <g id="rs-furniture-group"></g>
+                                <rect width="100%" height="100%" fill="url(#std-grid)" />
+                                <g id="std-ghost-group"></g>
+                                <g id="std-room-group"></g>
+                                <g id="std-furniture-group"></g>
                             </svg>
-                            <div id="rs-hint" class="rs-hint">Drag to add. Click to select. 'R' to Rotate. 'Del' to Remove.</div>
+                            <div id="std-hint" class="std-hint">${ROOM_STUDIO_CONFIG.header.hint}</div>
                         </div>
 
-                        <div class="rs-catalog">
-                            <div id="rs-properties" style="display: none; background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #38bdf8;"></div>
-                            <h3 style="color: #cbd5e1; font-size: 0.8rem; margin-top: 0; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px;">CATALOG</h3>
-                            <div id="rs-catalog-grid" class="rs-grid"></div>
+                        <div class="std-catalog">
+                            <div id="std-properties" class="std-properties-panel" style="display: none;"></div>
+                            <h3 class="std-catalog-title">${ROOM_STUDIO_CONFIG.labels.catalogTitle}</h3>
+                            <div id="std-catalog-grid" class="std-grid"></div>
                         </div>
                     </div>
                 </div>
@@ -79,21 +126,25 @@ const RoomStudio = {
         this.setupDragAndDrop();
         this.boundKeyHandler = this.handleKeydown.bind(this);
         
-        window.addEventListener('mousemove', (e) => this.handleDragMove(e));
-        window.addEventListener('mouseup', () => { this.isDragging = false; });
+        this.boundDragMove = (e) => this.handleDragMove(e);
+        this.boundDragUp = () => { this.isDragging = false; };
+
+        window.addEventListener('mousemove', this.boundDragMove);
+        window.addEventListener('mouseup', this.boundDragUp);
     },
 
     open() {
-        if (typeof selectedElIndex === 'undefined' || selectedElIndex === -1) return;
+        if (typeof selectedElIndex === 'undefined' || selectedElIndex === -1 || typeof elements === 'undefined') return;
         
         this.activeRoomIndex = selectedElIndex;
         this.activeRoom = elements[this.activeRoomIndex];
+        if (!this.activeRoom) return;
+
         this.selectedFixtureIndex = -1;
         this.is3DActive = false;
         
-        // RESTORED: Room Dimensions
-        document.getElementById('rs-room-title').innerText = this.activeRoom.customName || this.activeRoom.type;
-        const dimsEl = document.getElementById('rs-room-dims');
+        document.getElementById('std-room-title').innerText = this.activeRoom.customName || this.activeRoom.type;
+        const dimsEl = document.getElementById('std-room-dims');
         if (dimsEl) {
             dimsEl.innerText = `${Math.floor(this.activeRoom.w/12)}'${Math.round(this.activeRoom.w%12)}" × ${Math.floor(this.activeRoom.h/12)}'${Math.round(this.activeRoom.h%12)}"`;
         }
@@ -107,7 +158,6 @@ const RoomStudio = {
                 const ry = this.activeRoom.y;
 
                 if (cx >= rx && cx <= rx + this.activeRoom.w && cy >= ry && cy <= ry + this.activeRoom.h) {
-                    // const localFurniture = JSON.parse(JSON.stringify(el));
                     const localFurniture = structuredClone(el);
                     localFurniture.x = el.x - this.activeRoom.x;
                     localFurniture.y = el.y - this.activeRoom.y;
@@ -120,10 +170,12 @@ const RoomStudio = {
 
         this.sandboxDoorsWindows = typeof fixtures !== 'undefined' ? fixtures.filter(f => f.roomId === this.activeRoomIndex) : [];
 
-        const btn = document.getElementById('rs-toggle-3d-btn');
-        btn.innerHTML = '👁️ 3D PREVIEW';
-        btn.style.background = 'rgba(56, 189, 248, 0.1)';
-        btn.style.color = '#38bdf8';
+        const btn = document.getElementById('std-toggle-3d-btn');
+        if (btn) {
+            btn.innerHTML = ROOM_STUDIO_CONFIG.actions[0].text;
+            btn.classList.remove('std-btn-3d-active');
+        }
+        
         document.getElementById('studio-svg').style.display = 'block';
         document.getElementById('studio-3d-container').style.display = 'none';
 
@@ -141,17 +193,20 @@ const RoomStudio = {
         this.isDragging = false;
         if (this.reqAnim) cancelAnimationFrame(this.reqAnim);
 
-        document.getElementById('room-studio-modal').style.display = 'none';
+        const modal = document.getElementById('room-studio-modal');
+        if (modal) modal.style.display = 'none';
         document.removeEventListener('keydown', this.boundKeyHandler);
     },
 
     save() {
-        if(typeof saveState === 'function') saveState();
+        if (typeof saveState === 'function') saveState();
+        if (typeof elements === 'undefined') return;
 
         const indicesToRemove = this.sandboxFixtures
             .filter(f => f.globalRef !== undefined)
             .map(f => f.globalRef)
             .sort((a, b) => b - a);
+
         indicesToRemove.forEach(idx => {
             elements.splice(idx, 1);
             if (typeof fixtures !== 'undefined') {
@@ -162,8 +217,8 @@ const RoomStudio = {
                 });
             }
         });
+
         this.sandboxFixtures.forEach(fix => {
-            // const globalFurniture = JSON.parse(JSON.stringify(fix));
             const globalFurniture = structuredClone(fix);
             delete globalFurniture.globalRef;
             globalFurniture.x = this.activeRoom.x + fix.x;
@@ -172,6 +227,7 @@ const RoomStudio = {
             globalFurniture.locked = false;
             elements.push(globalFurniture);
         });
+
         this.close();
         if (typeof updateCanvas === 'function') updateCanvas();
         if (typeof renderSidebar === 'function') renderSidebar();
@@ -198,16 +254,14 @@ const RoomStudio = {
     },
 
     handleDragMove(event) {
-        if (!this.isDragging || this.selectedFixtureIndex === -1 || this.is3DActive) return;
+        if (!this.isDragging || this.selectedFixtureIndex === -1 || this.is3DActive || !this.activeRoom) return;
         const pt = this.getSVGPos(event);
         const fix = this.sandboxFixtures[this.selectedFixtureIndex];
         
-        // 1. Calculate raw drop coordinates
         let newX = pt.x - this.dragOffset.x;
         let newY = pt.y - this.dragOffset.y;
         
-        // 2. Apply your existing Grid Snapping
-        let snap = typeof STUDIO_CONFIG !== 'undefined' ? STUDIO_CONFIG.GRID_SNAP_INCHES : 6;
+        let snap = (typeof STUDIO_CONFIG !== 'undefined' && STUDIO_CONFIG.GRID_SNAP_INCHES) ? STUDIO_CONFIG.GRID_SNAP_INCHES : 6;
         if (typeof CanvasState !== 'undefined') {
             if (CanvasState.zoomLvl > 2.5) snap = 1;
             else if (CanvasState.zoomLvl < 0.8) snap = 12;
@@ -215,54 +269,43 @@ const RoomStudio = {
         newX = Math.round(newX / snap) * snap; 
         newY = Math.round(newY / snap) * snap;
 
-        // 🌟 3. MAGNETIC WALL SNAPPING & ROTATION
-        const SNAP_DIST = STUDIO_CONFIG.MAGNETIC_SNAP_DIST;
+        const SNAP_DIST = (typeof STUDIO_CONFIG !== 'undefined' && STUDIO_CONFIG.MAGNETIC_SNAP_DIST) ? STUDIO_CONFIG.MAGNETIC_SNAP_DIST : 18;
+        const roomW = this.activeRoom.w;
+        const roomH = this.activeRoom.h;
 
-        // Calculate distance to all 4 walls
         const distLeft = newX;
         const distRight = roomW - (newX + fix.w);
         const distTop = newY;
         const distBottom = roomH - (newY + fix.h);
 
-        // Find the closest wall
         const minDist = Math.min(distLeft, distRight, distTop, distBottom);
 
-        // If dragged close enough to a wall, snap it flush and rotate it!
+        // FIX 1: Removed forced fix.rot assignments. Only snap X/Y coordinates.
         if (minDist < SNAP_DIST) {
-            if (minDist === distTop) {
-                newY = 0;
-                fix.rot = 0;   // Back against Top Wall
-            } else if (minDist === distBottom) {
-                newY = roomH - fix.h;
-                fix.rot = 180; // Back against Bottom Wall
-            } else if (minDist === distLeft) {
-                newX = 0;
-                fix.rot = 270; // Back against Left Wall
-            } else if (minDist === distRight) {
-                newX = roomW - fix.w;
-                fix.rot = 90;  // Back against Right Wall
-            }
+            if (minDist === distTop) { newY = 0; } 
+            else if (minDist === distBottom) { newY = roomH - fix.h; } 
+            else if (minDist === distLeft) { newX = 0; } 
+            else if (minDist === distRight) { newX = roomW - fix.w; }
         }
         
-        // 4. Apply boundaries (prevents dragging outside the room)
         newX = Math.max(0, Math.min(newX, roomW - fix.w));
         newY = Math.max(0, Math.min(newY, roomH - fix.h));
         
-        // 5. Save and Render
         fix.x = newX;
         fix.y = newY;
         
         this.renderCanvas();
         if (typeof this.renderProperties === 'function') {
-            this.renderProperties(); // Sync pos and rotation inputs in the UI
+            this.renderProperties(); 
         }
     },
 
     renderCanvas() {
+        if (!this.activeRoom) return;
         const svg = document.getElementById('studio-svg');
-        const roomGroup = document.getElementById('rs-room-group');
-        const furnGroup = document.getElementById('rs-furniture-group');
-        const ghostGroup = document.getElementById('rs-ghost-group');
+        const roomGroup = document.getElementById('std-room-group');
+        const furnGroup = document.getElementById('std-furniture-group');
+        const ghostGroup = document.getElementById('std-ghost-group');
         
         const maxDim = Math.max(this.activeRoom.w, this.activeRoom.h);
         const padding = maxDim * 0.35; 
@@ -270,22 +313,22 @@ const RoomStudio = {
         const vH = this.activeRoom.h + (padding * 2);
         svg.setAttribute('viewBox', `-${padding} -${padding} ${vW} ${vH}`);
 
-        // RESTORED: GHOST CONTEXT
         let ghostHTML = '';
-        elements.forEach((el, idx) => {
-            if (idx === this.activeRoomIndex || el.floor !== this.activeRoom.floor || el.isFurniture) return;
-            const localX = el.x - this.activeRoom.x;
-            const localY = el.y - this.activeRoom.y;
-            ghostHTML += `
-                <rect x="${localX}" y="${localY}" width="${el.w}" height="${el.h}" 
-                      fill="rgba(255,255,255,0.02)" stroke="rgba(255,255,255,0.1)" 
-                      stroke-dasharray="4,4" stroke-width="2" pointer-events="none" />
-            `;
-        });
+        if (typeof elements !== 'undefined') {
+            elements.forEach((el, idx) => {
+                if (idx === this.activeRoomIndex || el.floor !== this.activeRoom.floor || el.isFurniture) return;
+                const localX = el.x - this.activeRoom.x;
+                const localY = el.y - this.activeRoom.y;
+                ghostHTML += `
+                    <rect x="${localX}" y="${localY}" width="${el.w}" height="${el.h}" 
+                          fill="rgba(255,255,255,0.02)" stroke="rgba(255,255,255,0.1)" 
+                          stroke-dasharray="4,4" stroke-width="2" pointer-events="none" />
+                `;
+            });
+        }
         ghostGroup.innerHTML = ghostHTML;
 
-        // RESTORED: ACTIVE ROOM & DOORS/WINDOWS
-        let rgb = ARCH_CONFIG?.COLORS?.[this.activeRoom.type]?.rgb || '255,255,255';
+        let rgb = (typeof ARCH_CONFIG !== 'undefined' && ARCH_CONFIG.COLORS && ARCH_CONFIG.COLORS[this.activeRoom.type]) ? ARCH_CONFIG.COLORS[this.activeRoom.type].rgb : '255,255,255';
         if (this.activeRoom.customColor) {
             const hex = this.activeRoom.customColor.replace('#', '');
             rgb = `${parseInt(hex.substring(0,2),16)}, ${parseInt(hex.substring(2,4),16)}, ${parseInt(hex.substring(4,6),16)}`;
@@ -293,7 +336,6 @@ const RoomStudio = {
 
         let roomHTML = `<rect x="0" y="0" width="${this.activeRoom.w}" height="${this.activeRoom.h}" fill="rgba(${rgb}, 0.15)" stroke="rgb(${rgb})" stroke-width="3" />`;
         
-        // Draw 2D local doors and windows
         this.sandboxDoorsWindows.forEach(fix => {
             const fw = (fix.edge === 'top' || fix.edge === 'bottom') ? fix.size : 6;
             const fh = (fix.edge === 'left' || fix.edge === 'right') ? fix.size : 6;
@@ -308,25 +350,26 @@ const RoomStudio = {
         });
         roomGroup.innerHTML = roomHTML;
 
-        // FURNITURE
         furnGroup.innerHTML = '';
         this.sandboxFixtures.forEach((f, idx) => {
             const isSelected = idx === this.selectedFixtureIndex;
             const strokeColor = isSelected ? '#38bdf8' : '#ec4899';
             const fillColor = isSelected ? 'rgba(56, 189, 248, 0.3)' : 'rgba(236, 72, 153, 0.2)';
             
-            // 🌟 NEW: Calculate visual dimensions based on rotation
             const isTurned = Math.abs(f.rot) === 90 || Math.abs(f.rot) === 270;
             const drawW = isTurned ? f.h : f.w;
             const drawH = isTurned ? f.w : f.h;
 
+            // FIX 3: Reduced font-size from 10 to 4 (real-world inches).
+            const displayName = f.type.toUpperCase().substring(0, 8); 
+
             furnGroup.innerHTML += `
                 <g transform="translate(${f.x}, ${f.y})" 
                    onmousedown="RoomStudio.startDrag(${idx}, event)" 
-                   style="cursor: ${isSelected ? 'grabbing' : 'grab'};">
+                   class="${isSelected ? 'std-cursor-grabbing' : 'std-cursor-grab'}">
                     <rect width="${drawW}" height="${drawH}" fill="${fillColor}" stroke="${strokeColor}" stroke-width="${isSelected ? 3 : 1}" />
-                    <text x="${drawW/2}" y="${drawH/2 + 4}" fill="#f8fafc" font-size="10" text-anchor="middle" font-weight="bold" pointer-events="none">
-                          ${f.type.toUpperCase()}
+                    <text x="${drawW/2}" y="${drawH/2 + 1.5}" fill="#f8fafc" font-size="4" text-anchor="middle" font-weight="bold" pointer-events="none">
+                          ${displayName}
                     </text>
                 </g>
             `;
@@ -335,11 +378,10 @@ const RoomStudio = {
         this.renderProperties();
     },
 
-    // =========================================
-    // ENHANCED PROPERTIES PANEL (No Focus Loss!)
-    // =========================================
     renderProperties() {
-        const propPanel = document.getElementById('rs-properties');
+        const propPanel = document.getElementById('std-properties');
+        if (!propPanel) return;
+
         if (this.selectedFixtureIndex === -1) {
             propPanel.style.display = 'none';
             return;
@@ -347,57 +389,46 @@ const RoomStudio = {
 
         const fix = this.sandboxFixtures[this.selectedFixtureIndex];
         const isAlreadyOpen = propPanel.style.display === 'block';
-        const currentTitle = document.getElementById('rs-prop-title');
+        const currentTitle = document.getElementById('std-prop-title');
 
-        // 🚀 ANTI-THRASHING: If panel is open for the same item, just update the numbers!
         if (isAlreadyOpen && currentTitle && currentTitle.innerText.includes(fix.type.toUpperCase())) {
-            document.getElementById('rs-pos-x').value = fix.x;
-            document.getElementById('rs-pos-y').value = fix.y;
-            document.getElementById('rs-dim-w').value = fix.w;
-            document.getElementById('rs-dim-h').value = fix.h;
-            return; // Exit early! No HTML wiping!
+            ROOM_STUDIO_CONFIG.propertyFields.forEach(field => {
+                const el = document.getElementById(`std-dim-${field.prop}`);
+                if (el) el.value = fix[field.prop];
+            });
+            return; 
         }
 
-        // Otherwise, build the HTML freshly (Notice the new IDs on the inputs)
+        const inputsHTML = ROOM_STUDIO_CONFIG.propertyFields.map(field => `
+            <div class="std-prop-field">
+                <label class="std-prop-label">${field.label}</label>
+                <input id="std-dim-${field.prop}" class="std-prop-input" type="number" value="${fix[field.prop]}" min="${field.min}" step="${field.step}" 
+                       oninput="RoomStudio.modifyFixture('${field.prop}', this.value)">
+            </div>
+        `).join('');
+
         propPanel.style.display = 'block';
         propPanel.innerHTML = `
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                <span id="rs-prop-title" style="font-weight: 800; font-size: 0.75rem; color: #38bdf8; text-transform: uppercase;">
-                    ⚙️ EDIT ${fix.type}
+            <div class="std-prop-header">
+                <span id="std-prop-title" class="std-prop-title-text">
+                    ${ROOM_STUDIO_CONFIG.labels.editPrefix} ${fix.type}
                 </span>
-                <button onclick="RoomStudio.deleteSelected()" style="background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #ef4444; padding: 4px 8px; border-radius: 4px; font-size: 0.65rem; font-weight: bold; cursor: pointer;">✕ Del</button>
+                <button class="std-btn-delete" onclick="RoomStudio.deleteSelected()">
+                    ${ROOM_STUDIO_CONFIG.labels.btnDelete}
+                </button>
             </div>
             
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
-                <div style="display: flex; flex-direction: column; gap: 4px;">
-                    <label style="font-size: 0.6rem; color: #94a3b8; font-weight: bold;">POS X (in)</label>
-                    <input id="rs-pos-x" type="number" value="${fix.x}" step="6" oninput="RoomStudio.modifyFixture('x', this.value)" 
-                           style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 4px; padding: 4px; text-align: center;">
-                </div>
-                <div style="display: flex; flex-direction: column; gap: 4px;">
-                    <label style="font-size: 0.6rem; color: #94a3b8; font-weight: bold;">POS Y (in)</label>
-                    <input id="rs-pos-y" type="number" value="${fix.y}" step="6" oninput="RoomStudio.modifyFixture('y', this.value)" 
-                           style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 4px; padding: 4px; text-align: center;">
-                </div>
-                <div style="display: flex; flex-direction: column; gap: 4px;">
-                    <label style="font-size: 0.6rem; color: #94a3b8; font-weight: bold;">WIDTH (in)</label>
-                    <input id="rs-dim-w" type="number" value="${fix.w}" min="12" step="6" oninput="RoomStudio.modifyFixture('w', this.value)" 
-                           style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 4px; padding: 4px; text-align: center;">
-                </div>
-                <div style="display: flex; flex-direction: column; gap: 4px;">
-                    <label style="font-size: 0.6rem; color: #94a3b8; font-weight: bold;">DEPTH (in)</label>
-                    <input id="rs-dim-h" type="number" value="${fix.h}" min="12" step="6" oninput="RoomStudio.modifyFixture('h', this.value)" 
-                           style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 4px; padding: 4px; text-align: center;">
-                </div>
+            <div class="std-prop-grid">
+                ${inputsHTML}
             </div>
-            <button onclick="RoomStudio.rotateSelected()" style="width: 100%; background: rgba(56, 189, 248, 0.15); border: 1px dashed #38bdf8; color: #38bdf8; padding: 6px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; cursor: pointer;">
-                🔄 Rotate 90°
+            <button class="std-btn-rotate" onclick="RoomStudio.rotateSelected()">
+                ${ROOM_STUDIO_CONFIG.labels.btnRotate}
             </button>
         `;
     },
 
     modifyFixture(prop, value) {
-        if (this.selectedFixtureIndex === -1) return;
+        if (this.selectedFixtureIndex === -1 || !this.activeRoom) return;
         let num = parseInt(value);
         if (isNaN(num)) return;
         
@@ -407,26 +438,20 @@ const RoomStudio = {
         fix.x = Math.max(0, Math.min(fix.x, this.activeRoom.w - fix.w));
         fix.y = Math.max(0, Math.min(fix.y, this.activeRoom.h - fix.h));
 
-        if(this.is3DActive) this.build3DScene();
+        if (this.is3DActive) this.build3DScene();
         else this.renderCanvas();
     },
 
-    // =========================================
-    // 🌟 THE 4-SIDED ROTATION FIX 🌟
-    // =========================================
     rotateSelected() {
-        if (this.selectedFixtureIndex === -1) return;
+        if (this.selectedFixtureIndex === -1 || !this.activeRoom) return;
         const fix = this.sandboxFixtures[this.selectedFixtureIndex];
         
-        // 1. Only track the mathematical rotation
         fix.rot = ((fix.rot || 0) + 90) % 360;
         
-        // 2. Calculate the visual footprint for boundary collisions
         const isTurned = Math.abs(fix.rot) === 90 || Math.abs(fix.rot) === 270;
         const visualW = isTurned ? fix.h : fix.w;
         const visualH = isTurned ? fix.w : fix.h;
         
-        // 3. Safety bound check using the active visual footprint
         fix.x = Math.max(0, Math.min(fix.x, this.activeRoom.w - visualW));
         fix.y = Math.max(0, Math.min(fix.y, this.activeRoom.h - visualH));
         
@@ -443,30 +468,27 @@ const RoomStudio = {
         if (this.is3DActive) this.build3DScene();
     },
 
-    // =========================================
-    // 3D ENGINE PREVIEWER (Raycaster Enabled)
-    // =========================================
     toggle3D() {
         this.is3DActive = !this.is3DActive;
-        const btn = document.getElementById('rs-toggle-3d-btn');
+        const btn = document.getElementById('std-toggle-3d-btn');
         const svg = document.getElementById('studio-svg');
         const container3D = document.getElementById('studio-3d-container');
 
         if (this.is3DActive) {
             btn.innerHTML = '📐 BACK TO 2D';
-            btn.style.background = '#38bdf8';
-            btn.style.color = '#0f172a';
+            btn.classList.add('std-btn-3d-active');
             svg.style.display = 'none';
             container3D.style.display = 'block';
             
             this.init3D();
             this.build3DScene();
         } else {
-            btn.innerHTML = '👁️ 3D PREVIEW';
-            btn.style.background = 'rgba(56, 189, 248, 0.1)';
-            btn.style.color = '#38bdf8';
+            btn.innerHTML = ROOM_STUDIO_CONFIG.actions[0].text;
+            btn.classList.remove('std-btn-3d-active');
             svg.style.display = 'block';
             container3D.style.display = 'none';
+            // FIX 2: Force the 2D canvas to redraw using updated 3D coordinates
+            this.renderCanvas();
         }
     },
 
@@ -486,10 +508,8 @@ const RoomStudio = {
             this.controls3D = new THREE.OrbitControls(this.camera3D, this.renderer3D.domElement);
             this.controls3D.enableDamping = true;
             this.controls3D.dampingFactor = 0.05;
-            //this.controls3D.maxPolarAngle = Math.PI / 2.1; // <-- This was the restriction for 360deg vertically
-            this.controls3D.maxPolarAngle = Math.PI; // Allows going completely underneath
+            this.controls3D.maxPolarAngle = Math.PI;
 
-            // 🌟 INIT RAYCASTER FOR 3D DRAG & DROP 🌟
             this.raycaster = new THREE.Raycaster();
             this.mouse3D = new THREE.Vector2();
             this.dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
@@ -510,12 +530,32 @@ const RoomStudio = {
     },
 
     build3DScene() {
-        while(this.scene3D.children.length > 0){ this.scene3D.remove(this.scene3D.children[0]); }
+        if (!this.scene3D) return;
+
+        // Clean disposal of meshes, materials, and textures to prevent memory leaks
+        while(this.scene3D.children.length > 0){ 
+            const obj = this.scene3D.children[0];
+            this.scene3D.remove(obj);
+            obj.traverse(child => {
+                if (child.geometry) child.geometry.dispose();
+                if (child.material) {
+                    if (Array.isArray(child.material)) {
+                        child.material.forEach(m => {
+                            if (m.map) m.map.dispose();
+                            m.dispose();
+                        });
+                    } else {
+                        if (child.material.map) child.material.map.dispose();
+                        child.material.dispose();
+                    }
+                }
+            });
+        }
 
         const W = this.activeRoom.w;
         const D = this.activeRoom.h;
-        const H = ARCH_CONFIG.DEFAULTS.WALL_HEIGHT_3D; 
-        const T = ARCH_CONFIG.DEFAULTS.WALL_THICKNESS_3D;
+        const H = typeof ARCH_CONFIG !== 'undefined' ? ARCH_CONFIG.DEFAULTS.WALL_HEIGHT_3D : 120; 
+        const T = typeof ARCH_CONFIG !== 'undefined' ? ARCH_CONFIG.DEFAULTS.WALL_THICKNESS_3D : 6;
         
         const ambient = new THREE.AmbientLight(0xffffff, 0.4);
         this.scene3D.add(ambient);
@@ -523,7 +563,6 @@ const RoomStudio = {
         pointLight.position.set(W/2, H - 20, D/2);
         this.scene3D.add(pointLight);
 
-        // FLOOR
         let floorMat;
         if (typeof getProceduralTexture === 'function') {
             const texType = typeof getTextureForRoom === 'function' ? getTextureForRoom(this.activeRoom.type) : 'wood';
@@ -540,7 +579,7 @@ const RoomStudio = {
         floor.position.set(W/2, 0, D/2);
         this.scene3D.add(floor);
         
-        const wallMat = new THREE.MeshStandardMaterial({ color: 0x475569, transparent: true, opacity: STUDIO_CONFIG.WALL_OPACITY, side: THREE.DoubleSide });
+        const wallMat = new THREE.MeshStandardMaterial({ color: 0x475569, transparent: true, opacity: typeof STUDIO_CONFIG !== 'undefined' ? STUDIO_CONFIG.WALL_OPACITY : 0.35, side: THREE.DoubleSide });
         const wN = new THREE.Mesh(new THREE.BoxGeometry(W, H, T), wallMat); wN.position.set(W/2, H/2, -T/2);
         const wS = new THREE.Mesh(new THREE.BoxGeometry(W, H, T), wallMat); wS.position.set(W/2, H/2, D + T/2);
         const wE = new THREE.Mesh(new THREE.BoxGeometry(T, H, D), wallMat); wE.position.set(W + T/2, H/2, D/2);
@@ -570,7 +609,7 @@ const RoomStudio = {
         });
         
         this.sandboxFixtures.forEach((fix, idx) => {
-            if (typeof FurnitureFactory !== 'undefined') {
+            if (typeof createFurniture3D !== 'undefined') {
                 let drawW = fix.w;
                 let drawH = fix.h;
                 if (Math.abs(fix.rot) === 90 || Math.abs(fix.rot) === 270) {
@@ -601,9 +640,7 @@ const RoomStudio = {
         this.controls3D.update();
     },
 
-    // =========================================
-    // 🌟 3D RAYCASTING EVENT HANDLERS 🌟
-    // =========================================
+    // 🌟 3D RAYCASTING EVENT HANDLERS
     on3DPointerDown(event) {
         if (!this.is3DActive) return;
         const container = document.getElementById('studio-3d-container');
@@ -644,7 +681,7 @@ const RoomStudio = {
     },
 
     on3DPointerMove(event) {
-        if (!this.is3DDragging || this.selectedFixtureIndex === -1 || !this.is3DActive) return;
+        if (!this.is3DDragging || this.selectedFixtureIndex === -1 || !this.is3DActive || !this.activeRoom) return;
         if (this._raycastPending) return;
         this._raycastPending = true;
         
@@ -660,7 +697,7 @@ const RoomStudio = {
                 const fix = this.sandboxFixtures[this.selectedFixtureIndex];
                 let newX = intersectPoint.x - this.dragOffset3D.x - (fix.w/2);
                 let newY = intersectPoint.z - this.dragOffset3D.z - (fix.h/2); 
-                const snap = typeof STUDIO_CONFIG !== 'undefined' ? STUDIO_CONFIG.GRID_SNAP_INCHES : 6;
+                const snap = (typeof STUDIO_CONFIG !== 'undefined' && STUDIO_CONFIG.GRID_SNAP_INCHES) ? STUDIO_CONFIG.GRID_SNAP_INCHES : 6;
                 newX = Math.round(newX / snap) * snap;
                 newY = Math.round(newY / snap) * snap;
                 newX = Math.max(0, Math.min(newX, this.activeRoom.w - fix.w));
@@ -674,7 +711,6 @@ const RoomStudio = {
                 );
                 if (activeMesh) {
                     activeMesh.position.set(fix.x + (fix.w/2), 0, fix.y + (fix.h/2));
-                    // 🐛 BUG FIX: Force shadow map update so shadows track the dragged furniture
                     if (this.renderer3D.shadowMap.enabled) {
                         this.renderer3D.shadowMap.needsUpdate = true;
                     }
@@ -686,53 +722,40 @@ const RoomStudio = {
 
     on3DPointerUp() {
         this.is3DDragging = false;
-        if (this.controls3D) this.controls3D.enabled = true; // Re-enable camera orbit
+        if (this.controls3D) this.controls3D.enabled = true; 
     },
 
     handleKeydown(e) {
-        if (document.activeElement.tagName === 'INPUT') return;
+        if (document.activeElement && document.activeElement.tagName === 'INPUT') return;
         if (e.key.toLowerCase() === 'r') this.rotateSelected();
         if (e.key === 'Delete' || e.key === 'Backspace') this.deleteSelected();
     },
 
     renderCatalog() {
-        const grid = document.getElementById('rs-catalog-grid');
-        if (!grid) {
-            console.warn("Catalog grid container not found!");
-            return;
-        }
+        const grid = document.getElementById('std-catalog-grid');
+        if (!grid) return;
         
-        // Clear previous items
         grid.innerHTML = '';
+        if (!ROOM_STUDIO_CONFIG.catalog) return;
         
-        // Check if catalog data exists in constants.js
-        if (typeof FURNITURE_CATALOG === 'undefined') {
-            console.error("FURNITURE_CATALOG is missing from constants.js");
-            return;
-        }
-        
-        FURNITURE_CATALOG.forEach(item => {
+        ROOM_STUDIO_CONFIG.catalog.forEach(item => {
             const div = document.createElement('div');
-            div.className = 'rs-item';
+            div.className = 'std-item';
             div.draggable = true;
             
-            // Build the UI card for the furniture
             div.innerHTML = `
-                <div style="font-size: 1.8rem; margin-bottom: 5px; pointer-events: none;">${item.icon}</div>
-                <div style="font-size: 0.65rem; color: #cbd5e1; pointer-events: none;">${item.label}</div>
+                <div class="std-item-icon">${item.icon}</div>
+                <div class="std-item-label">${item.label}</div>
             `;
             
-            // Drag and Drop Event Listeners
             div.ondragstart = (e) => {
                 e.dataTransfer.setData('text/plain', item.id);
                 e.dataTransfer.effectAllowed = 'copy';
-                div.style.opacity = '0.5';
-                div.style.border = '1px dashed #38bdf8'; // Visual feedback while dragging
+                div.classList.add('std-item-dragging');
             };
             
             div.ondragend = () => { 
-                div.style.opacity = '1'; 
-                div.style.border = '1px solid rgba(255,255,255,0.05)';
+                div.classList.remove('std-item-dragging');
             };
             
             grid.appendChild(div);
@@ -740,12 +763,11 @@ const RoomStudio = {
     },
 
     setupDragAndDrop() {
-        // FIX: Target the actual canvas wrapper class used in your HTML
-        const dropzone = document.querySelector('.rs-canvas-wrapper') || document.getElementById('studio-svg');
+        const dropzone = document.querySelector('.std-canvas-wrapper') || document.getElementById('studio-svg');
         if (!dropzone) return;
 
         dropzone.addEventListener('click', (e) => {
-            if (e.target.tagName === 'rect' && e.target.parentElement.id === 'rs-room-group') {
+            if (e.target.tagName === 'rect' && e.target.parentElement.id === 'std-room-group') {
                 this.selectedFixtureIndex = -1;
                 this.renderCanvas();
             }
@@ -759,6 +781,7 @@ const RoomStudio = {
         dropzone.addEventListener('drop', (e) => {
             e.preventDefault();
             if (this.is3DActive) return alert("Please switch back to 2D Plan to drop furniture.");
+            if (!this.activeRoom || typeof ARCH_CONFIG === 'undefined') return;
 
             const type = e.dataTransfer.getData('text/plain');
             if (!type || !ARCH_CONFIG.DEFAULTS.FURNITURE[type]) return;
@@ -767,7 +790,7 @@ const RoomStudio = {
             const w = ARCH_CONFIG.DEFAULTS.FURNITURE[type].w;
             const h = ARCH_CONFIG.DEFAULTS.FURNITURE[type].h;
 
-            const snap = STUDIO_CONFIG.GRID_SNAP_INCHES;
+            const snap = (typeof STUDIO_CONFIG !== 'undefined' && STUDIO_CONFIG.GRID_SNAP_INCHES) ? STUDIO_CONFIG.GRID_SNAP_INCHES : 6;
             let localX = Math.round((pt.x - (w / 2)) / snap) * snap;
             let localY = Math.round((pt.y - (h / 2)) / snap) * snap;
 

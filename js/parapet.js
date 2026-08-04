@@ -3,12 +3,178 @@
 // 🌟 FULLY MODULAR PARAPET SYSTEM
 // =========================================
 
+// 1. INJECT PREMIUM NEUMORPHIC CSS (Preserved Exactly)
+const parapetStyles = `
+    @keyframes emeraldBreathe {
+        0% { box-shadow: 0 10px 40px rgba(0,0,0,0.8), inset 0 2px 15px rgba(16, 185, 129, 0.05); border-color: rgba(16, 185, 129, 0.2); }
+        100% { box-shadow: 0 10px 40px rgba(0,0,0,0.8), inset 0 2px 25px rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.5); }
+    }
+
+    .parapet-panel {
+        position: absolute;
+        top: 80px;
+        right: 20px;
+        width: 290px;
+        background: rgba(9, 14, 23, 0.85);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(16, 185, 129, 0.3);
+        border-radius: 14px;
+        padding: 16px;
+        color: #f8fafc;
+        font-family: 'Inter', system-ui, sans-serif;
+        z-index: 10000;
+        animation: emeraldBreathe 3s infinite alternate ease-in-out;
+    }
+
+    .parapet-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid rgba(16, 185, 129, 0.2);
+        padding-bottom: 10px;
+        margin-bottom: 14px;
+    }
+
+    .parapet-title {
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 1.5px;
+        color: #10b981;
+        text-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
+    }
+
+    .parapet-close-btn {
+        background: transparent;
+        border: none;
+        color: #64748b;
+        cursor: pointer;
+        font-size: 1rem;
+        transition: all 0.2s ease;
+    }
+
+    .parapet-close-btn:hover {
+        color: #ef4444;
+        transform: scale(1.1) rotate(90deg);
+    }
+
+    .parapet-content { display: flex; flex-direction: column; gap: 12px; }
+    .parapet-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; }
+    .parapet-group { display: flex; flex-direction: column; gap: 4px; }
+    .parapet-row { display: flex; justify-content: space-between; align-items: center; }
+
+    .parapet-divider {
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(16, 185, 129, 0.2), transparent);
+        margin: 4px 0;
+        border: none;
+    }
+
+    .parapet-label {
+        font-size: 0.6rem;
+        text-transform: uppercase;
+        color: #94a3b8;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+    }
+
+    .parapet-val-badge {
+        font-size: 0.6rem;
+        color: #10b981;
+        font-family: 'Courier New', monospace;
+        background: rgba(2, 6, 23, 0.8);
+        padding: 2px 5px;
+        border-radius: 4px;
+        border: 1px solid rgba(16, 185, 129, 0.15);
+        box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
+    }
+
+    .parapet-slider {
+        -webkit-appearance: none;
+        width: 100%;
+        height: 4px;
+        background: rgba(2, 6, 23, 0.9);
+        border-radius: 2px;
+        outline: none;
+        border: 1px solid rgba(255,255,255,0.05);
+        box-shadow: inset 0 1px 3px rgba(0,0,0,0.8);
+        margin: 4px 0;
+    }
+
+    .parapet-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #10b981;
+        cursor: pointer;
+        box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+        transition: transform 0.1s ease, background 0.1s;
+    }
+
+    .parapet-slider::-webkit-slider-thumb:hover {
+        transform: scale(1.4);
+        background: #34d399;
+    }
+
+    .parapet-select {
+        width: 100%;
+        background: rgba(2, 6, 23, 0.8);
+        color: #e2e8f0;
+        border: 1px solid rgba(16, 185, 129, 0.2);
+        padding: 6px 8px;
+        border-radius: 6px;
+        font-size: 0.7rem;
+        outline: none;
+        cursor: pointer;
+        appearance: none;
+        box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);
+        background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2310b981%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+        background-repeat: no-repeat;
+        background-position: right 8px top 50%;
+        background-size: 8px auto;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .parapet-select:hover { 
+        border-color: rgba(16, 185, 129, 0.5);
+        box-shadow: inset 0 2px 5px rgba(0,0,0,0.5), 0 0 5px rgba(16, 185, 129, 0.2); 
+    }
+
+    .parapet-color-picker {
+        -webkit-appearance: none;
+        width: 20px;
+        height: 20px;
+        border: none;
+        border-radius: 50%;
+        cursor: pointer;
+        padding: 0;
+        background: transparent;
+    }
+
+    .parapet-color-picker::-webkit-color-swatch-wrapper { padding: 0; }
+    .parapet-color-picker::-webkit-color-swatch {
+        border: 1px solid rgba(255,255,255,0.3);
+        border-radius: 50%;
+        box-shadow: 0 0 8px rgba(0,0,0,0.6);
+    }
+`;
+document.head.insertAdjacentHTML("beforeend", `<style>${parapetStyles}</style>`);
+
+// 2. DATA-DRIVEN CONTROLS CONFIGURATION
+const PARAPET_CONTROLS_CONFIG = [
+    { id: 'heightOffset', label: 'Height', min: -15, max: 30, step: 1, type: 'int' },
+    { id: 'thicknessOffset', label: 'Thickness', min: 0, max: 15, step: 1, type: 'int' },
+    { id: 'elevationOffset', label: 'Elevation', min: -10, max: 25, step: 1, type: 'int' },
+    { id: 'glassOpacity', label: 'Opacity', min: 0.1, max: 1.0, step: 0.05, type: 'float' }
+];
+
 const ParapetModule = {
     // 1. STATE MANAGER
     config: {
         heightOffset: 0,
         thicknessOffset: 0,
-        // ✨ NEW CONTROLS BELOW:
         elevationOffset: 0,    
         theme: 'midnight-aurora', 
         accentColor: '#38bdf8',  
@@ -48,30 +214,21 @@ const ParapetModule = {
         else if (currentStyle === 'geo-interlock') this.styles.buildGeoInterlock(SCALE, w, d, centerX, centerZ, effectiveBaseY, frontZ);
         else if (currentStyle === 'classic-curve') this.styles.buildClassicCurve(SCALE, w, d, centerX, centerZ, effectiveBaseY, frontZ);
         else if (currentStyle === 'modern-glass') this.styles.buildModernGlass(SCALE, w, d, centerX, centerZ, effectiveBaseY);
-        // ✨ NEW STYLES ADDED HERE:
         else if (currentStyle === 'neo-brutalist') this.styles.buildNeoBrutalist(SCALE, w, d, centerX, centerZ, effectiveBaseY, frontZ);
         else if (currentStyle === 'zen-pergola') this.styles.buildZenPergola(SCALE, w, d, centerX, centerZ, effectiveBaseY, frontZ);
         else if (currentStyle === 'cyber-cantilever') this.styles.buildCyberCantilever(SCALE, w, d, centerX, centerZ, effectiveBaseY, frontZ);
-
         else if (currentStyle === 'standard') this.styles.buildStandardWall(SCALE, w, d, centerX, centerZ, effectiveBaseY, useReal3D);
     },
 
-    // ✨ NEW MATERIAL GENERATOR
     getMaterials(SCALE) {
         const cfg = this.config;
         const accentHex = parseInt(cfg.accentColor.replace('#', '0x'), 16);
-
         let primaryHex = 0xf8fafc, secondaryHex = 0x0f172a, woodHex = 0x3e2723, activeAccentHex = accentHex;
 
-        if (cfg.theme === 'midnight-aurora') {
-            primaryHex = 0x1e293b; secondaryHex = 0x020617; activeAccentHex = 0x38bdf8;
-        } else if (cfg.theme === 'cyberpunk') {
-            primaryHex = 0x180828; secondaryHex = 0x090014; activeAccentHex = 0xf43f5e; woodHex = 0x4c0519;
-        } else if (cfg.theme === 'warm-wood') {
-            primaryHex = 0xfef3c7; secondaryHex = 0x451a03; activeAccentHex = 0xd97706; woodHex = 0x78350f;
-        } else if (cfg.theme === 'monochrome-slate') {
-            primaryHex = 0x64748b; secondaryHex = 0x0f172a; activeAccentHex = 0xcbd5e1;
-        }
+        if (cfg.theme === 'midnight-aurora') { primaryHex = 0x1e293b; secondaryHex = 0x020617; activeAccentHex = 0x38bdf8; } 
+        else if (cfg.theme === 'cyberpunk') { primaryHex = 0x180828; secondaryHex = 0x090014; activeAccentHex = 0xf43f5e; woodHex = 0x4c0519; } 
+        else if (cfg.theme === 'warm-wood') { primaryHex = 0xfef3c7; secondaryHex = 0x451a03; activeAccentHex = 0xd97706; woodHex = 0x78350f; } 
+        else if (cfg.theme === 'monochrome-slate') { primaryHex = 0x64748b; secondaryHex = 0x0f172a; activeAccentHex = 0xcbd5e1; }
 
         return {
             matPrimary: new THREE.MeshStandardMaterial({ color: primaryHex, roughness: 0.8 }),
@@ -84,7 +241,6 @@ const ParapetModule = {
         };
     },
 
-    // 3. HELPER METHODS
     getBounds(SCALE) {
         let minX = Infinity, minZ = Infinity, maxX = -Infinity, maxZ = -Infinity;
         elements.forEach(el => {
@@ -98,13 +254,7 @@ const ParapetModule = {
     },
 
     addMesh(mesh) {
-        mesh.traverse(child => {
-            if (child.isMesh) {
-                child.castShadow = true;
-                child.receiveShadow = true;
-                child.userData = { isParapet: true };
-            }
-        });
+        mesh.traverse(child => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; child.userData = { isParapet: true }; } });
         Engine3D.buildingGroup.add(mesh)
     },
 
@@ -124,59 +274,32 @@ const ParapetModule = {
         [pN, pE, pW].forEach(m => this.addMesh(m));
     },
 
-    // 4. UI POPUP CONTROLLER
+    // 🌟 DATA-DRIVEN UI GENERATOR
     getEditorHTML() {
+        const sliderHTML = PARAPET_CONTROLS_CONFIG.map(ctrl => `
+            <div class="parapet-group">
+                <div class="parapet-row">
+                    <label class="parapet-label">${ctrl.label}</label>
+                    <span id="val-${ctrl.id}" class="parapet-val-badge">${this.config[ctrl.id]}</span>
+                </div>
+                <input type="range" class="parapet-slider" min="${ctrl.min}" max="${ctrl.max}" step="${ctrl.step}" value="${this.config[ctrl.id]}" 
+                    oninput="window._updateParapetConfig('${ctrl.id}', this.value, '${ctrl.type}')">
+            </div>
+        `).join('');
+
         return `
             <div class="parapet-header">
                 <span class="parapet-title">⚙️ PARAPET STUDIO</span>
                 <button class="parapet-close-btn" onclick="ParapetModule.closeEditor()">✕</button>
             </div>
             <div class="parapet-content">
-                <!-- 2x2 GRID FOR COMPACT CONTROLS -->
                 <div class="parapet-grid">
-                    <div class="parapet-group">
-                        <div class="parapet-row">
-                            <label class="parapet-label">Height</label>
-                            <span id="val-heightOffset" class="parapet-val-badge">${this.config.heightOffset}</span>
-                        </div>
-                        <input type="range" class="parapet-slider" min="-15" max="30" value="${this.config.heightOffset}" 
-                            oninput="window._updateParapetConfig('heightOffset', this.value, 'int')">
-                    </div>
-                    
-                    <div class="parapet-group">
-                        <div class="parapet-row">
-                            <label class="parapet-label">Thickness</label>
-                            <span id="val-thicknessOffset" class="parapet-val-badge">${this.config.thicknessOffset}</span>
-                        </div>
-                        <input type="range" class="parapet-slider" min="0" max="15" value="${this.config.thicknessOffset}" 
-                            oninput="window._updateParapetConfig('thicknessOffset', this.value, 'int')">
-                    </div>
-
-                    <div class="parapet-group">
-                        <div class="parapet-row">
-                            <label class="parapet-label">Elevation</label>
-                            <span id="val-elevationOffset" class="parapet-val-badge">${this.config.elevationOffset}</span>
-                        </div>
-                        <input type="range" class="parapet-slider" min="-10" max="25" value="${this.config.elevationOffset}" 
-                            oninput="window._updateParapetConfig('elevationOffset', this.value, 'int')">
-                    </div>
-
-                    <div class="parapet-group">
-                        <div class="parapet-row">
-                            <label class="parapet-label">Opacity</label>
-                            <span id="val-glassOpacity" class="parapet-val-badge">${this.config.glassOpacity}</span>
-                        </div>
-                        <input type="range" class="parapet-slider" min="0.1" max="1.0" step="0.05" value="${this.config.glassOpacity}" 
-                            oninput="window._updateParapetConfig('glassOpacity', this.value, 'float')">
-                    </div>
+                    ${sliderHTML}
                 </div>
-
                 <hr class="parapet-divider">
-
-                <!-- FULL WIDTH THEME CONTROLS -->
                 <div class="parapet-group">
                     <label class="parapet-label">Theme Preset</label>
-                    <select class="parapet-select" onchange="window._updateParapetConfig('theme', this.value, String)">
+                    <select class="parapet-select" onchange="window._updateParapetConfig('theme', this.value, 'string')">
                         <option value="midnight-aurora" ${this.config.theme === 'midnight-aurora' ? 'selected' : ''}>🌌 Midnight Aurora</option>
                         <option value="cyberpunk" ${this.config.theme === 'cyberpunk' ? 'selected' : ''}>🌆 Cyberpunk Neon</option>
                         <option value="warm-wood" ${this.config.theme === 'warm-wood' ? 'selected' : ''}>🪵 Warm Wood</option>
@@ -184,14 +307,12 @@ const ParapetModule = {
                         <option value="custom" ${this.config.theme === 'custom' ? 'selected' : ''}>🎯 Custom Accent</option>
                     </select>
                 </div>
-
                 <div class="parapet-row">
                     <label class="parapet-label">Accent Color</label>
                     <input type="color" class="parapet-color-picker" value="${this.config.accentColor}" 
                         onchange="window._updateParapetConfig('accentColor', this.value, 'string')">
                 </div>
-
-                <div class="parapet-group" style="margin-bottom: 5px;">
+                <div class="parapet-group" style="margin-top: 10px;">
                     <div class="parapet-row">
                         <label class="parapet-label">Glow Intensity</label>
                         <span id="val-glowIntensity" class="parapet-val-badge">${this.config.glowIntensity}</span>
@@ -202,6 +323,7 @@ const ParapetModule = {
             </div>
         `;
     },
+
     openEditor() {
         let popup = document.getElementById('parapet-editor-popup');
         if (!popup) {
@@ -211,57 +333,40 @@ const ParapetModule = {
             document.body.appendChild(popup);
         }
 
-        // ✨ THE FIX: Debouncing for ultra-smooth sliders with SAFE type parsing
         let renderTimeout;
         window._updateParapetConfig = (key, val, parseType = 'float') => {
             let parsedVal = val;
-            if (parseType === 'int') {
-                parsedVal = parseInt(val, 10);
-            } else if (parseType === 'float') {
-                parsedVal = parseFloat(val);
-            } else if (parseType === 'string') {
-                parsedVal = String(val);
-            }
-            ParapetModule.config[key] = parsedVal;
+            if (parseType === 'int') parsedVal = parseInt(val, 10);
+            else if (parseType === 'float') parsedVal = parseFloat(val);
+            else if (parseType === 'string') parsedVal = String(val);
             
-            // 1. Instantly update the text value in the UI (feels responsive)
+            ParapetModule.config[key] = parsedVal;
             const displayEl = document.getElementById(`val-${key}`);
             if (displayEl) displayEl.innerText = val;
             
-            // 2. Delay the heavy 3D rendering slightly so the slider doesn't lock up
             clearTimeout(renderTimeout);
             renderTimeout = setTimeout(() => {
                 if (typeof request3DUpdate === 'function') request3DUpdate();
-            }, 40); // 40ms delay allows the slider to glide smoothly
+            }, 40); 
         };
 
         popup.innerHTML = this.getEditorHTML();
         popup.style.display = 'block';
     },
+
     closeEditor() {
         const popup = document.getElementById('parapet-editor-popup');
         if (popup) popup.style.display = 'none';
     },
 
-    // 5. INDIVIDUAL DESIGN BUILDERS
     styles: {
         buildPremiumCanopy(SCALE, w, d, centerX, centerZ, effectiveBaseY, frontZ) {
-            // Incorporating User UI Modifiers
             const extraH = ParapetModule.config.heightOffset * SCALE;
             const extraT = ParapetModule.config.thicknessOffset * SCALE;
-
-            // Add extraH to wallH, and extraT to the thickness variables!
             const wallH = (30 * SCALE) + extraH; 
             const wallT = (5 * SCALE) + extraT; 
             const capH = 4 * SCALE; 
             const capT = (9 * SCALE) + extraT;
-
-            // const matWhite = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.8 });
-            // const matBlack = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.6 });
-            // const matPink = new THREE.MeshStandardMaterial({ color: 0xfca5a5, roughness: 0.9 });
-            // const matOrange = new THREE.MeshStandardMaterial({ color: 0xf97316, roughness: 0.5 });
-            // const matBlue = new THREE.MeshStandardMaterial({ color: 0xe0f2fe, roughness: 1.0 });
-
             const { matPrimary: matWhite, matSecondary: matBlack, matAccent: matPink, matGlow: matOrange, matPrimary: matBlue } = ParapetModule.getMaterials(SCALE);
 
             const featW = w * 0.45; 
@@ -344,29 +449,18 @@ const ParapetModule = {
         buildModernBrown(SCALE, w, d, centerX, centerZ, effectiveBaseY, frontZ) {
             const extraH = ParapetModule.config.heightOffset * SCALE;
             const extraT = ParapetModule.config.thicknessOffset * SCALE;
-
-            // const matBrown = new THREE.MeshStandardMaterial({ color: 0x8b5a2b, roughness: 0.8 });
-            // const matWhite = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.8 });
-            // const matSteel = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.4, metalness: 0.6 });
-            // const matDark = new THREE.MeshStandardMaterial({ color: 0x3e2723, roughness: 0.9 });
-
             const { matWood: matBrown, matPrimary: matWhite, matSteel: matSteel, matSecondary: matDark } = ParapetModule.getMaterials(SCALE);
-
             const wallT = (6 * SCALE) + extraT;
             
-            // Perimeter Enclosure (N, E, W)
             ParapetModule.buildPerimeterEnclosure(w, d, centerX, centerZ, effectiveBaseY, wallT, (30 * SCALE) + extraH, matDark);
 
-            // Front Facade Dimensions
             const leftW = w * 0.35, rightW = w * 0.25, railW = w - leftW - rightW;
             const h1 = (35 * SCALE) + extraH, h2 = (45 * SCALE) + extraH;
 
-            // LEFT SECTION: Brown wall with 3 White Diamond Cutouts
             const leftWall = new THREE.Mesh(new THREE.BoxGeometry(leftW, h1, wallT), matBrown);
             leftWall.position.set(centerX - w/2 + leftW/2, effectiveBaseY + h1/2, frontZ - wallT/2);
             ParapetModule.addMesh(leftWall);
             
-            // Diamonds
             for (let i = 0; i < 3; i++) {
                 const diamond = new THREE.Mesh(new THREE.BoxGeometry(6*SCALE, 6*SCALE, wallT + 2*SCALE), matWhite);
                 diamond.position.set(centerX - w/2 + (leftW/4) + (i * 8*SCALE), effectiveBaseY + h1/2 + 2*SCALE, frontZ - wallT/2);
@@ -374,12 +468,10 @@ const ParapetModule = {
                 ParapetModule.addMesh(diamond);
             }
             
-            // White Cap on Left Wall
             const leftCap = new THREE.Mesh(new THREE.BoxGeometry(leftW + 4*SCALE, 2*SCALE, wallT + 2*SCALE), matWhite);
             leftCap.position.set(centerX - w/2 + leftW/2, effectiveBaseY + h1, frontZ - wallT/2);
             ParapetModule.addMesh(leftCap);
 
-            // RIGHT SECTION: Tall Brown wall with vertical white slats
             const rightWall = new THREE.Mesh(new THREE.BoxGeometry(rightW, h2, wallT), matBrown);
             rightWall.position.set(centerX + w/2 - rightW/2, effectiveBaseY + h2/2, frontZ - wallT/2);
             ParapetModule.addMesh(rightWall);
@@ -390,7 +482,6 @@ const ParapetModule = {
                 ParapetModule.addMesh(slat);
             }
 
-            // MIDDLE SECTION: Steel Railings
             const railX = centerX - w/2 + leftW;
             const baseC = new THREE.Mesh(new THREE.BoxGeometry(railW, 6*SCALE, wallT), matDark);
             baseC.position.set(railX + railW/2, effectiveBaseY + 3*SCALE, frontZ - wallT/2);
@@ -407,26 +498,16 @@ const ParapetModule = {
         buildGeoInterlock(SCALE, w, d, centerX, centerZ, effectiveBaseY, frontZ) {
             const extraH = ParapetModule.config.heightOffset * SCALE;
             const extraT = ParapetModule.config.thicknessOffset * SCALE;
-
-            // const matCream = new THREE.MeshStandardMaterial({ color: 0xfefce8, roughness: 0.9 });
-            // const matBrown = new THREE.MeshStandardMaterial({ color: 0x5d4037, roughness: 0.8 });
-            // const matOrange = new THREE.MeshStandardMaterial({ color: 0xe65100, roughness: 0.6 });
-            // const matSteel = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.4, metalness: 0.6 });
-
             const { matPrimary: matCream, matWood: matBrown, matAccent: matOrange, matSteel: matSteel } = ParapetModule.getMaterials(SCALE);
-
             const wallT = (6 * SCALE) + extraT;
             const facadeH = (35 * SCALE) + extraH;
 
-            // Perimeter Enclosure
             ParapetModule.buildPerimeterEnclosure(w, d, centerX, centerZ, effectiveBaseY, wallT, facadeH, matCream);
 
-            // Base Front Wall (Cream)
             const frontWall = new THREE.Mesh(new THREE.BoxGeometry(w, facadeH, wallT), matCream);
             frontWall.position.set(centerX, effectiveBaseY + facadeH/2, frontZ - wallT/2);
             ParapetModule.addMesh(frontWall);
 
-            // LEFT: Horizontal Brown Slits
             const slitX = centerX - w/2 + 20*SCALE;
             for (let i = 0; i < 4; i++) {
                 const slit = new THREE.Mesh(new THREE.BoxGeometry(15*SCALE, 3*SCALE, wallT + 2*SCALE), matBrown);
@@ -434,9 +515,7 @@ const ParapetModule = {
                 ParapetModule.addMesh(slit);
             }
 
-            // MIDDLE: The L-Shape and Orange Box Interlock
             const intX = centerX - 5*SCALE;
-            
             const lVert = new THREE.Mesh(new THREE.BoxGeometry(6*SCALE, 25*SCALE + extraH, wallT + 4*SCALE), matBrown);
             lVert.position.set(intX - 15*SCALE, effectiveBaseY + (25*SCALE + extraH)/2, frontZ - wallT/2);
             ParapetModule.addMesh(lVert);
@@ -459,7 +538,6 @@ const ParapetModule = {
             wBox.position.set(intX + 5*SCALE, effectiveBaseY + 15*SCALE, frontZ - wallT/2);
             ParapetModule.addMesh(wBox);
 
-            // RIGHT: Siding & Railings
             const sidW = 20*SCALE;
             const siding = new THREE.Mesh(new THREE.BoxGeometry(sidW, facadeH - 10*SCALE, wallT + 2*SCALE), new THREE.MeshStandardMaterial({color: 0xeff6ff}));
             siding.position.set(centerX + 25*SCALE, effectiveBaseY + facadeH/2 - 5*SCALE, frontZ - wallT/2);
@@ -483,10 +561,6 @@ const ParapetModule = {
              const extraH = ParapetModule.config.heightOffset * SCALE;
              const wallT = (6 * SCALE) + (ParapetModule.config.thicknessOffset * SCALE);
              const H = (40 * SCALE) + extraH; 
-
-            //  const matConcrete = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.9 });
-            //  const matSteel = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.4, metalness: 0.6 });
-
              const { matPrimary: matConcrete, matSteel: matSteel } = ParapetModule.getMaterials(SCALE);
 
              ParapetModule.buildPerimeterEnclosure(w, d, centerX, centerZ, effectiveBaseY, wallT, 30*SCALE + extraH, matConcrete);
@@ -507,10 +581,6 @@ const ParapetModule = {
 
         buildModernGlass(SCALE, w, d, centerX, centerZ, effectiveBaseY) {
             const railH = 36 * SCALE, baseH = 4 * SCALE, postT = 2 * SCALE;
-            // const matBase = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.8 }); 
-            // const matGlass = new THREE.MeshStandardMaterial({ color: 0x98d8c8, transparent: true, opacity: 0.3, side: THREE.DoubleSide, roughness: 0.1, metalness: 0.8 });
-            // const matRail = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.5, roughness: 0.4 }); 
-
             const { matSecondary: matBase, matGlass: matGlass, matSteel: matRail } = ParapetModule.getMaterials(SCALE);
 
             const bN = new THREE.Mesh(new THREE.BoxGeometry(w, baseH, postT), matBase); bN.position.set(centerX, effectiveBaseY + baseH/2, centerZ - d/2 + postT/2);
@@ -535,33 +605,21 @@ const ParapetModule = {
             });
         },
 
-        // ==========================================
-        // 🏗️ NEW PREMIUM STYLES
-        // ==========================================
         buildNeoBrutalist(SCALE, w, d, centerX, centerZ, effectiveBaseY, frontZ) {
             const extraH = ParapetModule.config.heightOffset * SCALE;
             const extraT = ParapetModule.config.thicknessOffset * SCALE;
             const wallT = (12 * SCALE) + extraT;
             const facadeH = (45 * SCALE) + extraH;
-            
-            // const matConcrete = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 1.0 });
-            // const matDark = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.9 });
-            // const matGlow = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0x38bdf8, emissiveIntensity: 1.5 });
-
             const { matPrimary: matConcrete, matSecondary: matDark, matGlow: matGlow } = ParapetModule.getMaterials(SCALE);
 
-            // Side Enclosures
             ParapetModule.buildPerimeterEnclosure(w, d, centerX, centerZ, effectiveBaseY, wallT, facadeH, matConcrete);
 
-            // Front Deep Inset Wall
             const insetD = 8 * SCALE;
             const frontBacking = new THREE.Mesh(new THREE.BoxGeometry(w, facadeH, wallT), matDark);
             frontBacking.position.set(centerX, effectiveBaseY + facadeH/2, frontZ - wallT/2 - insetD);
             ParapetModule.addMesh(frontBacking);
 
-            // Vertical Ribs (Fins)
-            const finW = 4 * SCALE, finD = 12 * SCALE;
-            const spacing = 14 * SCALE;
+            const finW = 4 * SCALE, finD = 12 * SCALE, spacing = 14 * SCALE;
             const finCount = Math.floor(w / spacing);
             const startX = centerX - w/2 + finW/2 + (w - (finCount * spacing))/2;
 
@@ -571,7 +629,6 @@ const ParapetModule = {
                 ParapetModule.addMesh(fin);
             }
 
-            // Top LED Glow Strip Frame
             const ledStrip = new THREE.Mesh(new THREE.BoxGeometry(w, 2*SCALE, 2*SCALE), matGlow);
             ledStrip.position.set(centerX, effectiveBaseY + facadeH - 4*SCALE, frontZ + 1*SCALE);
             ParapetModule.addMesh(ledStrip);
@@ -579,83 +636,58 @@ const ParapetModule = {
 
         buildZenPergola(SCALE, w, d, centerX, centerZ, effectiveBaseY, frontZ) {
             const extraH = ParapetModule.config.heightOffset * SCALE;
-            
             const wallT = 6 * SCALE;
             const railH = (35 * SCALE) + extraH;
-            
-            // const matWood = new THREE.MeshStandardMaterial({ color: 0x3e2723, roughness: 0.9 });
-            // const matDarkSteel = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.4, metalness: 0.7 });
-            // const matGlass = new THREE.MeshStandardMaterial({ color: 0x000000, transparent: true, opacity: 0.4, metalness: 0.9 });
-
             const { matWood: matWood, matSecondary: matDarkSteel, matGlass: matGlass } = ParapetModule.getMaterials(SCALE);
 
-            // Floating Wood Base Line
             const baseWall = new THREE.Mesh(new THREE.BoxGeometry(w, 8*SCALE, wallT), matWood);
             baseWall.position.set(centerX, effectiveBaseY + 4*SCALE, frontZ - wallT/2);
             ParapetModule.addMesh(baseWall);
 
-            // Left Side Heavy Wood Anchor
             const anchorW = w * 0.3;
             const anchor = new THREE.Mesh(new THREE.BoxGeometry(anchorW, railH, wallT), matWood);
             anchor.position.set(centerX - w/2 + anchorW/2, effectiveBaseY + railH/2, frontZ - wallT/2);
             ParapetModule.addMesh(anchor);
 
-            // Smoked Glass Railing for the rest of the front
             const glassW = w - anchorW;
             const glass = new THREE.Mesh(new THREE.BoxGeometry(glassW, railH - 8*SCALE, 2*SCALE), matGlass);
             glass.position.set(centerX + anchorW/2, effectiveBaseY + 8*SCALE + (railH - 8*SCALE)/2, frontZ - wallT/2);
             ParapetModule.addMesh(glass);
 
-            // Floating Pergola Slats overhead
-            const slatL = 40 * SCALE; // Sticks out over the edge
-            const slatW = 3 * SCALE;
-            const slatH = 6 * SCALE;
+            const slatL = 40 * SCALE, slatW = 3 * SCALE, slatH = 6 * SCALE;
             for(let i = 0; i < 6; i++) {
                 const slat = new THREE.Mesh(new THREE.BoxGeometry(slatW, slatH, slatL), matWood);
                 slat.position.set(centerX - w/2 + 8*SCALE + (i * 12*SCALE), effectiveBaseY + railH + slatH/2, frontZ - wallT/2 + 10*SCALE);
                 ParapetModule.addMesh(slat);
             }
 
-            // Simple side rails
             ParapetModule.buildPerimeterEnclosure(w, d, centerX, centerZ, effectiveBaseY, wallT, 8*SCALE, matDarkSteel);
         },
 
         buildCyberCantilever(SCALE, w, d, centerX, centerZ, effectiveBaseY, frontZ) {
             const extraH = ParapetModule.config.heightOffset * SCALE;
             const extraT = ParapetModule.config.thicknessOffset * SCALE;
-            
             const h = (40 * SCALE) + extraH;
             const t = (8 * SCALE) + extraT;
-            
-            // const matChrome = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 1.0, roughness: 0.1 });
-            // const matBlackMetal = new THREE.MeshStandardMaterial({ color: 0x020617, metalness: 0.8, roughness: 0.3 });
-            // const matCyanGlass = new THREE.MeshStandardMaterial({ color: 0x06b6d4, transparent: true, opacity: 0.5, metalness: 0.8, side: THREE.DoubleSide });
-
             const { matSteel: matChrome, matSecondary: matBlackMetal, matGlass: matCyanGlass } = ParapetModule.getMaterials(SCALE);
 
-            // Base and Side Enclosures in Black Metal
             ParapetModule.buildPerimeterEnclosure(w, d, centerX, centerZ, effectiveBaseY, t, 6*SCALE, matBlackMetal);
 
-            // Heavy Cantilever Top Frame (Extends past the building width)
             const overW = w + (40 * SCALE); 
             const topFrame = new THREE.Mesh(new THREE.BoxGeometry(overW, 8*SCALE, t + 4*SCALE), matBlackMetal);
             topFrame.position.set(centerX, effectiveBaseY + h, frontZ - t/2);
             ParapetModule.addMesh(topFrame);
 
-            // Support Pillars for Cantilever
             const pL = new THREE.Mesh(new THREE.BoxGeometry(t, h, t), matChrome);
             pL.position.set(centerX - w/2 + t/2, effectiveBaseY + h/2, frontZ - t/2);
             const pR = new THREE.Mesh(new THREE.BoxGeometry(t, h, t), matChrome);
             pR.position.set(centerX + w/2 - t/2, effectiveBaseY + h/2, frontZ - t/2);
             ParapetModule.addMesh(pL); ParapetModule.addMesh(pR);
 
-            // Floating Angled Glass Panels
             const panelW = (w - (t*4)) / 3;
             for(let i = 0; i < 3; i++) {
                 const glass = new THREE.Mesh(new THREE.BoxGeometry(panelW, h - 14*SCALE, 2*SCALE), matCyanGlass);
-                // Position them slightly pushed forward from the frame
                 glass.position.set(centerX - w/2 + t*2 + panelW/2 + (i * (panelW + 4*SCALE)), effectiveBaseY + 6*SCALE + (h - 14*SCALE)/2, frontZ + 4*SCALE);
-                // Give them an aggressive sci-fi tilt
                 glass.rotation.x = -0.1;
                 ParapetModule.addMesh(glass);
             }

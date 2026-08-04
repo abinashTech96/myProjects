@@ -145,7 +145,6 @@
     cursor: pointer; 
 }
 .std-btn-delete:hover { background: rgba(239, 68, 68, 0.3); }
-
 .std-prop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
 .std-prop-field { display: flex; flex-direction: column; gap: 4px; }
 .std-prop-label { font-size: 0.6rem; color: #94a3b8; font-weight: bold; }
@@ -182,17 +181,13 @@
 }
 
 /* GRID & ITEMS EXTRACTED STYLES */
-.std-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); 
-    gap: 10px;
-}
+.std-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 
 .std-item {
     background: rgba(0,0,0,0.4);
     border: 1px solid rgba(255,255,255,0.05);
-    border-radius: 12px;
-    padding: 15px 5px;
+    border-radius: 10px; /* Slightly softer corners for smaller tiles */
+    padding: 8px 4px; /* Reduced padding for a compact size */
     text-align: center;
     cursor: grab;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -202,14 +197,10 @@
 .std-item:hover {
     background: rgba(56, 189, 248, 0.15);
     border-color: #38bdf8;
-    transform: translateY(-3px);
+    transform: translateY(-2px); /* Subtler lift on smaller tiles */
     box-shadow: 0 4px 12px rgba(56, 189, 248, 0.2);
 }
 
-.std-item-icon { font-size: 1.8rem; margin-bottom: 5px; pointer-events: none; }
-.std-item-label { font-size: 0.65rem; color: #cbd5e1; pointer-events: none; }
-
-.std-item-dragging { 
-    opacity: 0.5; 
-    border: 1px dashed #38bdf8 !important; 
-}
+.std-item-icon { font-size: 1.2rem; margin-bottom: 4px; pointer-events: none; }
+.std-item-label { font-size: 0.55rem; color: #cbd5e1; pointer-events: none; }
+.std-item-dragging { opacity: 0.5; border: 1px dashed #38bdf8 !important; }

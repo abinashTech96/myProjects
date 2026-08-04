@@ -53,6 +53,8 @@ const RoomStudio = {
     sandboxDoorsWindows: [], 
     selectedFixtureIndex: -1, 
     boundKeyHandler: null,
+    boundDragMove: null,
+    boundDragUp: null,
 
     // Drag State (2D)
     isDragging: false,
@@ -71,7 +73,6 @@ const RoomStudio = {
             `<button id="${btn.id}" class="${btn.class}" onclick="${btn.action}">${btn.text}</button>`
         ).join('');
 
-        // Completely removed inline style elements (except JS-toggled display controls)
         const uiTemplate = `
             <div id="room-studio-modal" style="display: none;">
                 <div class="std-backdrop"></div>
@@ -125,15 +126,20 @@ const RoomStudio = {
         this.setupDragAndDrop();
         this.boundKeyHandler = this.handleKeydown.bind(this);
         
-        window.addEventListener('mousemove', (e) => this.handleDragMove(e));
-        window.addEventListener('mouseup', () => { this.isDragging = false; });
+        this.boundDragMove = (e) => this.handleDragMove(e);
+        this.boundDragUp = () => { this.isDragging = false; };
+
+        window.addEventListener('mousemove', this.boundDragMove);
+        window.addEventListener('mouseup', this.boundDragUp);
     },
 
     open() {
-        if (typeof selectedElIndex === 'undefined' || selectedElIndex === -1) return;
+        if (typeof selectedElIndex === 'undefined' || selectedElIndex === -1 || typeof elements === 'undefined') return;
         
         this.activeRoomIndex = selectedElIndex;
         this.activeRoom = elements[this.activeRoomIndex];
+        if (!this.activeRoom) return;
+
         this.selectedFixtureIndex = -1;
         this.is3DActive = false;
         
@@ -165,8 +171,10 @@ const RoomStudio = {
         this.sandboxDoorsWindows = typeof fixtures !== 'undefined' ? fixtures.filter(f => f.roomId === this.activeRoomIndex) : [];
 
         const btn = document.getElementById('std-toggle-3d-btn');
-        btn.innerHTML = ROOM_STUDIO_CONFIG.actions[0].text;
-        btn.classList.remove('std-btn-3d-active');
+        if (btn) {
+            btn.innerHTML = ROOM_STUDIO_CONFIG.actions[0].text;
+            btn.classList.remove('std-btn-3d-active');
+        }
         
         document.getElementById('studio-svg').style.display = 'block';
         document.getElementById('studio-3d-container').style.display = 'none';
@@ -185,17 +193,20 @@ const RoomStudio = {
         this.isDragging = false;
         if (this.reqAnim) cancelAnimationFrame(this.reqAnim);
 
-        document.getElementById('room-studio-modal').style.display = 'none';
+        const modal = document.getElementById('room-studio-modal');
+        if (modal) modal.style.display = 'none';
         document.removeEventListener('keydown', this.boundKeyHandler);
     },
 
     save() {
-        if(typeof saveState === 'function') saveState();
+        if (typeof saveState === 'function') saveState();
+        if (typeof elements === 'undefined') return;
 
         const indicesToRemove = this.sandboxFixtures
             .filter(f => f.globalRef !== undefined)
             .map(f => f.globalRef)
             .sort((a, b) => b - a);
+
         indicesToRemove.forEach(idx => {
             elements.splice(idx, 1);
             if (typeof fixtures !== 'undefined') {
@@ -206,6 +217,7 @@ const RoomStudio = {
                 });
             }
         });
+
         this.sandboxFixtures.forEach(fix => {
             const globalFurniture = structuredClone(fix);
             delete globalFurniture.globalRef;
@@ -215,6 +227,7 @@ const RoomStudio = {
             globalFurniture.locked = false;
             elements.push(globalFurniture);
         });
+
         this.close();
         if (typeof updateCanvas === 'function') updateCanvas();
         if (typeof renderSidebar === 'function') renderSidebar();
@@ -241,14 +254,14 @@ const RoomStudio = {
     },
 
     handleDragMove(event) {
-        if (!this.isDragging || this.selectedFixtureIndex === -1 || this.is3DActive) return;
+        if (!this.isDragging || this.selectedFixtureIndex === -1 || this.is3DActive || !this.activeRoom) return;
         const pt = this.getSVGPos(event);
         const fix = this.sandboxFixtures[this.selectedFixtureIndex];
         
         let newX = pt.x - this.dragOffset.x;
         let newY = pt.y - this.dragOffset.y;
         
-        let snap = typeof STUDIO_CONFIG !== 'undefined' ? STUDIO_CONFIG.GRID_SNAP_INCHES : 6;
+        let snap = (typeof STUDIO_CONFIG !== 'undefined' && STUDIO_CONFIG.GRID_SNAP_INCHES) ? STUDIO_CONFIG.GRID_SNAP_INCHES : 6;
         if (typeof CanvasState !== 'undefined') {
             if (CanvasState.zoomLvl > 2.5) snap = 1;
             else if (CanvasState.zoomLvl < 0.8) snap = 12;
@@ -256,7 +269,7 @@ const RoomStudio = {
         newX = Math.round(newX / snap) * snap; 
         newY = Math.round(newY / snap) * snap;
 
-        const SNAP_DIST = typeof STUDIO_CONFIG !== 'undefined' ? STUDIO_CONFIG.MAGNETIC_SNAP_DIST : 18;
+        const SNAP_DIST = (typeof STUDIO_CONFIG !== 'undefined' && STUDIO_CONFIG.MAGNETIC_SNAP_DIST) ? STUDIO_CONFIG.MAGNETIC_SNAP_DIST : 18;
         const roomW = this.activeRoom.w;
         const roomH = this.activeRoom.h;
 
@@ -267,11 +280,12 @@ const RoomStudio = {
 
         const minDist = Math.min(distLeft, distRight, distTop, distBottom);
 
+        // FIX 1: Removed forced fix.rot assignments. Only snap X/Y coordinates.
         if (minDist < SNAP_DIST) {
-            if (minDist === distTop) { newY = 0; fix.rot = 0; } 
-            else if (minDist === distBottom) { newY = roomH - fix.h; fix.rot = 180; } 
-            else if (minDist === distLeft) { newX = 0; fix.rot = 270; } 
-            else if (minDist === distRight) { newX = roomW - fix.w; fix.rot = 90; }
+            if (minDist === distTop) { newY = 0; } 
+            else if (minDist === distBottom) { newY = roomH - fix.h; } 
+            else if (minDist === distLeft) { newX = 0; } 
+            else if (minDist === distRight) { newX = roomW - fix.w; }
         }
         
         newX = Math.max(0, Math.min(newX, roomW - fix.w));
@@ -287,6 +301,7 @@ const RoomStudio = {
     },
 
     renderCanvas() {
+        if (!this.activeRoom) return;
         const svg = document.getElementById('studio-svg');
         const roomGroup = document.getElementById('std-room-group');
         const furnGroup = document.getElementById('std-furniture-group');
@@ -299,19 +314,21 @@ const RoomStudio = {
         svg.setAttribute('viewBox', `-${padding} -${padding} ${vW} ${vH}`);
 
         let ghostHTML = '';
-        elements.forEach((el, idx) => {
-            if (idx === this.activeRoomIndex || el.floor !== this.activeRoom.floor || el.isFurniture) return;
-            const localX = el.x - this.activeRoom.x;
-            const localY = el.y - this.activeRoom.y;
-            ghostHTML += `
-                <rect x="${localX}" y="${localY}" width="${el.w}" height="${el.h}" 
-                      fill="rgba(255,255,255,0.02)" stroke="rgba(255,255,255,0.1)" 
-                      stroke-dasharray="4,4" stroke-width="2" pointer-events="none" />
-            `;
-        });
+        if (typeof elements !== 'undefined') {
+            elements.forEach((el, idx) => {
+                if (idx === this.activeRoomIndex || el.floor !== this.activeRoom.floor || el.isFurniture) return;
+                const localX = el.x - this.activeRoom.x;
+                const localY = el.y - this.activeRoom.y;
+                ghostHTML += `
+                    <rect x="${localX}" y="${localY}" width="${el.w}" height="${el.h}" 
+                          fill="rgba(255,255,255,0.02)" stroke="rgba(255,255,255,0.1)" 
+                          stroke-dasharray="4,4" stroke-width="2" pointer-events="none" />
+                `;
+            });
+        }
         ghostGroup.innerHTML = ghostHTML;
 
-        let rgb = ARCH_CONFIG?.COLORS?.[this.activeRoom.type]?.rgb || '255,255,255';
+        let rgb = (typeof ARCH_CONFIG !== 'undefined' && ARCH_CONFIG.COLORS && ARCH_CONFIG.COLORS[this.activeRoom.type]) ? ARCH_CONFIG.COLORS[this.activeRoom.type].rgb : '255,255,255';
         if (this.activeRoom.customColor) {
             const hex = this.activeRoom.customColor.replace('#', '');
             rgb = `${parseInt(hex.substring(0,2),16)}, ${parseInt(hex.substring(2,4),16)}, ${parseInt(hex.substring(4,6),16)}`;
@@ -343,13 +360,16 @@ const RoomStudio = {
             const drawW = isTurned ? f.h : f.w;
             const drawH = isTurned ? f.w : f.h;
 
+            // FIX 3: Reduced font-size from 10 to 4 (real-world inches).
+            const displayName = f.type.toUpperCase().substring(0, 8); 
+
             furnGroup.innerHTML += `
                 <g transform="translate(${f.x}, ${f.y})" 
                    onmousedown="RoomStudio.startDrag(${idx}, event)" 
                    class="${isSelected ? 'std-cursor-grabbing' : 'std-cursor-grab'}">
                     <rect width="${drawW}" height="${drawH}" fill="${fillColor}" stroke="${strokeColor}" stroke-width="${isSelected ? 3 : 1}" />
-                    <text x="${drawW/2}" y="${drawH/2 + 4}" fill="#f8fafc" font-size="10" text-anchor="middle" font-weight="bold" pointer-events="none">
-                          ${f.type.toUpperCase()}
+                    <text x="${drawW/2}" y="${drawH/2 + 1.5}" fill="#f8fafc" font-size="4" text-anchor="middle" font-weight="bold" pointer-events="none">
+                          ${displayName}
                     </text>
                 </g>
             `;
@@ -360,6 +380,8 @@ const RoomStudio = {
 
     renderProperties() {
         const propPanel = document.getElementById('std-properties');
+        if (!propPanel) return;
+
         if (this.selectedFixtureIndex === -1) {
             propPanel.style.display = 'none';
             return;
@@ -406,7 +428,7 @@ const RoomStudio = {
     },
 
     modifyFixture(prop, value) {
-        if (this.selectedFixtureIndex === -1) return;
+        if (this.selectedFixtureIndex === -1 || !this.activeRoom) return;
         let num = parseInt(value);
         if (isNaN(num)) return;
         
@@ -416,12 +438,12 @@ const RoomStudio = {
         fix.x = Math.max(0, Math.min(fix.x, this.activeRoom.w - fix.w));
         fix.y = Math.max(0, Math.min(fix.y, this.activeRoom.h - fix.h));
 
-        if(this.is3DActive) this.build3DScene();
+        if (this.is3DActive) this.build3DScene();
         else this.renderCanvas();
     },
 
     rotateSelected() {
-        if (this.selectedFixtureIndex === -1) return;
+        if (this.selectedFixtureIndex === -1 || !this.activeRoom) return;
         const fix = this.sandboxFixtures[this.selectedFixtureIndex];
         
         fix.rot = ((fix.rot || 0) + 90) % 360;
@@ -465,6 +487,8 @@ const RoomStudio = {
             btn.classList.remove('std-btn-3d-active');
             svg.style.display = 'block';
             container3D.style.display = 'none';
+            // FIX 2: Force the 2D canvas to redraw using updated 3D coordinates
+            this.renderCanvas();
         }
     },
 
@@ -506,12 +530,32 @@ const RoomStudio = {
     },
 
     build3DScene() {
-        while(this.scene3D.children.length > 0){ this.scene3D.remove(this.scene3D.children[0]); }
+        if (!this.scene3D) return;
+
+        // Clean disposal of meshes, materials, and textures to prevent memory leaks
+        while(this.scene3D.children.length > 0){ 
+            const obj = this.scene3D.children[0];
+            this.scene3D.remove(obj);
+            obj.traverse(child => {
+                if (child.geometry) child.geometry.dispose();
+                if (child.material) {
+                    if (Array.isArray(child.material)) {
+                        child.material.forEach(m => {
+                            if (m.map) m.map.dispose();
+                            m.dispose();
+                        });
+                    } else {
+                        if (child.material.map) child.material.map.dispose();
+                        child.material.dispose();
+                    }
+                }
+            });
+        }
 
         const W = this.activeRoom.w;
         const D = this.activeRoom.h;
-        const H = ARCH_CONFIG.DEFAULTS.WALL_HEIGHT_3D; 
-        const T = ARCH_CONFIG.DEFAULTS.WALL_THICKNESS_3D;
+        const H = typeof ARCH_CONFIG !== 'undefined' ? ARCH_CONFIG.DEFAULTS.WALL_HEIGHT_3D : 120; 
+        const T = typeof ARCH_CONFIG !== 'undefined' ? ARCH_CONFIG.DEFAULTS.WALL_THICKNESS_3D : 6;
         
         const ambient = new THREE.AmbientLight(0xffffff, 0.4);
         this.scene3D.add(ambient);
@@ -565,7 +609,7 @@ const RoomStudio = {
         });
         
         this.sandboxFixtures.forEach((fix, idx) => {
-            if (typeof FurnitureFactory !== 'undefined') {
+            if (typeof createFurniture3D !== 'undefined') {
                 let drawW = fix.w;
                 let drawH = fix.h;
                 if (Math.abs(fix.rot) === 90 || Math.abs(fix.rot) === 270) {
@@ -637,7 +681,7 @@ const RoomStudio = {
     },
 
     on3DPointerMove(event) {
-        if (!this.is3DDragging || this.selectedFixtureIndex === -1 || !this.is3DActive) return;
+        if (!this.is3DDragging || this.selectedFixtureIndex === -1 || !this.is3DActive || !this.activeRoom) return;
         if (this._raycastPending) return;
         this._raycastPending = true;
         
@@ -653,7 +697,7 @@ const RoomStudio = {
                 const fix = this.sandboxFixtures[this.selectedFixtureIndex];
                 let newX = intersectPoint.x - this.dragOffset3D.x - (fix.w/2);
                 let newY = intersectPoint.z - this.dragOffset3D.z - (fix.h/2); 
-                const snap = typeof STUDIO_CONFIG !== 'undefined' ? STUDIO_CONFIG.GRID_SNAP_INCHES : 6;
+                const snap = (typeof STUDIO_CONFIG !== 'undefined' && STUDIO_CONFIG.GRID_SNAP_INCHES) ? STUDIO_CONFIG.GRID_SNAP_INCHES : 6;
                 newX = Math.round(newX / snap) * snap;
                 newY = Math.round(newY / snap) * snap;
                 newX = Math.max(0, Math.min(newX, this.activeRoom.w - fix.w));
@@ -682,7 +726,7 @@ const RoomStudio = {
     },
 
     handleKeydown(e) {
-        if (document.activeElement.tagName === 'INPUT') return;
+        if (document.activeElement && document.activeElement.tagName === 'INPUT') return;
         if (e.key.toLowerCase() === 'r') this.rotateSelected();
         if (e.key === 'Delete' || e.key === 'Backspace') this.deleteSelected();
     },
@@ -707,7 +751,7 @@ const RoomStudio = {
             div.ondragstart = (e) => {
                 e.dataTransfer.setData('text/plain', item.id);
                 e.dataTransfer.effectAllowed = 'copy';
-                div.classList.add('std-item-dragging'); // Replaced inline styles
+                div.classList.add('std-item-dragging');
             };
             
             div.ondragend = () => { 
@@ -737,6 +781,7 @@ const RoomStudio = {
         dropzone.addEventListener('drop', (e) => {
             e.preventDefault();
             if (this.is3DActive) return alert("Please switch back to 2D Plan to drop furniture.");
+            if (!this.activeRoom || typeof ARCH_CONFIG === 'undefined') return;
 
             const type = e.dataTransfer.getData('text/plain');
             if (!type || !ARCH_CONFIG.DEFAULTS.FURNITURE[type]) return;
@@ -745,7 +790,7 @@ const RoomStudio = {
             const w = ARCH_CONFIG.DEFAULTS.FURNITURE[type].w;
             const h = ARCH_CONFIG.DEFAULTS.FURNITURE[type].h;
 
-            const snap = STUDIO_CONFIG.GRID_SNAP_INCHES;
+            const snap = (typeof STUDIO_CONFIG !== 'undefined' && STUDIO_CONFIG.GRID_SNAP_INCHES) ? STUDIO_CONFIG.GRID_SNAP_INCHES : 6;
             let localX = Math.round((pt.x - (w / 2)) / snap) * snap;
             let localY = Math.round((pt.y - (h / 2)) / snap) * snap;
 

@@ -1,17 +1,16 @@
 /* =========================================
-   ⌨️ NEUMORPHIC SHORTCUTS GUIDE
+   ⌨️ ISOLATED CHEAT SHEET CONTROLS
 ========================================= */
-/* --- 0. Neumorphic Floating Action Button --- */
-.neo-action-btn {
+
+/* --- 0. Floating Action Button --- */
+.cs-action-btn {
     position: fixed;
     bottom: 5px;
     left: 5px;
     z-index: 1000;
-    /* Neumorphic Button Styling - Minimized Circle State */
     background: #1e293b;
     color: #f8fafc;
     border: 0.2px solid #95daf8;
-    /* Sizing for perfect circle */
     width: 36px;
     height: 36px;
     border-radius: 18px; 
@@ -25,44 +24,39 @@
     font-weight: 600;
     font-size: 0.9rem;
     white-space: nowrap;
-    /* Convex Pop-out Shadow */
-    box-shadow: 6px 6px 12px #151d2a,
-               -6px -6px 12px #27354c;
-    /* Animate the width for expansion, plus standard hover states */
+    box-shadow: 6px 6px 12px #151d2a, -6px -6px 12px #27354c;
     transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
 }
-/* Icon container strictly sized so it centers perfectly in the circle */
-.neo-action-btn .icon {
+
+.cs-action-btn .cs-icon {
     font-size: 1.1rem;
     min-width: 36px;
     display: flex;
     justify-content: center;
     align-items: center;
 }
-/* Text hidden by default */
-.neo-action-btn .text {
+
+.cs-action-btn .cs-text {
     opacity: 0;
     padding-right: 16px;
     transition: opacity 0.2s ease;
 }
-/* Hover State - Expand to Pill */
-.neo-action-btn:hover {
+
+.cs-action-btn:hover {
     width: 160px;
     transform: translateY(-2px);
-    box-shadow: 8px 8px 16px #151d2a,
-               -8px -8px 16px #27354c;
+    box-shadow: 8px 8px 16px #151d2a, -8px -8px 16px #27354c;
     color: #38bdf8;
 }
-/* Delay text fade-in slightly so the button expands first */
-.neo-action-btn:hover .text {
+
+.cs-action-btn:hover .cs-text {
     opacity: 1;
     transition-delay: 0.1s; 
 }
-/* Click State */
-.neo-action-btn:active {
+
+.cs-action-btn:active {
     transform: translateY(1px);
-    box-shadow: inset 4px 4px 8px #151d2a,
-                inset -4px -4px 8px #27354c;
+    box-shadow: inset 4px 4px 8px #151d2a, inset -4px -4px 8px #27354c;
 }
 
 /* --- Mobile / Tablet Cleanup --- */
@@ -72,171 +66,136 @@
         display: none !important;
     }
 }
-
-/* --- 1. Main Panel Layout & Shadows --- */
-#cheat-sheet-panel {
+/* --- 1. Main Panel Layout & Shadows (Compact) --- */
+.cs-panel {
     position: fixed;
-    bottom: 80px;
+    bottom: 60px; /* Lowered slightly to save vertical space */
     left: 20px;
     z-index: 1000;
-    width: 320px;
-    
-    /* Neumorphic Dark Base */
+    width: 250px; /* 📉 Reduced from 320px */
     background: #1e293b; 
-    border-radius: 16px;
-    padding: 20px;
+    border-radius: 12px; /* 📉 Slightly sharper corners for smaller size */
+    padding: 12px 14px; /* 📉 Tighter padding (was 20px) */
     
-    /* Soft 3D Outset Shadows */
-    box-shadow:  8px 8px 16px #151d2a,
-                -8px -8px 16px #27354c;
+    /* Scaled-down shadow to match the smaller panel */
+    box-shadow: 6px 6px 12px #151d2a, -6px -6px 12px #27354c;
     
     color: #e2e8f0;
     font-family: 'Segoe UI', system-ui, sans-serif;
-
-    /* Hidden by default, animated via JS */
     display: none;
     opacity: 0;
     transform: translateY(15px);
-    /* Bouncy, smooth entrance transition */
     transition: opacity 0.3s ease, transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 /* --- 2. Header & Title --- */
-.neo-panel-header {
+.cs-panel-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 12px;
+    margin-bottom: 8px; /* 📉 Tighter margin */
 }
 
-.neo-panel-header h2 {
-    font-size: 1rem;
+.cs-panel-header h2 {
+    font-size: 0.8rem; /* 📉 Smaller header */
     margin: 0;
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: 0.5px;
     color: #f8fafc;
 }
 
-/* --- 3. Animated Close Button --- */
-.neo-minimize-btn {
+/* --- 3. Animated Close Button (Miniaturized) --- */
+.cs-minimize-btn {
     background: #1e293b;
     color: #94a3b8;
     border: none;
-    width: 32px;
-    height: 32px;
+    width: 24px; /* 📉 Shrunk from 32px */
+    height: 24px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    font-size: 14px;
-    
-    /* Pushed out (convex) state */
-    box-shadow:  4px 4px 8px #151d2a,
-                -4px -4px 8px #27354c;
+    font-size: 10px; /* 📉 Smaller X icon */
+    box-shadow: 3px 3px 6px #151d2a, -3px -3px 6px #27354c;
     transition: all 0.2s ease-in-out;
 }
 
-.neo-minimize-btn:hover {
-    color: #ef4444; /* Turns red to indicate close */
-    transform: rotate(90deg) scale(1.1); /* Smooth spin and pop */
+.cs-minimize-btn:hover {
+    color: #ef4444; 
+    transform: rotate(90deg) scale(1.1); 
 }
 
-.neo-minimize-btn:active {
-    /* Pressed in (concave) state */
-    box-shadow: inset 4px 4px 8px #151d2a,
-                inset -4px -4px 8px #27354c;
+.cs-minimize-btn:active {
+    box-shadow: inset 2px 2px 4px #151d2a, inset -2px -2px 4px #27354c;
     transform: rotate(90deg) scale(0.95);
 }
 
-/* --- 4. Subdued Divider --- */
-.neo-divider {
-    height: 2px;
+/* --- 4. Subdued Divider (Thinner) --- */
+.cs-divider {
+    height: 1px; /* 📉 Thinner line */
     background: #1e293b;
-    /* Inset groove */
-    box-shadow: inset 1px 1px 2px #151d2a,
-                inset -1px -1px 2px #27354c;
-    margin: 12px 0;
-    border-radius: 2px;
+    box-shadow: inset 1px 1px 1px #151d2a, inset -1px -1px 1px #27354c;
+    margin: 8px 0; /* 📉 Less vertical space */
+    border-radius: 1px;
 }
 
 /* --- 5. Scroll Area & Custom Scrollbar --- */
-.cheat-sheet-scroll {
+.cs-scroll {
     display: flex;
     flex-direction: column;
-    gap: 12px; /* Increased gap for breathing room */
-    max-height: 350px;
+    gap: 6px; /* 📉 Tighter stacking of rows (was 12px) */
+    max-height: 240px; /* 📉 Reduced height to save screen real estate */
     overflow-y: auto;
-    padding-right: 10px;
-    padding-bottom: 5px;
+    padding-right: 8px;
+    padding-bottom: 2px;
 }
-
-/* Modern, thin scrollbar */
-.cheat-sheet-scroll::-webkit-scrollbar {
-    width: 6px;
-}
-.cheat-sheet-scroll::-webkit-scrollbar-track {
-    background: #161e2b;
-    border-radius: 4px;
-}
-.cheat-sheet-scroll::-webkit-scrollbar-thumb {
-    background: #334155;
-    border-radius: 4px;
-}
-.cheat-sheet-scroll::-webkit-scrollbar-thumb:hover {
-    background: #475569;
-}
-
+.cs-scroll::-webkit-scrollbar { width: 4px; } /* 📉 Thinner scrollbar */
+.cs-scroll::-webkit-scrollbar-track { background: #161e2b; border-radius: 4px; }
+.cs-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+.cs-scroll::-webkit-scrollbar-thumb:hover { background: #475569; }
 /* --- 6. Category Labels --- */
-.neo-label {
-    font-size: 0.75rem;
+.cs-label {
+    font-size: 0.65rem; /* 📉 Shrunk label */
     font-weight: 700;
-    letter-spacing: 1px;
+    letter-spacing: 0.5px;
     text-transform: uppercase;
-    margin-top: 8px;
-    margin-bottom: 2px;
+    margin-top: 4px;
+    margin-bottom: 0px;
     display: block;
     opacity: 0.9;
 }
 
-/* --- 7. Interactive Shortcut Rows --- */
-.cheat-sheet-row {
+/* --- 7. Interactive Shortcut Rows (Compact) --- */
+.cs-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px 14px;
+    padding: 6px 10px; /* 📉 Tighter internal padding */
     background: #1e293b;
-    border-radius: 8px;
-    
-    /* Subtle pop-out effect for each row */
-    box-shadow: 3px 3px 6px #151d2a,
-               -3px -3px 6px #27354c;
+    border-radius: 6px;
+    box-shadow: 2px 2px 4px #151d2a, -2px -2px 4px #27354c;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-/* Rows lift up slightly when hovered */
-.cheat-sheet-row:hover {
-    transform: translateY(-2px);
-    box-shadow: 5px 5px 10px #151d2a,
-               -5px -5px 10px #27354c;
+.cs-row:hover {
+    transform: translateY(-1px);
+    box-shadow: 3px 3px 6px #151d2a, -3px -3px 6px #27354c;
 }
 
-.cheat-sheet-desc {
+.cs-desc {
     color: #cbd5e1;
-    font-size: 0.85rem;
+    font-size: 0.75rem; /* 📉 Shrunk text */
     font-weight: 500;
 }
 
 /* --- 8. Styled Keycaps for Shortcuts --- */
-.ctx-shortcut {
+.cs-shortcut {
     font-family: 'Courier New', Courier, monospace;
-    font-size: 0.75rem;
+    font-size: 0.65rem; /* 📉 Shrunk keycap text */
     font-weight: bold;
-    background: #0f172a; /* Darker inset background */
-    padding: 4px 8px;
-    border-radius: 6px;
-    
-    /* Engraved keycap look */
-    box-shadow: inset 2px 2px 4px #080c16,
-                inset -2px -2px 4px #16223e;
+    background: #0f172a; 
+    padding: 3px 6px; /* 📉 Tighter keycap padding */
+    border-radius: 4px;
+    box-shadow: inset 1px 1px 3px #080c16, inset -1px -1px 3px #16223e;
 }

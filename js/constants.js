@@ -128,12 +128,20 @@ const FURNITURE_CATALOG = [
     { id: 'toilet_seat', icon: '🚽', label: 'Toilet' },
     { id: 'plant', icon: '🪴', label: 'Plant' }
 ];
-
-
 // =========================================
-// 🌟 NEW: FEATURE CONFIGURATIONS 🌟
+// 🌟 UI DYNAMIC CATALOGS 
 // =========================================
+const ROOM_CATALOG = [
+    { id: 'living', label: 'Living Room' },
+    { id: 'bedroom', label: 'Bedroom' },
+    { id: 'toilet', label: 'Toilet' },
+    { id: 'kitchen', label: 'Kitchen' },
+    { id: 'puja', label: 'Puja Room' },
+    { id: 'staircase', label: 'Staircase' },
+    { id: 'balcony', label: 'Balcony' }
+];
 
+// 🌟 NEW: FEATURE CONFIGURATIONS
 const STUDIO_CONFIG = {
     GRID_SNAP_INCHES: 6,         // The step size when dragging furniture in Room Studio
     MAGNETIC_SNAP_DIST: 18,      // How close to a wall before it auto-rotates and flushes

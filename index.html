@@ -23,11 +23,11 @@
     <link rel="stylesheet" href="css/compliance.css">
     <link rel="stylesheet" href="css/vastu.css">
     <link rel="stylesheet" href="css/cheatsheet.css">
-    <link rel="stylesheet" href="css/parapet.css">
+    <!-- <link rel="stylesheet" href="css/parapet.css"> -->
     <link rel="stylesheet" href="css/studio.css">
     <!-- <link rel="stylesheet" href="css/tour.css"> -->
     <link rel="stylesheet" href="css/advanced3d.css">
-    <link rel="stylesheet" href="css/onboarding.css">
+    <!-- <link rel="stylesheet" href="css/onboarding.css"> -->
     <link rel="stylesheet" href="css/export.css">
 </head>
 <body>
@@ -140,98 +140,7 @@
                 </div>
                 
                 <div id="settings-content" class="settings-content">
-                    
-                    <!-- WIDGET VISIBILITY -->
-                    <div class="settings-accordion-wrapper">
-                        <button class="settings-accordion-btn active" id="btn-widget-vis-new" onclick="this.classList.toggle('active'); this.nextElementSibling.classList.toggle('active');">
-                            <div class="accordion-title-wrap">
-                                <span class="accordion-emoji">👁️</span>
-                                <span class="settings-category">WIDGET VISIBILITY</span>
-                            </div>
-                            <span class="settings-chevron">▼</span>
-                        </button>                    
-                        <div class="settings-accordion-content active" id="content-widget-visibility">
-                            <div class="settings-accordion-inner">
-                                <label class="ui-toggle">
-                                    <span class="settings-label-text">📏 Quick Converter</span>
-                                    <input type="checkbox" id="toggle-qc-cb" checked autocomplete="off">
-                                    <div class="slider"></div>
-                                </label>
-                                <label class="ui-toggle">
-                                    <span class="settings-label-text">📷 Camera Controls</span>
-                                    <input type="checkbox" id="toggle-camera-cb" checked autocomplete="off">
-                                    <div class="slider"></div>
-                                </label>
-                                <label class="ui-toggle">
-                                    <span class="settings-label-text">✅ Code Inspector</span>
-                                    <input type="checkbox" id="toggle-compliance-cb" checked autocomplete="off">
-                                    <div class="slider"></div>
-                                </label>
-                                <label class="ui-toggle">
-                                    <span class="settings-label-text">🧭 Vastu Score</span>
-                                    <input type="checkbox" id="toggle-vastu-cb" checked autocomplete="off">
-                                    <div class="slider"></div>
-                                </label>
-                                <label class="ui-toggle">
-                                    <span class="settings-label-text">⌨️ Shortcuts Guide</span>
-                                    <input type="checkbox" id="toggle-cheatsheet-cb" checked autocomplete="off">
-                                    <div class="slider"></div>
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- DATA CONTROLS -->
-                    <div class="settings-accordion-wrapper">
-                        <button class="settings-accordion-btn" id="btn-data-ctrl-new" onclick="this.classList.toggle('active'); this.nextElementSibling.classList.toggle('active');">
-                            <div class="accordion-title-wrap">
-                                <span class="accordion-emoji">💾</span>
-                                <span class="settings-category">DATA CONTROLS</span>
-                            </div>
-                            <span class="settings-chevron">▼</span>
-                        </button>
-                        <div class="settings-accordion-content" id="content-data-controls">
-                            <div class="settings-accordion-inner btn-grid">
-                                <div class="flex-row">
-                                    <button class="sidebar-btn secondary" style="flex:1; padding: 5px;" onclick="exportJSON()">💾 Save</button>
-                                    <button class="sidebar-btn secondary" style="flex:1; padding: 5px;" onclick="document.getElementById('importFile').click()">📂 Load</button>
-                                </div>
-                                <button class="sidebar-btn secondary danger-override" onclick="resetWorkspace()">⚠️ FACTORY RESET</button>
-                                <input type="file" id="importFile" style="display:none" onchange="importJSON(event)">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- TOOLBAR CONTROLS -->
-                    <div class="settings-accordion-wrapper">
-                        <button class="settings-accordion-btn" id="btn-toolbar-controls" onclick="this.classList.toggle('active'); this.nextElementSibling.classList.toggle('active');">
-                            <div class="accordion-title-wrap">
-                                <span class="accordion-emoji">🛠️</span>
-                                <span class="settings-category">TOOLBAR TOOLS</span>
-                            </div>
-                            <span class="settings-chevron">▼</span>
-                        </button>
-                        <div class="settings-accordion-content" id="content-toolbar-controls">
-                            <div class="settings-accordion-inner">
-                                <label class="ui-toggle">
-                                    <span class="settings-label-text">ℹ️ Project Info</span>
-                                    <input type="checkbox" id="toggle-project-info-cb" checked autocomplete="off" onchange="toggleNavTool('project-info-btn', this.checked)">
-                                    <div class="slider"></div>
-                                </label>
-                                <label class="ui-toggle">
-                                    <span class="settings-label-text">✨ Auto-Builder</span>
-                                    <input type="checkbox" id="toggle-auto-builder-cb" checked autocomplete="off" onchange="toggleNavTool('auto-builder-btn', this.checked)">
-                                    <div class="slider"></div>
-                                </label>
-                                <label class="ui-toggle">
-                                    <span class="settings-label-text">🤖 AI Agent</span>
-                                    <input type="checkbox" id="toggle-ai-agent-cb" checked autocomplete="off" onchange="toggleNavTool('ai-agent-btn', this.checked)">
-                                    <div class="slider"></div>
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-
+                    <!-- Automatically populated by settings.js -->
                 </div>
             </div>
 
@@ -402,13 +311,7 @@
                     <div style="display: flex; flex-direction: column; gap: 8px;">
                         <label class="neo-label">ARCHITECTURE</label>
                         <select id="elem-type" class="modern-select neo-sunken">
-                            <option value="living">Living Room</option>
-                            <option value="bedroom">Bedroom</option>
-                            <option value="toilet">Toilet</option>
-                            <option value="kitchen">Kitchen</option>
-                            <option value="puja">Puja Room</option>
-                            <option value="staircase">Staircase</option>
-                            <option value="balcony">Balcony</option>
+                            <!-- Populated by JS -->
                         </select>
                         <button class="neo-btn" onclick="addElement()">+ ADD ROOM</button>
                     </div>
@@ -416,10 +319,7 @@
                     <div style="display: flex; flex-direction: column; gap: 8px;">
                         <label class="neo-label">INTERIOR SCALE</label>
                         <select id="furn-type" class="modern-select neo-sunken">
-                            <option value="bed">🛏️ King Bed (6'x7')</option>
-                            <option value="sofa">🛋️ 3-Seater Sofa (7'x3')</option>
-                            <option value="dining">🍽️ Dining Table (6'x4')</option>
-                            <option value="wardrobe">🚪 Wardrobe (4'x2')</option>
+                            <!-- Populated by JS -->
                         </select>
                         <button class="neo-btn primary-green" onclick="addElement(document.getElementById('furn-type').value)">
                             + FURNITURE
@@ -538,13 +438,7 @@
         <!-- LEFT CANVAS (2D Engine & Overlays) -->
         <div id="canvas-wrapper" class="split-left">
             <!-- Context Menu -->
-            <div id="context-menu">
-                <div class="ctx-item" onclick="if(selectedElIndex !== -1) cloneElement(selectedElIndex)"><span>📋 Duplicate</span><span class="ctx-shortcut">Ctrl+D</span></div>
-                <div class="ctx-item" onclick="if(selectedElIndex !== -1) { elements[selectedElIndex].locked = !elements[selectedElIndex].locked; renderSidebar(); }"><span>🔒 Lock/Unlock</span><span class="ctx-shortcut">Ctrl+L</span></div>
-                <div class="ctx-item" onclick="if(selectedElIndex !== -1) rotateElement(selectedElIndex)"><span>🔄 Rotate</span></div>
-                <div style="height:1px; background:rgba(255,255,255,0.1); margin:4px 0;"></div>
-                <div class="ctx-item" onclick="if(selectedElIndex !== -1) deleteElement(selectedElIndex)" style="color:#ef4444;"><span>🗑️ Delete</span><span class="ctx-shortcut">Del</span></div>
-            </div>
+            <div id="context-menu"></div>
             <!-- 🌟 QUICK CONVERTER WIDGET (Top Left) -->
             <div id="qc-widget-wrapper" class="canvas-widget-top-left qc-wrapper">
                 
@@ -705,50 +599,11 @@
 
     </div> <!-- END MAIN WORKSPACE -->
 
-    <!-- ========================================== -->
-    <!-- 🌟 PRESENTATION CONTROLS (Pro Glass Pill)  -->
-    <!-- ========================================== -->
-    <!-- CLIENT SHOWCASE MODE
-    <button id="exit-showcase-btn" onclick="toggleShowcaseMode()">
-        ✕ EXIT PRESENTATION
-    </button>
-    <div id="presentation-controls" class="pres-controls-wrapper" style="display: none;">
-        
-        <div class="pres-sun-group">
-            <span class="pres-sun-icon dawn" title="Dawn">🌅</span>
-            <input type="range" id="sun-slider" class="pres-sun-slider" min="6" max="18" step="0.1" value="12" oninput="updateSunlight(this.value)">
-            <span class="pres-sun-icon dusk" title="Dusk">🌇</span>
-        </div>
-        <div class="pres-divider"></div>
-        <div class="pres-btn-group">
-            <button class="action-btn pres-btn waypoint-btn" onclick="captureWaypoint()">
-                📷 Set (<span id="wp-count">0</span>)
-            </button>
-            <button class="action-btn pres-btn play-btn" onclick="playCinematicTour()">
-                ▶️ Play
-            </button>
-            <button class="action-btn pres-btn clear-btn" onclick="clearTour()" title="Clear All">
-                🗑️
-            </button>
-        </div>
-        <div class="pres-divider"></div>
-        <div class="pres-btn-group">
-            <button class="neo-btn outline-cyan pres-btn showcase-btn" onclick="toggleShowcaseMode()">🎬SHOW</button>
-            <button id="btn-explode" class="neo-btn outline-cyan pres-btn showcase-btn" onclick="toggleExplodeView()">💥EXPLODE</button>
-        </div>
-    </div>
-     -->
-
-
-    <!-- ========================================== -->
-    <!-- 🌟 PRESENTATION CONTROLS (Pro Glass Pill)  -->
-    <!-- ========================================== -->
-    
+    <!-- 🌟 PRESENTATION CONTROLS (Pro Glass Pill) -->
     <!-- CLIENT SHOWCASE MODE -->
     <button id="exit-showcase-btn" onclick="toggleShowcaseMode()">
         ✕ EXIT PRESENTATION
     </button>
-    
     <div id="presentation-controls" class="pc-wrapper" style="display: none;">
         <!-- Sun Controls -->
         <div class="pc-sun-group">
@@ -780,83 +635,24 @@
             </button>
         </div>
     </div>
+    <!-- 🌟 PRESENTATION CONTROLS (Pro Glass Pill) -->
 
-
-
-
-
-
-
-
-
-
-
-
-    <!-- FLOATING SHORTCUT MENU -->
-    <button id="btn-cheat-sheet" class="neo-action-btn" onclick="toggleCheatSheet()">
-        <span class="icon">⌨️</span>
-        <span class="text">Shortcuts Guide</span>
+    <!--⌨️ FLOATING SHORTCUT MENU (Cheat Sheet) -->
+    <button id="btn-cheat-sheet" class="cs-action-btn" onclick="toggleCheatSheet()">
+        <span class="cs-icon">⌨️</span>
+        <span class="cs-text">Shortcuts Guide</span>
     </button>
-    <div id="cheat-sheet-panel" class="neo-panel">
-        <div class="neo-panel-header">
+    <div id="cheat-sheet-panel" class="cs-panel">
+        <div class="cs-panel-header">
             <h2>⌨️ KEYBOARD SHORTCUTS</h2>
-            <button class="neo-minimize-btn" onclick="toggleCheatSheet()">✕</button>
+            <button class="cs-minimize-btn" onclick="toggleCheatSheet()">✕</button>
         </div>
-        <div class="neo-divider"></div>
-        
-        <div class="cheat-sheet-scroll">
-            <span class="neo-label" style="color: #38bdf8; margin-top: 5px;">GENERAL EDITING</span>
-            
-            <div class="cheat-sheet-row">
-                <span class="cheat-sheet-desc">Copy / Paste</span>
-                <span class="ctx-shortcut" style="color: #38bdf8;">Ctrl+C / Ctrl+V</span>
-            </div>
-            <div class="cheat-sheet-row">
-                <span class="cheat-sheet-desc">Undo Action</span>
-                <span class="ctx-shortcut" style="color: #38bdf8;">Ctrl+Z</span>
-            </div>
-            <div class="cheat-sheet-row">
-                <span class="cheat-sheet-desc">Duplicate Room</span>
-                <span class="ctx-shortcut" style="color: #38bdf8;">Ctrl+D</span>
-            </div>
-            <div class="cheat-sheet-row">
-                <span class="cheat-sheet-desc">Lock/Unlock</span>
-                <span class="ctx-shortcut" style="color: #38bdf8;">Ctrl+L</span>
-            </div>
-            <div class="cheat-sheet-row">
-                <span class="cheat-sheet-desc">Delete Item</span>
-                <span class="ctx-shortcut" style="color: #ef4444;">Del / Bksp</span>
-            </div>
-            
-            <div class="neo-divider" style="margin: 5px 0;"></div>
-            <span class="neo-label" style="color: #10b981;">2D CANVAS CONTROLS</span>
-            
-            <div class="cheat-sheet-row">
-                <span class="cheat-sheet-desc">Pan View</span>
-                <span class="ctx-shortcut" style="color: #10b981;">Hold Space</span>
-            </div>
-            <div class="cheat-sheet-row">
-                <span class="cheat-sheet-desc">Zoom In / Out</span>
-                <span class="ctx-shortcut" style="color: #10b981;">Mouse Scroll</span>
-            </div>
-            <div class="cheat-sheet-row">
-                <span class="cheat-sheet-desc">Straight Line Drag</span>
-                <span class="ctx-shortcut" style="color: #10b981;">Shift + Drag</span>
-            </div>
-            <div class="cheat-sheet-row">
-                <span class="cheat-sheet-desc">Nudge Item</span>
-                <span class="ctx-shortcut" style="color: #10b981;">Arrow Keys</span>
-            </div>
-            
-            <div class="neo-divider" style="margin: 5px 0;"></div>
-            <span class="neo-label" style="color: #f59e0b;">DRONE MODE (3D)</span>
-            
-            <div class="cheat-sheet-row">
-                <span class="cheat-sheet-desc">Fly / Navigate</span>
-                <span class="ctx-shortcut" style="color: #f59e0b;">WASD + QE</span>
-            </div>
+        <div class="cs-divider"></div>
+        <div id="cs-dynamic-content" class="cs-scroll">
         </div>
     </div>
+    <!--⌨️ FLOATING SHORTCUT MENU (Cheat Sheet) -->
+
 
     <script src="js/event.js"></script>
     <script src="secrets.js"></script>
@@ -888,6 +684,7 @@
     <!-- <script src="js/presentation.js"></script> -->
     <script src="js/onboarding.js"></script>
     <script src="js/app.js"></script>
+    <script src="js/contextmenu.js"></script>
 
 </body>
 </html>

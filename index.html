@@ -27,7 +27,7 @@
     <link rel="stylesheet" href="css/studio.css">
     <!-- <link rel="stylesheet" href="css/tour.css"> -->
     <link rel="stylesheet" href="css/advanced3d.css">
-    <link rel="stylesheet" href="css/onboarding.css">
+    <!-- <link rel="stylesheet" href="css/onboarding.css"> -->
     <link rel="stylesheet" href="css/export.css">
 </head>
 <body>
@@ -402,13 +402,7 @@
                     <div style="display: flex; flex-direction: column; gap: 8px;">
                         <label class="neo-label">ARCHITECTURE</label>
                         <select id="elem-type" class="modern-select neo-sunken">
-                            <option value="living">Living Room</option>
-                            <option value="bedroom">Bedroom</option>
-                            <option value="toilet">Toilet</option>
-                            <option value="kitchen">Kitchen</option>
-                            <option value="puja">Puja Room</option>
-                            <option value="staircase">Staircase</option>
-                            <option value="balcony">Balcony</option>
+                            <!-- Populated by JS -->
                         </select>
                         <button class="neo-btn" onclick="addElement()">+ ADD ROOM</button>
                     </div>
@@ -416,10 +410,7 @@
                     <div style="display: flex; flex-direction: column; gap: 8px;">
                         <label class="neo-label">INTERIOR SCALE</label>
                         <select id="furn-type" class="modern-select neo-sunken">
-                            <option value="bed">🛏️ King Bed (6'x7')</option>
-                            <option value="sofa">🛋️ 3-Seater Sofa (7'x3')</option>
-                            <option value="dining">🍽️ Dining Table (6'x4')</option>
-                            <option value="wardrobe">🚪 Wardrobe (4'x2')</option>
+                            <!-- Populated by JS -->
                         </select>
                         <button class="neo-btn primary-green" onclick="addElement(document.getElementById('furn-type').value)">
                             + FURNITURE
@@ -538,13 +529,7 @@
         <!-- LEFT CANVAS (2D Engine & Overlays) -->
         <div id="canvas-wrapper" class="split-left">
             <!-- Context Menu -->
-            <div id="context-menu">
-                <div class="ctx-item" onclick="if(selectedElIndex !== -1) cloneElement(selectedElIndex)"><span>📋 Duplicate</span><span class="ctx-shortcut">Ctrl+D</span></div>
-                <div class="ctx-item" onclick="if(selectedElIndex !== -1) { elements[selectedElIndex].locked = !elements[selectedElIndex].locked; renderSidebar(); }"><span>🔒 Lock/Unlock</span><span class="ctx-shortcut">Ctrl+L</span></div>
-                <div class="ctx-item" onclick="if(selectedElIndex !== -1) rotateElement(selectedElIndex)"><span>🔄 Rotate</span></div>
-                <div style="height:1px; background:rgba(255,255,255,0.1); margin:4px 0;"></div>
-                <div class="ctx-item" onclick="if(selectedElIndex !== -1) deleteElement(selectedElIndex)" style="color:#ef4444;"><span>🗑️ Delete</span><span class="ctx-shortcut">Del</span></div>
-            </div>
+            <div id="context-menu"></div>
             <!-- 🌟 QUICK CONVERTER WIDGET (Top Left) -->
             <div id="qc-widget-wrapper" class="canvas-widget-top-left qc-wrapper">
                 
@@ -790,6 +775,7 @@
     <!-- <script src="js/presentation.js"></script> -->
     <script src="js/onboarding.js"></script>
     <script src="js/app.js"></script>
+    <script src="js/contextmenu.js"></script>
 
 </body>
 </html>

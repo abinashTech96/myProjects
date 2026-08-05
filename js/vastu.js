@@ -175,7 +175,7 @@ document.head.insertAdjacentHTML("beforeend", `<style>${vastuStyles}</style>`);
 // 2. ENGINE LOGIC & CONTROLLER
 // ==========================================
 const VastuEngine = {
-    
+    REQUIRE_HTML_CONTAINER: true,
     // Core compass mathematics[cite: 4]
     getDynamicZone: function(cx, cy, plotW, plotH, topDirection) {
         const centerX = plotW / 2;
@@ -202,7 +202,6 @@ const VastuEngine = {
         const index = Math.floor(((normalizedAngle + 11.25) % 360) / 22.5);
         return zones[index];
     },
-
     calculate: function(elements) {
         let score = 0;
         let warnings = [];
@@ -246,21 +245,20 @@ const VastuEngine = {
         score = Math.max(0, Math.min(100, score));
         return { score, warnings, text: warnings.length > 0 ? warnings[0] : "Good overall spatial flow." };
     },
-
     toggleUI: function() {
         const widget = document.getElementById('vastu-widget');
         if (widget) widget.classList.toggle('minimized');
     },
-
     renderUI: function(elementsData) {
         const data = this.calculate(elementsData);
         let widget = document.getElementById('vastu-widget');
-        
         // Initialize widget container if it doesn't exist
         if (!widget) {
+            // Abort if strict HTML is required
+            if (this.REQUIRE_HTML_CONTAINER) return;             
+            // Otherwise, auto-generate the fallback div
             widget = document.createElement('div');
             widget.id = 'vastu-widget';
-            // Defaults to minimized so it doesn't crowd the screen immediately
             widget.className = 'minimized';
             const canvasWrapper = document.getElementById('canvas-wrapper');
             (canvasWrapper || document.body).appendChild(widget);

@@ -10,25 +10,14 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/BufferGeometryUtils.js"></script>
 
     <link rel="stylesheet" href="css/style.css">
-    <!-- <link rel="stylesheet" href="css/layout.css"> -->
     <link rel="stylesheet" href="css/workspace.css">
     <link rel="stylesheet" href="css/navbar.css">
     <link rel="stylesheet" href="css/navbarDrawerTabbed.css">
     <link rel="stylesheet" href="css/sidebar.css">
     <link rel="stylesheet" href="css/settings.css">
     <link rel="stylesheet" href="css/presentationcontrols.css">
-    <!-- <link rel="stylesheet" href="css/presentation.css"> -->
-    <link rel="stylesheet" href="css/camera.css">
-    <link rel="stylesheet" href="css/converter.css">
-    <!-- <link rel="stylesheet" href="css/compliance.css">
-    <link rel="stylesheet" href="css/vastu.css"> -->
-    <link rel="stylesheet" href="css/cheatsheet.css">
-    <!-- <link rel="stylesheet" href="css/parapet.css"> -->
     <link rel="stylesheet" href="css/studio.css">
-    <!-- <link rel="stylesheet" href="css/tour.css"> 
-    <link rel="stylesheet" href="css/advanced3d.css">
-    <!-- <link rel="stylesheet" href="css/onboarding.css"> 
-    <link rel="stylesheet" href="css/export.css">-->
+    <link rel="stylesheet" href="css/converter.css">
 </head>
 <body>
 
@@ -179,7 +168,6 @@
                         <label>Depth:</label>
                         <input type="number" id="inH" value="417" oninput="updateCanvas()">
                     </div>
-                    <!--here-->
                     <div class="field">
                         <label>Main Road Placement:</label>
                         <select id="roadSide" onchange="updateCanvas()" class="modern-select">
@@ -439,102 +427,20 @@
             <!-- Context Menu -->
             <div id="context-menu"></div>
             <!-- 🌟 QUICK CONVERTER WIDGET (Top Left) -->
-            <div id="qc-widget-wrapper" class="canvas-widget-top-left qc-wrapper">
-                
-                <!-- Minimized Micro-Input Pill -->
-                <div id="qc-min-btn" class="qc-min-btn">
-                    <button onclick="toggleQuickConverter()" style="background:transparent; border:none; cursor:pointer; padding:0; display:flex;" title="Maximize Converter">
-                        <span class="icon" style="font-size: 1.1rem; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">📏</span>
-                    </button>
-                    <div style="display:flex; align-items:center; gap:2px; margin-left:6px;">
-                        <!-- Tiny Feet Input -->
-                        <input type="number" id="minFt" class="qc-min-input" placeholder="0" oninput="document.getElementById('calcFt').value = this.value; calcInches();">
-                        <span style="color:#94a3b8; font-weight:bold;">'</span>
-                        
-                        <!-- Tiny Inches Input -->
-                        <input type="number" id="minIn" class="qc-min-input" placeholder="0" oninput="document.getElementById('calcIn').value = this.value; calcInches();">
-                        <span style="color:#94a3b8; font-weight:bold;">"</span>
-                        
-                        <span style="color:#38bdf8; margin: 0 4px; font-weight:bold;">=</span>
-                        <span id="qc-min-text" style="color:#f8fafc; font-family:monospace; font-weight:bold; font-size:0.9rem;">0"</span>
-                    </div>
-                </div>
-                
-                <!-- Maximized Full Widget (Uses your original .sidebar-converter class!) -->
-                <div id="qc-full-widget" class="sidebar-converter">
-                    <div class="converter-header">
-                        <div><span class="icon">📏</span> QUICK CONVERTER</div>
-                        <button onclick="toggleQuickConverter()" title="Minimize Converter" class="converter-close-btn">&times;</button>
-                    </div>
-                    <div class="converter-row">
-                        <div class="converter-input-group">
-                            <input type="number" id="calcFt" placeholder="0" oninput="calcInches()">
-                            <span class="unit">FT</span>
-                        </div>
-                        <div class="converter-input-group">
-                            <input type="number" id="calcIn" placeholder="0" oninput="calcInches()">
-                            <span class="unit">IN</span>
-                        </div>
-                        <span class="converter-equals">=</span>
-                        <div class="converter-input-group result-group">
-                            <input type="text" id="resIn" placeholder="Total" readonly>
-                            <span class="unit">IN</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <div id="qc-widget-wrapper" class="canvas-widget-top-left qc-wrapper"></div>
 
             <!-- ✨ NEW: COMPLIANCE DASHBOARD WIDGET -->
             <div id="compliance-widget">
                 <div class="compliance-waiting">Waiting for compliance scan...</div>
             </div>
-        
-            <!-- VASTU SCORE block 
-            <div id="vastu-floating-widget" class="canvas-widget-bottom-left neo-sunken vastu-widget">
-                <div class="vastu-header">
-                    <span class="vastu-title">🧭 VASTU SCORE</span>
-                    <div class="vastu-header-controls">
-                        <span id="vastu-score-badge" class="vastu-badge">0/100</span>
-                        <button id="vastu-toggle-btn" class="vastu-toggle-btn" onclick="toggleVastuWidget()" title="Minimize/Maximize">
-                            —
-                        </button>
-                    </div>
-                </div>
-                <div id="vastu-content" class="vastu-content">
-                    <div id="vastu-ring" class="vastu-ring">
-                        <div id="vastu-circle-text" class="vastu-circle-text">0</div>
-                    </div>
-                    <div id="vastu-feedback-text" class="vastu-feedback-text">
-                        Add rooms to calculate Vastu.
-                    </div>
-                </div>
-            </div>
--->
-            <!-- 🌟 GREEN SQUIRCLE CAMERA CONTROLS -->
-            <div id="camera-controls" class="cam-bar-wrapper">
-                
-                <!-- Pan Controls (Pops up when camera is clicked) -->
-                <div class="cam-pan-popout">
-                    <button class="cam-squircle-btn pan-dir up" onclick="panCamera(0, 50)" title="Pan Up">▲</button>
-                    <button class="cam-squircle-btn pan-dir left" onclick="panCamera(50, 0)" title="Pan Left">◄</button>
-                    <button class="cam-squircle-btn pan-center" onclick="resetCamera()" title="Reset Camera">⚪</button>
-                    <button class="cam-squircle-btn pan-dir right" onclick="panCamera(-50, 0)" title="Pan Right">►</button>
-                    <button class="cam-squircle-btn pan-dir down" onclick="panCamera(0, -50)" title="Pan Down">▼</button>
-                </div>
 
-                <!-- Main Bottom Bar -->
-                <div class="cam-main-bar">
-                    <button class="cam-squircle-btn cam-zoom-btn" onclick="zoomCamera(1.2)" title="Zoom In">➕</button>
-                    
-                    <!-- The Clickable Camera Toggle -->
-                    <button class="cam-squircle-btn cam-toggle-btn" onclick="document.getElementById('camera-controls').classList.toggle('open')" title="Toggle Pan Controls">
-                        <span class="cam-icon">🎥</span>
-                        <span class="close-icon">✕</span>
-                    </button>
-                    
-                    <button class="cam-squircle-btn cam-zoom-btn" onclick="zoomCamera(0.8)" title="Zoom Out">➖</button>
-                </div>
+            <!--VASTU_WIDGET -->
+            <div id="vastu-widget" class="minimized">
+                <div class="vastu-waiting" style="padding: 10px; color: #94a3b8; font-size: 0.75rem; text-align: center;">Waiting for Vastu scan...</div>
             </div>
+
+            <!-- 🌟 GREEN SQUIRCLE CAMERA CONTROLS -->
+            <div id="camera-controls"></div>
             
             <!-- ROOM TOOLTIP -->
             <div id="room-tooltip" style="position: absolute; display: none; background: rgba(15, 23, 42, 0.9); color: #f8fafc; padding: 8px; border-radius: 6px; border: 1px solid #38bdf8; pointer-events: none; z-index: 1000; font-size: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);"></div>
@@ -574,7 +480,6 @@
             <div style="text-align: center;">
                 <span style="font-size: 3rem; opacity: 0.2;">🏗️</span>
                 <h3 style="color: #64748b; font-family: monospace; margin-top: 15px;">RIGHT CANVAS PLACEHOLDER</h3>
-                <p style="color: #475569; font-size: 0.75rem;">(Ready for future development)</p>
             </div>
 
             <div id="three-container" 
@@ -637,20 +542,7 @@
     <!-- 🌟 PRESENTATION CONTROLS (Pro Glass Pill) -->
 
     <!--⌨️ FLOATING SHORTCUT MENU (Cheat Sheet) -->
-    <button id="btn-cheat-sheet" class="cs-action-btn" onclick="toggleCheatSheet()">
-        <span class="cs-icon">⌨️</span>
-        <span class="cs-text">Shortcuts Guide</span>
-    </button>
-    <div id="cheat-sheet-panel" class="cs-panel">
-        <div class="cs-panel-header">
-            <h2>⌨️ KEYBOARD SHORTCUTS</h2>
-            <button class="cs-minimize-btn" onclick="toggleCheatSheet()">✕</button>
-        </div>
-        <div class="cs-divider"></div>
-        <div id="cs-dynamic-content" class="cs-scroll">
-        </div>
-    </div>
-    <!--⌨️ FLOATING SHORTCUT MENU (Cheat Sheet) -->
+    <div id="cheatsheet-widget"></div>
 
 
     <script src="js/event.js"></script>
@@ -676,11 +568,9 @@
     <script src="js/studio.js"></script>
     <script src="js/parapet.js"></script>
     <script src="js/advanced3d.js"></script>
-    <!-- <script src="js/tour.js"></script> -->
     <script src="js/elevation.js"></script>
     <script src="js/export.js"></script>
     <script src="js/presentationcontrols.js"></script>
-    <!-- <script src="js/presentation.js"></script> -->
     <script src="js/onboarding.js"></script>
     <script src="js/app.js"></script>
     <script src="js/contextmenu.js"></script>

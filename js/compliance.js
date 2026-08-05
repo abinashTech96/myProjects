@@ -171,6 +171,7 @@ document.head.insertAdjacentHTML("beforeend", `<style>${complianceStyles}</style
 
 // 2. ENGINE LOGIC & CONTROLLER
 const ComplianceEngine = {
+    REQUIRE_HTML_CONTAINER: true,
     RULES: {
         bedroom: { minAreaSqft: 70, minDimInches: 84, requiresEgress: true }, // 84 inches = 7'0"
         living: { minAreaSqft: 120, minDimInches: 84, requiresEgress: true },
@@ -244,6 +245,9 @@ const ComplianceEngine = {
         let widget = document.getElementById('compliance-widget');
         
         if (!widget) {
+            // Abort if strict HTML is required
+            if (this.REQUIRE_HTML_CONTAINER) return;            
+            // Otherwise, auto-generate the fallback div
             widget = document.createElement('div');
             widget.id = 'compliance-widget';
             const canvasWrapper = document.getElementById('canvas-wrapper');

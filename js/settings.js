@@ -12,7 +12,8 @@ const SETTINGS_CONFIG = [
             { type: 'toggle', id: 'toggle-qc-cb', label: '📏 Quick Converter', checked: true, action: "window.toggleWidget('qc-widget-wrapper', this.checked)" },
             { type: 'toggle', id: 'toggle-camera-cb', label: '📷 Camera Controls', checked: true, action: "window.toggleWidget('camera-controls', this.checked)" },
             { type: 'toggle', id: 'toggle-compliance-cb', label: '✅ Code Inspector', checked: true, action: "window.toggleWidget('compliance-widget', this.checked)" },
-            { type: 'toggle', id: 'toggle-vastu-cb', label: '🧭 Vastu Score', checked: true, action: "window.toggleWidget('vastu-floating-widget', this.checked)" },
+            // { type: 'toggle', id: 'toggle-vastu-cb', label: '🧭 Vastu Score', checked: true, action: "window.toggleWidget('vastu-floating-widget', this.checked)" },
+            { type: 'toggle', id: 'toggle-vastu-cb', label: '🧭 Vastu Score', checked: true, action: "window.toggleWidget('vastu-widget', this.checked)" },
             { type: 'toggle', id: 'toggle-cheatsheet-cb', label: '⌨️ Shortcuts Guide', checked: true, action: "if(typeof toggleCheatSheet === 'function') { const btn = document.getElementById('btn-cheat-sheet'); if(btn) btn.style.display = this.checked ? '' : 'none'; }" }
         ]
     },

@@ -1,6 +1,11 @@
 // =========================================
 // ⏳ PHASE 3: DELTA STATE MANAGEMENT (state.js)
+// Modular Architecture
 // =========================================
+
+// -----------------------------------------
+// 1. CORE STATE & HISTORY MANAGER
+// -----------------------------------------
 const ProjectState = {
     data: {
         elements: [],
@@ -144,7 +149,6 @@ const ProjectState = {
 
             this.data.elements = this._clone(restoredState.elements);
             this.data.fixtures = this._clone(restoredState.fixtures);
-            // 🐛 BUG FIX: Validate selected index to prevent 2D renderer crashes
             if (this.data.selectedElIndex >= this.data.elements.length) {
                 this.data.selectedElIndex = -1;
             }
@@ -160,7 +164,6 @@ const ProjectState = {
             const restoredState = this._buildStateFromHistory(this.history.stack.length - 1);
             this.data.elements = this._clone(restoredState.elements);
             this.data.fixtures = this._clone(restoredState.fixtures);
-            // 🐛 BUG FIX: Validate selected index
             if (this.data.selectedElIndex >= this.data.elements.length) {
                 this.data.selectedElIndex = -1;
             }
@@ -187,7 +190,6 @@ const ProjectState = {
         const el = this.data.elements[idx];
         const elName = el ? (el.customName || el.type.toUpperCase()) : "Element";
         
-        // 🧱 Use the new commit pattern for deletion!
         this.commit(`Deleted ${elName}`, () => {
             this.data.elements.splice(idx, 1);
             this.data.fixtures = this.data.fixtures.filter(f => f.roomId !== idx);
@@ -198,21 +200,16 @@ const ProjectState = {
         });
     },
 
-    // 🧱 The Secure State Mutator
     commit(actionName, mutationCallback) {
-        // 1. Save the state BEFORE the mutation happens
-        this.saveState(actionName);
-        
-        // 2. Execute the data mutation (updates elements/fixtures)
         mutationCallback();
-        
-        // 3. Alert the rest of the app to re-render
+        this.saveState(actionName);
         if (typeof AppEvents !== 'undefined') {
             AppEvents.triggerStateChange();
         }
     }
 };
 
+// Map Global Variables to the State Manager
 ['elements', 'fixtures', 'currentFloor', 'globalCompassDir', 'selectedElIndex'].forEach(key => {
     Object.defineProperty(window, key, {
         get: () => ProjectState.data[key],
@@ -224,176 +221,220 @@ Object.defineProperty(window, 'clipboard', {
     set: (value) => { ProjectState.history.clipboard = value; }
 });
 
-// =========================================
-// 💾 ASYNC INDEXED-DB STORAGE ENGINE
-// =========================================
-const DB_NAME = 'ArchCAD_Storage';
-const STORE_NAME = 'autosaves';
 
-function initDB() {
-    return new Promise((resolve, reject) => {
-        const request = indexedDB.open(DB_NAME, 1);
-        request.onupgradeneeded = (e) => e.target.result.createObjectStore(STORE_NAME);
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
-    });
-}
-async function saveToMemory() {
-    const data = {
-        elements: elements, fixtures: fixtures,
-        inW: document.getElementById('inW')?.value || 278,
-        inH: document.getElementById('inH')?.value || 417,
-        floors: document.getElementById('b-floors')?.value || 1
-    };
-    
-    try {
-        const db = await initDB();
-        const tx = db.transaction(STORE_NAME, 'readwrite');
-        tx.objectStore(STORE_NAME).put(data, 'latest_session');
-    } catch (e) {
-        console.warn("Async save failed. Falling back to LocalStorage.", e);
-        localStorage.setItem('ArchCAD_AutoSave', JSON.stringify(data));
-    }
-}
-async function loadFromMemory() {
-    try {
-        const db = await initDB();
-        const tx = db.transaction(STORE_NAME, 'readonly');
-        const request = tx.objectStore(STORE_NAME).get('latest_session');
-        
-        request.onsuccess = () => {
-            const data = request.result;
-            if (!data && !localStorage.getItem('ArchCAD_AutoSave')) return; 
-            const wantsToRestore = confirm("💾 A previous session was found.\n\nWould you like to restore your last design?");
-            if (wantsToRestore) {
-                const finalData = data || JSON.parse(localStorage.getItem('ArchCAD_AutoSave'));
-                if (finalData && finalData.elements && finalData.elements.length > 0) {
-                    elements = finalData.elements;
-                    fixtures = finalData.fixtures || [];
-                    if (finalData.inW && document.getElementById('inW')) document.getElementById('inW').value = finalData.inW;
-                    if (finalData.inH && document.getElementById('inH')) document.getElementById('inH').value = finalData.inH;
-                    let maxFloor = 0;
-                    elements.forEach(el => { if (el.floor > maxFloor) maxFloor = el.floor; });
-                    if (document.getElementById('b-floors')) document.getElementById('b-floors').value = maxFloor + 1;
-                    if (typeof setFloor === 'function') setFloor(currentFloor || 0);
-                    if (typeof renderSidebar === 'function') renderSidebar();
-                    if (typeof updateCanvas === 'function') updateCanvas(false); 
+// -----------------------------------------
+// 2. STORAGE ENGINE (IndexedDB & Auto-Save)
+// -----------------------------------------
+const StorageEngine = {
+    DB_NAME: 'ArchCAD_Storage',
+    STORE_NAME: 'autosaves',
+    dbNeedsSave: false,
+
+    initDB() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open(this.DB_NAME, 1);
+            request.onupgradeneeded = (e) => e.target.result.createObjectStore(this.STORE_NAME);
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    },
+
+    async saveToMemory() {
+        const data = {
+            elements: elements, fixtures: fixtures,
+            inW: document.getElementById('inW')?.value || 278,
+            inH: document.getElementById('inH')?.value || 417,
+            floors: document.getElementById('b-floors')?.value || 1
+        };
+        try {
+            const db = await this.initDB();
+            const tx = db.transaction(this.STORE_NAME, 'readwrite');
+            tx.objectStore(this.STORE_NAME).put(data, 'latest_session');
+        } catch (e) {
+            console.warn("Async save failed. Falling back to LocalStorage.", e);
+            localStorage.setItem('ArchCAD_AutoSave', JSON.stringify(data));
+        }
+    },
+
+    async loadFromMemory() {
+        try {
+            const db = await this.initDB();
+            const tx = db.transaction(this.STORE_NAME, 'readonly');
+            const request = tx.objectStore(this.STORE_NAME).get('latest_session');
+            
+            request.onsuccess = () => {
+                const data = request.result;
+                if (!data && !localStorage.getItem('ArchCAD_AutoSave')) return; 
+                const wantsToRestore = confirm("💾 A previous session was found.\n\nWould you like to restore your last design?");
+                if (wantsToRestore) {
+                    const finalData = data || JSON.parse(localStorage.getItem('ArchCAD_AutoSave'));
+                    if (finalData && finalData.elements && finalData.elements.length > 0) {
+                        elements = finalData.elements;
+                        fixtures = finalData.fixtures || [];
+                        if (finalData.inW && document.getElementById('inW')) document.getElementById('inW').value = finalData.inW;
+                        if (finalData.inH && document.getElementById('inH')) document.getElementById('inH').value = finalData.inH;
+                        let maxFloor = 0;
+                        elements.forEach(el => { if (el.floor > maxFloor) maxFloor = el.floor; });
+                        if (document.getElementById('b-floors')) document.getElementById('b-floors').value = maxFloor + 1;
+                        if (typeof setFloor === 'function') setFloor(currentFloor || 0);
+                        if (typeof renderSidebar === 'function') renderSidebar();
+                        if (typeof updateCanvas === 'function') updateCanvas(false); 
+                    }
+                } else {
+                    db.transaction(this.STORE_NAME, 'readwrite').objectStore(this.STORE_NAME).delete('latest_session');
+                    localStorage.removeItem('ArchCAD_AutoSave');
                 }
-            } else {
-                db.transaction(STORE_NAME, 'readwrite').objectStore(STORE_NAME).delete('latest_session');
-                localStorage.removeItem('ArchCAD_AutoSave');
+            };
+        } catch (e) { 
+            console.error("Async load failed.", e); 
+        }
+    },
+
+    async resetWorkspace() {
+        if (confirm("⚠️ This will completely erase your building. Continue?")) {
+            if (typeof clearTextureCache === 'function') clearTextureCache();
+            elements = []; fixtures = []; currentFloor = 0;
+            ProjectState.history.baseState = null; 
+            ProjectState.history.stack = [];
+            ProjectState.history.redoStack = [];
+            if(document.getElementById('inW')) document.getElementById('inW').value = 278;
+            if(document.getElementById('inH')) document.getElementById('inH').value = 417;
+            if(document.getElementById('b-floors')) document.getElementById('b-floors').value = 1;
+            try {
+                const db = await this.initDB();
+                db.transaction(this.STORE_NAME, 'readwrite').objectStore(this.STORE_NAME).delete('latest_session');
+            } catch(e) {}
+            localStorage.removeItem('ArchCAD_AutoSave');
+            if (typeof renderFloorSelectors === 'function') renderFloorSelectors();
+            if (typeof setFloor === 'function') setFloor(0);
+            if (typeof updateCanvas === 'function') updateCanvas();
+            if (typeof generate3DModel === 'function') generate3DModel();
+        }
+    },
+
+    markDirty() {
+        this.dbNeedsSave = true;
+    },
+
+    startThrottler() {
+        setInterval(() => {
+            if (this.dbNeedsSave) {
+                this.saveToMemory();
+                this.dbNeedsSave = false;
+                console.log("💾 Throttled Auto-Save Complete.");
+            }
+        }, 5000);
+    }
+};
+StorageEngine.startThrottler();
+
+
+// -----------------------------------------
+// 3. PROJECT FILE I/O (JSON Import/Export)
+// -----------------------------------------
+const ProjectIO = {
+    exportJSON() {
+        const projectData = {
+            version: "1.2",
+            timestamp: new Date().toISOString(),
+            floorCount: parseInt(document.getElementById('b-floors')?.value) || 1,
+            elements: elements, fixtures: fixtures,
+            plot: {
+                inW: document.getElementById('inW')?.value,
+                inH: document.getElementById('inH')?.value,
+                aL: document.getElementById('aL')?.value, aU: document.getElementById('aU')?.value,
+                bR: document.getElementById('bR')?.value, bU: document.getElementById('bU')?.value,
+                cR: document.getElementById('cR')?.value, cD: document.getElementById('cD')?.value,
+                dL: document.getElementById('dL')?.value, dD: document.getElementById('dD')?.value,
+                roadSide: document.getElementById('roadSide')?.value
             }
         };
-    } catch (e) { 
-        console.error("Async load failed.", e); 
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(projectData, null, 2));
+        const downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute("href", dataStr);
+        downloadAnchorNode.setAttribute("download", "ArchCAD_Project_" + Math.floor(Date.now() / 1000) + ".json");
+        document.body.appendChild(downloadAnchorNode);
+        downloadAnchorNode.click();
+        downloadAnchorNode.remove();
+    },
+
+    importJSON(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const importedData = JSON.parse(e.target.result);
+                if (!importedData.elements) return alert("Invalid project file.");
+                elements = importedData.elements;
+                fixtures = importedData.fixtures || [];
+
+                // Completely reset the history stack for the newly imported file
+                if (typeof ProjectState !== 'undefined') {
+                    ProjectState.history.stack = [];
+                    ProjectState.history.redoStack = [];
+                    ProjectState.history.baseState = ProjectState._clone({ elements, fixtures });
+                    if (typeof renderTimeMachine === 'function') renderTimeMachine();
+                }
+
+                const maxFloor = elements.reduce((max, el) => Math.max(max, el.floor || 0), 0);
+                const calculatedFloors = maxFloor + 1;
+                const finalFloorCount = Math.max(importedData.floorCount || 1, calculatedFloors);
+                if (document.getElementById('b-floors')) {
+                    document.getElementById('b-floors').value = finalFloorCount;
+                }
+                if (importedData.plot) {
+                    const p = importedData.plot;
+                    const setVal = (id, val) => { if(document.getElementById(id)) document.getElementById(id).value = val; };
+                    setVal('inW', p.inW); setVal('inH', p.inH);
+                    setVal('aL', p.aL); setVal('aU', p.aU);
+                    setVal('bR', p.bR); setVal('bU', p.bU);
+                    setVal('cR', p.cR); setVal('cD', p.cD);
+                    setVal('dL', p.dL); setVal('dD', p.dD);
+                    setVal('roadSide', p.roadSide || 'none');
+                }
+                if (typeof renderFloorSelectors === 'function') renderFloorSelectors();
+                
+                currentFloor = 0; 
+                selectedElIndex = -1;
+                
+                if (typeof renderSidebar === 'function') renderSidebar();
+                if (typeof updateCanvas === 'function') updateCanvas(false);
+                setTimeout(() => {
+                    if (typeof generate3DModel === 'function') generate3DModel();
+                    alert("✅ Project loaded successfully!");
+                }, 100);
+                document.getElementById('importFile').value = ''; 
+            } catch (error) { alert("Error parsing file: " + error.message); }
+        };
+        reader.readAsText(file);
     }
-}
-async function resetWorkspace() {
-    if (confirm("⚠️ This will completely erase your building. Continue?")) {
-        if (typeof clearTextureCache === 'function') clearTextureCache();
-        elements = []; fixtures = []; currentFloor = 0;
-        ProjectState.history.baseState = null; 
-        ProjectState.history.stack = [];
-        if(document.getElementById('inW')) document.getElementById('inW').value = 278;
-        if(document.getElementById('inH')) document.getElementById('inH').value = 417;
-        if(document.getElementById('b-floors')) document.getElementById('b-floors').value = 1;
-        try {
-            const db = await initDB();
-            db.transaction(STORE_NAME, 'readwrite').objectStore(STORE_NAME).delete('latest_session');
-        } catch(e) {}
-        localStorage.removeItem('ArchCAD_AutoSave');
-        if (typeof renderFloorSelectors === 'function') renderFloorSelectors();
-        if (typeof setFloor === 'function') setFloor(0);
-        if (typeof updateCanvas === 'function') updateCanvas();
-        if (typeof generate3DModel === 'function') generate3DModel();
-    }
-}
-// --- JSON EXPORT / IMPORT ---
-function exportJSON() {
-    const projectData = {
-        version: "1.2",
-        timestamp: new Date().toISOString(),
-        floorCount: parseInt(document.getElementById('b-floors')?.value) || 1,
-        elements: elements, fixtures: fixtures,
-        plot: {
-            inW: document.getElementById('inW')?.value,
-            inH: document.getElementById('inH')?.value,
-            aL: document.getElementById('aL')?.value, aU: document.getElementById('aU')?.value,
-            bR: document.getElementById('bR')?.value, bU: document.getElementById('bU')?.value,
-            cR: document.getElementById('cR')?.value, cD: document.getElementById('cD')?.value,
-            dL: document.getElementById('dL')?.value, dD: document.getElementById('dD')?.value,
-            roadSide: document.getElementById('roadSide')?.value
-        }
-    };
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(projectData, null, 2));
-    const downloadAnchorNode = document.createElement('a');
-    downloadAnchorNode.setAttribute("href", dataStr);
-    downloadAnchorNode.setAttribute("download", "ArchCAD_Project_" + Math.floor(Date.now() / 1000) + ".json");
-    document.body.appendChild(downloadAnchorNode);
-    downloadAnchorNode.click();
-    downloadAnchorNode.remove();
-}
-function importJSON(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        try {
-            const importedData = JSON.parse(e.target.result);
-            if (!importedData.elements) return alert("Invalid project file.");
-            elements = importedData.elements;
-            fixtures = importedData.fixtures || [];
-            const maxFloor = elements.reduce((max, el) => Math.max(max, el.floor || 0), 0);
-            const calculatedFloors = maxFloor + 1;
-            const finalFloorCount = Math.max(importedData.floorCount || 1, calculatedFloors);
-            if (document.getElementById('b-floors')) {
-                document.getElementById('b-floors').value = finalFloorCount;
-            }
-            if (importedData.plot) {
-                const p = importedData.plot;
-                const setVal = (id, val) => { if(document.getElementById(id)) document.getElementById(id).value = val; };
-                setVal('inW', p.inW); setVal('inH', p.inH);
-                setVal('aL', p.aL); setVal('aU', p.aU);
-                setVal('bR', p.bR); setVal('bU', p.bU);
-                setVal('cR', p.cR); setVal('cD', p.cD);
-                setVal('dL', p.dL); setVal('dD', p.dD);
-                setVal('roadSide', p.roadSide || 'none');
-            }
-            if (typeof renderFloorSelectors === 'function') renderFloorSelectors();
-            setFloor(0); selectedElIndex = -1;
-            if (typeof renderSidebar === 'function') renderSidebar();
-            updateCanvas(false);
-            setTimeout(() => {
-                if (typeof generate3DModel === 'function') generate3DModel();
-                alert("✅ Project loaded successfully!");
-            }, 100);
-            document.getElementById('importFile').value = ''; 
-        } catch (error) { alert("Error parsing file: " + error.message); }
-    };
-    reader.readAsText(file);
-}
-function undoAction() {
+};
+
+
+// -----------------------------------------
+// 4. GLOBAL BRIDGE (HTML ONCLICK BINDINGS)
+// -----------------------------------------
+window.undoAction = () => {
     ProjectState.undo();
     if (typeof renderSidebar === 'function') renderSidebar();
     if (typeof updateCanvas === 'function') updateCanvas();
-}
-function redoAction() {
+};
+
+window.redoAction = () => {
     ProjectState.redo();
     if (typeof renderSidebar === 'function') renderSidebar();
     if (typeof updateCanvas === 'function') updateCanvas();
-}
-
-// =========================================
-// AUTO-SAVE THROTTLER (Prevents DB Spam)
-// =========================================
-let dbNeedsSave = false;
-window.markStateDirty = function() {
-    dbNeedsSave = true;
 };
-setInterval(() => {
-    if (dbNeedsSave) {
-        if (typeof saveToMemory === 'function') saveToMemory();
-        dbNeedsSave = false;
-        console.log("💾 Throttled Auto-Save Complete.");
-    }
-}, 5000);
+
+window.resetWorkspace = () => StorageEngine.resetWorkspace();
+window.saveToMemory = () => StorageEngine.saveToMemory();
+window.loadFromMemory = () => StorageEngine.loadFromMemory();
+window.markStateDirty = () => StorageEngine.markDirty();
+
+window.exportJSON = () => ProjectIO.exportJSON();
+window.importJSON = (event) => ProjectIO.importJSON(event);
+
+window.saveState = (actionName) => {
+    if (typeof ProjectState !== 'undefined') ProjectState.saveState(actionName);
+};

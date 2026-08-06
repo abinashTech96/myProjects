@@ -150,6 +150,8 @@ const AIAgent = {
         }
 
         if (!aiResponseText) return null;
+        // ✨ FIX: Strip markdown code blocks before parsing!
+        aiResponseText = aiResponseText.replace(/```json/gi, '').replace(/```/g, '').trim();
 
         let actionPlan = JSON.parse(aiResponseText);
         
@@ -369,3 +371,49 @@ window.populateAIModelDropdown = function() {
 // 🚀 THE FIX: Run this synchronously IMMEDIATELY. 
 // Don't wait for DOMContentLoaded, otherwise the UI script will build an empty box first!
 window.populateAIModelDropdown();
+
+// =========================================
+// 🌟 AI UI INJECTION ENGINE
+// =========================================
+const AIAgentUIEngine = {
+    init: function() {
+        let overlay = document.getElementById('ai-agent-overlay');
+        
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'ai-agent-overlay';
+            overlay.className = 'glass-panel nav-dropdown-panel width-md';
+            
+            overlay.innerHTML = `
+                <div class="panel-header drop-header-purple">
+                    <span class="icon">🤖</span>
+                    <h2>AI ASSISTANT</h2>
+                </div>
+                
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                        <label style="font-size: 0.65rem; color: #94a3b8; font-weight: bold; letter-spacing: 0.5px;">ACTIVE MODEL</label>
+                        <select id="ai-model-select" class="modern-select neo-sunken"></select>
+                    </div>
+
+                    <textarea id="ai-input" class="neo-sunken ai-textarea" placeholder="e.g., Add a 10x12 master bedroom on the left..."></textarea>
+                    
+                    <button id="ai-generate-btn" class="btn-generate theme-purple-btn" onclick="handleAICommand()">
+                        <span class="btn-icon">✨</span><span class="btn-text">GENERATE</span>
+                    </button>
+                </div>
+            `;
+            
+            const btn = document.getElementById('ai-agent-btn');
+            if (btn && btn.parentNode) {
+                btn.parentNode.appendChild(overlay);
+            } else {
+                document.body.appendChild(overlay);
+            }
+        }
+    }
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    AIAgentUIEngine.init();
+});

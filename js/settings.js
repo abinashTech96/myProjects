@@ -1,18 +1,635 @@
 // =========================================
-// ⚙️ SETTINGS MENU LOGIC (core/settings.js)
+// ⚙️ SETTINGS ENGINE (settings.js)
+// Single-File Component (CSS + JS + HTML)
 // =========================================
 
+// 1. INJECT MODULE-SPECIFIC CSS
+const settingsStyles = `
+    .nav-settings-btn {
+        margin-left: 4px; color: #94a3b8; background: rgba(148, 163, 184, 0.15); 
+        border: 1px solid rgba(148, 163, 184, 0.3); transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s ease;
+    }
+    .nav-settings-icon { font-size: 0.8rem; filter: drop-shadow(0 0 2px rgba(148, 163, 184, 0.5)); }
+
+    .settings-dropdown {
+        display: none; opacity: 0; transform: scale(0); transform-origin: top right; position: absolute; 
+        top: calc(100% + 15px); right: 0; width: 260px; z-index: var(--z-modal); transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); 
+        margin: 0; background: rgba(10, 10, 14, 0.75); backdrop-filter: blur(24px) saturate(200%);
+        border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; padding: 12px;
+    }
+    .settings-header { border-bottom: 1px solid rgba(148, 163, 184, 0.3); margin-bottom: 15px; padding-bottom: 10px; }
+    .settings-icon-color { color: #94a3b8; }
+    .settings-title { background: linear-gradient(90deg, #94a3b8, #cbd5e1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0; font-size: 0.9rem; font-weight: 700; }
+    .settings-content { display: flex; flex-direction: column; gap: 6px; padding: 5px 0; }
+    .settings-label-text { font-size: 0.75rem; }
+
+    /* ACCORDION STYLES */
+    .settings-accordion-wrapper { width: 100%; display: flex; flex-direction: column; margin-bottom: 1px; }
+    .settings-accordion-btn {
+        width: 100%; display: flex; justify-content: space-between; align-items: center;
+        background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.04);
+        border-radius: 10px; padding: 8px 12px; cursor: pointer; transition: all 0.4s cubic-bezier(0.21, 1.02, 0.73, 1);
+        color: #8b949e; opacity: 0.75;
+    }
+    .settings-accordion-btn:hover { background: rgba(20, 20, 25, 0.65); border-color: rgba(255, 255, 255, 0.1); transform: translateY(-1px); opacity: 1; }
+    .settings-accordion-btn.active {
+        background: linear-gradient(90deg, rgba(6, 182, 212, 0.2) 0%, rgba(0, 0, 0, 0.6) 50%, rgba(239, 68, 68, 0.2) 100%);
+        border-top: 1px solid rgba(255, 255, 255, 0.1); border-bottom: 1px solid transparent; border-left: 4px solid #06b6d4; border-right: 4px solid #ef4444;
+        border-radius: 10px 10px 0 0; box-shadow: inset 0 2px 8px rgba(0,0,0,0.5), -5px 2px 15px rgba(6, 182, 212, 0.15), 5px 2px 15px rgba(239, 68, 68, 0.15);
+        opacity: 1; transform: translateY(0);
+    }
+    .settings-category { font-size: 0.8rem; font-weight: 600; transition: color 0.3s cubic-bezier(0.21, 1.02, 0.73, 1); margin: 0; }
+    .settings-accordion-btn.active .settings-category { color: #ffffff; text-shadow: 0 0 10px rgba(6, 182, 212, 0.7); }
+    .settings-chevron { font-size: 0.7rem; transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.15); }
+    .settings-accordion-btn.active .settings-chevron { color: #ffffff; transform: rotate(180deg) scale(1.1); }
+    .settings-accordion-btn:not(.active) .settings-chevron { transform: rotate(0deg); }
+
+    .settings-accordion-content {
+        display: grid; grid-template-rows: 0fr; transform-origin: top center; transform: rotateX(-15deg) translateY(-10px) scale(0.97);
+        opacity: 0; transition: grid-template-rows 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.15), transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.15), opacity 0.4s cubic-bezier(0.21, 1.02, 0.73, 1);
+    }
+    .settings-accordion-content.active { grid-template-rows: 1fr; transform: rotateX(0deg) translateY(0) scale(1); opacity: 1; }
+    .settings-accordion-inner { overflow: hidden; padding: 0 8px; border: 1px solid transparent; border-radius: 12px; box-sizing: border-box; transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+
+    /* ✨ PREMIUM INSET TRAY (SEAMLESS MERGE & ANIMATIONS) */
+    .settings-accordion-content.active .settings-accordion-inner {
+        position: relative;
+        overflow: hidden;
+        padding-top: 10px; 
+        padding-bottom: 8px; 
+        margin-top: 0px;
+        background-color: rgba(0, 0, 0, 0.4);
+        background-repeat: no-repeat;
+        border: 1px solid rgba(6, 182, 212, 0.2);
+        border-top: none;
+        border-radius: 0 0 10px 10px;
+        box-shadow: inset 0 -4px 12px rgba(0, 0, 0, 0.6);
+        /* 🌟 NOW USES A CSS VARIABLE (with a default fallback) */
+        animation: var(--accordion-anim, blastAndSparkleStorm) 4s infinite;
+    }
+    .settings-accordion-content.active .settings-accordion-inner::before {
+        content: "";
+        position: absolute;
+        width: 5px; 
+        height: 5px;
+        background: #ffffff;
+        border-radius: 50%;
+        box-shadow: 0 0 10px 3px #06b6d4, 0 0 25px 8px rgba(6, 182, 212, 0.5);
+        animation: runLeftCyan 4s infinite ease-in-out;
+        z-index: 2;
+    }
+    .settings-accordion-content.active .settings-accordion-inner::after {
+        content: "";
+        position: absolute;
+        width: 5px; 
+        height: 5px;
+        background: #ffffff;
+        border-radius: 50%;
+        box-shadow: 0 0 10px 3px #ef4444, 0 0 25px 8px rgba(239, 68, 68, 0.5);
+        animation: runRightRed 4s infinite ease-in-out;
+        z-index: 2;
+    }
+
+    /* 🚀 EXTREME 3D KEYFRAMES */
+    @keyframes runLeftCyan {
+        0% { top: 0; left: 0; opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+        5% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        25% { top: 100%; left: 0; transform: translate(-50%, -50%) scale(1.1); }
+        40% { top: 100%; left: 50%; transform: translate(-50%, -50%) scale(1.3); opacity: 1; }
+        41% { top: 100%; left: 50%; transform: translate(-50%, -50%) scale(4); opacity: 0; }
+        100% { top: 100%; left: 50%; opacity: 0; }
+    }
+    @keyframes runRightRed {
+        0% { top: 0; right: 0; opacity: 0; transform: translate(50%, -50%) scale(0.5); }
+        5% { opacity: 1; transform: translate(50%, -50%) scale(1); }
+        25% { top: 100%; right: 0; transform: translate(50%, -50%) scale(1.1); }
+        40% { top: 100%; right: 50%; transform: translate(50%, -50%) scale(1.3); opacity: 1; }
+        41% { top: 100%; right: 50%; transform: translate(50%, -50%) scale(4); opacity: 0; }
+        100% { top: 100%; right: 50%; opacity: 0; }
+    }
+    /* AnimationType 1 */
+    @keyframes blastAndSparkleStorm {
+        0%, 39.5% {
+            background-color: rgba(15, 20, 30, 0.8);
+            box-shadow: inset 0 -4px 15px rgba(0, 0, 0, 0.9);
+            background-image: 
+                radial-gradient(ellipse at 50% 120%, rgba(255, 255, 255, 0) 0%, transparent 50%),
+                none, none;
+        }
+        40% {
+            background-color: rgba(220, 240, 255, 0.95);
+            box-shadow: inset 0 -50px 100px rgba(150, 200, 255, 1), inset 0 -10px 30px rgba(255, 255, 255, 1);
+            background-image: 
+                radial-gradient(ellipse at 50% 100%, rgba(255, 255, 255, 1) 15%, rgba(100, 150, 255, 0.8) 45%, transparent 80%),
+                url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath d='M45,0 L35,25 L42,50 L25,75 L35,100' stroke='rgba(150,200,255,0.8)' stroke-width='1.5' fill='none'/%3E%3Cpath d='M45,0 L35,25 L42,50 L25,75 L35,100' stroke='rgba(255,255,255,1)' stroke-width='0.4' fill='none'/%3E%3C/svg%3E"),
+                url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath d='M55,0 L68,20 L58,45 L72,70 L65,100' stroke='rgba(150,200,255,0.8)' stroke-width='1.5' fill='none'/%3E%3Cpath d='M55,0 L68,20 L58,45 L72,70 L65,100' stroke='rgba(255,255,255,1)' stroke-width='0.4' fill='none'/%3E%3C/svg%3E");
+            background-size: 100% 100%, 100% 100%, 100% 100%;
+            background-position: center, center, center;
+            background-repeat: no-repeat;
+        }
+        41.5% {
+            background-color: rgba(15, 20, 30, 0.9);
+            box-shadow: inset 0 -4px 15px rgba(0, 0, 0, 0.9);
+            background-image: 
+                radial-gradient(ellipse at 50% 120%, rgba(255, 255, 255, 0) 0%, transparent 50%),
+                none, none;
+        }
+        43% {
+            background-color: rgba(200, 230, 255, 0.8);
+            box-shadow: inset 0 -40px 80px rgba(120, 180, 255, 0.8);
+            background-image: 
+                radial-gradient(ellipse at 30% 110%, rgba(255, 255, 255, 0.95) 10%, rgba(100, 150, 255, 0.6) 40%, transparent 75%),
+                url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath d='M30,0 L20,30 L35,60 L25,85 L30,100' stroke='rgba(150,200,255,0.8)' stroke-width='1.5' fill='none'/%3E%3Cpath d='M30,0 L20,30 L35,60 L25,85 L30,100' stroke='rgba(255,255,255,1)' stroke-width='0.4' fill='none'/%3E%3C/svg%3E"),
+                none;
+            background-size: 100% 100%, 100% 100%, 100% 100%;
+            background-position: center, center, center;
+            background-repeat: no-repeat;
+        }
+        44.5% {
+            background-color: rgba(20, 25, 35, 0.9);
+            box-shadow: inset 0 -5px 20px rgba(100, 150, 255, 0.1);
+            background-image: 
+                radial-gradient(ellipse at 50% 120%, rgba(255, 255, 255, 0) 0%, transparent 50%),
+                none, none;
+        }
+        46% {
+            background-color: rgba(180, 210, 255, 0.5);
+            box-shadow: inset 0 -30px 60px rgba(100, 150, 255, 0.6);
+            background-image: 
+                radial-gradient(ellipse at 70% 110%, rgba(255, 255, 255, 0.8) 15%, rgba(100, 150, 255, 0.5) 45%, transparent 75%),
+                none,
+                url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath d='M75,0 L85,25 L70,55 L85,80 L75,100' stroke='rgba(150,200,255,0.8)' stroke-width='1.5' fill='none'/%3E%3Cpath d='M75,0 L85,25 L70,55 L85,80 L75,100' stroke='rgba(255,255,255,1)' stroke-width='0.4' fill='none'/%3E%3C/svg%3E");
+            background-size: 100% 100%, 100% 100%, 100% 100%;
+            background-position: center, center, center;
+            background-repeat: no-repeat;
+        }
+        55% {
+            background-color: rgba(25, 30, 40, 0.8);
+            box-shadow: inset 0 -20px 40px rgba(100, 130, 200, 0.3);
+            background-image: 
+                radial-gradient(ellipse at 50% 120%, rgba(255, 255, 255, 0.2) 0%, rgba(100, 150, 255, 0.1) 30%, transparent 60%),
+                none, none;
+        }
+        65%, 100% {
+            background-color: rgba(15, 20, 30, 0.8);
+            box-shadow: inset 0 -4px 15px rgba(0, 0, 0, 0.9);
+            background-image: 
+                radial-gradient(ellipse at 50% 120%, rgba(255, 255, 255, 0) 0%, transparent 50%),
+                none, none;
+        }
+    }
+    
+    /* AnimationType 2 */
+    @keyframes blastAndSparkleStorm2 {
+        0%, 39.5% {
+            background-color: rgba(15, 20, 30, 0.8);
+            box-shadow: inset 0 -4px 15px rgba(0, 0, 0, 0.9);
+            background-image: 
+                radial-gradient(ellipse at 50% 120%, rgba(255, 255, 255, 0) 0%, transparent 50%),
+                linear-gradient(105deg, transparent 49%, rgba(255, 255, 255, 0) 49.5%, rgba(255, 255, 255, 0) 50.5%, transparent 51%),
+                linear-gradient(75deg, transparent 49%, rgba(255, 255, 255, 0) 49.5%, rgba(255, 255, 255, 0) 50.5%, transparent 51%);
+        }
+        40% {
+            background-color: rgba(220, 240, 255, 0.95);
+            box-shadow: inset 0 -50px 100px rgba(150, 200, 255, 1), inset 0 -10px 30px rgba(255, 255, 255, 1);
+            background-image: 
+                radial-gradient(ellipse at 50% 100%, rgba(255, 255, 255, 1) 15%, rgba(100, 150, 255, 0.8) 45%, transparent 80%),
+                linear-gradient(105deg, transparent 49%, rgba(255, 255, 255, 1) 49.5%, rgba(150, 200, 255, 0.9) 50.5%, transparent 51%),
+                linear-gradient(75deg, transparent 49%, rgba(255, 255, 255, 1) 49.5%, rgba(150, 200, 255, 0.9) 50.5%, transparent 51%);
+        }
+        41.5% {
+            background-color: rgba(15, 20, 30, 0.9);
+            box-shadow: inset 0 -4px 15px rgba(0, 0, 0, 0.9);
+            background-image: 
+                radial-gradient(ellipse at 50% 120%, rgba(255, 255, 255, 0) 0%, transparent 50%),
+                linear-gradient(105deg, transparent 49%, rgba(255, 255, 255, 0) 49.5%, rgba(255, 255, 255, 0) 50.5%, transparent 51%),
+                linear-gradient(75deg, transparent 49%, rgba(255, 255, 255, 0) 49.5%, rgba(255, 255, 255, 0) 50.5%, transparent 51%);
+        }
+        43% {
+            background-color: rgba(200, 230, 255, 0.8);
+            box-shadow: inset 0 -40px 80px rgba(120, 180, 255, 0.8);
+            background-image: 
+                radial-gradient(ellipse at 30% 110%, rgba(255, 255, 255, 0.95) 10%, rgba(100, 150, 255, 0.6) 40%, transparent 75%),
+                linear-gradient(115deg, transparent 49%, rgba(255, 255, 255, 0.9) 49.5%, rgba(255, 255, 255, 0) 50.5%, transparent 51%),
+                linear-gradient(75deg, transparent 49%, rgba(255, 255, 255, 0) 49.5%, rgba(255, 255, 255, 0) 50.5%, transparent 51%);
+        }
+        44.5% {
+            background-color: rgba(20, 25, 35, 0.9);
+            box-shadow: inset 0 -5px 20px rgba(100, 150, 255, 0.1);
+            background-image: 
+                radial-gradient(ellipse at 50% 120%, rgba(255, 255, 255, 0) 0%, transparent 50%),
+                linear-gradient(105deg, transparent 49%, rgba(255, 255, 255, 0) 49.5%, rgba(255, 255, 255, 0) 50.5%, transparent 51%),
+                linear-gradient(75deg, transparent 49%, rgba(255, 255, 255, 0) 49.5%, rgba(255, 255, 255, 0) 50.5%, transparent 51%);
+        }
+        46% {
+            background-color: rgba(180, 210, 255, 0.5);
+            box-shadow: inset 0 -30px 60px rgba(100, 150, 255, 0.6);
+            background-image: 
+                radial-gradient(ellipse at 70% 110%, rgba(255, 255, 255, 0.8) 15%, rgba(100, 150, 255, 0.5) 45%, transparent 75%),
+                linear-gradient(105deg, transparent 49%, rgba(255, 255, 255, 0) 49.5%, rgba(255, 255, 255, 0) 50.5%, transparent 51%),
+                linear-gradient(65deg, transparent 49%, rgba(255, 255, 255, 0.8) 49.5%, rgba(255, 255, 255, 0) 50.5%, transparent 51%);
+        }
+        55% {
+            background-color: rgba(25, 30, 40, 0.8);
+            box-shadow: inset 0 -20px 40px rgba(100, 130, 200, 0.3);
+            background-image: 
+                radial-gradient(ellipse at 50% 120%, rgba(255, 255, 255, 0.2) 0%, rgba(100, 150, 255, 0.1) 30%, transparent 60%),
+                linear-gradient(105deg, transparent 49%, rgba(255, 255, 255, 0) 49.5%, rgba(255, 255, 255, 0) 50.5%, transparent 51%),
+                linear-gradient(75deg, transparent 49%, rgba(255, 255, 255, 0) 49.5%, rgba(255, 255, 255, 0) 50.5%, transparent 51%);
+        }
+        65%, 100% {
+            background-color: rgba(15, 20, 30, 0.8);
+            box-shadow: inset 0 -4px 15px rgba(0, 0, 0, 0.9);
+            background-image: 
+                radial-gradient(ellipse at 50% 120%, rgba(255, 255, 255, 0) 0%, transparent 50%),
+                linear-gradient(105deg, transparent 49%, rgba(255, 255, 255, 0) 49.5%, rgba(255, 255, 255, 0) 50.5%, transparent 51%),
+                linear-gradient(75deg, transparent 49%, rgba(255, 255, 255, 0) 49.5%, rgba(255, 255, 255, 0) 50.5%, transparent 51%);
+        }
+    }
+    /* AnimationType 3 */
+    @keyframes blastAndSparkle {
+        0%, 39% {
+            background-color: rgba(0, 0, 0, 0.4);
+            box-shadow: inset 0 -4px 12px rgba(0, 0, 0, 0.6);
+            background-image: 
+                radial-gradient(circle at 50% 100%, rgba(255,255,255,0) 0%, transparent 60%),
+                radial-gradient(circle, rgba(6,182,212,0) 1px, transparent 2px),
+                radial-gradient(circle, rgba(239,68,68,0) 1px, transparent 2px),
+                radial-gradient(circle, rgba(255,255,255,0) 1px, transparent 2px),
+                radial-gradient(circle, rgba(6,182,212,0) 1.5px, transparent 2.5px),
+                radial-gradient(circle, rgba(239,68,68,0) 1.5px, transparent 2.5px);
+            background-position: bottom center, 50% 100%, 50% 100%, 50% 100%, 50% 100%, 50% 100%;
+            background-size: 100% 100%;
+        }
+        40% {
+            background-color: rgba(20, 10, 30, 0.7);
+            box-shadow: inset 0 -30px 50px rgba(139, 92, 246, 0.4), inset 0 -10px 20px rgba(255, 255, 255, 0.6);
+            background-image: 
+                radial-gradient(circle at 50% 100%, rgba(255,255,255,0.9) 0%, rgba(139, 92, 246, 0.5) 20%, transparent 60%),
+                radial-gradient(circle, rgba(6,182,212,1) 1px, transparent 2px),
+                radial-gradient(circle, rgba(239,68,68,1) 1px, transparent 2px),
+                radial-gradient(circle, rgba(255,255,255,1) 1px, transparent 2px),
+                radial-gradient(circle, rgba(6,182,212,0.9) 1.5px, transparent 2.5px),
+                radial-gradient(circle, rgba(239,68,68,0.9) 1.5px, transparent 2.5px);
+            background-position: bottom center, 50% 100%, 50% 100%, 50% 100%, 50% 100%, 50% 100%;
+        }
+        55% {
+            background-color: rgba(0, 0, 0, 0.4);
+            box-shadow: inset 0 -10px 20px rgba(139, 92, 246, 0.1);
+            background-image: 
+                radial-gradient(circle at 50% 100%, rgba(255,255,255,0) 0%, transparent 60%),
+                radial-gradient(circle, rgba(6,182,212,0.8) 1px, transparent 2px),
+                radial-gradient(circle, rgba(239,68,68,0.8) 1px, transparent 2px),
+                radial-gradient(circle, rgba(255,255,255,0.6) 1px, transparent 2px),
+                radial-gradient(circle, rgba(6,182,212,0.7) 1.5px, transparent 2.5px),
+                radial-gradient(circle, rgba(239,68,68,0.7) 1.5px, transparent 2.5px);
+            background-position: bottom center, 35% 60%, 65% 55%, 50% 40%, 20% 75%, 80% 70%;
+        }
+        70%, 100% {
+            background-color: rgba(0, 0, 0, 0.4);
+            box-shadow: inset 0 -4px 12px rgba(0, 0, 0, 0.6);
+            background-image: 
+                radial-gradient(circle at 50% 100%, rgba(255,255,255,0) 0%, transparent 60%),
+                radial-gradient(circle, rgba(6,182,212,0) 1px, transparent 2px),
+                radial-gradient(circle, rgba(239,68,68,0) 1px, transparent 2px),
+                radial-gradient(circle, rgba(255,255,255,0) 1px, transparent 2px),
+                radial-gradient(circle, rgba(6,182,212,0) 1.5px, transparent 2.5px),
+                radial-gradient(circle, rgba(239,68,68,0) 1.5px, transparent 2.5px);
+            background-position: bottom center, 25% 30%, 75% 25%, 50% 10%, 10% 45%, 90% 40%;
+        }
+    }
+    /* AnimationType 4 */
+    @keyframes blastAndSparklePointed {
+        0%, 39% {
+            background-color: rgba(0, 0, 0, 0.4);
+            box-shadow: inset 0 -4px 12px rgba(0, 0, 0, 0.6);
+            background-image: 
+                radial-gradient(circle at 50% 100%, rgba(255,255,255,0) 0%, transparent 60%),
+                radial-gradient(circle, rgba(6,182,212,0) 1px, transparent 2px),
+                radial-gradient(circle, rgba(239,68,68,0) 1px, transparent 2px),
+                radial-gradient(circle, rgba(255,255,255,0) 1px, transparent 2px),
+                radial-gradient(circle, rgba(6,182,212,0) 1.5px, transparent 2.5px),
+                radial-gradient(circle, rgba(239,68,68,0) 1.5px, transparent 2.5px);
+            background-position: bottom center, 50% 100%, 50% 100%, 50% 100%, 50% 100%, 50% 100%;
+            background-size: 100% 100%;
+        }
+        40% {
+            background-color: rgba(30, 20, 45, 0.7);
+            box-shadow: inset 0 -40px 60px rgba(139, 92, 246, 0.5), inset 0 -15px 30px rgba(255, 255, 255, 0.8);
+            background-image: 
+                radial-gradient(circle at 50% 100%, rgba(255,255,255,1) 0%, rgba(139, 92, 246, 0.7) 25%, transparent 70%),
+                radial-gradient(circle, rgba(6,182,212,1) 1.5px, transparent 3px),
+                radial-gradient(circle, rgba(239,68,68,1) 1.5px, transparent 3px),
+                radial-gradient(circle, rgba(255,255,255,1) 1.5px, transparent 3px),
+                radial-gradient(circle, rgba(6,182,212,0.9) 2px, transparent 3.5px),
+                radial-gradient(circle, rgba(239,68,68,0.9) 2px, transparent 3.5px);
+            background-position: bottom center, 50% 100%, 50% 100%, 50% 100%, 50% 100%, 50% 100%;
+        }
+        44% {
+            background-color: rgba(15, 10, 25, 0.5);
+            box-shadow: inset 0 -20px 40px rgba(139, 92, 246, 0.3), inset 0 -5px 15px rgba(255, 255, 255, 0.3);
+            background-image: 
+                radial-gradient(circle at 50% 100%, rgba(255,255,255,0.4) 0%, rgba(139, 92, 246, 0.2) 20%, transparent 60%),
+                radial-gradient(circle, rgba(6,182,212,0.9) 1px, transparent 2px),
+                radial-gradient(circle, rgba(239,68,68,0.9) 1px, transparent 2px),
+                radial-gradient(circle, rgba(255,255,255,0.8) 1px, transparent 2px),
+                radial-gradient(circle, rgba(6,182,212,0.8) 1.5px, transparent 2.5px),
+                radial-gradient(circle, rgba(239,68,68,0.8) 1.5px, transparent 2.5px);
+            background-position: bottom center, 42% 75%, 58% 70%, 50% 65%, 30% 85%, 70% 80%;
+        }
+        55% {
+            background-color: rgba(0, 0, 0, 0.4);
+            box-shadow: inset 0 -10px 20px rgba(139, 92, 246, 0.1);
+            background-image: 
+                radial-gradient(circle at 50% 100%, rgba(255,255,255,0) 0%, transparent 60%),
+                radial-gradient(circle, rgba(6,182,212,0.6) 1px, transparent 2px),
+                radial-gradient(circle, rgba(239,68,68,0.6) 1px, transparent 2px),
+                radial-gradient(circle, rgba(255,255,255,0.4) 1px, transparent 2px),
+                radial-gradient(circle, rgba(6,182,212,0.5) 1.5px, transparent 2.5px),
+                radial-gradient(circle, rgba(239,68,68,0.5) 1.5px, transparent 2.5px);
+            background-position: bottom center, 35% 55%, 65% 50%, 50% 40%, 20% 70%, 80% 65%;
+        }
+        70%, 100% {
+            background-color: rgba(0, 0, 0, 0.4);
+            box-shadow: inset 0 -4px 12px rgba(0, 0, 0, 0.6);
+            background-image: 
+                radial-gradient(circle at 50% 100%, rgba(255,255,255,0) 0%, transparent 60%),
+                radial-gradient(circle, rgba(6,182,212,0) 1px, transparent 2px),
+                radial-gradient(circle, rgba(239,68,68,0) 1px, transparent 2px),
+                radial-gradient(circle, rgba(255,255,255,0) 1px, transparent 2px),
+                radial-gradient(circle, rgba(6,182,212,0) 1.5px, transparent 2.5px),
+                radial-gradient(circle, rgba(239,68,68,0) 1.5px, transparent 2.5px);
+            background-position: bottom center, 32% 48%, 68% 43%, 50% 30%, 15% 63%, 85% 58%; 
+        }
+    }
+    /* AnimationType 5 */
+    @keyframes blastAndSparkleHotFlash {
+        0%, 39.5% {
+            background-color: rgba(0, 0, 0, 0.4);
+            box-shadow: inset 0 -4px 12px rgba(0, 0, 0, 0.6);
+            background-image: 
+                radial-gradient(circle at 50% 100%, rgba(255,255,255,0) 0%, transparent 10%),
+                radial-gradient(circle, rgba(6,182,212,0) 1px, transparent 2px),
+                radial-gradient(circle, rgba(239,68,68,0) 1px, transparent 2px),
+                radial-gradient(circle, rgba(255,255,255,0) 1px, transparent 2px),
+                radial-gradient(circle, rgba(6,182,212,0) 1.5px, transparent 2.5px),
+                radial-gradient(circle, rgba(239,68,68,0) 1.5px, transparent 2.5px);
+            background-position: bottom center, 50% 100%, 50% 100%, 50% 100%, 50% 100%, 50% 100%;
+        }
+        40% {
+            /* Blinding flash */
+            background-color: rgba(255, 255, 255, 0.9);
+            box-shadow: inset 0 -50px 80px rgba(255, 255, 255, 1);
+            background-image: 
+                radial-gradient(circle at 50% 100%, rgba(255,255,255,1) 0%, rgba(255,255,255,0.8) 50%, transparent 80%),
+                radial-gradient(circle, rgba(6,182,212,1) 2px, transparent 4px),
+                radial-gradient(circle, rgba(239,68,68,1) 2px, transparent 4px),
+                radial-gradient(circle, rgba(255,255,255,1) 2px, transparent 4px),
+                radial-gradient(circle, rgba(6,182,212,1) 3px, transparent 5px),
+                radial-gradient(circle, rgba(239,68,68,1) 3px, transparent 5px);
+            background-position: bottom center, 50% 100%, 50% 100%, 50% 100%, 50% 100%, 50% 100%;
+        }
+        41.5% {
+            /* Flash dies instantly, leaving only the dark tray and sparks */
+            background-color: rgba(15, 10, 20, 0.6);
+            box-shadow: inset 0 -15px 30px rgba(139, 92, 246, 0.4);
+            background-image: 
+                radial-gradient(circle at 50% 100%, rgba(255,255,255,0.2) 0%, transparent 40%),
+                radial-gradient(circle, rgba(6,182,212,0.9) 1px, transparent 2px),
+                radial-gradient(circle, rgba(239,68,68,0.9) 1px, transparent 2px),
+                radial-gradient(circle, rgba(255,255,255,0.8) 1px, transparent 2px),
+                radial-gradient(circle, rgba(6,182,212,0.8) 1.5px, transparent 2.5px),
+                radial-gradient(circle, rgba(239,68,68,0.8) 1.5px, transparent 2.5px);
+            background-position: bottom center, 40% 70%, 60% 65%, 50% 60%, 25% 80%, 75% 75%;
+        }
+        55%, 100% {
+            background-color: rgba(0, 0, 0, 0.4);
+            box-shadow: inset 0 -4px 12px rgba(0, 0, 0, 0.6);
+            background-image: 
+                radial-gradient(circle at 50% 100%, rgba(255,255,255,0) 0%, transparent 10%),
+                radial-gradient(circle, rgba(6,182,212,0) 1px, transparent 2px),
+                radial-gradient(circle, rgba(239,68,68,0) 1px, transparent 2px),
+                radial-gradient(circle, rgba(255,255,255,0) 1px, transparent 2px),
+                radial-gradient(circle, rgba(6,182,212,0) 1.5px, transparent 2.5px),
+                radial-gradient(circle, rgba(239,68,68,0) 1.5px, transparent 2.5px);
+            background-position: bottom center, 35% 50%, 65% 45%, 50% 30%, 15% 60%, 85% 55%;
+        }
+    }
+    /* AnimationType 6 */
+    @keyframes blastAndSparkleFocus {
+        0%, 39% {
+            background-color: rgba(0, 0, 0, 0.4);
+            box-shadow: inset 0 -4px 12px rgba(0, 0, 0, 0.6);
+            background-image: 
+                radial-gradient(circle at 50% 100%, rgba(139,92,246,0) 0%, transparent 50%),
+                radial-gradient(circle, rgba(6,182,212,0) 1px, transparent 2px),
+                radial-gradient(circle, rgba(239,68,68,0) 1px, transparent 2px),
+                radial-gradient(circle, rgba(255,255,255,0) 1px, transparent 2px),
+                radial-gradient(circle, rgba(6,182,212,0) 1.5px, transparent 2.5px),
+                radial-gradient(circle, rgba(239,68,68,0) 1.5px, transparent 2.5px);
+            background-position: bottom center, 50% 100%, 50% 100%, 50% 100%, 50% 100%, 50% 100%;
+        }
+        40% {
+            background-color: rgba(20, 10, 35, 0.7);
+            box-shadow: inset 0 -30px 50px rgba(139, 92, 246, 0.6);
+            background-image: 
+                radial-gradient(circle at 50% 100%, rgba(255,255,255,0.8) 0%, transparent 60%),
+                radial-gradient(circle, rgba(6,182,212,1) 1.5px, transparent 3px),
+                radial-gradient(circle, rgba(239,68,68,1) 1.5px, transparent 3px),
+                radial-gradient(circle, rgba(255,255,255,1) 1.5px, transparent 3px),
+                radial-gradient(circle, rgba(6,182,212,0.9) 2px, transparent 3.5px),
+                radial-gradient(circle, rgba(239,68,68,0.9) 2px, transparent 3.5px);
+            background-position: bottom center, 50% 100%, 50% 100%, 50% 100%, 50% 100%, 50% 100%;
+        }
+        43% {
+            background-color: rgba(10, 5, 20, 0.5);
+            box-shadow: inset 0 -10px 20px rgba(139, 92, 246, 0.2);
+            background-image: 
+                radial-gradient(circle at 50% 100%, rgba(139,92,246,0.3) 0%, transparent 50%),
+                radial-gradient(circle, rgba(6,182,212,0.9) 1px, transparent 2px),
+                radial-gradient(circle, rgba(239,68,68,0.9) 1px, transparent 2px),
+                radial-gradient(circle, rgba(255,255,255,0.8) 1px, transparent 2px),
+                radial-gradient(circle, rgba(6,182,212,0.8) 1.5px, transparent 2.5px),
+                radial-gradient(circle, rgba(239,68,68,0.8) 1.5px, transparent 2.5px);
+            background-position: bottom center, 35% 45%, 65% 40%, 50% 25%, 20% 55%, 80% 50%;
+        }
+        55% {
+            background-color: rgba(0, 0, 0, 0.4);
+            box-shadow: inset 0 -4px 12px rgba(0, 0, 0, 0.6);
+            background-image: 
+                radial-gradient(circle at 50% 100%, rgba(139,92,246,0) 0%, transparent 50%),
+                radial-gradient(circle, rgba(6,182,212,0.4) 1px, transparent 2px),
+                radial-gradient(circle, rgba(239,68,68,0.4) 1px, transparent 2px),
+                radial-gradient(circle, rgba(255,255,255,0.2) 1px, transparent 2px),
+                radial-gradient(circle, rgba(6,182,212,0.3) 1.5px, transparent 2.5px),
+                radial-gradient(circle, rgba(239,68,68,0.3) 1.5px, transparent 2.5px);
+            background-position: bottom center, 33% 65%, 67% 60%, 50% 55%, 18% 75%, 82% 70%;
+        }
+        70%, 100% {
+            background-image: 
+                radial-gradient(circle at 50% 100%, rgba(139,92,246,0) 0%, transparent 50%),
+                radial-gradient(circle, rgba(6,182,212,0) 1px, transparent 2px),
+                radial-gradient(circle, rgba(239,68,68,0) 1px, transparent 2px),
+                radial-gradient(circle, rgba(255,255,255,0) 1px, transparent 2px),
+                radial-gradient(circle, rgba(6,182,212,0) 1.5px, transparent 2.5px),
+                radial-gradient(circle, rgba(239,68,68,0) 1.5px, transparent 2.5px);
+            background-position: bottom center, 33% 85%, 67% 80%, 50% 75%, 18% 95%, 82% 90%;
+        }
+    }
+    /* AnimationType 7 */
+    @keyframes blastAndSparkleRing {
+        0%, 39% {
+            background-color: rgba(0, 0, 0, 0.4);
+            box-shadow: inset 0 -4px 12px rgba(0, 0, 0, 0.6);
+            background-image: 
+                radial-gradient(circle at 50% 100%, transparent 0%, rgba(139, 92, 246, 0) 10%, transparent 20%),
+                radial-gradient(circle, rgba(6,182,212,0) 1px, transparent 2px),
+                radial-gradient(circle, rgba(239,68,68,0) 1px, transparent 2px),
+                radial-gradient(circle, rgba(255,255,255,0) 1px, transparent 2px),
+                radial-gradient(circle, rgba(6,182,212,0) 1.5px, transparent 2.5px),
+                radial-gradient(circle, rgba(239,68,68,0) 1.5px, transparent 2.5px);
+            background-position: bottom center, 50% 100%, 50% 100%, 50% 100%, 50% 100%, 50% 100%;
+            background-size: 10% 10%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
+        }
+        40% {
+            background-color: rgba(30, 20, 45, 0.7);
+            box-shadow: inset 0 -30px 50px rgba(139, 92, 246, 0.5);
+            background-image: 
+                radial-gradient(circle at 50% 100%, transparent 20%, rgba(255, 255, 255, 0.9) 30%, transparent 40%),
+                radial-gradient(circle, rgba(6,182,212,1) 1px, transparent 2px),
+                radial-gradient(circle, rgba(239,68,68,1) 1px, transparent 2px),
+                radial-gradient(circle, rgba(255,255,255,1) 1px, transparent 2px),
+                radial-gradient(circle, rgba(6,182,212,1) 1.5px, transparent 2.5px),
+                radial-gradient(circle, rgba(239,68,68,1) 1.5px, transparent 2.5px);
+            background-position: bottom center, 50% 100%, 50% 100%, 50% 100%, 50% 100%, 50% 100%;
+            background-size: 30% 30%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
+        }
+        43% {
+            background-color: rgba(10, 5, 20, 0.5);
+            box-shadow: inset 0 -10px 20px rgba(139, 92, 246, 0.2);
+            background-image: 
+                radial-gradient(circle at 50% 100%, transparent 70%, rgba(6, 182, 212, 0.3) 80%, transparent 90%),
+                radial-gradient(circle, rgba(6,182,212,0.8) 1px, transparent 2px),
+                radial-gradient(circle, rgba(239,68,68,0.8) 1px, transparent 2px),
+                radial-gradient(circle, rgba(255,255,255,0.6) 1px, transparent 2px),
+                radial-gradient(circle, rgba(6,182,212,0.7) 1.5px, transparent 2.5px),
+                radial-gradient(circle, rgba(239,68,68,0.7) 1.5px, transparent 2.5px);
+            background-position: bottom center, 40% 75%, 60% 70%, 50% 65%, 25% 85%, 75% 80%;
+            background-size: 150% 150%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
+        }
+        55%, 100% {
+            background-color: rgba(0, 0, 0, 0.4);
+            box-shadow: inset 0 -4px 12px rgba(0, 0, 0, 0.6);
+            background-image: 
+                radial-gradient(circle at 50% 100%, transparent 0%, rgba(139, 92, 246, 0) 10%, transparent 20%),
+                radial-gradient(circle, rgba(6,182,212,0) 1px, transparent 2px),
+                radial-gradient(circle, rgba(239,68,68,0) 1px, transparent 2px),
+                radial-gradient(circle, rgba(255,255,255,0) 1px, transparent 2px),
+                radial-gradient(circle, rgba(6,182,212,0) 1.5px, transparent 2.5px),
+                radial-gradient(circle, rgba(239,68,68,0) 1.5px, transparent 2.5px);
+            background-position: bottom center, 35% 60%, 65% 55%, 50% 45%, 20% 70%, 80% 65%;
+            background-size: 10% 10%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
+        }
+    }
+    /* AnimationType 8 */
+    @keyframes blastAndSparkleCombo {
+        0%, 39% {
+            background-color: rgba(0, 0, 0, 0.4);
+            box-shadow: inset 0 -4px 12px rgba(0, 0, 0, 0.6);
+            background-image: 
+                radial-gradient(circle at 50% 100%, rgba(255,255,255,0) 0%, transparent 20%),
+                radial-gradient(circle, rgba(6,182,212,0) 1px, transparent 2px),
+                radial-gradient(circle, rgba(239,68,68,0) 1px, transparent 2px),
+                radial-gradient(circle, rgba(255,255,255,0) 1px, transparent 2px),
+                radial-gradient(circle, rgba(6,182,212,0) 1.5px, transparent 2.5px),
+                radial-gradient(circle, rgba(239,68,68,0) 1.5px, transparent 2.5px);
+            background-position: bottom center, 50% 100%, 50% 100%, 50% 100%, 50% 100%, 50% 100%;
+            background-size: 10% 10%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
+        }
+        40% {
+            background-color: rgba(255, 255, 255, 0.8);
+            box-shadow: inset 0 -40px 60px rgba(139, 92, 246, 0.8), inset 0 -10px 20px rgba(255,255,255,1);
+            background-image: 
+                radial-gradient(circle at 50% 100%, rgba(255,255,255,1) 10%, rgba(139, 92, 246, 0.8) 25%, transparent 40%),
+                radial-gradient(circle, rgba(6,182,212,1) 1.5px, transparent 3px),
+                radial-gradient(circle, rgba(239,68,68,1) 1.5px, transparent 3px),
+                radial-gradient(circle, rgba(255,255,255,1) 1.5px, transparent 3px),
+                radial-gradient(circle, rgba(6,182,212,1) 2px, transparent 3.5px),
+                radial-gradient(circle, rgba(239,68,68,1) 2px, transparent 3.5px);
+            background-position: bottom center, 50% 100%, 50% 100%, 50% 100%, 50% 100%, 50% 100%;
+            background-size: 40% 40%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
+        }
+        42% {
+            background-color: rgba(15, 10, 25, 0.6);
+            box-shadow: inset 0 -15px 30px rgba(139, 92, 246, 0.3);
+            background-image: 
+                radial-gradient(circle at 50% 100%, transparent 60%, rgba(139, 92, 246, 0.3) 75%, transparent 90%),
+                radial-gradient(circle, rgba(6,182,212,0.9) 1px, transparent 2px),
+                radial-gradient(circle, rgba(239,68,68,0.9) 1px, transparent 2px),
+                radial-gradient(circle, rgba(255,255,255,0.8) 1px, transparent 2px),
+                radial-gradient(circle, rgba(6,182,212,0.8) 1.5px, transparent 2.5px),
+                radial-gradient(circle, rgba(239,68,68,0.8) 1.5px, transparent 2.5px);
+            background-position: bottom center, 38% 60%, 62% 55%, 50% 40%, 25% 70%, 75% 65%;
+            background-size: 120% 120%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
+        }
+        55% {
+            background-color: rgba(0, 0, 0, 0.4);
+            box-shadow: inset 0 -4px 12px rgba(0, 0, 0, 0.6);
+            background-image: 
+                radial-gradient(circle at 50% 100%, transparent 0%, rgba(255,255,255,0) 10%, transparent 20%),
+                radial-gradient(circle, rgba(6,182,212,0.4) 1px, transparent 2px),
+                radial-gradient(circle, rgba(239,68,68,0.4) 1px, transparent 2px),
+                radial-gradient(circle, rgba(255,255,255,0.3) 1px, transparent 2px),
+                radial-gradient(circle, rgba(6,182,212,0.3) 1.5px, transparent 2.5px),
+                radial-gradient(circle, rgba(239,68,68,0.3) 1.5px, transparent 2.5px);
+            background-position: bottom center, 35% 70%, 65% 65%, 50% 55%, 22% 80%, 78% 75%;
+            background-size: 10% 10%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
+        }
+        70%, 100% {
+            background-color: rgba(0, 0, 0, 0.4);
+            box-shadow: inset 0 -4px 12px rgba(0, 0, 0, 0.6);
+            background-image: 
+                radial-gradient(circle at 50% 100%, rgba(255,255,255,0) 0%, transparent 20%),
+                radial-gradient(circle, rgba(6,182,212,0) 1px, transparent 2px),
+                radial-gradient(circle, rgba(239,68,68,0) 1px, transparent 2px),
+                radial-gradient(circle, rgba(255,255,255,0) 1px, transparent 2px),
+                radial-gradient(circle, rgba(6,182,212,0) 1.5px, transparent 2.5px),
+                radial-gradient(circle, rgba(239,68,68,0) 1.5px, transparent 2.5px);
+            background-position: bottom center, 35% 85%, 65% 80%, 50% 70%, 22% 95%, 78% 90%;
+            background-size: 10% 10%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
+        }
+    }
+
+    /* TOGGLE SWITCHES */
+    .settings-accordion-inner .ui-toggle { display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-size: 0.75rem; color: #8b949e; font-weight: 600; user-select: none; transition: color 0.3s cubic-bezier(0.21, 1.02, 0.73, 1); margin-bottom: 8px; }
+    .settings-accordion-inner .ui-toggle:last-child { margin-bottom: 0; }
+    .settings-accordion-inner .ui-toggle:hover { color: #ffffff; }
+    .settings-accordion-inner .ui-toggle input { display: none; }
+    .settings-accordion-inner .ui-toggle .slider { width: 40px; height: 22px; background-color: rgba(0, 0, 0, 0.5); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 20px; position: relative; transition: background-color 0.4s ease-out, border-color 0.4s ease-out; box-shadow: inset 0 2px 5px rgba(0,0,0,0.8); }
+    .settings-accordion-inner .ui-toggle .slider::before { content: ""; position: absolute; width: 16px; height: 16px; border-radius: 50%; background-color: #6b7280; top: 2px; left: 2px; transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.15), background-color 0.4s ease-out; box-shadow: 0 2px 4px rgba(0,0,0,0.4); }
+    .settings-accordion-inner .ui-toggle input:checked + .slider { background-image: linear-gradient(135deg, #06b6d4, #8b5cf6); border-color: transparent; }
+    .settings-accordion-inner .ui-toggle input:checked + .slider::before { transform: translateX(18px); background-color: #ffffff; box-shadow: -2px 0 8px rgba(0,0,0,0.3); }
+
+    .sidebar-btn.danger-override {
+        width: 100%; margin-top: 6px; color: #ef4444; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3);
+        padding: 6px; border-radius: 8px; font-weight: 600; cursor: pointer; text-align: center; transition: all 0.3s cubic-bezier(0.21, 1.02, 0.73, 1);
+    }
+    .sidebar-btn.danger-override:hover { background: rgba(239, 68, 68, 0.2); border-color: rgba(239, 68, 68, 0.5); box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2); transform: translateY(-2px); }
+`;
+document.head.insertAdjacentHTML("beforeend", `<style>${settingsStyles}</style>`);
+
+// 2. CONFIGURATION
 const SETTINGS_CONFIG = [
     {
         id: 'widget-visibility',
         icon: '👁️',
         title: 'WIDGET VISIBILITY',
         open: true,
+        animation: 'blastAndSparkleFocus',
         items: [
             { type: 'toggle', id: 'toggle-qc-cb', label: '📏 Quick Converter', checked: true, action: "window.toggleWidget('qc-widget-wrapper', this.checked)" },
             { type: 'toggle', id: 'toggle-camera-cb', label: '📷 Camera Controls', checked: true, action: "window.toggleWidget('camera-controls', this.checked)" },
             { type: 'toggle', id: 'toggle-compliance-cb', label: '✅ Code Inspector', checked: true, action: "window.toggleWidget('compliance-widget', this.checked)" },
-            // { type: 'toggle', id: 'toggle-vastu-cb', label: '🧭 Vastu Score', checked: true, action: "window.toggleWidget('vastu-floating-widget', this.checked)" },
             { type: 'toggle', id: 'toggle-vastu-cb', label: '🧭 Vastu Score', checked: true, action: "window.toggleWidget('vastu-widget', this.checked)" },
             { type: 'toggle', id: 'toggle-cheatsheet-cb', label: '⌨️ Shortcuts Guide', checked: true, action: "if(typeof toggleCheatSheet === 'function') { const btn = document.getElementById('btn-cheat-sheet'); if(btn) btn.style.display = this.checked ? '' : 'none'; }" }
         ]
@@ -22,7 +639,8 @@ const SETTINGS_CONFIG = [
         icon: '💾',
         title: 'DATA CONTROLS',
         open: false,
-        isGrid: true, // Uses btn-grid class
+        isGrid: true,
+        animation: 'blastAndSparkleHotFlash',
         items: [
             { type: 'buttons', buttons: [
                 { label: '💾 Save', action: 'exportJSON()', class: 'sidebar-btn secondary', style: 'flex:1; padding: 5px;' },
@@ -36,6 +654,7 @@ const SETTINGS_CONFIG = [
         icon: '🛠️',
         title: 'TOOLBAR TOOLS',
         open: false,
+        animation: 'blastAndSparkleRing',
         items: [
             { type: 'toggle', id: 'toggle-project-info-cb', label: 'ℹ️ Project Info', checked: true, action: "toggleNavTool('project-info-btn', this.checked)" },
             { type: 'toggle', id: 'toggle-auto-builder-cb', label: '✨ Auto-Builder', checked: true, action: "toggleNavTool('auto-builder-btn', this.checked)" },
@@ -44,49 +663,80 @@ const SETTINGS_CONFIG = [
     }
 ];
 
-window.initSettingsMenu = function() {
-    const container = document.getElementById('settings-content');
-    if (!container) return;
-
-    container.innerHTML = SETTINGS_CONFIG.map(section => {
-        const activeClass = section.open ? 'active' : '';
-        const gridClass = section.isGrid ? 'btn-grid' : '';
-
-        const itemsHTML = section.items.map(item => {
-            if (item.type === 'toggle') {
-                return `
-                    <label class="ui-toggle">
-                        <span class="settings-label-text">${item.label}</span>
-                        <input type="checkbox" id="${item.id}" ${item.checked ? 'checked' : ''} autocomplete="off" onchange="${item.action}">
-                        <div class="slider"></div>
-                    </label>
-                `;
-            } else if (item.type === 'button') {
-                return `<button class="${item.class}" onclick="${item.action}">${item.label}</button>`;
-            } else if (item.type === 'buttons') {
-                const btnRow = item.buttons.map(b => `<button class="${b.class}" style="${b.style}" onclick="${b.action}">${b.label}</button>`).join('');
-                return `<div class="flex-row">${btnRow}</div>`;
+// 3. SETTINGS ENGINE
+const SettingsEngine = {
+    init: function() {
+        let overlay = document.getElementById('settings-overlay');
+        
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'settings-overlay';
+            overlay.className = 'glass-panel settings-dropdown';
+            
+            overlay.innerHTML = `
+                <div class="panel-header settings-header">
+                    <span class="icon settings-icon-color">⚙️</span>
+                    <h2 class="settings-title">SETTINGS</h2>
+                </div>
+                <div id="settings-content" class="settings-content"></div>
+            `;
+            
+            const btn = document.getElementById('settings-btn');
+            if (btn && btn.parentNode) {
+                btn.parentNode.appendChild(overlay);
+            } else {
+                document.body.appendChild(overlay);
             }
-            return '';
-        }).join('');
+        }
+        
+        this.renderMenu();
+    },
 
-        return `
-            <div class="settings-accordion-wrapper">
-                <button class="settings-accordion-btn ${activeClass}" onclick="this.classList.toggle('active'); this.nextElementSibling.classList.toggle('active');">
-                    <div class="accordion-title-wrap">
-                        <span class="accordion-emoji">${section.icon}</span>
-                        <span class="settings-category">${section.title}</span>
-                    </div>
-                    <span class="settings-chevron">▼</span>
-                </button>                    
-                <div class="settings-accordion-content ${activeClass}">
-                    <div class="settings-accordion-inner ${gridClass}">
-                        ${itemsHTML}
+    renderMenu: function() {
+        const container = document.getElementById('settings-content');
+        if (!container) return;
+
+        container.innerHTML = SETTINGS_CONFIG.map(section => {
+            const activeClass = section.open ? 'active' : '';
+            const gridClass = section.isGrid ? 'btn-grid' : '';
+            // 🌟 INJECT THE ANIMATION VARIABLE IF IT EXISTS
+            const customAnim = section.animation ? `style="--accordion-anim: ${section.animation};"` : '';
+            const itemsHTML = section.items.map(item => {
+                if (item.type === 'toggle') {
+                    return `
+                        <label class="ui-toggle">
+                            <span class="settings-label-text">${item.label}</span>
+                            <input type="checkbox" id="${item.id}" ${item.checked ? 'checked' : ''} autocomplete="off" onchange="${item.action}">
+                            <div class="slider"></div>
+                        </label>
+                    `;
+                } else if (item.type === 'button') {
+                    return `<button class="${item.class}" onclick="${item.action}">${item.label}</button>`;
+                } else if (item.type === 'buttons') {
+                    const btnRow = item.buttons.map(b => `<button class="${b.class}" style="${b.style}" onclick="${b.action}">${b.label}</button>`).join('');
+                    return `<div class="flex-row">${btnRow}</div>`;
+                }
+                return '';
+            }).join('');
+
+            return `
+                <div class="settings-accordion-wrapper">
+                    <button class="settings-accordion-btn ${activeClass}" onclick="this.classList.toggle('active'); this.nextElementSibling.classList.toggle('active');">
+                        <div class="accordion-title-wrap" style="display: flex; align-items: center; gap: 8px;">
+                            <span class="accordion-emoji">${section.icon}</span>
+                            <span class="settings-category">${section.title}</span>
+                        </div>
+                        <span class="settings-chevron">▼</span>
+                    </button>                    
+                    <div class="settings-accordion-content ${activeClass}">
+                        <div class="settings-accordion-inner ${gridClass}" ${customAnim}>
+                            ${itemsHTML}
+                        </div>
                     </div>
                 </div>
-            </div>
-        `;
-    }).join('');
+            `;
+        }).join('');
+    }
 };
 
 window.toggleSettings = function() {
@@ -95,7 +745,6 @@ window.toggleSettings = function() {
     }
 };
 
-// Auto-initialize when the script loads
 document.addEventListener('DOMContentLoaded', () => {
-    initSettingsMenu();
+    SettingsEngine.init();
 });

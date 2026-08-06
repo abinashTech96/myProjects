@@ -240,14 +240,15 @@ const ComplianceEngine = {
         }
     },
 
-    renderUI: function(data) {
+    renderUI: function(elementsData, fixturesData) {
+        // ✨ NEW: Calculate the data internally instead of relying on app.js
+        const data = this.calculate(elementsData, fixturesData);
         if (!data) return;
+        
         let widget = document.getElementById('compliance-widget');
         
         if (!widget) {
-            // Abort if strict HTML is required
             if (this.REQUIRE_HTML_CONTAINER) return;            
-            // Otherwise, auto-generate the fallback div
             widget = document.createElement('div');
             widget.id = 'compliance-widget';
             const canvasWrapper = document.getElementById('canvas-wrapper');
@@ -300,9 +301,12 @@ const ComplianceEngine = {
 };
 
 // 🌟 GLOBAL COMPATIBILITY HOOKS
-window._calcCompliance = (elements, fixtures) => ComplianceEngine.calculate(elements, fixtures);
+window.runComplianceCheck = () => {
+    if (typeof elements !== 'undefined' && typeof fixtures !== 'undefined') {
+        ComplianceEngine.renderUI(elements, fixtures);
+    }
+};
 window.toggleComplianceWidget = () => ComplianceEngine.toggleUI();
-window.renderComplianceUI = (data) => ComplianceEngine.renderUI(data);
 
 // --- Self-Contained Settings Toggle ---
 document.addEventListener('DOMContentLoaded', () => {

@@ -14,14 +14,15 @@
     <link rel="stylesheet" href="css/navbar.css">
     <link rel="stylesheet" href="css/navbarDrawerTabbed.css">
     <link rel="stylesheet" href="css/sidebar.css">
-    <link rel="stylesheet" href="css/settings.css">
-    <link rel="stylesheet" href="css/presentationcontrols.css">
+    <!-- <link rel="stylesheet" href="css/settings.css">
+    <link rel="stylesheet" href="css/presentationcontrols.css"> -->
     <link rel="stylesheet" href="css/studio.css">
     <link rel="stylesheet" href="css/converter.css">
 </head>
 <body>
 
-
+    
+    
     <!-- TOP NAVBAR -->
     <div class="pro-studio-navbar">
         <div class="nav-brand">
@@ -47,11 +48,10 @@
                 </svg>
             </button>
 
-            <!-- 🌟 PROJECT INFO -->
-            <button id="project-info-btn" class="nav-a-->dd-floor-btn tool-btn theme-blue" onclick="toggleProjectInfo()" title="Project Details">
+            <!-- 🌟 PROJECT INFO
+            <button id="project-info-btn" class="nav-add-floor-btn tool-btn theme-blue" onclick="toggleProjectInfo()" title="Project Details">
                 <span class="tool-icon italic-serif">i</span>
             </button>
-            
             <div id="project-info-overlay" class="glass-panel nav-dropdown-panel offset-right">
                 <div class="panel-header drop-header-blue">
                     <span class="icon">ℹ️</span>
@@ -70,12 +70,11 @@
                     </div>
                 </div>
             </div>
-
-            <!-- 🌟 AUTO-BUILDER -->
+-->
+            <!-- 🌟 AUTO-BUILDER 
             <button id="auto-builder-btn" class="nav-add-floor-btn tool-btn theme-yellow" onclick="toggleAutoBuilder()" title="Auto-Builder">
                 <span class="tool-icon">✨</span>
             </button>
-            
             <div id="template-builder-overlay" class="glass-panel nav-dropdown-panel width-sm">
                 <div class="panel-header"><span class="icon">✨</span><h2>AUTO-BUILDER</h2></div>
                 <div class="glass-field">
@@ -89,12 +88,11 @@
                     <span class="btn-icon">🏗️</span><span class="btn-text">GENERATE BUILDING</span>
                 </button>
             </div>
-
-            <!-- 🌟 AI AGENT -->
+-->
+            <!-- 🌟 AI AGENT 
             <button id="ai-agent-btn" class="nav-add-floor-btn tool-btn theme-purple" onclick="toggleAIAgent(); window.populateAIModelDropdown();" title="AI Design Assistant">
                 <span class="tool-icon">🤖</span>
             </button>
-
             <div id="ai-agent-overlay" class="glass-panel nav-dropdown-panel width-md">
                 <div class="panel-header drop-header-purple">
                     <span class="icon">🤖</span>
@@ -102,7 +100,6 @@
                 </div>
                 
                 <div style="display: flex; flex-direction: column; gap: 10px;">
-                    <!-- 🚀 Clean Model Selection Dropdown -->
                     <div style="display: flex; flex-direction: column; gap: 4px;">
                         <label style="font-size: 0.65rem; color: #94a3b8; font-weight: bold; letter-spacing: 0.5px;">ACTIVE MODEL</label>
                         <select id="ai-model-select" class="modern-select neo-sunken"></select>
@@ -115,12 +112,11 @@
                     </button>
                 </div>
             </div>
-
-            <!-- 🌟 SETTINGS -->
+-->
+            <!-- 🌟 SETTINGS 
             <button id="settings-btn" class="nav-add-floor-btn nav-settings-btn" title="Settings" onclick="toggleSettings()">
                 <span class="nav-settings-icon">⚙️</span>
             </button>
-
             <div id="settings-overlay" class="glass-panel settings-dropdown">
                 <div class="panel-header settings-header">
                     <span class="icon settings-icon-color">⚙️</span>
@@ -128,9 +124,32 @@
                 </div>
                 
                 <div id="settings-content" class="settings-content">
-                    <!-- Automatically populated by settings.js -->
                 </div>
             </div>
+-->
+
+
+<!-- 🌟 PROJECT INFO -->
+<button id="project-info-btn" class="nav-add-floor-btn tool-btn theme-blue" onclick="toggleProjectInfo()" title="Project Details">
+    <span class="tool-icon italic-serif">i</span>
+</button>
+<!-- The Project Info overlay HTML has been removed and will be injected by JS -->
+
+<!-- 🌟 AUTO-BUILDER -->
+<button id="auto-builder-btn" class="nav-add-floor-btn tool-btn theme-yellow" onclick="toggleAutoBuilder()" title="Auto-Builder">
+    <span class="tool-icon">✨</span>
+</button>
+<!-- The Auto-Builder overlay HTML has been removed and will be injected by JS -->
+
+<!-- 🌟 AI AGENT -->
+<button id="ai-agent-btn" class="nav-add-floor-btn tool-btn theme-purple" onclick="toggleAIAgent(); window.populateAIModelDropdown();" title="AI Design Assistant">
+    <span class="tool-icon">🤖</span>
+</button>
+<!-- The AI Agent overlay HTML has been removed and will be injected by JS -->
+
+<button id="settings-btn" class="nav-add-floor-btn nav-settings-btn" title="Settings" onclick="toggleSettings()">
+    <span class="nav-settings-icon">⚙️</span>
+</button>
 
         </div>
     </div>
@@ -505,18 +524,17 @@
 
     <!-- 🌟 PRESENTATION CONTROLS (Pro Glass Pill) -->
     <!-- CLIENT SHOWCASE MODE -->
+    <!-- 
     <button id="exit-showcase-btn" onclick="toggleShowcaseMode()">
         ✕ EXIT PRESENTATION
     </button>
     <div id="presentation-controls" class="pc-wrapper" style="display: none;">
-        <!-- Sun Controls -->
         <div class="pc-sun-group">
             <span class="pc-sun-icon pc-dawn" title="Dawn">🌅</span>
             <input type="range" id="sun-slider" class="pc-sun-slider" min="6" max="18" step="0.1" value="12" oninput="updateSunlight(this.value)">
             <span class="pc-sun-icon pc-dusk" title="Dusk">🌇</span>
         </div>
         <div class="pc-divider"></div>
-        <!-- Tour Controls -->
         <div class="pc-btn-group">
             <button class="pc-btn pc-btn-set" onclick="captureWaypoint()">
                 <span class="pc-icon">📷</span> Set (<span id="wp-count">0</span>)
@@ -529,7 +547,6 @@
             </button>
         </div>
         <div class="pc-divider"></div>
-        <!-- View Controls -->
         <div class="pc-btn-group">
             <button class="pc-btn pc-btn-view" onclick="toggleShowcaseMode()">
                 <span class="pc-icon">🎬</span> SHOW
@@ -538,7 +555,8 @@
                 <span class="pc-icon">💥</span> EXPLODE
             </button>
         </div>
-    </div>
+    </div> 
+    -->
     <!-- 🌟 PRESENTATION CONTROLS (Pro Glass Pill) -->
 
     <!--⌨️ FLOATING SHORTCUT MENU (Cheat Sheet) -->
@@ -560,6 +578,8 @@
     <script src="js/ui.js"></script>
     <script src="js/settings.js"></script>
     <script src="js/ai-agent.js"></script>
+    <script src="js/autobuilder.js"></script>
+    <script src="js/projectinfo.js"></script>
     <script src="js/camera.js"></script>
     <script src="js/converter.js"></script>
     <script src="js/compliance.js"></script>

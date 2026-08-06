@@ -199,36 +199,42 @@ const RoomStudio = {
     },
 
     save() {
-        if (typeof saveState === 'function') saveState();
         if (typeof elements === 'undefined') return;
 
-        const indicesToRemove = this.sandboxFixtures
-            .filter(f => f.globalRef !== undefined)
-            .map(f => f.globalRef)
-            .sort((a, b) => b - a);
+        // ✨ FIX: Wrap the merge logic in a commit block so the Undo/Redo engine catches it!
+        if (typeof ProjectState !== 'undefined') {
+            ProjectState.commit(`Saved Room Studio`, () => {
+                const indicesToRemove = this.sandboxFixtures
+                    .filter(f => f.globalRef !== undefined)
+                    .map(f => f.globalRef)
+                    .sort((a, b) => b - a);
 
-        indicesToRemove.forEach(idx => {
-            elements.splice(idx, 1);
-            if (typeof fixtures !== 'undefined') {
-                fixtures.forEach(fix => {
-                    if (fix.roomId > idx) {
-                        fix.roomId -= 1;
+                indicesToRemove.forEach(idx => {
+                    elements.splice(idx, 1);
+                    if (typeof fixtures !== 'undefined') {
+                        fixtures.forEach(fix => {
+                            if (fix.roomId > idx) {
+                                fix.roomId -= 1;
+                            }
+                        });
                     }
                 });
-            }
-        });
 
-        this.sandboxFixtures.forEach(fix => {
-            const globalFurniture = structuredClone(fix);
-            delete globalFurniture.globalRef;
-            globalFurniture.x = this.activeRoom.x + fix.x;
-            globalFurniture.y = this.activeRoom.y + fix.y;
-            globalFurniture.floor = this.activeRoom.floor;
-            globalFurniture.locked = false;
-            elements.push(globalFurniture);
-        });
+                this.sandboxFixtures.forEach(fix => {
+                    const globalFurniture = structuredClone(fix);
+                    delete globalFurniture.globalRef;
+                    globalFurniture.x = this.activeRoom.x + fix.x;
+                    globalFurniture.y = this.activeRoom.y + fix.y;
+                    globalFurniture.floor = this.activeRoom.floor;
+                    globalFurniture.locked = false;
+                    elements.push(globalFurniture);
+                });
+            });
+        }
 
         this.close();
+        
+        // UI Updates (Fallbacks in case the Event Bus misses the commit)
         if (typeof updateCanvas === 'function') updateCanvas();
         if (typeof renderSidebar === 'function') renderSidebar();
         if (typeof window.is3DMode !== 'undefined' && window.is3DMode && typeof generate3DModel === 'function') generate3DModel();

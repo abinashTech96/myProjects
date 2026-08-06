@@ -401,7 +401,7 @@ function buildFixturesView(i, el) {
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                     <span class="neo-label ${accentColor}" style="font-size: 0.75rem;">${emoji} ${fix.type.toUpperCase()}</span>
                     
-                    <button class="neo-btn-icon danger" onclick="fixtures.splice(${globalIdx},1); renderSidebar(); updateCanvas()" title="Remove ${fix.type}">
+                    <button class="neo-btn-icon danger" onclick="deleteFixture(${globalIdx})" title="Remove ${fix.type}">
                         &times;
                     </button>
                 </div>
@@ -474,10 +474,12 @@ function renderFloorSelectors() {
 function toggleTheme() {
     const isClassic = document.body.classList.toggle('classic-theme');
     if (typeof updateCanvas === 'function') updateCanvas(); 
-    if (typeof scene3D !== 'undefined' && scene3D) {
+    
+    // ✨ FIX: Properly reference Engine3D.scene instead of the undefined scene3D
+    if (typeof Engine3D !== 'undefined' && Engine3D.scene) {
         const bgColor = isClassic ? 0xe2e8f0 : 0x0f172a; 
-        scene3D.background.setHex(bgColor);
-        if (scene3D.fog) scene3D.fog.color.setHex(bgColor);
+        Engine3D.scene.background.setHex(bgColor);
+        if (Engine3D.scene.fog) Engine3D.scene.fog.color.setHex(bgColor);
     }
 }
 

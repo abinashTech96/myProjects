@@ -195,8 +195,10 @@ function updateCanvas(force3D = true) {
     if (typeof updateAreaDashboard === 'function') updateAreaDashboard();
     if (typeof updateVastuHUD === 'function') updateVastuHUD();
     if (typeof calculateVastuScore === 'function') calculateVastuScore();
-    // ✨ ADD THIS LINE: Trigger the local math engine!
+    if (typeof runComplianceCheck === 'function') runComplianceCheck();
     if (typeof requestBackgroundMath === 'function') requestBackgroundMath();
+    // ✨ ADD THIS LINE: Pass the geometry to the new Project Info Engine
+    if (typeof refreshProjectStatsUI === 'function') refreshProjectStatsUI(geom);
 }
 
 // -----------------------------------------
@@ -547,7 +549,7 @@ function handleColumnToggle(geom) {
     }
 }
 
-function renderOverlaysAndStats(geom) {
+function renderOverlaysAndStatsBackUp  (geom) {
     if(typeof validateStairs === 'function') validateStairs();
     if(typeof renderAutoDimensions === 'function') renderAutoDimensions();
 
@@ -560,6 +562,19 @@ function renderOverlaysAndStats(geom) {
     if (UI.buildArea) UI.buildArea.innerText = `Build Area: ${buildAreaSqFt.toFixed(2)} sq.ft (${coverage}% Coverage)`;
 
     // Draw Smart Alignment Guides
+    const svg = document.getElementById('blueprint');
+    window.CanvasState.snapLines.forEach(line => {
+        const l = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        if (line.type === 'v') { l.setAttribute("x1", line.x); l.setAttribute("x2", line.x); l.setAttribute("y1", 0); l.setAttribute("y2", 1000); }
+        else { l.setAttribute("y1", line.y); l.setAttribute("y2", line.y); l.setAttribute("x1", 0); l.setAttribute("x2", 1000); }
+        l.setAttribute("style", "stroke: #fbbf24; stroke-width: 1.5; stroke-dasharray: 6,4;");
+        if(svg) svg.appendChild(l);
+    });
+}
+
+function renderOverlaysAndStats (geom) {
+    if(typeof validateStairs === 'function') validateStairs();
+    if(typeof renderAutoDimensions === 'function') renderAutoDimensions();
     const svg = document.getElementById('blueprint');
     window.CanvasState.snapLines.forEach(line => {
         const l = document.createElementNS("http://www.w3.org/2000/svg", "line");
@@ -1460,7 +1475,7 @@ document.addEventListener('keydown', (e) => {
 // =========================================
 
 // --- 3. Auto-Area Calculation Dashboard (Worker Receiver) ---
-window.renderAreaUI = function(areaData) {
+window.renderAreaUIBackUp = function(areaData) {
     const dash = document.getElementById('area-dashboard');
     const totalBuiltAreaUI = document.getElementById('total-built-area'); 
 
@@ -1501,13 +1516,40 @@ window.renderAreaUI = function(areaData) {
     dash.innerHTML = html;
 };
 
+// --- 3. Auto-Area Calculation Dashboard (Worker Receiver) ---
+window.renderAreaUI = function(areaData) {
+    const dash = document.getElementById('area-dashboard');
+    if (!dash) return;
+    if (Object.keys(areaData.currentFloorTotals).length === 0) {
+        dash.innerHTML = '<div style="color: #94a3b8; text-align: center;">No rooms on this floor...</div>';
+        return;
+    }
+    let html = '';
+    for (const [room, sqft] of Object.entries(areaData.currentFloorTotals)) {
+        html += `
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 4px;">
+                <span style="color: #cbd5e1;">${room}</span>
+                <span style="color: #38bdf8; font-weight: bold; font-family: monospace;">${sqft.toFixed(1)} sqft</span>
+            </div>
+        `;
+    }
+    html += `
+        <div style="display: flex; justify-content: space-between; margin-top: 6px; padding-top: 6px; border-top: 1px solid #38bdf8;">
+            <span style="color: #f8fafc; font-weight: 900;">THIS FLOOR TOTAL</span>
+            <span style="color: #10b981; font-weight: 900; font-family: monospace; font-size: 0.85rem;">${areaData.currentFloorGrandTotal.toFixed(1)} sqft</span>
+        </div>
+    `;
+
+    dash.innerHTML = html;
+};
+
 
 // ==========================================
 // 🧠 MAIN THREAD MATH ENGINE (Replaces Web Worker for Local Files)
 // ==========================================
 
 // 1. The Debounced Trigger
-window.requestBackgroundMath = debounce(() => {
+window.requestBackgroundMathOld = debounce(() => {
     if (typeof elements === 'undefined' || !elements) return;
     
     const inW = parseFloat(document.getElementById('inW')?.value || 272);
@@ -1526,8 +1568,24 @@ window.requestBackgroundMath = debounce(() => {
     if (typeof renderComplianceUI === 'function') renderComplianceUI(complianceResult);
 }, 50);
 
+// 1. The Debounced Trigger
+window.requestBackgroundMath = debounce(() => {
+    if (typeof elements === 'undefined' || !elements) return;
+    
+    // Vastu and Compliance now handle their own math internally via their respective engines.
+    // The Area Dashboard is the only UI component that still relies on this specific math loop.
+    
+    const areaResult = typeof _calcArea === 'function' ? _calcArea(elements, currentFloor) : null;
+
+    // Update the Area UI
+    if (areaResult && typeof renderAreaUI === 'function') {
+        renderAreaUI(areaResult);
+    }
+}, 50);
+
 
 // 3. The Math Algorithms (Ported from worker)
+/*
 function _calcVastu(elements, inW, inH, compassDir) {
     let score = 0;
     let mainText = "Add rooms to calculate Vastu.";
@@ -1595,6 +1653,8 @@ function _calcVastu(elements, inW, inH, compassDir) {
     }
     return { score, text: mainText, color };
 }
+*/
+
 
 function _calcArea(elements, currentFloor) {
     let currentFloorTotals = {};

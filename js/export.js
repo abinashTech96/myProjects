@@ -244,8 +244,19 @@ const ExportEngine = {
     },
 
     handleExport(type) {
-        const currentState = typeof ProjectState !== 'undefined' ? ProjectState.getSnapshot() : { elements: typeof elements !== 'undefined' ? elements : [], fixtures: typeof fixtures !== 'undefined' ? fixtures : [] };
-        
+        // ✨ FIX: Safely pull the data directly from the global arrays if ProjectState isn't formatting it
+        const currentState = {
+            version: "1.2",
+            timestamp: new Date().toISOString(),
+            elements: typeof elements !== 'undefined' ? elements : [],
+            fixtures: typeof fixtures !== 'undefined' ? fixtures : [],
+            plot: {
+                inW: document.getElementById('inW')?.value,
+                inH: document.getElementById('inH')?.value
+            }
+        };
+
+
         switch (type) {
             case 'json':
                 this.downloadBlob(JSON.stringify(currentState, null, 2), 'archcad-project.json', 'application/json');

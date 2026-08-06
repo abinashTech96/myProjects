@@ -9,15 +9,24 @@ window.is3DMode = true;
 // 🛑 PHASE 1: DEMAND-DRIVEN RENDERING
 // =========================================
 window.isEnginePaused = false;
+window.enginePauseTime = 0;  // Tracks when the tab was hidden
+window.isEngineDead = false; // Tracks if the loop was killed
 
 document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
         window.isEnginePaused = true;
+        window.enginePauseTime = Date.now(); // Start the 1-hour timer
         console.log("⏸️ 3D Engine Paused (Tab Hidden)");
     } else {
         window.isEnginePaused = false;
         console.log("▶️ 3D Engine Resumed");
-        // Force a fresh render the second they switch back to this tab
+        
+        // ✨ Revive the engine if it was killed after 1 hour!
+        if (window.isEngineDead && typeof Engine3D !== 'undefined') {
+            window.isEngineDead = false;
+            Engine3D.startAnimationLoop();
+            console.log("🔄 3D Engine Revived from deep sleep!");
+        }
         if (typeof request3DUpdate === 'function') request3DUpdate();
     }
 });

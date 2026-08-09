@@ -50,9 +50,7 @@ const contextMenuStyles = `
         box-shadow: inset 2px 2px 4px rgba(0,0,0,0.5);
     }
 `;
-
 document.head.insertAdjacentHTML("beforeend", `<style>${contextMenuStyles}</style>`);
-
 // 2. DATA CONFIGURATION (Multi-Context Profiles)
 const CONTEXT_MENUS = {
     element: [

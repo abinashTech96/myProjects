@@ -1,8 +1,228 @@
 // =========================================
 // ADVANCED 3D ISOLATION LOGIC (advanced3d.js)
+// Single-File Component (CSS + JS)
 // =========================================
 
-// --- 1. STATE MANAGEMENT ---
+// --- 1. INJECT MODULE-SPECIFIC CSS ---
+const advanced3DStyles = `
+    /* =========================================
+       FLOATING BUTTON CSS (Adv3D Specific)
+    ========================================= */
+    .Adv3d_btn-adv-3d {
+        width: 120px; 
+        justify-content: center;
+        background: linear-gradient(135deg, #0ea5e9, #3b82f6);
+        border: none;
+        color: #ffffff; 
+        padding: 6px 10px; 
+        border-radius: 10px; 
+        font-weight: 800;
+        font-size: 0.60rem; 
+        letter-spacing: 0.5px;
+        white-space: nowrap; 
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 3px; 
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        --nm-dark: rgba(4, 40, 80, 0.75);
+        --nm-dark-soft: rgba(4, 40, 80, 0.4);
+        --nm-light: rgba(125, 190, 255, 0.55);
+        --nm-light-soft: rgba(125, 190, 255, 0.25);
+        box-shadow:
+            6px 6px 10px var(--nm-dark),
+            12px 12px 28px var(--nm-dark-soft),
+            -6px -6px 10px var(--nm-light),
+            -12px -12px 28px var(--nm-light-soft),
+            inset 0 2px 0 rgba(255,255,255,0.35),
+            inset 0 -2px 4px rgba(0,0,0,0.25);
+    }
+    .Adv3d_btn-adv-3d:hover {
+        transform: translateY(-3px);
+        box-shadow:
+            8px 8px 14px var(--nm-dark),
+            16px 16px 34px var(--nm-dark-soft),
+            -8px -8px 14px var(--nm-light),
+            -16px -16px 34px var(--nm-light-soft),
+            0 10px 28px rgba(59, 130, 246, 0.5),
+            inset 0 2px 0 rgba(255,255,255,0.4),
+            inset 0 -2px 4px rgba(0,0,0,0.25);
+    }
+    .Adv3d_btn-adv-3d:active {
+        transform: translateY(2px);
+        box-shadow:
+            inset 8px 8px 16px var(--nm-dark),
+            inset 14px 14px 26px var(--nm-dark-soft),
+            inset -6px -6px 12px var(--nm-light),
+            inset -2px -2px 4px rgba(0,0,0,0.4);
+    }
+    .Adv3d_btn-adv-3d .icon {
+        font-size: 0.85rem;
+        display: inline-block;
+        transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .Adv3d_btn-adv-3d:hover .icon {
+        transform: scale(1.25) rotate(-8deg);
+    }
+
+    /* =========================================
+       ADVANCED 3D - NEUMORPHIC UI PANEL
+    ========================================= */
+    :root {
+        --neu-bg: #151f32; 
+        --neu-dark-shadow: 6px 6px 12px rgba(0, 0, 0, 0.6);
+        --neu-light-shadow: -6px -6px 12px rgba(255, 255, 255, 0.05);
+        --neu-inset-dark: inset 4px 4px 8px rgba(0, 0, 0, 0.6);
+        --neu-inset-light: inset -4px -4px 8px rgba(255, 255, 255, 0.05);
+    }
+
+    .adv-3d-panel {
+        position: absolute;
+        top: 65px;
+        right: 20px;
+        width: 340px;
+        background: var(--neu-bg);
+        padding: 25px;
+        border-radius: 20px;
+        box-shadow: 12px 12px 24px rgba(0, 0, 0, 0.7), 
+                   -2px -2px 10px rgba(255, 255, 255, 0.02);
+        border: none;
+        color: #f8fafc;
+    }
+
+    .adv-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 25px;
+        padding-bottom: 15px;
+        box-shadow: 0 4px 2px -2px rgba(0,0,0,0.4); 
+    }
+
+    .adv-header h3 {
+        margin: 0;
+        color: #e2e8f0;
+        font-weight: 800;
+        letter-spacing: 0.5px;
+    }
+
+    .adv-close-btn {
+        background: var(--neu-bg);
+        border: none;
+        color: #94a3b8;
+        width: 32px; height: 32px;
+        border-radius: 50%;
+        cursor: pointer;
+        box-shadow: 3px 3px 6px rgba(0,0,0,0.5), 
+                   -3px -3px 6px rgba(255,255,255,0.05);
+        transition: all 0.2s ease;
+        display: flex; align-items: center; justify-content: center;
+    }
+    .adv-close-btn:active {
+        box-shadow: var(--neu-inset-dark), var(--neu-inset-light);
+        color: #ef4444;
+    }
+
+    .adv-label {
+        display: block;
+        font-size: 0.65rem;
+        font-weight: 800;
+        color: #64748b;
+        letter-spacing: 1px;
+        margin-bottom: 12px;
+        text-transform: uppercase;
+    }
+
+    .adv-tab-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .adv-tab {
+        background: var(--neu-bg);
+        border: none;
+        color: #94a3b8;
+        padding: 8px 16px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: 4px 4px 8px rgba(0,0,0,0.5), 
+                   -4px -4px 8px rgba(255,255,255,0.05);
+    }
+
+    .adv-tab:hover {
+        color: #e2e8f0;
+        transform: translateY(-1px);
+    }
+
+    .adv-tab.active {
+        color: #38bdf8;
+        box-shadow: var(--neu-inset-dark), var(--neu-inset-light);
+    }
+
+    .adv-action-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+        margin-bottom: 25px;
+        margin-top: 15px;
+    }
+
+    .adv-btn {
+        background: var(--neu-bg);
+        border: none;
+        padding: 12px;
+        border-radius: 12px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: 5px 5px 10px rgba(0,0,0,0.5), 
+                   -5px -5px 10px rgba(255,255,255,0.05);
+    }
+    .adv-btn:active {
+        box-shadow: var(--neu-inset-dark), var(--neu-inset-light);
+    }
+    .adv-btn-primary { color: #38bdf8; }
+    .adv-btn-danger { color: #ef4444; }
+
+    #adv-clip-slider {
+        -webkit-appearance: none;
+        width: 100%;
+        background: transparent;
+        margin-top: 5px;
+    }
+    #adv-clip-slider:focus { outline: none; }
+
+    #adv-clip-slider::-webkit-slider-runnable-track {
+        height: 10px;
+        background: var(--neu-bg);
+        border-radius: 10px;
+        box-shadow: var(--neu-inset-dark), var(--neu-inset-light);
+    }
+
+    #adv-clip-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        height: 20px;
+        width: 20px;
+        border-radius: 50%;
+        background: #38bdf8;
+        margin-top: -5px;
+        box-shadow: 0 0 10px rgba(56, 189, 248, 0.4), 
+                    3px 3px 6px rgba(0,0,0,0.6);
+        cursor: pointer;
+        transition: transform 0.1s;
+    }
+    #adv-clip-slider::-webkit-slider-thumb:active {
+        transform: scale(0.85);
+    }
+`;
+
+document.head.insertAdjacentHTML("beforeend", '<style>' + advanced3DStyles + '</style>');
+
+// --- 2. STATE MANAGEMENT ---
 const Adv3DState = {
     selectedFloor: null,
     selectedElement: null,
@@ -65,7 +285,7 @@ function initAdvanced3D() {
 }
 
 
-// --- 2. DOM & UI MANAGERS ---
+// --- 3. DOM & UI MANAGERS ---
 function closeAdvPanel() {
     const panel = document.getElementById('adv-3d-panel');
     if (panel) {
@@ -154,7 +374,7 @@ function renderAdvElements() {
 }
 
 
-// --- 3. EVENT CONTROLLERS ---
+// --- 4. EVENT CONTROLLERS ---
 function selectAdvFloor(floorIndex) {
     Adv3DState.selectedFloor = floorIndex;
     Adv3DState.selectedElement = null; 
@@ -205,7 +425,7 @@ function resetAdvIsolation() {
 }
 
 
-// --- 4. CORE 3D ORCHESTRATORS ---
+// --- 5. CORE 3D ORCHESTRATORS ---
 function executeIsolation() {
     if (Adv3DState.selectedFloor === null) return alert("Please select a floor first!");
     
@@ -220,7 +440,6 @@ function executeIsolation() {
         const startTarget = Engine3D.controls.target.clone();
 
         const targetCutY = calculateClippingPlaneY();
-        // 🌟 REFACTORED: Dynamic sweep offset
         const startCutY = targetCutY + ARCH3D_CONFIG.ADVANCED_UI.CINEMATIC.SWEEP_OFFSET;
         const clipPlane = new THREE.Plane(new THREE.Vector3(0, -1, 0), startCutY);
         
@@ -260,7 +479,7 @@ function finalizeReset() {
 }
 
 
-// --- 5. 3D MATH & RENDER HELPERS ---
+// --- 6. 3D MATH & RENDER HELPERS ---
 function sync2DToAdv3D() {
     if (typeof setFloor === 'function' && currentFloor !== Adv3DState.selectedFloor) setFloor(Adv3DState.selectedFloor);
     if (typeof selectedElIndex !== 'undefined') selectedElIndex = Adv3DState.selectedElement !== null ? Adv3DState.selectedElement : -1;
@@ -392,12 +611,11 @@ function getRoofClippingHeight() {
 }
 
 
-// --- 6. ANIMATION CONTROLLERS ---
+// --- 7. ANIMATION CONTROLLERS ---
 function animateCinematicSweep(startCam, endCam, startTarget, endTarget, clipPlane, startCutY, endCutY) {
     if (typeof Engine3D.controls === 'undefined' || !Engine3D.camera) return;
 
     Engine3D.controls.enabled = false; 
-    // 🌟 REFACTORED
     const duration = ARCH3D_CONFIG.ADVANCED_UI.CINEMATIC.SWEEP_DURATION_MS;
     const startTime = performance.now();
     const easeInOutCubic = t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
@@ -429,7 +647,6 @@ function animateCinematicReset(startCam, endCam, startTarget, endTarget, clipPla
     if (typeof Engine3D.controls === 'undefined' || !Engine3D.camera) return;
 
     Engine3D.controls.enabled = false;
-    // 🌟 REFACTORED
     const duration = ARCH3D_CONFIG.ADVANCED_UI.CINEMATIC.RESET_DURATION_MS;
     const startTime = performance.now();
     const easeInOutCubic = t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
@@ -453,22 +670,19 @@ function animateCinematicReset(startCam, endCam, startTarget, endTarget, clipPla
     requestAnimationFrame(update);
 }
 
-// 🌟 MISSING MECHANICS: Render Modes & Clipping
+// 🌟 Render Modes & Clipping
 function setAdvRenderMode(mode, btnElement) {
     if (!Engine3D.buildingGroup) return;
 
-    // Update UI button styles
     const tabs = document.querySelectorAll('#render-mode-tabs .adv-tab');
     tabs.forEach(t => t.classList.remove('active'));
     if (btnElement) btnElement.classList.add('active');
 
-    // Loop through all 3D meshes
     Engine3D.buildingGroup.traverse(child => {
         if (child.isMesh && child.material) {
             let mats = Array.isArray(child.material) ? child.material : [child.material];
             
             mats.forEach(mat => {
-                // Ensure we don't accidentally ruin the Ghost Material from Isolate mode
                 const ghostOpacity = typeof ARCH3D_CONFIG !== 'undefined' ? ARCH3D_CONFIG.ADVANCED_UI.GHOST_MATERIAL.OPACITY : 0.1;
                 if (mat.opacity === ghostOpacity) return;
 
@@ -494,10 +708,8 @@ function setAdvRenderMode(mode, btnElement) {
 function updateClippingPlane(val) {
     if (!Engine3D.buildingGroup || typeof Engine3D.renderer === 'undefined') return;
     
-    // Ensure Three.js allows clipping
     Engine3D.renderer.localClippingEnabled = true;
 
-    // Try to find the existing clipping plane if isolation has occurred
     let globalClipPlane = null;
     Engine3D.buildingGroup.traverse(child => {
         if (child.isMesh && child.material && child.material.clippingPlanes && child.material.clippingPlanes.length > 0) {
@@ -505,7 +717,6 @@ function updateClippingPlane(val) {
         }
     });
 
-    // If no plane exists, create one and apply it to everything
     if (!globalClipPlane) {
         globalClipPlane = new THREE.Plane(new THREE.Vector3(0, -1, 0), val);
         Engine3D.buildingGroup.traverse(child => {
@@ -519,25 +730,23 @@ function updateClippingPlane(val) {
             }
         });
     } else {
-        // Just move the existing plane
         globalClipPlane.constant = val;
     }
 }
 
 
-// --- 7. PUBLIC API FACADE ---
+// --- 8. PUBLIC API FACADE ---
 window.Adv3D = {
     closePanel: closeAdvPanel,
     toggleWorkspaceMode: toggleAdvWorkspace,
     toggleGhostMode: toggleAdvGhostMode,
     viewIsolated: executeIsolation,
     resetIsolation: resetAdvIsolation,
-    setRenderMode: setAdvRenderMode,           // <-- NEW
-    updateClippingPlane: updateClippingPlane   // <-- NEW
+    setRenderMode: setAdvRenderMode,
+    updateClippingPlane: updateClippingPlane 
 };
 
-// --- 8. INITIALIZATION ---
-// Add the event listener LAST, after everything else is defined
+// --- 9. INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', () => {
     if (typeof initAdvanced3D === 'function') {
         initAdvanced3D();

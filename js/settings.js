@@ -635,30 +635,29 @@ const SETTINGS_CONFIG = [
         ]
     },
     {
-        id: 'data-controls',
-        icon: '💾',
-        title: 'DATA CONTROLS',
+        id: 'pro-tools',
+        icon: '🚀',
+        title: 'PRO TOOLS & AI',
         open: false,
         isGrid: true,
-        animation: 'blastAndSparkleHotFlash',
-        items: [
-            { type: 'buttons', buttons: [
-                { label: '💾 Save', action: 'exportJSON()', class: 'sidebar-btn secondary', style: 'flex:1; padding: 5px;' },
-                { label: '📂 Load', action: "document.getElementById('importFile').click()", class: 'sidebar-btn secondary', style: 'flex:1; padding: 5px;' }
-            ]},
-            { type: 'button', label: '⚠️ FACTORY RESET', action: 'resetWorkspace()', class: 'sidebar-btn secondary danger-override' }
-        ]
-    },
-    {
-        id: 'toolbar-controls',
-        icon: '🛠️',
-        title: 'TOOLBAR TOOLS',
-        open: false,
         animation: 'blastAndSparkleRing',
         items: [
-            { type: 'toggle', id: 'toggle-project-info-cb', label: 'ℹ️ Project Info', checked: true, action: "toggleNavTool('project-info-btn', this.checked)" },
-            { type: 'toggle', id: 'toggle-auto-builder-cb', label: '✨ Auto-Builder', checked: true, action: "toggleNavTool('auto-builder-btn', this.checked)" },
-            { type: 'toggle', id: 'toggle-ai-agent-cb', label: '🤖 AI Agent', checked: true, action: "toggleNavTool('ai-agent-btn', this.checked)" }
+            { type: 'buttons', buttons: [
+                { label: '✨ Auto-Builder', action: "toggleAutoBuilder()", class: 'sidebar-btn secondary', style: 'flex:1; padding: 5px;' },
+                { label: '🤖 AI Agent', action: "toggleAIAgent(); window.populateAIModelDropdown();", class: 'sidebar-btn secondary', style: 'flex:1; padding: 5px;' }
+            ]}
+        ]
+    },
+    ,
+    {
+        id: 'demo-section',
+        icon: '🧪',
+        title: 'DEMO FEATURES',
+        open: false,
+        animation: 'blastAndSparkleHotFlash',
+        items: [
+            { type: 'toggle', id: 'demo-toggle-1', label: '🚀 Future Feature A', checked: false, action: "console.log('Feature A toggled')" },
+            { type: 'toggle', id: 'demo-toggle-2', label: '🔮 Future Feature B', checked: false, action: "console.log('Feature B toggled')" }
         ]
     }
 ];

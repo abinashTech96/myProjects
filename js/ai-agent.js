@@ -377,42 +377,45 @@ window.populateAIModelDropdown();
 // =========================================
 const AIAgentUIEngine = {
     init: function() {
-        let overlay = document.getElementById('ai-agent-overlay');
+        if (document.getElementById('ai-agent-modal-container')) return;
+
+        const modalContainer = document.createElement('div');
+        modalContainer.id = 'ai-agent-modal-container';
         
-        if (!overlay) {
-            overlay = document.createElement('div');
-            overlay.id = 'ai-agent-overlay';
-            overlay.className = 'glass-panel nav-dropdown-panel width-md';
-            
-            overlay.innerHTML = `
-                <div class="panel-header drop-header-purple">
-                    <span class="icon">🤖</span>
-                    <h2>AI ASSISTANT</h2>
+        modalContainer.innerHTML = `
+            <div id="ai-agent-backdrop" style="position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(15, 23, 42, 0.75); backdrop-filter:blur(8px); z-index:99998; display:none; opacity:0; transition:opacity 0.3s ease;" onclick="toggleAIAgent()"></div>
+            <div id="ai-agent-modal" class="glass-panel" style="position:fixed; top:50%; left:50%; transform:translate(-50%, -50%) scale(0.9); width:400px; z-index:99999; display:none; opacity:0; transition:all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);">
+                <div class="panel-header" style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid rgba(168, 85, 247, 0.3); padding-bottom: 10px; margin-bottom: 15px;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span class="icon" style="color:#a855f7;">🤖</span><h2 style="margin:0; background:linear-gradient(90deg, #a855f7, #c084fc); -webkit-background-clip:text; -webkit-text-fill-color:transparent; font-size:1.1rem; letter-spacing:1px;">AI ASSISTANT</h2>
+                    </div>
+                    <button onclick="toggleAIAgent()" style="background:transparent; border:none; color:#94a3b8; font-size:1.4rem; cursor:pointer;">&times;</button>
                 </div>
                 
-                <div style="display: flex; flex-direction: column; gap: 10px;">
-                    <div style="display: flex; flex-direction: column; gap: 4px;">
-                        <label style="font-size: 0.65rem; color: #94a3b8; font-weight: bold; letter-spacing: 0.5px;">ACTIVE MODEL</label>
-                        <select id="ai-model-select" class="modern-select neo-sunken"></select>
+                <div style="display: flex; flex-direction: column; gap: 15px;">
+                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                        <label style="font-size: 0.7rem; color: #94a3b8; font-weight: bold; letter-spacing: 0.5px;">ACTIVE MODEL</label>
+                        <select id="ai-model-select" class="modern-select neo-sunken" style="width:100%;"></select>
                     </div>
 
-                    <textarea id="ai-input" class="neo-sunken ai-textarea" placeholder="e.g., Add a 10x12 master bedroom on the left..."></textarea>
+                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                        <label style="font-size: 0.7rem; color: #94a3b8; font-weight: bold; letter-spacing: 0.5px;">PROMPT COMMAND</label>
+                        <textarea id="ai-input" class="neo-sunken ai-textarea" style="width:100%; height:90px; padding:12px; border-radius:8px; border:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.3); color:white; resize:none; font-family:sans-serif;" placeholder="e.g., Add a 10x12 master bedroom on the left..."></textarea>
+                    </div>
                     
-                    <button id="ai-generate-btn" class="btn-generate theme-purple-btn" onclick="handleAICommand()">
-                        <span class="btn-icon">✨</span><span class="btn-text">GENERATE</span>
+                    <button id="ai-generate-btn" class="theme-purple-btn" style="width:100%; padding:12px; border-radius:8px; font-weight:bold; cursor:pointer; color:white; border:none;" onclick="handleAICommand()">
+                        <span class="btn-icon">✨</span> <span class="btn-text">GENERATE LAYOUT</span>
                     </button>
                 </div>
-            `;
-            
-            const btn = document.getElementById('ai-agent-btn');
-            if (btn && btn.parentNode) {
-                btn.parentNode.appendChild(overlay);
-            } else {
-                document.body.appendChild(overlay);
-            }
-        }
+            </div>
+        `;
+        document.body.appendChild(modalContainer);
     }
 };
+
+document.addEventListener('DOMContentLoaded', () => {
+    AIAgentUIEngine.init();
+});
 
 document.addEventListener('DOMContentLoaded', () => {
     AIAgentUIEngine.init();

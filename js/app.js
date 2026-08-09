@@ -1370,11 +1370,22 @@ window.addRoom = function(x, y, w, h, type) {
 
 window.moveElement = function(id, newX, newY) {
     if (!elements[id]) return; 
-    if(typeof saveState === 'function') saveState();
-    
-    elements[id].x = newX;
-    elements[id].y = newY;
-    
+
+    // Force the mutation through the state manager to ensure the Time Machine captures it
+    if (typeof ProjectState !== 'undefined') {
+        ProjectState.commit('AI Moved Element', () => {
+            elements[id].x = newX;
+            elements[id].y = newY;
+        });
+        console.log(`Element ${id} moved to (${newX}, ${newY}) via ProjectState.`);
+    } else {
+        // Fallback safety
+        if(typeof saveState === 'function') saveState();
+        elements[id].x = newX;
+        elements[id].y = newY;
+        console.log(`Warning: ProjectState is undefined. Directly mutated element ${id}.`);
+    }
+
     if(typeof renderSidebar === 'function') renderSidebar();
     updateCanvas();
 };
@@ -1571,13 +1582,7 @@ window.requestBackgroundMathOld = debounce(() => {
 // 1. The Debounced Trigger
 window.requestBackgroundMath = debounce(() => {
     if (typeof elements === 'undefined' || !elements) return;
-    
-    // Vastu and Compliance now handle their own math internally via their respective engines.
-    // The Area Dashboard is the only UI component that still relies on this specific math loop.
-    
     const areaResult = typeof _calcArea === 'function' ? _calcArea(elements, currentFloor) : null;
-
-    // Update the Area UI
     if (areaResult && typeof renderAreaUI === 'function') {
         renderAreaUI(areaResult);
     }

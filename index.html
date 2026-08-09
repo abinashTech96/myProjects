@@ -135,17 +135,18 @@
 </button>
 <!-- The Project Info overlay HTML has been removed and will be injected by JS -->
 
-<!-- 🌟 AUTO-BUILDER -->
-<button id="auto-builder-btn" class="nav-add-floor-btn tool-btn theme-yellow" onclick="toggleAutoBuilder()" title="Auto-Builder">
-    <span class="tool-icon">✨</span>
+<!-- 🌟 SAVE & LOAD (Moved from Settings) -->
+<button class="nav-add-floor-btn tool-btn theme-blue" onclick="exportJSON()" title="Save Project JSON">
+    <span class="tool-icon">💾</span>
 </button>
-<!-- The Auto-Builder overlay HTML has been removed and will be injected by JS -->
+<button class="nav-add-floor-btn tool-btn theme-yellow" onclick="document.getElementById('importFile').click()" title="Load Project JSON">
+    <span class="tool-icon">📂</span>
+</button>
 
-<!-- 🌟 AI AGENT -->
-<button id="ai-agent-btn" class="nav-add-floor-btn tool-btn theme-purple" onclick="toggleAIAgent(); window.populateAIModelDropdown();" title="AI Design Assistant">
-    <span class="tool-icon">🤖</span>
+<!-- 🌟 FACTORY RESET -->
+<button class="nav-add-floor-btn tool-btn" style="color: #ef4444; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3);" onclick="resetWorkspace()" title="Factory Reset">
+    <span class="tool-icon">⚠️</span>
 </button>
-<!-- The AI Agent overlay HTML has been removed and will be injected by JS -->
 
 <button id="settings-btn" class="nav-add-floor-btn nav-settings-btn" title="Settings" onclick="toggleSettings()">
     <span class="nav-settings-icon">⚙️</span>

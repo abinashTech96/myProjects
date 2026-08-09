@@ -1387,3 +1387,26 @@ select optgroup {
     box-shadow: 0 6px 20px rgba(250, 204, 21, 0.2);
     background: rgba(250, 204, 21, 0.05);
 }
+
+/* =========================================
+   ⚡ PERFORMANCE MODE OVERRIDES
+========================================= */
+body.perf-mode-active * {
+    /* Globally disable all glassmorphism blurs */
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+body.perf-mode-active .glass-panel,
+body.perf-mode-active .panel,
+body.perf-mode-active .sidebar-converter,
+body.perf-mode-active .neo-explorer-panel,
+body.perf-mode-active .adv-3d-panel,
+body.perf-mode-active .std-container,
+body.perf-mode-active .pc-wrapper {
+    /* Fallback to solid, opaque backgrounds to prevent text overlapping */
+    background-color: #0f172a !important; 
+    /* Disable expensive rendering shadows */
+    box-shadow: none !important; 
+    border: 1px solid #334155 !important;
+}

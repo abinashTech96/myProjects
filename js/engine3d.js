@@ -277,16 +277,19 @@ let isPerformanceMode = false;
 window.togglePerformanceMode = function() {
     isPerformanceMode = !isPerformanceMode;
     const btn = document.getElementById('btn-performance');
-    
     if (btn) {
         const textSpan = btn.querySelector('.text');
         if(textSpan) textSpan.innerHTML = isPerformanceMode ? 'PERF MODE: ON' : 'PERF MODE: OFF';
         btn.style.background = isPerformanceMode ? 'rgba(234, 179, 8, 0.2)' : 'rgba(15, 23, 42, 0.85)';
-        btn.style.color = isPerformanceMode ? '#facc15' : '#facc15';
+        btn.style.color = isPerformanceMode ? '#facc15' : '#38bdf8'; 
     }
+
+    // 1. UI PERFORMANCE: Toggle the CSS class to disable glassmorphism
+    document.body.classList.toggle('perf-mode-active', isPerformanceMode);
 
     if (!Engine3D.scene || !Engine3D.renderer) return;
 
+    // 2. WEBGL PERFORMANCE: Lower pixel ratio and disable shadows
     Engine3D.renderer.setPixelRatio(isPerformanceMode ? 1 : window.devicePixelRatio);
 
     Engine3D.scene.traverse((object) => {

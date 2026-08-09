@@ -200,6 +200,20 @@ const ProjectState = {
         });
     },
 
+    updateElement(idx, newData, actionName = "Updated Element") {
+        this.commit(actionName, () => {
+            // Safely merge the new data into the existing element
+            Object.assign(this.data.elements[idx], newData);
+        });
+    },
+
+    updateFixture(idx, newData, actionName = "Updated Fixture") {
+        this.commit(actionName, () => {
+            // Safely merge the new data into the existing fixture
+            Object.assign(this.data.fixtures[idx], newData);
+        });
+    },
+
     commit(actionName, mutationCallback) {
         mutationCallback();
         this.saveState(actionName);

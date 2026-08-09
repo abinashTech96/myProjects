@@ -1,6 +1,6 @@
 // =========================================
-// 📋 CONTEXT MENU ENGINE (contextmenu.js)
-// Single-File Component (CSS + JS)
+// 🖱️ CONTEXT MENU ENGINE (contextmenu.js)
+// Context-Aware (Elements, Plot, Outside)
 // =========================================
 
 // 1. INJECT NEUMORPHIC CSS
@@ -51,24 +51,35 @@ const contextMenuStyles = `
     }
 `;
 
-// Insert the CSS into the <head> automatically
 document.head.insertAdjacentHTML("beforeend", `<style>${contextMenuStyles}</style>`);
 
-// 2. DATA CONFIGURATION
-const CONTEXT_MENU_CONFIG = [
-    { id: 'duplicate', icon: '📋', label: 'Duplicate', shortcut: 'Ctrl+D', action: 'cloneElement' },
-    { id: 'lock', icon: '🔒', label: 'Lock/Unlock', shortcut: 'Ctrl+L', action: 'toggleLock' },
-    { id: 'rotate', icon: '🔄', label: 'Rotate', action: 'rotateElement' },
-    { type: 'divider' }, 
-    { id: 'delete', icon: '🗑️', label: 'Delete', shortcut: 'Del', action: 'deleteElement', color: '#ef4444' }
-];
+// 2. DATA CONFIGURATION (Multi-Context Profiles)
+const CONTEXT_MENUS = {
+    element: [
+        { id: 'duplicate', icon: '📋', label: 'Duplicate', shortcut: 'Ctrl+D' },
+        { id: 'lock', icon: '🔒', label: 'Lock/Unlock', shortcut: 'Ctrl+L' },
+        { id: 'rotate', icon: '🔄', label: 'Rotate' },
+        { type: 'divider' }, 
+        { id: 'delete', icon: '🗑️', label: 'Delete', shortcut: 'Del', color: '#ef4444' }
+    ],
+    plot: [
+        { id: 'future_plot_1', icon: '🏗️', label: 'Add Room Here (Future)' },
+        { id: 'future_plot_2', icon: '📐', label: 'Plot Settings (Future)' }
+    ],
+    outside: [
+        { id: 'future_outside_1', icon: '🌳', label: 'Add Landscape (Future)' },
+        { id: 'future_outside_2', icon: '🛣️', label: 'Road Settings (Future)' }
+    ]
+};
 
-// 3. UI GENERATOR
-window.initContextMenu = function() {
+// 3. UI GENERATOR (Dynamic)
+window.renderContextMenu = function(contextType) {
     const ctxMenu = document.getElementById('context-menu');
     if (!ctxMenu) return;
     
-    ctxMenu.innerHTML = CONTEXT_MENU_CONFIG.map(item => {
+    const config = CONTEXT_MENUS[contextType] || CONTEXT_MENUS.element;
+
+    ctxMenu.innerHTML = config.map(item => {
         if (item.type === 'divider') {
             return `<div style="height:1px; background:rgba(255,255,255,0.1); margin:4px 0;"></div>`;
         }
@@ -87,48 +98,87 @@ window.initContextMenu = function() {
 
 // 4. ACTION ROUTER
 window.handleContextMenuAction = function(actionId) {
-    if (typeof selectedElIndex === 'undefined' || selectedElIndex === -1) return;
-    
-    switch(actionId) {
-        case 'duplicate': 
-            if (typeof cloneElement === 'function') cloneElement(selectedElIndex); 
-            break;
-        case 'lock': 
-            if (typeof elements !== 'undefined' && elements[selectedElIndex]) {
-                elements[selectedElIndex].locked = !elements[selectedElIndex].locked; 
-                if(typeof renderSidebar === 'function') renderSidebar(); 
-            }
-            break;
-        case 'rotate': 
-            if (typeof rotateElement === 'function') rotateElement(selectedElIndex); 
-            break;
-        case 'delete': 
-            if (typeof deleteElement === 'function') deleteElement(selectedElIndex); 
-            break;
-    }
-    
-    // Hide menu after clicking
+    // Hide menu immediately after clicking
     const ctx = document.getElementById('context-menu');
     if (ctx) ctx.style.display = 'none';
+
+    // Route Element Actions
+    if (typeof selectedElIndex !== 'undefined' && selectedElIndex !== -1) {
+        switch(actionId) {
+            case 'duplicate': if (typeof cloneElement === 'function') cloneElement(selectedElIndex); break;
+            case 'lock': 
+                if (typeof elements !== 'undefined' && elements[selectedElIndex]) {
+                    elements[selectedElIndex].locked = !elements[selectedElIndex].locked; 
+                    if(typeof renderSidebar === 'function') renderSidebar(); 
+                }
+                break;
+            case 'rotate': if (typeof rotateElement === 'function') rotateElement(selectedElIndex); break;
+            case 'delete': if (typeof deleteElement === 'function') deleteElement(selectedElIndex); break;
+        }
+    } 
+    // Route Future Plot/Outside Actions
+    else {
+        switch(actionId) {
+            case 'future_plot_1': console.log("Future: Add Room Triggered"); break;
+            case 'future_plot_2': console.log("Future: Plot Settings Triggered"); break;
+            case 'future_outside_1': console.log("Future: Add Landscape Triggered"); break;
+            case 'future_outside_2': console.log("Future: Road Settings Triggered"); break;
+        }
+    }
 };
 
-// 5. EVENT LISTENERS
-document.addEventListener('DOMContentLoaded', () => {
-    initContextMenu();
+// 5. GEOMETRY HELPER: Point-in-Polygon (Ray-Casting Algorithm)
+function isPointInPolygon(point, vs) {
+    let x = point.x, y = point.y;
+    let inside = false;
+    for (let i = 0, j = vs.length - 1; i < vs.length; j = i++) {
+        let xi = vs[i].x, yi = vs[i].y;
+        let xj = vs[j].x, yj = vs[j].y;
+        
+        let intersect = ((yi > y) != (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+        if (intersect) inside = !inside;
+    }
+    return inside;
+}
 
-    // Right Click (Show Menu)
+// 6. EVENT LISTENERS
+document.addEventListener('DOMContentLoaded', () => {
     const blueprint = document.getElementById('blueprint');
+    
     if (blueprint) {
         blueprint.addEventListener('contextmenu', (e) => {
             e.preventDefault();
+            const ctx = document.getElementById('context-menu');
+            if (!ctx) return;
+
+            // Scenario 1: Active Element is selected
             if (typeof selectedElIndex !== 'undefined' && selectedElIndex !== -1) {
-                const ctx = document.getElementById('context-menu');
-                if (ctx) {
-                    ctx.style.display = 'block';
-                    ctx.style.left = e.pageX + 'px';
-                    ctx.style.top = e.pageY + 'px';
+                renderContextMenu('element');
+            } 
+            // Scenario 2: Empty space clicked
+            else {
+                // Get the exact SVG mouse coordinates
+                const pt = getMousePos(e);
+                
+                // Get the A, B, C, D bounds from the current geometry
+                const SCALE = parseFloat(UI.scaleInput?.value || 1.2);
+                const unit = UI.unitSelect?.value || 'in';
+                const geom = calculateGeometry(SCALE, unit); 
+                
+                // Check if the point is inside the A-B-C-D Polygon boundary
+                const isInsidePlot = isPointInPolygon(pt, [geom.A, geom.B, geom.C, geom.D]);
+                
+                if (isInsidePlot) {
+                    renderContextMenu('plot');
+                } else {
+                    renderContextMenu('outside');
                 }
             }
+
+            // Show and position the menu
+            ctx.style.display = 'block';
+            ctx.style.left = e.pageX + 'px';
+            ctx.style.top = e.pageY + 'px';
         });
     }
 

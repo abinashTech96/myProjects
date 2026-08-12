@@ -61,6 +61,9 @@ const CONTEXT_MENUS = {
         { id: 'delete', icon: '🗑️', label: 'Delete', shortcut: 'Del', color: '#ef4444' }
     ],
     plot: [
+        { id: 'add_floor', icon: '🏢', label: 'Add New Floor' },
+        { id: 'delete_floor', icon: '🗑️', label: 'Delete Current Floor', color: '#ef4444' },
+        { type: 'divider' },
         { id: 'future_plot_1', icon: '🏗️', label: 'Add Room Here (Future)' },
         { id: 'future_plot_2', icon: '📐', label: 'Plot Settings (Future)' }
     ],
@@ -117,6 +120,10 @@ window.handleContextMenuAction = function(actionId) {
     // Route Future Plot/Outside Actions
     else {
         switch(actionId) {
+            // ✨ THE NEW FLOOR ACTIONS
+            case 'add_floor': if (typeof addManualFloor === 'function') addManualFloor(); break;
+            case 'delete_floor': if (typeof deleteCurrentFloor === 'function') deleteCurrentFloor(); break;
+            
             case 'future_plot_1': console.log("Future: Add Room Triggered"); break;
             case 'future_plot_2': console.log("Future: Plot Settings Triggered"); break;
             case 'future_outside_1': console.log("Future: Add Landscape Triggered"); break;

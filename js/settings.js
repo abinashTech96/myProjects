@@ -648,7 +648,6 @@ const SETTINGS_CONFIG = [
             ]}
         ]
     },
-    ,
     {
         id: 'demo-section',
         icon: '🧪',
@@ -659,7 +658,24 @@ const SETTINGS_CONFIG = [
             { type: 'toggle', id: 'demo-toggle-1', label: '🚀 Future Feature A', checked: false, action: "console.log('Feature A toggled')" },
             { type: 'toggle', id: 'demo-toggle-2', label: '🔮 Future Feature B', checked: false, action: "console.log('Feature B toggled')" }
         ]
+    },
+    {
+        id: 'canvas-controls',
+        icon: '🎨',
+        title: 'CANVAS & 3D CONTROLS',
+        open: false,
+        animation: 'blastAndSparkleFocus',
+        items: [
+            { type: 'toggle', id: 'showOffsetsToggle', label: '📏 Show Site Offsets', checked: false, action: "updateCanvas()" },
+            { type: 'toggle', id: 'showLabelsToggle', label: '🔠 Show Plot Labels', checked: true, action: "updateCanvas()" },
+            { type: 'toggle', id: 'smartMergeToggle', label: '🧩 Smart-Merge', checked: false, action: "updateCanvas()" },
+            { type: 'toggle', id: 'gridSnapToggle', label: '📐 Snap to 1ft Grid', checked: true, action: "" },
+            { type: 'toggle', id: 'showColsToggle', label: '🏗️ Show Columns', checked: false, action: "updateCanvas()" },
+            { type: 'toggle', id: 'showDims', label: '📏 Show Dimensions', checked: false, action: "updateCanvas()" },
+            { type: 'toggle', id: 'real3DToggle', label: '🏠 Real3D View', checked: false, action: "updateCanvas()" }
+        ]
     }
+
 ];
 
 // 3. SETTINGS ENGINE
@@ -745,5 +761,11 @@ window.toggleSettings = function() {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
+    // 1. Build the dynamic Settings menu
     SettingsEngine.init();
+    
+    // 2. ✨ THE FIX: Force the core engine to re-cache the newly generated toggles!
+    if (typeof initDOMCache === 'function') {
+        initDOMCache();
+    }
 });

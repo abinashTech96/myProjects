@@ -17,6 +17,7 @@
     <link rel="stylesheet" href="css/advanced3d.css">
      <link rel="stylesheet" href="css/settings.css">
     <link rel="stylesheet" href="css/presentationcontrols.css"> -->
+    <link rel="stylesheet" href="css/ui-widget.css">
     <link rel="stylesheet" href="css/studio.css">
     <link rel="stylesheet" href="css/converter.css">
 </head>
@@ -457,16 +458,6 @@
             <!-- 🌟 QUICK CONVERTER WIDGET (Top Left) -->
             <div id="qc-widget-wrapper" class="canvas-widget-top-left qc-wrapper"></div>
 
-            <!-- ✨ NEW: COMPLIANCE DASHBOARD WIDGET -->
-            <div id="compliance-widget">
-                <div class="compliance-waiting">Waiting for compliance scan...</div>
-            </div>
-
-            <!--VASTU_WIDGET -->
-            <div id="vastu-widget" class="minimized">
-                <div class="vastu-waiting" style="padding: 10px; color: #94a3b8; font-size: 0.75rem; text-align: center;">Waiting for Vastu scan...</div>
-            </div>
-
             <!-- 🌟 GREEN SQUIRCLE CAMERA CONTROLS -->
             <div id="camera-controls"></div>
             
@@ -530,47 +521,12 @@
         </div> <!-- END RIGHT SPLIT -->
 
     </div> <!-- END MAIN WORKSPACE -->
-
-    <!-- 🌟 PRESENTATION CONTROLS (Pro Glass Pill) -->
-    <!-- CLIENT SHOWCASE MODE -->
-    <!-- 
-    <button id="exit-showcase-btn" onclick="toggleShowcaseMode()">
-        ✕ EXIT PRESENTATION
-    </button>
-    <div id="presentation-controls" class="pc-wrapper" style="display: none;">
-        <div class="pc-sun-group">
-            <span class="pc-sun-icon pc-dawn" title="Dawn">🌅</span>
-            <input type="range" id="sun-slider" class="pc-sun-slider" min="6" max="18" step="0.1" value="12" oninput="updateSunlight(this.value)">
-            <span class="pc-sun-icon pc-dusk" title="Dusk">🌇</span>
-        </div>
-        <div class="pc-divider"></div>
-        <div class="pc-btn-group">
-            <button class="pc-btn pc-btn-set" onclick="captureWaypoint()">
-                <span class="pc-icon">📷</span> Set (<span id="wp-count">0</span>)
-            </button>
-            <button class="pc-btn pc-btn-play" onclick="playCinematicTour()">
-                <span class="pc-icon">▶️</span> Play
-            </button>
-            <button class="pc-btn pc-btn-clear" onclick="clearTour()" title="Clear All">
-                <span class="pc-icon">🗑️</span>
-            </button>
-        </div>
-        <div class="pc-divider"></div>
-        <div class="pc-btn-group">
-            <button class="pc-btn pc-btn-view" onclick="toggleShowcaseMode()">
-                <span class="pc-icon">🎬</span> SHOW
-            </button>
-            <button id="btn-explode" class="pc-btn pc-btn-view" onclick="toggleExplodeView()">
-                <span class="pc-icon">💥</span> EXPLODE
-            </button>
-        </div>
-    </div> 
-    -->
-    <!-- 🌟 PRESENTATION CONTROLS (Pro Glass Pill) -->
-
-    <!--⌨️ FLOATING SHORTCUT MENU (Cheat Sheet) -->
+    
+    <!-- WIDGETS SECTION (COMPLIANCE, VASTU, SHORTCUT GUIDE)-->
+    <div id="compliance-widget"></div>
+    <div id="vastu-widget" class="minimized"></div>
     <div id="cheatsheet-widget"></div>
-
+    <!-- WIDGETS SECTION (COMPLIANCE, VASTU, SHORTCUT GUIDE)-->
 
     <script src="js/event.js"></script>
     <script src="secrets.js"></script>
@@ -589,9 +545,8 @@
     <script src="js/projectinfo.js"></script>
     <script src="js/camera.js"></script>
     <script src="js/converter.js"></script>
-    <script src="js/compliance.js"></script>
-    <script src="js/vastu.js"></script>
-    <script src="js/cheatsheet.js"></script>
+    <script src="js/ui-widget.js"></script>
+
     <script src="js/studio.js"></script>
     <script src="js/parapet.js"></script>
     <script src="js/advanced3d.js"></script>

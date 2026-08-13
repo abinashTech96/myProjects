@@ -208,7 +208,7 @@ const WidgetEngine = {
                 totalChecks++;
                 if (sqft < rules.minAreaSqft) {
                     warnings.push(`[${name}] Area is ${sqft.toFixed(1)} sqft (Min required: ${rules.minAreaSqft} sqft)`);
-                } else passed++; 
+                } else { passed++; }
             }
             
             if (rules.minDimInches > 0) {
@@ -216,7 +216,7 @@ const WidgetEngine = {
                 if (el.w < rules.minDimInches || el.h < rules.minDimInches) {
                     const minFeet = rules.minDimInches / 12;
                     warnings.push(`[${name}] Width or depth is too narrow. Minimum ${minFeet}'0" required.`);
-                } else passed++; 
+                } else { passed++; }
             }
             
             if (rules.requiresEgress && fixtures) {
@@ -225,7 +225,7 @@ const WidgetEngine = {
                 const hasEgress = roomFixtures.some(f => f.type === 'window' || f.type === 'door');
                 if (!hasEgress) {
                     warnings.push(`[${name}] Missing egress/ventilation. Add a door or window.`);
-                } else passed++; 
+                } else { passed++; }
             }
         });
 
@@ -259,14 +259,14 @@ const WidgetEngine = {
                     <span class="compliance-title">${icon} CODE INSPECTOR</span>
                     <div class="compliance-score-wrapper">
                         <span class="compliance-score ${colorClass}">${data.score}%</span>
-                        <button class="compliance-close-btn" title="Minimize" onclick="WidgetEngine.toggle('compliance')">&times;</button>
+                        <button class="compliance-close-btn" title="Minimize">&times;</button>
                     </div>
                 </div>
                 <div class="explorer-scroll compliance-warnings-container"></div>
             </div>
 
             <!-- MINIMIZED VIEW -->
-            <div class="compliance-min-view" title="Expand Code Inspector" onclick="WidgetEngine.toggle('compliance')">
+            <div class="compliance-min-view" title="Expand Code Inspector">
                 <span class="compliance-icon">${icon}</span>
                 <span class="compliance-score-min ${colorClass}">${data.score}%</span>
             </div>
@@ -286,6 +286,10 @@ const WidgetEngine = {
             successEl.textContent = 'All elements meet standard building codes.';
             warningsContainer.appendChild(successEl);
         }
+
+        // Restored exactly from compliance.js
+        widget.querySelector('.compliance-close-btn').addEventListener('click', () => this._toggleCompliance());
+        widget.querySelector('.compliance-min-view').addEventListener('click', () => this._toggleCompliance());
     },
 
     _toggleCompliance: function() {
@@ -425,14 +429,14 @@ const WidgetEngine = {
                     <span class="vastu-title">🧭 VASTU SCORE</span>
                     <div class="vastu-score-wrapper">
                         <span class="vastu-score ${colorClass}">${data.score}/100</span>
-                        <button class="vastu-close-btn" title="Minimize" onclick="WidgetEngine.toggle('vastu')">&times;</button>
+                        <button class="vastu-close-btn" title="Minimize">&times;</button>
                     </div>
                 </div>
                 <div class="explorer-scroll vastu-warnings-container"></div>
             </div>
 
             <!-- MINIMIZED VIEW -->
-            <div class="vastu-min-view" title="Expand Vastu Inspector" onclick="WidgetEngine.toggle('vastu')">
+            <div class="vastu-min-view" title="Expand Vastu Inspector">
                 <span class="vastu-icon">🧭</span>
                 <span class="vastu-score-min ${colorClass}">${data.score}%</span>
             </div>
@@ -460,6 +464,13 @@ const WidgetEngine = {
             successEl.textContent = data.text;
             warningsContainer.appendChild(successEl);
         }
+
+        // Restored exactly from vastu.js (including the stopPropagation)
+        widget.querySelector('.vastu-close-btn').addEventListener('click', (e) => {
+            e.stopPropagation(); 
+            this._toggleVastu();
+        });
+        widget.querySelector('.vastu-min-view').addEventListener('click', () => this._toggleVastu());
     },
 
     _toggleVastu: function() {

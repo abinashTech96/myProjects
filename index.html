@@ -13,13 +13,9 @@
     <link rel="stylesheet" href="css/workspace.css">
     <link rel="stylesheet" href="css/navbar.css">
     <link rel="stylesheet" href="css/navbarDrawerTabbed.css">
-    <link rel="stylesheet" href="css/sidebar.css"><!--
-    <link rel="stylesheet" href="css/advanced3d.css">
-     <link rel="stylesheet" href="css/settings.css">
-    <link rel="stylesheet" href="css/presentationcontrols.css"> -->
+    <link rel="stylesheet" href="css/sidebar.css">
     <link rel="stylesheet" href="css/ui-widget.css">
     <link rel="stylesheet" href="css/studio.css">
-    <link rel="stylesheet" href="css/converter.css">
 </head>
 <body>
 
@@ -50,109 +46,28 @@
                 </svg>
             </button>
 
-            <!-- 🌟 PROJECT INFO
+            <!-- 🌟 PROJECT INFO -->
             <button id="project-info-btn" class="nav-add-floor-btn tool-btn theme-blue" onclick="toggleProjectInfo()" title="Project Details">
                 <span class="tool-icon italic-serif">i</span>
             </button>
-            <div id="project-info-overlay" class="glass-panel nav-dropdown-panel offset-right">
-                <div class="panel-header drop-header-blue">
-                    <span class="icon">ℹ️</span>
-                    <h2>PROJECT DETAILS</h2>
-                </div>
-                
-                <div class="nav-stats-hud transparent-hud">
-                    <div class="hud-stat stat-row">
-                        <span class="hud-label">PLOT AREA</span> <span id="plot-area" class="hud-value blue">0</span>
-                    </div>
-                    <div class="hud-stat stat-row">
-                        <span class="hud-label">BUILD AREA</span> <span id="build-area" class="hud-value green">0</span>
-                    </div>
-                    <div class="hud-stat stat-row no-border">
-                        <span class="hud-label">TOTAL BUILT-UP</span> <span id="total-built-area" class="hud-value purple">0</span>
-                    </div>
-                </div>
-            </div>
--->
-            <!-- 🌟 AUTO-BUILDER 
-            <button id="auto-builder-btn" class="nav-add-floor-btn tool-btn theme-yellow" onclick="toggleAutoBuilder()" title="Auto-Builder">
-                <span class="tool-icon">✨</span>
-            </button>
-            <div id="template-builder-overlay" class="glass-panel nav-dropdown-panel width-sm">
-                <div class="panel-header"><span class="icon">✨</span><h2>AUTO-BUILDER</h2></div>
-                <div class="glass-field">
-                    <label>Total Floors:</label>
-                    <div class="number-input-wrapper">
-                        <input type="number" id="b-floors" value="1" min="1" max="10" oninput="renderFloorSelectors()">
-                    </div>
-                </div>
-                <div id="floor-layout-selectors" class="layout-selectors"></div>
-                <button class="btn-generate" onclick="generateBuilding()">
-                    <span class="btn-icon">🏗️</span><span class="btn-text">GENERATE BUILDING</span>
-                </button>
-            </div>
--->
-            <!-- 🌟 AI AGENT 
-            <button id="ai-agent-btn" class="nav-add-floor-btn tool-btn theme-purple" onclick="toggleAIAgent(); window.populateAIModelDropdown();" title="AI Design Assistant">
-                <span class="tool-icon">🤖</span>
-            </button>
-            <div id="ai-agent-overlay" class="glass-panel nav-dropdown-panel width-md">
-                <div class="panel-header drop-header-purple">
-                    <span class="icon">🤖</span>
-                    <h2>AI ASSISTANT</h2>
-                </div>
-                
-                <div style="display: flex; flex-direction: column; gap: 10px;">
-                    <div style="display: flex; flex-direction: column; gap: 4px;">
-                        <label style="font-size: 0.65rem; color: #94a3b8; font-weight: bold; letter-spacing: 0.5px;">ACTIVE MODEL</label>
-                        <select id="ai-model-select" class="modern-select neo-sunken"></select>
-                    </div>
+            <!-- The Project Info overlay HTML has been removed and will be injected by JS -->
 
-                    <textarea id="ai-input" class="neo-sunken ai-textarea" placeholder="e.g., Add a 10x12 master bedroom on the left..."></textarea>
-                    
-                    <button id="ai-generate-btn" class="btn-generate theme-purple-btn" onclick="handleAICommand()">
-                        <span class="btn-icon">✨</span><span class="btn-text">GENERATE</span>
-                    </button>
-                </div>
-            </div>
--->
-            <!-- 🌟 SETTINGS 
+            <!-- 🌟 SAVE & LOAD -->
+            <button class="nav-add-floor-btn tool-btn theme-blue" onclick="exportJSON()" title="Save Project JSON">
+                <span class="tool-icon">💾</span>
+            </button>
+            <button class="nav-add-floor-btn tool-btn theme-yellow" onclick="document.getElementById('importFile').click()" title="Load Project JSON">
+                <span class="tool-icon">📂</span>
+            </button>
+
+            <!-- 🌟 FACTORY RESET -->
+            <button class="nav-add-floor-btn tool-btn" style="color: #ef4444; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3);" onclick="resetWorkspace()" title="Factory Reset">
+                <span class="tool-icon">⚠️</span>
+            </button>
+            <!-- 🌟 SETTINGS -->
             <button id="settings-btn" class="nav-add-floor-btn nav-settings-btn" title="Settings" onclick="toggleSettings()">
                 <span class="nav-settings-icon">⚙️</span>
             </button>
-            <div id="settings-overlay" class="glass-panel settings-dropdown">
-                <div class="panel-header settings-header">
-                    <span class="icon settings-icon-color">⚙️</span>
-                    <h2 class="settings-title">SETTINGS</h2>
-                </div>
-                
-                <div id="settings-content" class="settings-content">
-                </div>
-            </div>
--->
-
-
-<!-- 🌟 PROJECT INFO -->
-<button id="project-info-btn" class="nav-add-floor-btn tool-btn theme-blue" onclick="toggleProjectInfo()" title="Project Details">
-    <span class="tool-icon italic-serif">i</span>
-</button>
-<!-- The Project Info overlay HTML has been removed and will be injected by JS -->
-
-<!-- 🌟 SAVE & LOAD (Moved from Settings) -->
-<button class="nav-add-floor-btn tool-btn theme-blue" onclick="exportJSON()" title="Save Project JSON">
-    <span class="tool-icon">💾</span>
-</button>
-<button class="nav-add-floor-btn tool-btn theme-yellow" onclick="document.getElementById('importFile').click()" title="Load Project JSON">
-    <span class="tool-icon">📂</span>
-</button>
-
-<!-- 🌟 FACTORY RESET -->
-<button class="nav-add-floor-btn tool-btn" style="color: #ef4444; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3);" onclick="resetWorkspace()" title="Factory Reset">
-    <span class="tool-icon">⚠️</span>
-</button>
-
-<button id="settings-btn" class="nav-add-floor-btn nav-settings-btn" title="Settings" onclick="toggleSettings()">
-    <span class="nav-settings-icon">⚙️</span>
-</button>
 
         </div>
     </div>
@@ -220,7 +135,6 @@
             <!-- 🏢 FLOORS TAB CONTENT                     -->
             <!-- ========================================= -->
             <div id="drawer-tab-floors" class="drawer-tab-panel">
-                
                 <div class="setting-card" style="padding: 8px; margin-bottom: 8px;">
                     <div class="setting-group" style="grid-column: span 2;">
                         <label class="setting-label">PARAPET STYLE</label>
@@ -349,88 +263,9 @@
             </div>
 
             <!-- ========================================= -->
-            <!-- ⚙️ CONTROLS TAB CONTENT                  -->
+            <!-- ⚙️ CONTROLS TAB CONTENT  Toggles moved to Settings Menu (⚙️) -->
             <!-- ========================================= -->
-             <!--
             <div id="drawer-tab-controls" class="drawer-tab-panel">
-                
-                <div class="setting-card" style="padding: 8px; margin-bottom: 8px;">
-                    <div class="setting-group toggle-group" style="justify-content: flex-end; padding-bottom: 5px;">
-                        <label class="ui-toggle" style="justify-content: flex-end; gap: 10px;">
-                            <span style="font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;">
-                                📏 Show Site Offsets
-                            </span>
-                            <input type="checkbox" id="showOffsetsToggle" onchange="updateCanvas()">
-                            <div class="slider"></div>
-                        </label>                        
-                    </div>
-                    <div class="setting-group toggle-group" style="justify-content: flex-end; padding-bottom: 5px;">
-                        <label class="ui-toggle" style="justify-content: flex-end; gap: 10px;">
-                            <span style="font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;">
-                                🔠 Show Plot Labels
-                            </span>
-                            <input type="checkbox" id="showLabelsToggle" onchange="updateCanvas()" checked>
-                            <div class="slider"></div>
-                        </label>                        
-                    </div>
-                            
-                </div>
-                <div class="neo-divider" style="margin: 10px 0;"></div>
-                <div class="setting-card" style="padding: 8px; margin-bottom: 8px;">
-                    <div class="setting-group toggle-group" style="justify-content: flex-end; padding-bottom: 5px;">
-                        <label class="ui-toggle" style="justify-content: flex-end; gap: 10px;">
-                            <span style="font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;">
-                                🧩 Smart-Merge</span>
-                            <input type="checkbox" id="smartMergeToggle" onchange="updateCanvas()">
-                            <div class="slider"></div>
-                        </label>                      
-                    </div>
-                    <div class="setting-group toggle-group" style="justify-content: flex-end; padding-bottom: 5px;">
-                        <label class="ui-toggle" style="justify-content: flex-end; gap: 10px;">
-                            <span style="font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;">
-                                📐 Snap to 1ft Grid
-                            </span>
-                            <input type="checkbox" id="gridSnapToggle" checked>
-                            <div class="slider"></div>
-                        </label>                        
-                    </div>
-                </div>
-                <div class="neo-divider" style="margin: 10px 0;"></div>
-                <div class="setting-card" style="padding: 8px; margin-bottom: 8px;">
-                    <div class="setting-group toggle-group" style="justify-content: flex-end; padding-bottom: 5px;">
-                        <label class="ui-toggle" style="justify-content: flex-end; gap: 10px;">
-                            <span style="font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;">
-                                🏠 Real3D View</span>
-                            <input type="checkbox" id="real3DToggle" onchange="if(typeof is3DMode !== 'undefined' && is3DMode) generate3DModel()">
-                            <div class="slider"></div>
-                        </label>                        
-                    </div>
-                    <div class="setting-group toggle-group" style="justify-content: flex-end; padding-bottom: 5px;">
-                        <label class="ui-toggle" style="justify-content: flex-end; gap: 10px;">
-                            <span style="font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;">
-                                🏗️ Show Columns</span>
-                            <input type="checkbox" id="showColsToggle" onchange="updateCanvas()">
-                            <div class="slider"></div>
-                        </label>                        
-                    </div>
-                </div>
-                <div class="setting-card" style="padding: 8px; margin-bottom: 8px;">
-                    <div class="setting-group toggle-group" style="justify-content: flex-end; padding-bottom: 5px;">
-                        <label class="ui-toggle" style="justify-content: flex-end; gap: 10px;">
-                            <span style="font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;">
-                                📏 Show Dimensions</span>
-                            <input type="checkbox" id="showDims" onchange="updateCanvas()">
-                            <div class="slider"></div>
-                        </label>                        
-                    </div>
-                </div>
-
-                <p style="font-size: 0.65rem; color: #10b981; margin-top: 8px; margin-bottom: 0; font-weight: bold; text-align: center;">🖱️ Scroll: Zoom | Mid-Click: Pan</p>
-            </div>
--->
-            <div id="drawer-tab-controls" class="drawer-tab-panel">
-                <!-- Toggles moved to Settings Menu (⚙️) -->
-                
                 <p style="font-size: 0.65rem; color: #10b981; margin-top: 8px; margin-bottom: 0; font-weight: bold; text-align: center;">🖱️ Scroll: Zoom | Mid-Click: Pan</p>
             </div>
         </div>
@@ -455,9 +290,6 @@
         <div id="canvas-wrapper" class="split-left">
             <!-- Context Menu -->
             <div id="context-menu"></div>
-            <!-- 🌟 QUICK CONVERTER WIDGET (Top Left) -->
-            <div id="qc-widget-wrapper" class="canvas-widget-top-left qc-wrapper"></div>
-
             <!-- 🌟 GREEN SQUIRCLE CAMERA CONTROLS -->
             <div id="camera-controls"></div>
             
@@ -521,8 +353,9 @@
         </div> <!-- END RIGHT SPLIT -->
 
     </div> <!-- END MAIN WORKSPACE -->
-    
-    <!-- WIDGETS SECTION (COMPLIANCE, VASTU, SHORTCUT GUIDE)-->
+
+    <!-- WIDGETS SECTION (CONVERTER, COMPLIANCE, VASTU, SHORTCUT GUIDE)-->
+    <div id="qc-widget-wrapper" class="canvas-widget-top-left qc-wrapper"></div>
     <div id="compliance-widget"></div>
     <div id="vastu-widget" class="minimized"></div>
     <div id="cheatsheet-widget"></div>
@@ -544,21 +377,16 @@
     <script src="js/settings.js"></script>
     <script src="js/projectinfo.js"></script>
     <script src="js/camera.js"></script>
-    <script src="js/converter.js"></script>
     <script src="js/ui-widget.js"></script>
-
     <script src="js/studio.js"></script>
     <script src="js/parapet.js"></script>
     <script src="js/advanced3d.js"></script>
     <script src="js/elevation.js"></script>
     <script src="js/presentationcontrols.js"></script>
-    <script src="js/onboarding.js"></script>    
-
+    <script src="js/onboarding.js"></script>  
     <script src="js/export.js"></script>
     <script src="js/autobuilder.js"></script>
     <script src="js/ai-agent.js"></script>
-    
-    <!-- ✨ THE DECOUPLED CORE FILES -->
     <script src="js/geometry.js"></script>
     <script src="js/renderer2d.js"></script>
     <script src="js/interactions.js"></script>

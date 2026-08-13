@@ -68,6 +68,7 @@ const WidgetEngine = {
         if (type === 'cheatsheet') this._initCheatSheet();
         else if (type === 'compliance') this._initCompliance();
         else if (type === 'vastu') this._initVastu();
+        else if (type === 'converter') this._initConverter();
     },
 
     render: function(type, arg1, arg2) {
@@ -80,6 +81,7 @@ const WidgetEngine = {
         if (type === 'cheatsheet') this._toggleCheatSheet();
         else if (type === 'compliance') this._toggleCompliance();
         else if (type === 'vastu') this._toggleVastu();
+        else if (type === 'converter') this._toggleConverter();
     },
 
     // -----------------------------------------
@@ -476,6 +478,119 @@ const WidgetEngine = {
     _toggleVastu: function() {
         const widget = document.getElementById('vastu-widget');
         if (widget) widget.classList.toggle('minimized');
+    },
+
+    // -----------------------------------------
+    // 5. QUICK CONVERTER MODULE
+    // -----------------------------------------
+    _initConverter: function() {
+        let widget = document.getElementById('qc-widget-wrapper');
+        
+        if (!widget) {
+            if (this.REQUIRE_HTML_CONTAINER) return;
+            widget = document.createElement('div');
+            widget.id = 'qc-widget-wrapper';
+            widget.className = 'canvas-widget-top-left qc-wrapper';
+            const canvasWrapper = document.getElementById('canvas-wrapper') || document.body;
+            canvasWrapper.appendChild(widget);
+        }
+
+        widget.innerHTML = `
+            <!-- Minimized Micro-Input Pill -->
+            <div id="qc-min-btn" class="qc-min-btn">
+                <button onclick="WidgetEngine.toggle('converter')" style="background:transparent; border:none; cursor:pointer; padding:0; display:flex;" title="Maximize Converter">
+                    <span class="icon" style="font-size: 1.1rem; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">📏</span>
+                </button>
+                <div style="display:flex; align-items:center; gap:2px; margin-left:6px;">
+                    <!-- Tiny Feet Input -->
+                    <input type="number" id="minFt" class="qc-min-input" placeholder="0" oninput="document.getElementById('calcFt').value = this.value; window.calcInches();">
+                    <span style="color:#94a3b8; font-weight:bold;">'</span>
+                    
+                    <!-- Tiny Inches Input -->
+                    <input type="number" id="minIn" class="qc-min-input" placeholder="0" oninput="document.getElementById('calcIn').value = this.value; window.calcInches();">
+                    <span style="color:#94a3b8; font-weight:bold;">"</span>
+                    
+                    <span style="color:#38bdf8; margin: 0 4px; font-weight:bold;">=</span>
+                    <span id="qc-min-text" style="color:#f8fafc; font-family:monospace; font-weight:bold; font-size:0.9rem;">0"</span>
+                </div>
+            </div>
+            
+            <!-- Maximized Full Widget -->
+            <div id="qc-full-widget" class="sidebar-converter">
+                <div class="converter-header">
+                    <div><span class="icon">📏</span> QUICK CONVERTER</div>
+                    <button onclick="WidgetEngine.toggle('converter')" title="Minimize Converter" class="converter-close-btn">&times;</button>
+                </div>
+                <div class="converter-row">
+                    <div class="converter-input-group">
+                        <input type="number" id="calcFt" placeholder="0" oninput="window.calcInches()">
+                        <span class="unit">FT</span>
+                    </div>
+                    <div class="converter-input-group">
+                        <input type="number" id="calcIn" placeholder="0" oninput="window.calcInches()">
+                        <span class="unit">IN</span>
+                    </div>
+                    <span class="converter-equals">=</span>
+                    <div class="converter-input-group result-group">
+                        <input type="text" id="resIn" placeholder="Total" readonly>
+                        <span class="unit">IN</span>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        const qcCb = document.getElementById('toggle-qc-cb');
+        if (qcCb) {
+            qcCb.addEventListener('change', (e) => {
+                if (typeof window.toggleWidget === 'function') {
+                    window.toggleWidget('qc-widget-wrapper', e.target.checked);
+                }
+            });
+        }
+    },
+
+    _calcConverterInches: function() {
+        const ftInput = document.getElementById('calcFt');
+        const inInput = document.getElementById('calcIn');
+        
+        const ft = parseFloat(ftInput?.value) || 0; 
+        const inc = parseFloat(inInput?.value) || 0; 
+        const total = ft * 12 + inc;
+        
+        const resIn = document.getElementById('resIn');
+        if (resIn) resIn.value = total + " in"; 
+
+        const minFt = document.getElementById('minFt');
+        const minIn = document.getElementById('minIn');
+        const minText = document.getElementById('qc-min-text');
+        
+        if (minFt && document.activeElement !== minFt && ftInput) minFt.value = ftInput.value;
+        if (minIn && document.activeElement !== minIn && inInput) minIn.value = inInput.value;
+        if (minText) minText.innerText = total + '"';
+    },
+
+    _toggleConverter: function() {
+        const fullWidget = document.getElementById('qc-full-widget');
+        const minBtn = document.getElementById('qc-min-btn');
+        
+        if (!fullWidget || !minBtn) return;    
+        const isClosed = fullWidget.style.opacity === '0';
+        
+        if (isClosed) {
+            minBtn.style.opacity = '0';
+            minBtn.style.transform = 'scale(0.5)';
+            minBtn.style.pointerEvents = 'none';        
+            fullWidget.style.opacity = '1';
+            fullWidget.style.transform = 'scale(1)';
+            fullWidget.style.pointerEvents = 'auto';
+        } else {
+            fullWidget.style.opacity = '0';
+            fullWidget.style.transform = 'scale(0.5)';
+            fullWidget.style.pointerEvents = 'none';        
+            minBtn.style.opacity = '1';
+            minBtn.style.transform = 'scale(1)';
+            minBtn.style.pointerEvents = 'auto';
+        }
     }
 };
 
@@ -483,7 +598,7 @@ const WidgetEngine = {
 // 🌐 GLOBAL HOOKS & EXPORTS
 // ==========================================
 
-// Backwards compatibility mappings for older scripts (e.g. settings.js)
+// Backwards compatibility mappings for older scripts (e.g. settings.js, index.html inline calls)
 window.toggleCheatSheet = () => WidgetEngine.toggle('cheatsheet');
 
 window.runComplianceCheck = () => {
@@ -500,9 +615,13 @@ window.calculateVastuScore = () => {
 };
 window.toggleVastuWidget = () => WidgetEngine.toggle('vastu');
 
+window.calcInches = () => WidgetEngine._calcConverterInches();
+window.toggleQuickConverter = () => WidgetEngine.toggle('converter');
+
 // Auto-Initialize on DOM Load
 document.addEventListener('DOMContentLoaded', () => {
     WidgetEngine.init('cheatsheet');
     WidgetEngine.init('compliance');
     WidgetEngine.init('vastu');
+    WidgetEngine.init('converter');
 });

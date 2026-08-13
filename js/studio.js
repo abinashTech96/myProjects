@@ -74,7 +74,7 @@ const RoomStudio = {
         ).join('');
 
         const uiTemplate = `
-            <div id="room-studio-modal" style="display: none;">
+            <div id="room-studio-modal" style="display: none; z-index: var(--z-overlay);">
                 <div class="std-backdrop"></div>
                 <div class="std-container">
                     <div class="std-header">
@@ -259,6 +259,7 @@ const RoomStudio = {
         this.renderProperties(); 
     },
 
+    // 🌟 REFACTORED: Only update the mathematical state and the specific SVG node transform
     handleDragMove(event) {
         if (!this.isDragging || this.selectedFixtureIndex === -1 || this.is3DActive || !this.activeRoom) return;
         const pt = this.getSVGPos(event);
@@ -300,12 +301,26 @@ const RoomStudio = {
         fix.x = newX;
         fix.y = newY;
         
-        this.renderCanvas();
+        // ✨ THE OPTIMIZATION: Do not call renderCanvas(). Just move the specific node!
+        this.updateCanvasTransform(this.selectedFixtureIndex, fix.x, fix.y);
+        
         if (typeof this.renderProperties === 'function') {
             this.renderProperties(); 
         }
     },
+    // ✨ NEW HELPER: Lightning fast coordinate update (No innerHTML destruction)
+    updateCanvasTransform(idx, x, y) {
+        const furnGroup = document.getElementById('std-furniture-group');
+        if (!furnGroup) return;
+        
+        // Find the specific <g> element for this furniture item
+        const node = furnGroup.children[idx];
+        if (node) {
+            node.setAttribute('transform', `translate(${x}, ${y})`);
+        }
+    },
 
+    // 🌟 REFACTORED: Only called when the node tree actually changes (add/delete/rotate)
     renderCanvas() {
         if (!this.activeRoom) return;
         const svg = document.getElementById('studio-svg');
@@ -356,7 +371,8 @@ const RoomStudio = {
         });
         roomGroup.innerHTML = roomHTML;
 
-        furnGroup.innerHTML = '';
+        // Build the Furniture HTML String
+        let furnHTML = '';
         this.sandboxFixtures.forEach((f, idx) => {
             const isSelected = idx === this.selectedFixtureIndex;
             const strokeColor = isSelected ? '#38bdf8' : '#ec4899';
@@ -369,7 +385,7 @@ const RoomStudio = {
             // FIX 3: Reduced font-size from 10 to 4 (real-world inches).
             const displayName = f.type.toUpperCase().substring(0, 8); 
 
-            furnGroup.innerHTML += `
+            furnHTML += `
                 <g transform="translate(${f.x}, ${f.y})" 
                    onmousedown="RoomStudio.startDrag(${idx}, event)" 
                    class="${isSelected ? 'std-cursor-grabbing' : 'std-cursor-grab'}">
@@ -380,6 +396,9 @@ const RoomStudio = {
                 </g>
             `;
         });
+        
+        // Single DOM update for furniture
+        furnGroup.innerHTML = furnHTML;
 
         this.renderProperties();
     },

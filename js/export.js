@@ -11,7 +11,7 @@ const exportStyles = `
         top: 0; left: 0; width: 100vw; height: 100vh;
         background: rgba(15, 23, 42, 0.75);
         backdrop-filter: blur(8px);
-        z-index: 9998;
+        z-index: calc(var(--z-overlay) - 1); /* Was 9998 */
         display: none;
         opacity: 0;
         transition: opacity 0.4s ease;
@@ -27,7 +27,7 @@ const exportStyles = `
         border-top: 3px solid #10b981;
         border-radius: 16px;
         padding: 30px;
-        z-index: 9999;
+        z-index: var(--z-overlay); /* Was 9999 */
         box-shadow: 0 25px 50px rgba(0, 0, 0, 0.7);
         display: none;
         opacity: 0;

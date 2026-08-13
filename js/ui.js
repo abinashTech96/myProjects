@@ -198,7 +198,8 @@ function renderSidebar() {
 // SUB-VIEW 1: ROOM EXPLORER
 // =========================================
 function buildExplorerView(animClass) {
-    let count = parseInt(document.getElementById('b-floors').value) || 1;
+    let countOld = parseInt(document.getElementById('b-floors').value) || 1;
+    let count = parseInt(document.getElementById('b-floors')?.value) || 1;
     let floorOptions = '';
     for(let i = 0; i < count; i++) {
         const label = getFloorDisplayName(i);
@@ -442,7 +443,8 @@ function buildFixturesView(i, el) {
 }
 
 function renderFloorSelectors() {
-    let count = parseInt(document.getElementById('b-floors').value);
+    let countOld = parseInt(document.getElementById('b-floors').value);
+    let count = parseInt(document.getElementById('b-floors')?.value || 1);
     if (count < 1 || isNaN(count)) count = 1;
 
     const container = document.getElementById('floor-layout-selectors');

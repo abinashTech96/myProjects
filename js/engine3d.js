@@ -236,35 +236,42 @@ document.addEventListener('DOMContentLoaded', () => {
         let hoveredObject = null;
         let hoveredOriginalEmissive = new THREE.Color(0x000000);
         
+        // ✨ Define the throttle flag just above the event listener (if not already there)
+        let raycastPending = false;
         threeContainer.addEventListener('mousemove', (event) => {
             if (!window.is3DMode || !isRaycasterActive || Engine3D.isWalkthrough) {
                 if (threeContainer.style.cursor === 'pointer') threeContainer.style.cursor = 'default';
                 return;
             }
-            const rect = Engine3D.renderer.domElement.getBoundingClientRect();
-            mouse3D.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-            mouse3D.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-            raycaster.setFromCamera(mouse3D, Engine3D.camera);
-            const intersects = raycaster.intersectObjects(Engine3D.buildingGroup.children, true);
-            let foundHover = null;
-            for (let i = 0; i < intersects.length; i++) {
-                const object = intersects[i].object;
-                if (object.userData && (object.userData.isRoom || object.userData.isParapet)) {
-                    foundHover = object;
-                    break;
+            if (raycastPending) return;
+            raycastPending = true;
+            setTimeout(() => {
+                const rect = Engine3D.renderer.domElement.getBoundingClientRect();
+                mouse3D.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+                mouse3D.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+                raycaster.setFromCamera(mouse3D, Engine3D.camera);
+                const intersects = raycaster.intersectObjects(Engine3D.buildingGroup.children, true);
+                let foundHover = null;
+                for (let i = 0; i < intersects.length; i++) {
+                    const object = intersects[i].object;
+                    if (object.userData && (object.userData.isRoom || object.userData.isParapet)) {
+                        foundHover = object;
+                        break;
+                    }
                 }
-            }
-            if (hoveredObject !== foundHover) {
-                if (hoveredObject && hoveredObject.material) {
-                    hoveredObject.material.emissive.copy(hoveredOriginalEmissive);
+                if (hoveredObject !== foundHover) {
+                    if (hoveredObject && hoveredObject.material) {
+                        hoveredObject.material.emissive.copy(hoveredOriginalEmissive);
+                    }
+                    hoveredObject = foundHover;
+                    if (hoveredObject && hoveredObject.material) {
+                        hoveredOriginalEmissive.copy(hoveredObject.material.emissive);
+                        hoveredObject.material.emissive.setHex(0x38bdf8);
+                    }
                 }
-                hoveredObject = foundHover;
-                if (hoveredObject && hoveredObject.material) {
-                    hoveredOriginalEmissive.copy(hoveredObject.material.emissive);
-                    hoveredObject.material.emissive.setHex(0x38bdf8);
-                }
-            }
-            threeContainer.style.cursor = hoveredObject ? 'pointer' : 'default';
+                threeContainer.style.cursor = hoveredObject ? 'pointer' : 'default';
+                raycastPending = false;
+            }, 40);
         });
     }
 });

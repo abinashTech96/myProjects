@@ -80,14 +80,14 @@ const presentationStyles = `
     }
     body.showcase-active #presentation-controls {
         position: fixed !important; bottom: 15px !important; left: 50% !important;
-        transform: translateX(-50%) scale(0.85) !important; z-index: 10000 !important;
+        transform: translateX(-50%) scale(0.85) !important; z-index: var(--z-modal) !important; /* Was 10000 */
         background: rgba(15, 23, 42, 0.9) !important; backdrop-filter: blur(16px) saturate(180%) !important;
         border: 1px solid rgba(56, 189, 248, 0.3) !important; border-radius: 50px !important; 
         padding: 4px 12px !important; gap: 6px !important; width: auto !important; max-width: 90vw !important;
         box-shadow: 0 20px 50px rgba(0,0,0,0.8), inset 0 1px 1px rgba(255, 255, 255, 0.1) !important;
     }
     #exit-showcase-btn {
-        display: none; position: fixed; top: 20px; right: 20px; z-index: 10001;
+        display: none; position: fixed; top: 20px; right: 20px; z-index: calc(var(--z-modal) + 1); /* Was 10001 */
         background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444;
         padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer;
         backdrop-filter: blur(5px); transition: all 0.2s;

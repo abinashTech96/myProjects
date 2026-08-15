@@ -19,10 +19,10 @@ const NAV_ACTION_CONFIG = {
             hasDropdown: true,
             dropdownId: 'nav-export-menu',
             dropdownItems: [
-                { label: '🖨️ Print PDF', actionType: 'EXPORT_PDF' },
-                { label: '💽 AutoCAD DXF', actionType: 'EXPORT_DXF' },
-                { label: '🖼️ Image PNG', actionType: 'EXPORT_PNG' },
-                { label: '🧊 3D Mesh GLB', actionType: 'EXPORT_GLB' }
+                { label: '🖨️ PDF', title: '🖨️ Print PDF', actionType: 'EXPORT_PDF' },
+                { label: '💽 DXF', title: '💽 AutoCAD DXF', actionType: 'EXPORT_DXF' },
+                { label: '🖼️ PNG', title: '🖼️ Image PNG', actionType: 'EXPORT_PNG' },
+                { label: '🧊 GLB', title: '🧊 3D Mesh GLB', actionType: 'EXPORT_GLB' }
             ]
         },
         { 
@@ -69,7 +69,7 @@ const NavActionEngine = {
 
             if (btn.hasDropdown) {
                 const dropItemsHtml = btn.dropdownItems.map(item => `
-                    <div class="export-drop-item" onclick="NavActionEngine.handleAction('${item.actionType}')">${item.label}</div>
+                    <div class="export-drop-item" title="${item.title}" onclick="NavActionEngine.handleAction('${item.actionType}')">${item.label}</div>
                 `).join('');
 
                 return `

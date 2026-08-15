@@ -304,28 +304,6 @@ const StorageEngine = {
         }
     },
 
-    async resetWorkspace() {
-        if (confirm("⚠️ This will completely erase your building. Continue?")) {
-            if (typeof clearTextureCache === 'function') clearTextureCache();
-            elements = []; fixtures = []; currentFloor = 0;
-            ProjectState.history.baseState = null; 
-            ProjectState.history.stack = [];
-            ProjectState.history.redoStack = [];
-            if(document.getElementById('inW')) document.getElementById('inW').value = 278;
-            if(document.getElementById('inH')) document.getElementById('inH').value = 417;
-            if(document.getElementById('b-floors')) document.getElementById('b-floors').value = 1;
-            try {
-                const db = await this.initDB();
-                db.transaction(this.STORE_NAME, 'readwrite').objectStore(this.STORE_NAME).delete('latest_session');
-            } catch(e) {}
-            localStorage.removeItem('ArchCAD_AutoSave');
-            if (typeof renderFloorSelectors === 'function') renderFloorSelectors();
-            if (typeof setFloor === 'function') setFloor(0);
-            if (typeof updateCanvas === 'function') updateCanvas();
-            if (typeof generate3DModel === 'function') generate3DModel();
-        }
-    },
-
     markDirty() {
         this.dbNeedsSave = true;
     },
@@ -343,88 +321,6 @@ const StorageEngine = {
 StorageEngine.startThrottler();
 
 
-// -----------------------------------------
-// 3. PROJECT FILE I/O (JSON Import/Export)
-// -----------------------------------------
-const ProjectIO = {
-    exportJSON() {
-        const projectData = {
-            version: "1.2",
-            timestamp: new Date().toISOString(),
-            floorCount: parseInt(document.getElementById('b-floors')?.value) || 1,
-            elements: elements, fixtures: fixtures,
-            plot: {
-                inW: document.getElementById('inW')?.value,
-                inH: document.getElementById('inH')?.value,
-                aL: document.getElementById('aL')?.value, aU: document.getElementById('aU')?.value,
-                bR: document.getElementById('bR')?.value, bU: document.getElementById('bU')?.value,
-                cR: document.getElementById('cR')?.value, cD: document.getElementById('cD')?.value,
-                dL: document.getElementById('dL')?.value, dD: document.getElementById('dD')?.value,
-                roadSide: document.getElementById('roadSide')?.value
-            }
-        };
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(projectData, null, 2));
-        const downloadAnchorNode = document.createElement('a');
-        downloadAnchorNode.setAttribute("href", dataStr);
-        downloadAnchorNode.setAttribute("download", "ArchCAD_Project_" + Math.floor(Date.now() / 1000) + ".json");
-        document.body.appendChild(downloadAnchorNode);
-        downloadAnchorNode.click();
-        downloadAnchorNode.remove();
-    },
-
-    importJSON(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                const importedData = JSON.parse(e.target.result);
-                if (!importedData.elements) return alert("Invalid project file.");
-                elements = importedData.elements;
-                fixtures = importedData.fixtures || [];
-
-                // Completely reset the history stack for the newly imported file
-                if (typeof ProjectState !== 'undefined') {
-                    ProjectState.history.stack = [];
-                    ProjectState.history.redoStack = [];
-                    ProjectState.history.baseState = ProjectState._clone({ elements, fixtures });
-                    if (typeof renderTimeMachine === 'function') renderTimeMachine();
-                }
-
-                const maxFloor = elements.reduce((max, el) => Math.max(max, el.floor || 0), 0);
-                const calculatedFloors = maxFloor + 1;
-                const finalFloorCount = Math.max(importedData.floorCount || 1, calculatedFloors);
-                if (document.getElementById('b-floors')) {
-                    document.getElementById('b-floors').value = finalFloorCount;
-                }
-                if (importedData.plot) {
-                    const p = importedData.plot;
-                    const setVal = (id, val) => { if(document.getElementById(id)) document.getElementById(id).value = val; };
-                    setVal('inW', p.inW); setVal('inH', p.inH);
-                    setVal('aL', p.aL); setVal('aU', p.aU);
-                    setVal('bR', p.bR); setVal('bU', p.bU);
-                    setVal('cR', p.cR); setVal('cD', p.cD);
-                    setVal('dL', p.dL); setVal('dD', p.dD);
-                    setVal('roadSide', p.roadSide || 'none');
-                }
-                if (typeof renderFloorSelectors === 'function') renderFloorSelectors();
-                
-                currentFloor = 0; 
-                selectedElIndex = -1;
-                
-                if (typeof renderSidebar === 'function') renderSidebar();
-                if (typeof updateCanvas === 'function') updateCanvas(false);
-                setTimeout(() => {
-                    if (typeof generate3DModel === 'function') generate3DModel();
-                    alert("✅ Project loaded successfully!");
-                }, 100);
-                document.getElementById('importFile').value = ''; 
-            } catch (error) { alert("Error parsing file: " + error.message); }
-        };
-        reader.readAsText(file);
-    }
-};
-
 
 // -----------------------------------------
 // 4. GLOBAL BRIDGE (HTML ONCLICK BINDINGS)
@@ -441,13 +337,10 @@ window.redoAction = () => {
     if (typeof updateCanvas === 'function') updateCanvas();
 };
 
-window.resetWorkspace = () => StorageEngine.resetWorkspace();
 window.saveToMemory = () => StorageEngine.saveToMemory();
 window.loadFromMemory = () => StorageEngine.loadFromMemory();
 window.markStateDirty = () => StorageEngine.markDirty();
 
-window.exportJSON = () => ProjectIO.exportJSON();
-window.importJSON = (event) => ProjectIO.importJSON(event);
 
 window.saveState = (actionName) => {
     if (typeof ProjectState !== 'undefined') ProjectState.saveState(actionName);

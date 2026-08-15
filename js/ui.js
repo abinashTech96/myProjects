@@ -693,9 +693,7 @@ window.toggleAIAgent = function() {
 
 
 
-window.toggleProjectInfo = function() {
-    toggleOverlayPanel('project-info-overlay', 'project-info-btn', 'rgba(56, 189, 248, 0.4)', 'rgba(56, 189, 248, 0.15)');
-};
+
 window.toggleSettings = function() {
     toggleOverlayPanel('settings-overlay', 'settings-btn', 'rgba(148, 163, 184, 0.4)', 'rgba(148, 163, 184, 0.15)');
 };

@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/workspace.css">
     <link rel="stylesheet" href="css/navbar.css">
+    <link rel="stylesheet" href="css/navActionBtn.css">
     <link rel="stylesheet" href="css/navbarDrawerTabbed.css">
     <link rel="stylesheet" href="css/sidebar.css">
     <link rel="stylesheet" href="css/ui-widget.css">
@@ -47,24 +48,9 @@
                 </svg>
             </button>
 
-            <!-- 🌟 PROJECT INFO -->
-            <button id="project-info-btn" class="nav-add-floor-btn tool-btn theme-blue" onclick="toggleProjectInfo()" title="Project Details">
-                <span class="tool-icon italic-serif">i</span>
-            </button>
-            <!-- The Project Info overlay HTML has been removed and will be injected by JS -->
+            <!-- 🌟 DYNAMIC NAV ACTION BUTTONS -->
+            <div id="nav-action-buttons" style="display: flex; align-items: center;"></div>
 
-            <!-- 🌟 SAVE & LOAD -->
-            <button class="nav-add-floor-btn tool-btn theme-blue" onclick="exportJSON()" title="Save Project JSON">
-                <span class="tool-icon">💾</span>
-            </button>
-            <button class="nav-add-floor-btn tool-btn theme-yellow" onclick="document.getElementById('importFile').click()" title="Load Project JSON">
-                <span class="tool-icon">📂</span>
-            </button>
-
-            <!-- 🌟 FACTORY RESET -->
-            <button class="nav-add-floor-btn tool-btn" style="color: #ef4444; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3);" onclick="resetWorkspace()" title="Factory Reset">
-                <span class="tool-icon">⚠️</span>
-            </button>
             <!-- 🌟 SETTINGS -->
             <button id="settings-btn" class="nav-add-floor-btn nav-settings-btn" title="Settings" onclick="toggleSettings()">
                 <span class="nav-settings-icon">⚙️</span>
@@ -223,7 +209,6 @@
                         </button>
                     </div>
                 </div>
-                <input type="file" id="importFile" style="display:none" onchange="importJSON(event)">
                 <p style="font-size: 0.65rem; color: #10b981; margin-top: 8px; margin-bottom: 0; font-weight: bold; text-align: center;">🖱️ Scroll: Zoom | Mid-Click: Pan</p>
             </div>
 
@@ -368,7 +353,6 @@
     <script src="js/actions.js"></script>
     <script src="js/ui.js"></script>
     <script src="js/settings.js"></script>
-    <script src="js/projectinfo.js"></script>
     <script src="js/ui-widget.js"></script>
     <script src="js/studio.js"></script>
     <script src="js/parapet.js"></script>
@@ -384,6 +368,7 @@
     <script src="js/interactions.js"></script>
     <script src="js/app.js"></script>
     <script src="js/contextmenu.js"></script>
+    <script src="js/navActionBtn.js"></script>
 
 </body>
 </html>

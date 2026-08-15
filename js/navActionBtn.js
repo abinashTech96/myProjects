@@ -9,10 +9,30 @@ const NAV_ACTION_CONFIG = {
         icon: 'tool-icon'
     },
     buttons: [
-        { id: 'project-info-btn', title: 'Project Details', icon: 'i', themeClass: 'theme-blue', iconClass: 'italic-serif', actionType: 'TOGGLE_INFO' },
-        { id: 'save-project-btn', title: 'Save Project JSON', icon: '💾', themeClass: 'theme-blue', actionType: 'SAVE_PROJECT' },
-        { id: 'load-project-btn', title: 'Load Project JSON', icon: '📂', themeClass: 'theme-yellow', actionType: 'LOAD_PROJECT' },
-        { id: 'reset-workspace-btn', title: 'Factory Reset', icon: '⚠️', themeClass: 'theme-red', actionType: 'RESET_WORKSPACE' }
+        { 
+            id: 'project-info-btn', title: 'Project Details', icon: 'i', 
+            themeClass: 'theme-blue', iconClass: 'italic-serif', actionType: 'TOGGLE_INFO' 
+        },
+        { 
+            id: 'save-project-btn', title: 'Save Project JSON', icon: '💾', 
+            themeClass: 'theme-blue', actionType: 'SAVE_PROJECT',
+            hasDropdown: true,
+            dropdownId: 'nav-export-menu',
+            dropdownItems: [
+                { label: '🖨️ Print PDF', actionType: 'EXPORT_PDF' },
+                { label: '💽 AutoCAD DXF', actionType: 'EXPORT_DXF' },
+                { label: '🖼️ Image PNG', actionType: 'EXPORT_PNG' },
+                { label: '🧊 3D Mesh GLB', actionType: 'EXPORT_GLB' }
+            ]
+        },
+        { 
+            id: 'load-project-btn', title: 'Load Project JSON', icon: '📂', 
+            themeClass: 'theme-yellow', actionType: 'LOAD_PROJECT' 
+        },
+        { 
+            id: 'reset-workspace-btn', title: 'Factory Reset', icon: '⚠️', 
+            themeClass: 'theme-red', actionType: 'RESET_WORKSPACE' 
+        }
     ],
     infoPanel: {
         id: 'project-info-overlay',
@@ -38,25 +58,46 @@ const NavActionEngine = {
         const container = document.getElementById(NAV_ACTION_CONFIG.containerId);
         if (!container) return;
 
-        // 1. Build the 4 Buttons
+        // 1. Build the Buttons & Split Dropdowns
         let html = NAV_ACTION_CONFIG.buttons.map(btn => {
             const iconClass = btn.iconClass ? ` ${btn.iconClass}` : '';
-            return `
+            const mainBtnHtml = `
                 <button id="${btn.id}" class="${NAV_ACTION_CONFIG.classes.baseBtn} ${btn.themeClass}" title="${btn.title}" onclick="NavActionEngine.handleAction('${btn.actionType}')">
                     <span class="${NAV_ACTION_CONFIG.classes.icon}${iconClass}">${btn.icon}</span>
                 </button>
             `;
+
+            if (btn.hasDropdown) {
+                const dropItemsHtml = btn.dropdownItems.map(item => `
+                    <div class="export-drop-item" onclick="NavActionEngine.handleAction('${item.actionType}')">${item.label}</div>
+                `).join('');
+
+                return `
+                <div class="nav-btn-group">
+                    ${mainBtnHtml}
+                    <button class="${NAV_ACTION_CONFIG.classes.baseBtn} ${btn.themeClass} dropdown-trigger-btn" onclick="NavActionEngine.toggleDropdown('${btn.dropdownId}', event)" title="More Export Options">
+                        ▼
+                    </button>
+                    <div id="${btn.dropdownId}" class="export-dropdown-panel">
+                        ${dropItemsHtml}
+                    </div>
+                </div>`;
+            }
+
+            return mainBtnHtml;
         }).join('');
 
-        // 2. Inject a Hidden File Input for the "Load JSON" functionality
+        // 2. Inject a Hidden File Input for "Load JSON"
         html += `<input type="file" id="${NAV_ACTION_CONFIG.fileInputId}" style="display:none" accept=".json">`;
         container.innerHTML = html;
 
-        // 3. Bind the Import Event Listener
+        // 3. Bind Event Listeners (Import & Outside Click)
         const importInput = document.getElementById(NAV_ACTION_CONFIG.fileInputId);
-        if (importInput) {
-            importInput.addEventListener('change', (e) => this.importProjectJSON(e));
-        }
+        if (importInput) importInput.addEventListener('change', (e) => this.importProjectJSON(e));
+
+        document.addEventListener('click', () => {
+            document.querySelectorAll('.export-dropdown-panel').forEach(p => p.classList.remove('show'));
+        });
 
         // 4. Build the Project Info Popup Panel
         this._buildInfoPanel(container);
@@ -102,12 +143,30 @@ const NavActionEngine = {
             if (fi) fi.click();
         } 
         else if (actionType === 'RESET_WORKSPACE') this.resetWorkspace();
+        
+        // 📤 EXPORT ROUTES
+        else if (actionType === 'EXPORT_PDF') this.exportPDF();
+        else if (actionType === 'EXPORT_DXF') this.exportDXF();
+        else if (actionType === 'EXPORT_PNG') this.exportPNG();
+        else if (actionType === 'EXPORT_GLB') this.exportGLB();
+
         else console.warn(`ActionType '${actionType}' is unhandled in Nav Action Engine.`);
     },
 
     // -----------------------------------------
-    // 💼 BUSINESS LOGIC & STATE MUTATION
+    // 💼 UI & WORKSPACE STATE MUTATION
     // -----------------------------------------
+    toggleDropdown: function(dropdownId, event) {
+        event.stopPropagation();
+        const menu = document.getElementById(dropdownId);
+        if (!menu) return;
+        
+        document.querySelectorAll('.export-dropdown-panel').forEach(p => {
+            if (p.id !== dropdownId) p.classList.remove('show');
+        });
+        menu.classList.toggle('show');
+    },
+
     toggleInfoPanel: function() {
         const panel = document.getElementById(NAV_ACTION_CONFIG.infoPanel.id);
         const btn = document.getElementById('project-info-btn');
@@ -170,6 +229,54 @@ const NavActionEngine = {
         if (totalEl) totalEl.innerText = totalBuiltUpArea.toFixed(1) + ' sq ft';
     },
 
+    async resetWorkspace() {
+        if (confirm("⚠️ This will completely erase your building. Continue?")) {
+            if (typeof clearTextureCache === 'function') clearTextureCache();
+            
+            window.elements = []; 
+            window.fixtures = []; 
+            window.currentFloor = 0;
+            
+            if (typeof ProjectState !== 'undefined') {
+                ProjectState.history.baseState = null; 
+                ProjectState.history.stack = [];
+                ProjectState.history.redoStack = [];
+            }
+            
+            if(document.getElementById('inW')) document.getElementById('inW').value = 278;
+            if(document.getElementById('inH')) document.getElementById('inH').value = 417;
+            if(document.getElementById('b-floors')) document.getElementById('b-floors').value = 1;
+            
+            if (typeof StorageEngine !== 'undefined') {
+                try {
+                    const db = await StorageEngine.initDB();
+                    db.transaction(StorageEngine.STORE_NAME, 'readwrite').objectStore(StorageEngine.STORE_NAME).delete('latest_session');
+                } catch(e) { console.warn('DB clear failed'); }
+            }
+            localStorage.removeItem('ArchCAD_AutoSave');
+            
+            if (typeof renderFloorSelectors === 'function') renderFloorSelectors();
+            if (typeof setFloor === 'function') setFloor(0);
+            if (typeof updateCanvas === 'function') updateCanvas();
+            if (typeof generate3DModel === 'function') generate3DModel();
+        }
+    },
+
+    // -----------------------------------------
+    // 📤 ADVANCED EXPORT LOGIC
+    // -----------------------------------------
+    downloadBlob: function(content, filename, contentType) {
+        const blob = new Blob([content], { type: contentType });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    },
+
     exportProjectJSON: function() {
         const projectData = {
             version: "1.2",
@@ -188,12 +295,7 @@ const NavActionEngine = {
             }
         };
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(projectData, null, 2));
-        const downloadAnchorNode = document.createElement('a');
-        downloadAnchorNode.setAttribute("href", dataStr);
-        downloadAnchorNode.setAttribute("download", "ArchCAD_Project_" + Math.floor(Date.now() / 1000) + ".json");
-        document.body.appendChild(downloadAnchorNode);
-        downloadAnchorNode.click();
-        downloadAnchorNode.remove();
+        this.downloadBlob(JSON.stringify(projectData, null, 2), "ArchCAD_Project_" + Math.floor(Date.now() / 1000) + ".json", 'application/json');
     },
 
     importProjectJSON: function(event) {
@@ -205,7 +307,6 @@ const NavActionEngine = {
                 const importedData = JSON.parse(e.target.result);
                 if (!importedData.elements) return alert("Invalid project file.");
                 
-                // Directly mutate the global variables
                 window.elements = importedData.elements;
                 window.fixtures = importedData.fixtures || [];
 
@@ -245,7 +346,6 @@ const NavActionEngine = {
                     alert("✅ Project loaded successfully!");
                 }, 100);
                 
-                // Reset the input so the same file can be loaded again if needed
                 document.getElementById(NAV_ACTION_CONFIG.fileInputId).value = ''; 
             } catch (error) { 
                 alert("Error parsing file: " + error.message); 
@@ -254,45 +354,185 @@ const NavActionEngine = {
         reader.readAsText(file);
     },
 
-    async resetWorkspace() {
-        if (confirm("⚠️ This will completely erase your building. Continue?")) {
-            if (typeof clearTextureCache === 'function') clearTextureCache();
-            
-            // Empty globals
-            window.elements = []; 
-            window.fixtures = []; 
-            window.currentFloor = 0;
-            
-            if (typeof ProjectState !== 'undefined') {
-                ProjectState.history.baseState = null; 
-                ProjectState.history.stack = [];
-                ProjectState.history.redoStack = [];
-            }
-            
-            if(document.getElementById('inW')) document.getElementById('inW').value = 278;
-            if(document.getElementById('inH')) document.getElementById('inH').value = 417;
-            if(document.getElementById('b-floors')) document.getElementById('b-floors').value = 1;
-            
-            if (typeof StorageEngine !== 'undefined') {
-                try {
-                    const db = await StorageEngine.initDB();
-                    db.transaction(StorageEngine.STORE_NAME, 'readwrite').objectStore(StorageEngine.STORE_NAME).delete('latest_session');
-                } catch(e) {
-                    console.warn('DB clear failed');
-                }
-            }
-            localStorage.removeItem('ArchCAD_AutoSave');
-            
-            if (typeof renderFloorSelectors === 'function') renderFloorSelectors();
-            if (typeof setFloor === 'function') setFloor(0);
-            if (typeof updateCanvas === 'function') updateCanvas();
-            if (typeof generate3DModel === 'function') generate3DModel();
+    exportPNG: function() {
+        const svgElement = document.getElementById('blueprint');
+        if (!svgElement) return;
+        
+        const serializer = new XMLSerializer();
+        let svgString = serializer.serializeToString(svgElement);
+        if (!svgString.match(/^<svg[^>]+xmlns="http\:\/\/www\.w3\.org\/2000\/svg"/)) {
+            svgString = svgString.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
         }
+
+        const svgBlob = new Blob([svgString], {type: 'image/svg+xml;charset=utf-8'});
+        const url = URL.createObjectURL(svgBlob);
+        const img = new Image();
+
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = 2000;
+            canvas.height = 2000;
+            const ctx = canvas.getContext('2d');
+            
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            URL.revokeObjectURL(url); 
+
+            const downloadLink = document.createElement('a');
+            downloadLink.href = canvas.toDataURL('image/png', 1.0);
+            downloadLink.download = 'ArchCAD-Blueprint.png';
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+        };
+        img.src = url;
+    },
+
+    exportPDF: function() {
+        const svgNode = document.getElementById('blueprint').cloneNode(true);
+        const layersToHide = ['smart-guides', 'measure-group', 'column-container', 'dim-group'];
+        layersToHide.forEach(id => {
+            const el = svgNode.querySelector(`#${id}`);
+            if (el) el.remove();
+        });
+        
+        svgNode.querySelectorAll('.room-selected').forEach(el => {
+            el.classList.remove('room-selected');
+            el.setAttribute('stroke', '#ffffff');
+        });
+
+        const printWindow = window.open('', '_blank', 'width=1200,height=800');
+        let totalArea = "0.0";
+        if (typeof elements !== 'undefined') {
+            totalArea = elements
+                .filter(el => !el.isFurniture && el.type !== 'staircase')
+                .reduce((sum, el) => sum + ((el.w * el.h) / 144), 0)
+                .toFixed(1);
+        }
+        
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+                <head>
+                    <title>ArchCAD_Blueprint</title>
+                    <style>
+                        body { margin: 0; padding: 0; background: #ffffff; font-family: sans-serif; }
+                        .print-wrapper { width: 100vw; height: 100vh; display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; }
+                        .frame { flex-grow: 1; border: 4px solid #0f172a; position: relative; overflow: hidden; display: flex; justify-content: center; align-items: center; background: #0f172a; }
+                        svg { width: 100%; height: 100%; object-fit: contain; }
+                        .title-block { position: absolute; bottom: 0; right: 0; width: 400px; background: white; border-top: 4px solid #0f172a; border-left: 4px solid #0f172a; display: grid; grid-template-columns: 1fr 1fr; color: #0f172a; }
+                        .title-header { grid-column: span 2; padding: 12px; background: #0f172a; color: white; text-align: center; font-weight: 900; font-size: 1.2rem; letter-spacing: 2px; }
+                        .title-cell { padding: 10px; border-right: 2px solid #0f172a; border-bottom: 2px solid #0f172a; font-size: 0.7rem; }
+                        .title-cell:nth-child(even) { border-right: none; }
+                        .title-cell strong { color: #64748b; }
+                        .title-val { display: block; font-size: 1rem; font-weight: bold; margin-top: 4px; }
+                        @page { size: landscape; margin: 0; }
+                    </style>
+                </head>
+                <body>
+                    <div class="print-wrapper">
+                        <div class="frame">
+                            ${svgNode.outerHTML}
+                            <div class="title-block">
+                                <div class="title-header">ARCHCAD PRO</div>
+                                <div class="title-cell"><strong>PROJECT</strong><span class="title-val">Floorplan</span></div>
+                                <div class="title-cell"><strong>DATE</strong><span class="title-val">${new Date().toLocaleDateString()}</span></div>
+                                <div class="title-cell" style="border-bottom: none;"><strong>DRAWN BY</strong><span class="title-val">System Admin</span></div>
+                                <div class="title-cell" style="border-bottom: none;"><strong>TOTAL AREA</strong><span class="title-val">${totalArea} sqft</span></div>
+                            </div>
+                        </div>
+                    </div>
+                    <script>
+                        window.onload = () => { setTimeout(() => { window.print(); window.close(); }, 500); };
+                    </script>
+                </body>
+            </html>
+        `);
+        printWindow.document.close();
+    },
+
+    exportDXF: function() {
+        // Safe access to DOM values mapped in UI object or directly via ID
+        const unit = document.getElementById('unitSelect') ? document.getElementById('unitSelect').value : 'in';
+        const SCALE = parseFloat(document.getElementById('scaleInput') ? document.getElementById('scaleInput').value : 1.2) || 1.2;
+        const geom = typeof calculateGeometry === 'function' ? calculateGeometry(SCALE, unit) : null;
+        
+        if (!geom) return alert("Geometry engine not ready!");
+
+        let dxf = "  0\nSECTION\n  2\nHEADER\n  0\nENDSEC\n  0\nSECTION\n  2\nENTITIES\n";
+        const addLine = (x1, y1, x2, y2, layer = "0") => {
+            dxf += `  0\nLINE\n  8\n${layer}\n`;
+            dxf += ` 10\n${x1.toFixed(2)}\n 20\n${y1.toFixed(2)}\n 30\n0.0\n`;
+            dxf += ` 11\n${x2.toFixed(2)}\n 21\n${y2.toFixed(2)}\n 31\n0.0\n`;
+        };
+
+        const { A, B, C, D, I, J, K, L } = geom;
+        const toReal = (val, origin) => (val - origin) / SCALE;
+
+        // Plot Boundaries
+        addLine(toReal(A.x, 500), toReal(A.y, 500), toReal(B.x, 500), toReal(B.y, 500), "PLOT");
+        addLine(toReal(B.x, 500), toReal(B.y, 500), toReal(C.x, 500), toReal(C.y, 500), "PLOT");
+        addLine(toReal(C.x, 500), toReal(C.y, 500), toReal(D.x, 500), toReal(D.y, 500), "PLOT");
+        addLine(toReal(D.x, 500), toReal(D.y, 500), toReal(A.x, 500), toReal(A.y, 500), "PLOT");
+
+        // Built-up Area
+        addLine(toReal(I.x, 500), toReal(I.y, 500), toReal(J.x, 500), toReal(J.y, 500), "BUILT_UP");
+        addLine(toReal(J.x, 500), toReal(J.y, 500), toReal(K.x, 500), toReal(K.y, 500), "BUILT_UP");
+        addLine(toReal(K.x, 500), toReal(K.y, 500), toReal(L.x, 500), toReal(L.y, 500), "BUILT_UP");
+        addLine(toReal(L.x, 500), toReal(L.y, 500), toReal(I.x, 500), toReal(I.y, 500), "BUILT_UP");
+
+        // Rooms
+        if (typeof elements !== 'undefined') {
+            elements.forEach(el => {
+                // Ensure currentFloor is globally accessed
+                const cFloor = typeof window.currentFloor !== 'undefined' ? window.currentFloor : 0;
+                if (el.floor !== cFloor || el.isFurniture) return;
+                const rx = toReal(I.x, 500) + el.x;
+                const ry = toReal(I.y, 500) + el.y;
+                addLine(rx, ry, rx + el.w, ry, "WALLS");
+                addLine(rx + el.w, ry, rx + el.w, ry + el.h, "WALLS");
+                addLine(rx + el.w, ry + el.h, rx, ry + el.h, "WALLS");
+                addLine(rx, ry + el.h, rx, ry, "WALLS");
+            });
+        }
+
+        dxf += "  0\nENDSEC\n  0\nEOF\n";
+        this.downloadBlob(dxf, `ArchCAD_Export_${new Date().getTime()}.dxf`, 'text/plain');
+    },
+
+    exportGLB: function() {
+        if (!window.is3DMode || typeof Engine3D === 'undefined' || !Engine3D.buildingGroup) {
+            return alert("Please open the 3D Preview first to generate the mesh!");
+        }
+        
+        if (typeof THREE.GLTFExporter === 'undefined') {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/GLTFExporter.js';
+            script.onload = () => this.runGLTFExport();
+            document.head.appendChild(script);
+        } else {
+            this.runGLTFExport();
+        }
+    },
+
+    runGLTFExport: function() {
+        const exporter = new THREE.GLTFExporter();
+        exporter.parse(Engine3D.buildingGroup, (gltf) => {
+            this.downloadBlob(gltf, `ArchCAD_3D_Model_${new Date().getTime()}.glb`, 'application/octet-stream');
+        }, { binary: true });
     }
 };
 
 // Global Hook for Math Engine
 window.refreshProjectStatsUI = (geom) => NavActionEngine.refreshStats(geom);
+
+// Backward Compatibility global hooks for any stray buttons left in your app
+window.exportPNG = () => NavActionEngine.exportPNG();
+window.exportPDF = () => NavActionEngine.exportPDF();
+window.exportDXF = () => NavActionEngine.exportDXF();
+window.exportGLB = () => NavActionEngine.exportGLB();
+window.exportJSON = () => NavActionEngine.exportProjectJSON();
 
 // Auto-Initialize on DOM Load
 document.addEventListener('DOMContentLoaded', () => {

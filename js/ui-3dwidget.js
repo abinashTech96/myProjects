@@ -1,20 +1,39 @@
 // =========================================
-// 🎛️ 3D WIDGET CONFIGURATION
+// 🎛️ MASTER 3D WIDGET CONFIGURATION
 // =========================================
 const WIDGET_3D_CONFIG = {
     // 🎬 Presentation & Showcase Controls
     PRESENTATION: {
         id: 'presentation-widget',
         wrapperId: 'presentation-controls',
+        timeDisplayId: 'time-display',
+        classes: {
+            wrapper: 'pc-wrapper',
+            sunGroup: 'pc-sun-group',
+            sunIcon: 'pc-sun-icon',
+            dawn: 'pc-dawn',
+            dusk: 'pc-dusk',
+            slider: 'pc-sun-slider',
+            divider: 'pc-divider',
+            btnGroup: 'pc-btn-group',
+            btn: 'pc-btn',
+            icon: 'pc-icon',
+            text: 'btn-text',
+            btnSet: 'pc-btn-set',
+            btnPlay: 'pc-btn-play',
+            btnClear: 'pc-btn-clear',
+            btnView: 'pc-btn-view'
+        },
         exitBtn: {
             id: 'exit-showcase-btn',
             text: '✕ EXIT PRESENTATION',
-            actionType: 'EXIT_SHOWCASE' // Maps to handleAction dispatcher
+            actionType: 'EXIT_SHOWCASE' 
         },
         sun: { 
             id: 'sun-slider',
             min: 6, max: 18, step: 0.1, default: 12, 
             iconDawn: '🌅', iconDusk: '🌇',
+            titleDawn: 'Dawn', titleDusk: 'Dusk',
             actionType: 'UPDATE_SUNLIGHT'
         },
         buttons: {
@@ -48,6 +67,11 @@ const WIDGET_3D_CONFIG = {
     // 🕹️ 3D Right-Canvas Navigation Pad
     NAVPAD: {
         id: 'nav-pad',
+        classes: {
+            btn: 'float-action-btn',
+            icon: 'icon',
+            text: 'text'
+        },
         buttons: {
             raycaster: { 
                 id: 'btn-raycaster', 
@@ -79,10 +103,17 @@ const WIDGET_3D_CONFIG = {
                     hintId: 'fly-hint',
                     crosshairId: 'walk-crosshair',
                     title: '🚶 VIRTUAL TOUR ACTIVE',
+                    classes: {
+                        container: 'tour-hud',
+                        crosshair: 'tour-crosshair',
+                        title: 'tour-hud-title',
+                        grid: 'tour-hud-grid',
+                        kbd: 'tour-kbd'
+                    },
                     instructions: [
-                        { keys: 'W A S D', action: 'Walk Around', colorClass: '#38bdf8' },
-                        { keys: 'MOUSE', action: 'Look Around', colorClass: '#38bdf8' },
-                        { keys: 'ESC', action: 'Exit Tour', colorClass: '#ef4444' }
+                        { keys: 'W A S D', action: 'Walk Around', colorClass: 'kbd-blue' },
+                        { keys: 'MOUSE', action: 'Look Around', colorClass: 'kbd-blue' },
+                        { keys: 'ESC', action: 'Exit Tour', colorClass: 'kbd-red' }
                     ]
                 }
             }
@@ -111,16 +142,16 @@ const Widget3DEngine = {
 
     // 🌟 CENTRALIZED ACTION DISPATCHER
     handleAction: function(actionType, payload = null) {
-        if (actionType === 'SET_WAYPOINT') this.captureWaypoint();
-        else if (actionType === 'PLAY_TOUR') this.playCinematicTour();
-        else if (actionType === 'CLEAR_TOUR') this.clearTour();
-        else if (actionType === 'TOGGLE_SHOWCASE' || actionType === 'EXIT_SHOWCASE') this.toggleShowcaseMode();
-        else if (actionType === 'TOGGLE_EXPLODE') this.toggleExplodeView();
-        else if (actionType === 'TOGGLE_RAYCASTER') this.toggleRaycaster();
-        else if (actionType === 'TOGGLE_PERFORMANCE') this.togglePerformanceMode();
-        else if (actionType === 'START_WALKTHROUGH') this.startWalkthrough();
-        else if (actionType === 'UPDATE_SUNLIGHT') this.updateSunlight(payload);
-        else console.warn(`ActionType '${actionType}' is unhandled.`);
+        if (actionType === WIDGET_3D_CONFIG.PRESENTATION.buttons.set.actionType) this.captureWaypoint();
+        else if (actionType === WIDGET_3D_CONFIG.PRESENTATION.buttons.play.actionType) this.playCinematicTour();
+        else if (actionType === WIDGET_3D_CONFIG.PRESENTATION.buttons.clear.actionType) this.clearTour();
+        else if (actionType === WIDGET_3D_CONFIG.PRESENTATION.buttons.show.actionType || actionType === WIDGET_3D_CONFIG.PRESENTATION.exitBtn.actionType) this.toggleShowcaseMode();
+        else if (actionType === WIDGET_3D_CONFIG.PRESENTATION.buttons.explode.actionType) this.toggleExplodeView();
+        else if (actionType === WIDGET_3D_CONFIG.NAVPAD.buttons.raycaster.actionType) this.toggleRaycaster();
+        else if (actionType === WIDGET_3D_CONFIG.NAVPAD.buttons.performance.actionType) this.togglePerformanceMode();
+        else if (actionType === WIDGET_3D_CONFIG.NAVPAD.buttons.walkthrough.actionType) this.startWalkthrough();
+        else if (actionType === WIDGET_3D_CONFIG.PRESENTATION.sun.actionType) this.updateSunlight(payload);
+        else console.warn(`ActionType '${actionType}' is unhandled in 3D Widget Engine.`);
     },
 
     // -----------------------------------------
@@ -140,31 +171,31 @@ const Widget3DEngine = {
             <button id="${conf.exitBtn.id}" onclick="Widget3DEngine.handleAction('${conf.exitBtn.actionType}')">
                 ${conf.exitBtn.text}
             </button>
-            <div id="${conf.wrapperId}" class="pc-wrapper" style="display: none;">
-                <div class="pc-sun-group">
-                    <span class="pc-sun-icon pc-dawn" title="Dawn">${conf.sun.iconDawn}</span>
-                    <input type="range" id="${conf.sun.id}" class="pc-sun-slider" min="${conf.sun.min}" max="${conf.sun.max}" step="${conf.sun.step}" value="${conf.sun.default}" oninput="Widget3DEngine.handleAction('${conf.sun.actionType}', this.value)">
-                    <span class="pc-sun-icon pc-dusk" title="Dusk">${conf.sun.iconDusk}</span>
+            <div id="${conf.wrapperId}" class="${conf.classes.wrapper}" style="display: none;">
+                <div class="${conf.classes.sunGroup}">
+                    <span class="${conf.classes.sunIcon} ${conf.classes.dawn}" title="${conf.sun.titleDawn}">${conf.sun.iconDawn}</span>
+                    <input type="range" id="${conf.sun.id}" class="${conf.classes.slider}" min="${conf.sun.min}" max="${conf.sun.max}" step="${conf.sun.step}" value="${conf.sun.default}" oninput="Widget3DEngine.handleAction('${conf.sun.actionType}', this.value)">
+                    <span class="${conf.classes.sunIcon} ${conf.classes.dusk}" title="${conf.sun.titleDusk}">${conf.sun.iconDusk}</span>
                 </div>
-                <div class="pc-divider"></div>
-                <div class="pc-btn-group">
-                    <button id="${conf.buttons.set.id}" class="pc-btn pc-btn-set" onclick="Widget3DEngine.handleAction('${conf.buttons.set.actionType}')">
-                        <span class="pc-icon">${conf.buttons.set.icon}</span> ${conf.buttons.set.text} (<span id="${conf.buttons.set.countId}">0</span>)
+                <div class="${conf.classes.divider}"></div>
+                <div class="${conf.classes.btnGroup}">
+                    <button id="${conf.buttons.set.id}" class="${conf.classes.btn} ${conf.classes.btnSet}" onclick="Widget3DEngine.handleAction('${conf.buttons.set.actionType}')">
+                        <span class="${conf.classes.icon}">${conf.buttons.set.icon}</span> ${conf.buttons.set.text} (<span id="${conf.buttons.set.countId}">0</span>)
                     </button>
-                    <button id="${conf.buttons.play.id}" class="pc-btn pc-btn-play" onclick="Widget3DEngine.handleAction('${conf.buttons.play.actionType}')">
-                        <span class="pc-icon">${conf.buttons.play.icon}</span> ${conf.buttons.play.text}
+                    <button id="${conf.buttons.play.id}" class="${conf.classes.btn} ${conf.classes.btnPlay}" onclick="Widget3DEngine.handleAction('${conf.buttons.play.actionType}')">
+                        <span class="${conf.classes.icon}">${conf.buttons.play.icon}</span> ${conf.buttons.play.text}
                     </button>
-                    <button id="${conf.buttons.clear.id}" class="pc-btn pc-btn-clear" onclick="Widget3DEngine.handleAction('${conf.buttons.clear.actionType}')" title="${conf.buttons.clear.title}">
-                        <span class="pc-icon">${conf.buttons.clear.icon}</span>
+                    <button id="${conf.buttons.clear.id}" class="${conf.classes.btn} ${conf.classes.btnClear}" onclick="Widget3DEngine.handleAction('${conf.buttons.clear.actionType}')" title="${conf.buttons.clear.title}">
+                        <span class="${conf.classes.icon}">${conf.buttons.clear.icon}</span>
                     </button>
                 </div>
-                <div class="pc-divider"></div>
-                <div class="pc-btn-group">
-                    <button id="${conf.buttons.show.id}" class="pc-btn pc-btn-view" onclick="Widget3DEngine.handleAction('${conf.buttons.show.actionType}')">
-                        <span class="pc-icon">${conf.buttons.show.states.off.icon}</span> <span class="btn-text">${conf.buttons.show.states.off.text}</span>
+                <div class="${conf.classes.divider}"></div>
+                <div class="${conf.classes.btnGroup}">
+                    <button id="${conf.buttons.show.id}" class="${conf.classes.btn} ${conf.classes.btnView}" onclick="Widget3DEngine.handleAction('${conf.buttons.show.actionType}')">
+                        <span class="${conf.classes.icon}">${conf.buttons.show.states.off.icon}</span> <span class="${conf.classes.text}">${conf.buttons.show.states.off.text}</span>
                     </button>
-                    <button id="${conf.buttons.explode.id}" class="pc-btn pc-btn-view" onclick="Widget3DEngine.handleAction('${conf.buttons.explode.actionType}')">
-                        <span class="pc-icon">${conf.buttons.explode.states.off.icon}</span> <span class="btn-text">${conf.buttons.explode.states.off.text}</span>
+                    <button id="${conf.buttons.explode.id}" class="${conf.classes.btn} ${conf.classes.btnView}" onclick="Widget3DEngine.handleAction('${conf.buttons.explode.actionType}')">
+                        <span class="${conf.classes.icon}">${conf.buttons.explode.states.off.icon}</span> <span class="${conf.classes.text}">${conf.buttons.explode.states.off.text}</span>
                     </button>
                 </div>
             </div>
@@ -174,6 +205,7 @@ const Widget3DEngine = {
     updateSunlight: function(hour) {
         if (!Engine3D.sunLight || !Engine3D.scene) return; 
         const conf = WIDGET_3D_CONFIG.PRESENTATION.timeStages;
+        const timeDisplayId = WIDGET_3D_CONFIG.PRESENTATION.timeDisplayId;
         
         const normalizedTime = (hour - 6) / 12; 
         const angle = normalizedTime * Math.PI;
@@ -181,7 +213,7 @@ const Widget3DEngine = {
         
         Engine3D.sunLight.position.set(Math.cos(angle) * -radius, Math.sin(angle) * radius, 300);
         
-        const timeDisplay = document.getElementById('time-display');
+        const timeDisplay = document.getElementById(timeDisplayId);
         if (timeDisplay) {
             if (hour < conf.morning.maxHour) {
                 timeDisplay.innerText = conf.morning.text;
@@ -208,12 +240,11 @@ const Widget3DEngine = {
     
         const isShowcase = document.body.classList.toggle('showcase-active');
 
-        // Dynamically update button text/icon from Config
-        const conf = WIDGET_3D_CONFIG.PRESENTATION.buttons.show;
-        const btn = document.getElementById(conf.id);
+        const conf = WIDGET_3D_CONFIG.PRESENTATION;
+        const btn = document.getElementById(conf.buttons.show.id);
         if (btn) {
-            const state = isShowcase ? conf.states.on : conf.states.off;
-            btn.innerHTML = `<span class="pc-icon">${state.icon}</span> <span class="btn-text">${state.text}</span>`;
+            const state = isShowcase ? conf.buttons.show.states.on : conf.buttons.show.states.off;
+            btn.innerHTML = `<span class="${conf.classes.icon}">${state.icon}</span> <span class="${conf.classes.text}">${state.text}</span>`;
         }
     
         setTimeout(() => {
@@ -245,15 +276,16 @@ const Widget3DEngine = {
         if (!Engine3D.buildingGroup || !window.is3DMode) return;
         this.isExploded = !this.isExploded;
         
-        // Dynamically update UI from Config
-        const expConf = WIDGET_3D_CONFIG.PRESENTATION.buttons.explode;
+        const conf = WIDGET_3D_CONFIG.PRESENTATION;
+        const expConf = conf.buttons.explode;
         const btn = document.getElementById(expConf.id);
+        
         if (btn) {
             const state = this.isExploded ? expConf.states.on : expConf.states.off;
             btn.style.background = state.bg;
             btn.style.color = state.color;
             btn.style.borderColor = state.border;
-            btn.innerHTML = `<span class="pc-icon">${state.icon}</span> <span class="btn-text">${state.text}</span>`;
+            btn.innerHTML = `<span class="${conf.classes.icon}">${state.icon}</span> <span class="${conf.classes.text}">${state.text}</span>`;
         }
     
         const WALL_HEIGHT = (typeof ARCH_CONFIG !== 'undefined' && ARCH_CONFIG.DEFAULTS) ? ARCH_CONFIG.DEFAULTS.WALL_HEIGHT_3D : 120;
@@ -403,8 +435,8 @@ const Widget3DEngine = {
         widget.innerHTML = Object.values(conf.buttons).map(btn => {
             const state = btn.states.off || btn.states.default;
             return `
-            <button id="${btn.id}" class="float-action-btn ${btn.class}" onclick="Widget3DEngine.handleAction('${btn.actionType}')">
-                <span class="icon">${state.icon}</span><span class="text">${state.text}</span>
+            <button id="${btn.id}" class="${conf.classes.btn} ${btn.class}" onclick="Widget3DEngine.handleAction('${btn.actionType}')">
+                <span class="${conf.classes.icon}">${state.icon}</span><span class="${conf.classes.text}">${state.text}</span>
             </button>
             `;
         }).join('');
@@ -412,12 +444,13 @@ const Widget3DEngine = {
 
     toggleRaycaster: function() {
         window.isRaycasterActive = !window.isRaycasterActive;
-        const conf = WIDGET_3D_CONFIG.NAVPAD.buttons.raycaster;
+        const confObj = WIDGET_3D_CONFIG.NAVPAD;
+        const conf = confObj.buttons.raycaster;
         const btn = document.getElementById(conf.id);
         
         if (btn) {
             const state = window.isRaycasterActive ? conf.states.on : conf.states.off;
-            const textSpan = btn.querySelector('.text');
+            const textSpan = btn.querySelector(`.${confObj.classes.text}`);
             if (textSpan) textSpan.innerHTML = state.text;
             btn.style.background = state.bg;
             btn.style.color = state.color;
@@ -432,12 +465,13 @@ const Widget3DEngine = {
 
     togglePerformanceMode: function() {
         window.isPerformanceMode = !window.isPerformanceMode;
-        const conf = WIDGET_3D_CONFIG.NAVPAD.buttons.performance;
+        const confObj = WIDGET_3D_CONFIG.NAVPAD;
+        const conf = confObj.buttons.performance;
         const btn = document.getElementById(conf.id);
 
         if (btn) {
             const state = window.isPerformanceMode ? conf.states.on : conf.states.off;
-            const textSpan = btn.querySelector('.text');
+            const textSpan = btn.querySelector(`.${confObj.classes.text}`);
             if (textSpan) textSpan.innerHTML = state.text;
             btn.style.background = state.bg;
             btn.style.color = state.color;
@@ -477,16 +511,16 @@ const Widget3DEngine = {
         if (!document.getElementById(conf.hintId)) {
             const hint = document.createElement('div');
             hint.id = conf.hintId;
-            hint.className = 'tour-hud';
+            hint.className = conf.classes.container;
             
             const instructionsHTML = conf.instructions.map(inst => `
-                <div><kbd style="background: rgba(255,255,255,0.1); padding: 4px 8px; border-radius: 4px; color: ${inst.colorClass}; font-family: monospace;">${inst.keys}</kbd></div>
+                <div><kbd class="${conf.classes.kbd} ${inst.colorClass}">${inst.keys}</kbd></div>
                 <div>${inst.action}</div>
             `).join('');
 
             hint.innerHTML = `
-                <div style="font-size: 1.1rem; font-weight: bold; color: #f8fafc; margin-bottom: 12px;">${conf.title}</div>
-                <div style="display: grid; grid-template-columns: auto 1fr; gap: 8px 15px; text-align: left; font-size: 0.8rem; color: #94a3b8; align-items: center;">
+                <div class="${conf.classes.title}">${conf.title}</div>
+                <div class="${conf.classes.grid}">
                     ${instructionsHTML}
                 </div>
             `;
@@ -496,7 +530,7 @@ const Widget3DEngine = {
         if (!document.getElementById(conf.crosshairId)) {
             const crosshair = document.createElement('div');
             crosshair.id = conf.crosshairId;
-            crosshair.className = 'tour-crosshair';
+            crosshair.className = conf.classes.crosshair;
             document.body.appendChild(crosshair);
         }
     
@@ -511,8 +545,6 @@ const Widget3DEngine = {
 // ==========================================
 // 🌐 GLOBAL HOOKS (Backwards Compatibility)
 // ==========================================
-
-// Map global inline HTML calls to the new Widget3DEngine
 window.updateSunlight = (hour) => Widget3DEngine.handleAction('UPDATE_SUNLIGHT', hour);
 window.toggleShowcaseMode = () => Widget3DEngine.handleAction('TOGGLE_SHOWCASE');
 window.toggleExplodeView = () => Widget3DEngine.handleAction('TOGGLE_EXPLODE');
@@ -525,7 +557,6 @@ window.addWaypoint = window.captureWaypoint;
 window.playTour = window.playCinematicTour; 
 window.clearWaypoints = window.clearTour;
 
-// Auto-Initialize on DOM Load
 document.addEventListener('DOMContentLoaded', () => {
     Widget3DEngine.init();
 });

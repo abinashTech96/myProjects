@@ -137,3 +137,26 @@ body.showcase-active #exit-showcase-btn { display: block; }
     width: 6px; height: 6px; background: rgba(255,255,255,0.9); border-radius: 50%;
     z-index: 100; pointer-events: none; box-shadow: 0 0 6px rgba(0,0,0,0.8); mix-blend-mode: difference;
 }
+
+/* --- EXTRACTED WALKTHROUGH HUD STYLES --- */
+.tour-hud-title {font-size: 1.1rem; font-weight: bold; color: #f8fafc; margin-bottom: 12px;}
+
+.tour-hud-grid { 
+    display: grid; 
+    grid-template-columns: auto 1fr; 
+    gap: 8px 15px; 
+    text-align: left; 
+    font-size: 0.8rem; 
+    color: #94a3b8; 
+    align-items: center; 
+}
+
+.tour-kbd { 
+    background: rgba(255,255,255,0.1); 
+    padding: 4px 8px; 
+    border-radius: 4px; 
+    font-family: monospace; 
+}
+
+.kbd-blue { color: #38bdf8; }
+.kbd-red { color: #ef4444; }

@@ -7,11 +7,32 @@ const WIDGET_CONFIG = {
         id: 'cheatsheet-widget',
         title: 'KEYBOARD SHORTCUTS',
         icon: '⌨️',
+        actionToggle: 'TOGGLE_CHEATSHEET',
         layout: { 
             buttonPos: 'position: fixed; bottom: 5px; left: 5px; z-index: 1000;', 
             panelPos: 'position: fixed; bottom: 60px; left: 20px; z-index: 1000;' 
         },
-        classes: { button: 'cs-action-btn', panel: 'cs-panel' },
+        domIds: {
+            btn: 'btn-cheat-sheet',
+            panel: 'cheat-sheet-panel',
+            content: 'cs-dynamic-content'
+        },
+        classes: { 
+            button: 'cs-action-btn', 
+            panel: 'cs-panel',
+            header: 'cs-panel-header',
+            divider: 'cs-divider',
+            scroll: 'cs-scroll',
+            label: 'cs-label',
+            row: 'cs-row',
+            desc: 'cs-desc',
+            shortcut: 'cs-shortcut',
+            icon: 'cs-icon',
+            text: 'cs-text'
+        },
+        controls: {
+            minimizeBtn: { icon: '✕', class: 'cs-minimize-btn', title: 'Minimize' }
+        },
         categories: [
             {
                 category: "GENERAL EDITING",
@@ -48,8 +69,33 @@ const WIDGET_CONFIG = {
     COMPLIANCE: {
         id: 'compliance-widget',
         title: 'CODE INSPECTOR',
-        icon: '✅',
+        actionToggle: 'TOGGLE_COMPLIANCE',
         layout: { position: 'top: 190px; left: 24px;' },
+        icons: { success: '✅', warning: '⚠️', error: '🚨' },
+        messages: {
+            success: 'All elements meet standard building codes.',
+            empty: 'Waiting for compliance scan...'
+        },
+        controls: {
+            minimizeBtn: { icon: '&times;', class: 'compliance-close-btn', title: 'Minimize' },
+            expandBtn: { title: 'Expand Code Inspector' }
+        },
+        classes: {
+            maxView: 'compliance-max-view',
+            minView: 'compliance-min-view',
+            header: 'compliance-header',
+            title: 'compliance-title',
+            scoreWrap: 'compliance-score-wrapper',
+            score: 'compliance-score',
+            scoreMin: 'compliance-score-min',
+            warningsContainer: 'explorer-scroll compliance-warnings-container',
+            warning: 'compliance-warning',
+            success: 'compliance-success',
+            icon: 'compliance-icon',
+            colorGreen: 'compliance-green',
+            colorYellow: 'compliance-yellow',
+            colorRed: 'compliance-red'
+        },
         constants: { SQ_INCHES_TO_SQFT: 144 },
         rules: {
             bedroom: { minAreaSqft: 70, minDimInches: 84, requiresEgress: true }, // 84 inches = 7'0"
@@ -64,8 +110,33 @@ const WIDGET_CONFIG = {
         id: 'vastu-widget',
         title: 'VASTU SCORE',
         icon: '🧭',
+        actionToggle: 'TOGGLE_VASTU',
         layout: { position: 'bottom: 20px; left: 20px;' },
-        classes: { container: 'minimized' },
+        controls: {
+            minimizeBtn: { icon: '&times;', class: 'vastu-close-btn', title: 'Minimize' },
+            expandBtn: { title: 'Expand Vastu Inspector' }
+        },
+        classes: { 
+            container: 'minimized',
+            maxView: 'vastu-max-view',
+            minView: 'vastu-min-view',
+            header: 'vastu-header',
+            title: 'vastu-title',
+            scoreWrap: 'vastu-score-wrapper',
+            score: 'vastu-score',
+            scoreMin: 'vastu-score-min',
+            warningsContainer: 'explorer-scroll vastu-warnings-container',
+            warning: 'vastu-warning',
+            success: 'vastu-success',
+            icon: 'vastu-icon',
+            colorGreen: 'vastu-green',
+            colorYellow: 'vastu-yellow',
+            colorRed: 'vastu-red'
+        },
+        messages: {
+            success: "Good overall spatial flow.",
+            empty: "Add rooms to calculate Vastu."
+        },
         config: {
             baseScore: 50,
             kitchen: { ideal: "SE", acceptable: "NW", idealScore: 20, acceptableScore: 10, penalty: -15 },
@@ -80,8 +151,37 @@ const WIDGET_CONFIG = {
         id: 'qc-widget-wrapper',
         title: 'QUICK CONVERTER',
         icon: '📏',
+        actionToggle: 'TOGGLE_CONVERTER',
+        actionCalc: 'CALC_CONVERTER',
         layout: { position: 'top: 24px; left: 24px;' },
-        classes: { container: 'canvas-widget-top-left qc-wrapper', inner: 'sidebar-converter' }
+        domIds: {
+            minBtn: 'qc-min-btn',
+            fullWidget: 'qc-full-widget',
+            minFt: 'minFt', minIn: 'minIn', minText: 'qc-min-text',
+            calcFt: 'calcFt', calcIn: 'calcIn', resIn: 'resIn'
+        },
+        controls: {
+            minimizeBtn: { icon: '&times;', class: 'converter-close-btn', title: 'Minimize Converter' },
+            expandBtn: { title: 'Maximize Converter' }
+        },
+        labels: { 
+            ft: 'FT', in: 'IN', total: 'Total',
+            symbols: { foot: "'", inch: '"', eq: "=" },
+            placeholder: "0"
+        },
+        classes: { 
+            container: 'canvas-widget-top-left qc-wrapper', 
+            inner: 'sidebar-converter',
+            minBtn: 'qc-min-btn',
+            minInput: 'qc-min-input',
+            header: 'converter-header',
+            row: 'converter-row',
+            inputGroup: 'converter-input-group',
+            resultGroup: 'result-group',
+            equals: 'converter-equals',
+            unit: 'unit',
+            icon: 'icon'
+        }
     }
 };
 
@@ -92,7 +192,7 @@ const WidgetEngine = {
     REQUIRE_HTML_CONTAINER: true,
 
     // -----------------------------------------
-    // 1. COMMON ROUTER METHODS
+    // 1. COMMON ROUTER METHODS & DISPATCHER
     // -----------------------------------------
     init: function(type) {
         if (type === 'cheatsheet') this._initCheatSheet();
@@ -114,6 +214,22 @@ const WidgetEngine = {
         else if (type === 'converter') this._toggleConverter();
     },
 
+    // 🌟 CENTRALIZED ACTION DISPATCHER
+    handleAction: function(actionType, payload = null) {
+        if (actionType === WIDGET_CONFIG.CHEATSHEET.actionToggle) this.toggle('cheatsheet');
+        else if (actionType === WIDGET_CONFIG.COMPLIANCE.actionToggle) {
+            if (payload) payload.stopPropagation();
+            this.toggle('compliance');
+        }
+        else if (actionType === WIDGET_CONFIG.VASTU.actionToggle) {
+            if (payload) payload.stopPropagation();
+            this.toggle('vastu');
+        }
+        else if (actionType === WIDGET_CONFIG.CONVERTER.actionToggle) this.toggle('converter');
+        else if (actionType === WIDGET_CONFIG.CONVERTER.actionCalc) this._calcConverterInches();
+        else console.warn(`ActionType '${actionType}' is unhandled in 2D Widget Engine.`);
+    },
+
     // -----------------------------------------
     // 2. CHEATSHEET MODULE
     // -----------------------------------------
@@ -129,26 +245,25 @@ const WidgetEngine = {
         }
 
         widget.innerHTML = `
-            <button id="btn-cheat-sheet" class="${conf.classes.button}" style="${conf.layout.buttonPos}" onclick="WidgetEngine.toggle('cheatsheet')">
-                <span class="cs-icon">${conf.icon}</span>
-                <span class="cs-text">${conf.title}</span>
+            <button id="${conf.domIds.btn}" class="${conf.classes.button}" style="${conf.layout.buttonPos}" onclick="WidgetEngine.handleAction('${conf.actionToggle}')">
+                <span class="${conf.classes.icon}">${conf.icon}</span>
+                <span class="${conf.classes.text}">${conf.title}</span>
             </button>
-            <div id="cheat-sheet-panel" class="${conf.classes.panel}" style="${conf.layout.panelPos}">
-                <div class="cs-panel-header">
+            <div id="${conf.domIds.panel}" class="${conf.classes.panel}" style="${conf.layout.panelPos}">
+                <div class="${conf.classes.header}">
                     <h2>${conf.icon} ${conf.title}</h2>
-                    <button class="cs-minimize-btn" onclick="WidgetEngine.toggle('cheatsheet')">✕</button>
+                    <button class="${conf.controls.minimizeBtn.class}" title="${conf.controls.minimizeBtn.title}" onclick="WidgetEngine.handleAction('${conf.actionToggle}')">${conf.controls.minimizeBtn.icon}</button>
                 </div>
-                <div class="cs-divider"></div>
-                <div id="cs-dynamic-content" class="cs-scroll"></div>
+                <div class="${conf.classes.divider}"></div>
+                <div id="${conf.domIds.content}" class="${conf.classes.scroll}"></div>
             </div>
         `;
 
         this.render('cheatsheet');
 
-        // Setup Bindings
         const cheatSheetCb = document.getElementById('toggle-cheatsheet-cb');
-        const cheatSheetBtn = document.getElementById('btn-cheat-sheet');
-        const cheatSheetPanel = document.getElementById('cheat-sheet-panel');
+        const cheatSheetBtn = document.getElementById(conf.domIds.btn);
+        const cheatSheetPanel = document.getElementById(conf.domIds.panel);
 
         if (cheatSheetCb) {
             cheatSheetCb.addEventListener('change', (e) => {
@@ -168,21 +283,21 @@ const WidgetEngine = {
 
     _renderCheatSheet: function() {
         const conf = WIDGET_CONFIG.CHEATSHEET;
-        const container = document.getElementById('cs-dynamic-content');
+        const container = document.getElementById(conf.domIds.content);
         if (!container) return;
         let htmlContent = '';
 
         conf.categories.forEach((section, index) => {
-            if (index > 0) htmlContent += `<div class="cs-divider" style="margin: 5px 0;"></div>`;
+            if (index > 0) htmlContent += `<div class="${conf.classes.divider}" style="margin: 5px 0;"></div>`;
             const topMargin = index === 0 ? '5px' : '4px';
-            htmlContent += `<span class="cs-label" style="color: ${section.color}; margin-top: ${topMargin};">${section.category}</span>`;
+            htmlContent += `<span class="${conf.classes.label}" style="color: ${section.color}; margin-top: ${topMargin};">${section.category}</span>`;
 
             section.items.forEach(item => {
                 const keyColor = item.overrideColor ? item.overrideColor : section.color;
                 htmlContent += `
-                <div class="cs-row">
-                    <span class="cs-desc">${item.desc}</span>
-                    <span class="cs-shortcut" style="color: ${keyColor};">${item.keys}</span>
+                <div class="${conf.classes.row}">
+                    <span class="${conf.classes.desc}">${item.desc}</span>
+                    <span class="${conf.classes.shortcut}" style="color: ${keyColor};">${item.keys}</span>
                 </div>`;
             });
         });
@@ -191,7 +306,8 @@ const WidgetEngine = {
     },
 
     _toggleCheatSheet: function() {
-        const panel = document.getElementById('cheat-sheet-panel');
+        const conf = WIDGET_CONFIG.CHEATSHEET;
+        const panel = document.getElementById(conf.domIds.panel);
         if (!panel) return;
         
         if (panel.style.display === 'none' || panel.style.display === '') {
@@ -213,11 +329,12 @@ const WidgetEngine = {
     // 3. COMPLIANCE MODULE
     // -----------------------------------------
     _initCompliance: function() {
+        const conf = WIDGET_CONFIG.COMPLIANCE;
         const complianceCb = document.getElementById('toggle-compliance-cb');
         if (complianceCb) {
             complianceCb.addEventListener('change', (e) => {
                 if (typeof window.toggleWidget === 'function') {
-                    window.toggleWidget(WIDGET_CONFIG.COMPLIANCE.id, e.target.checked);
+                    window.toggleWidget(conf.id, e.target.checked);
                 }
             });
         }
@@ -282,46 +399,45 @@ const WidgetEngine = {
             (canvasWrapper || document.body).appendChild(widget);
         }
 
-        // Apply Configured Styles
         widget.style.cssText = `position: absolute; ${conf.layout.position}; z-index: 100;`;
 
-        let colorClass = 'compliance-green';
-        let statusIcon = '✅';
-        if (data.score < 100) { colorClass = 'compliance-yellow'; statusIcon = '⚠️'; } 
-        if (data.score < 70) { colorClass = 'compliance-red'; statusIcon = '🚨'; }  
+        let colorClass = conf.classes.colorGreen;
+        let statusIcon = conf.icons.success;
+        if (data.score < 100) { colorClass = conf.classes.colorYellow; statusIcon = conf.icons.warning; } 
+        if (data.score < 70) { colorClass = conf.classes.colorRed; statusIcon = conf.icons.error; }  
 
         widget.innerHTML = `
             <!-- MAXIMIZED VIEW -->
-            <div class="compliance-max-view">
-                <div class="compliance-header">
-                    <span class="compliance-title">${statusIcon} ${conf.title}</span>
-                    <div class="compliance-score-wrapper">
-                        <span class="compliance-score ${colorClass}">${data.score}%</span>
-                        <button class="compliance-close-btn" title="Minimize" onclick="WidgetEngine.toggle('compliance')">&times;</button>
+            <div class="${conf.classes.maxView}">
+                <div class="${conf.classes.header}">
+                    <span class="${conf.classes.title}">${statusIcon} ${conf.title}</span>
+                    <div class="${conf.classes.scoreWrap}">
+                        <span class="${conf.classes.score} ${colorClass}">${data.score}%</span>
+                        <button class="${conf.controls.minimizeBtn.class}" title="${conf.controls.minimizeBtn.title}" onclick="WidgetEngine.handleAction('${conf.actionToggle}', event)">${conf.controls.minimizeBtn.icon}</button>
                     </div>
                 </div>
-                <div class="explorer-scroll compliance-warnings-container"></div>
+                <div class="${conf.classes.warningsContainer}"></div>
             </div>
 
             <!-- MINIMIZED VIEW -->
-            <div class="compliance-min-view" title="Expand Code Inspector" onclick="WidgetEngine.toggle('compliance')">
-                <span class="compliance-icon">${statusIcon}</span>
-                <span class="compliance-score-min ${colorClass}">${data.score}%</span>
+            <div class="${conf.classes.minView}" title="${conf.controls.expandBtn.title}" onclick="WidgetEngine.handleAction('${conf.actionToggle}', event)">
+                <span class="${conf.classes.icon}">${statusIcon}</span>
+                <span class="${conf.classes.scoreMin} ${colorClass}">${data.score}%</span>
             </div>
         `;
 
-        const warningsContainer = widget.querySelector('.compliance-warnings-container');
+        const warningsContainer = widget.querySelector(`.${conf.classes.warningsContainer.split(' ')[1]}`);
         if (data.warnings.length > 0) {
             data.warnings.forEach(w => {
                 const warnEl = document.createElement('div');
-                warnEl.className = 'compliance-warning';
+                warnEl.className = conf.classes.warning;
                 warnEl.textContent = w;
                 warningsContainer.appendChild(warnEl);
             });
         } else {
             const successEl = document.createElement('div');
-            successEl.className = 'compliance-success';
-            successEl.textContent = 'All elements meet standard building codes.';
+            successEl.className = conf.classes.success;
+            successEl.textContent = conf.messages.success;
             warningsContainer.appendChild(successEl);
         }
     },
@@ -330,7 +446,7 @@ const WidgetEngine = {
         const conf = WIDGET_CONFIG.COMPLIANCE;
         const widget = document.getElementById(conf.id);
         if (widget) {
-            widget.classList.toggle('minimized');
+            widget.classList.toggle('minimized'); // Base CSS transition class
         }
     },
 
@@ -338,10 +454,11 @@ const WidgetEngine = {
     // 4. VASTU MODULE
     // -----------------------------------------
     _initVastu: function() {
+        const conf = WIDGET_CONFIG.VASTU;
         const vastuCb = document.getElementById('toggle-vastu-cb');
         if (vastuCb) {
             vastuCb.addEventListener('change', (e) => {
-                const widget = document.getElementById(WIDGET_CONFIG.VASTU.id);
+                const widget = document.getElementById(conf.id);
                 if (widget) {
                     widget.style.display = e.target.checked ? 'block' : 'none';
                 }
@@ -376,15 +493,15 @@ const WidgetEngine = {
     },
 
     _calculateVastu: function(elements) {
+        const vConf = WIDGET_CONFIG.VASTU;
         let score = 0;
         let warnings = [];
         
         if (!elements || elements.length === 0) {
-            return { score: 0, warnings: [], text: "Add rooms to calculate Vastu." };
+            return { score: 0, warnings: [], text: vConf.messages.empty };
         }
 
-        const vConf = WIDGET_CONFIG.VASTU.config;
-        score = vConf.baseScore; 
+        score = vConf.config.baseScore; 
         const inW = parseFloat(document.getElementById('inW')?.value || 272);
         const inH = parseFloat(document.getElementById('inH')?.value || 400);
         const compassDir = document.getElementById('compassDir')?.value || 'West';
@@ -397,48 +514,48 @@ const WidgetEngine = {
             let zoneStr = this._getVastuDynamicZone(cx, cy, inW, inH, compassDir);
             
             if (el.type === 'kitchen') {
-                if (zoneStr === vConf.kitchen.ideal) { 
-                    score += vConf.kitchen.idealScore; 
-                    warnings.push(`✅ Kitchen perfectly in ${vConf.kitchen.ideal} (+${vConf.kitchen.idealScore})`); 
+                if (zoneStr === vConf.config.kitchen.ideal) { 
+                    score += vConf.config.kitchen.idealScore; 
+                    warnings.push(`✅ Kitchen perfectly in ${vConf.config.kitchen.ideal} (+${vConf.config.kitchen.idealScore})`); 
                 }
-                else if (zoneStr === vConf.kitchen.acceptable) { 
-                    score += vConf.kitchen.acceptableScore; 
-                    warnings.push(`✅ Kitchen acceptable in ${vConf.kitchen.acceptable} (+${vConf.kitchen.acceptableScore})`); 
+                else if (zoneStr === vConf.config.kitchen.acceptable) { 
+                    score += vConf.config.kitchen.acceptableScore; 
+                    warnings.push(`✅ Kitchen acceptable in ${vConf.config.kitchen.acceptable} (+${vConf.config.kitchen.acceptableScore})`); 
                 }
                 else { 
-                    score += vConf.kitchen.penalty; 
-                    warnings.push(`⚠️ Kitchen in ${zoneStr} (Should be ${vConf.kitchen.ideal}) (${vConf.kitchen.penalty})`); 
+                    score += vConf.config.kitchen.penalty; 
+                    warnings.push(`⚠️ Kitchen in ${zoneStr} (Should be ${vConf.config.kitchen.ideal}) (${vConf.config.kitchen.penalty})`); 
                 }
             }
             if (el.type === 'puja') {
-                if (zoneStr === vConf.puja.ideal) { 
-                    score += vConf.puja.idealScore; 
-                    warnings.push(`✅ Puja perfectly in ${vConf.puja.ideal} (+${vConf.puja.idealScore})`); 
+                if (zoneStr === vConf.config.puja.ideal) { 
+                    score += vConf.config.puja.idealScore; 
+                    warnings.push(`✅ Puja perfectly in ${vConf.config.puja.ideal} (+${vConf.config.puja.idealScore})`); 
                 }
                 else { 
-                    score += vConf.puja.penalty; 
-                    warnings.push(`⚠️ Puja in ${zoneStr} (Should be ${vConf.puja.ideal}) (${vConf.puja.penalty})`); 
+                    score += vConf.config.puja.penalty; 
+                    warnings.push(`⚠️ Puja in ${zoneStr} (Should be ${vConf.config.puja.ideal}) (${vConf.config.puja.penalty})`); 
                 }
             }
             if (el.type === 'bedroom') {
-                if (zoneStr === vConf.bedroom.ideal) { 
-                    score += vConf.bedroom.idealScore; 
-                    warnings.push(`✅ Master Bed perfectly in ${vConf.bedroom.ideal} (+${vConf.bedroom.idealScore})`); 
+                if (zoneStr === vConf.config.bedroom.ideal) { 
+                    score += vConf.config.bedroom.idealScore; 
+                    warnings.push(`✅ Master Bed perfectly in ${vConf.config.bedroom.ideal} (+${vConf.config.bedroom.idealScore})`); 
                 }
             }
             if (el.type === 'toilet') {
-                if (vConf.toilet.prohibited.includes(zoneStr)) { 
-                    score += vConf.toilet.penalty; 
-                    warnings.push(`⚠️ Toilet prohibited in ${zoneStr} (${vConf.toilet.penalty})`); 
+                if (vConf.config.toilet.prohibited.includes(zoneStr)) { 
+                    score += vConf.config.toilet.penalty; 
+                    warnings.push(`⚠️ Toilet prohibited in ${zoneStr} (${vConf.config.toilet.penalty})`); 
                 }
                 else { 
-                    score += vConf.toilet.safeScore; 
+                    score += vConf.config.toilet.safeScore; 
                 }
             }
         });
         
         score = Math.max(0, Math.min(100, score));
-        return { score, warnings, text: warnings.length > 0 ? warnings[0] : "Good overall spatial flow." };
+        return { score, warnings, text: warnings.length > 0 ? warnings[0] : vConf.messages.success };
     },
 
     _renderVastu: function(elementsData) {
@@ -455,38 +572,37 @@ const WidgetEngine = {
             (canvasWrapper || document.body).appendChild(widget);
         }
 
-        // Apply Configured Styles
         widget.style.cssText = `position: absolute; ${conf.layout.position}; z-index: 100;`;
 
-        let colorClass = 'vastu-green';
-        if (data.score < 40) { colorClass = 'vastu-red'; } 
-        else if (data.score < 70) { colorClass = 'vastu-yellow'; }  
+        let colorClass = conf.classes.colorGreen;
+        if (data.score < 40) { colorClass = conf.classes.colorRed; } 
+        else if (data.score < 70) { colorClass = conf.classes.colorYellow; }  
 
         widget.innerHTML = `
             <!-- MAXIMIZED VIEW -->
-            <div class="vastu-max-view">
-                <div class="vastu-header">
-                    <span class="vastu-title">${conf.icon} ${conf.title}</span>
-                    <div class="vastu-score-wrapper">
-                        <span class="vastu-score ${colorClass}">${data.score}/100</span>
-                        <button class="vastu-close-btn" title="Minimize" onclick="WidgetEngine.toggle('vastu', event)">&times;</button>
+            <div class="${conf.classes.maxView}">
+                <div class="${conf.classes.header}">
+                    <span class="${conf.classes.title}">${conf.icon} ${conf.title}</span>
+                    <div class="${conf.classes.scoreWrap}">
+                        <span class="${conf.classes.score} ${colorClass}">${data.score}/100</span>
+                        <button class="${conf.controls.minimizeBtn.class}" title="${conf.controls.minimizeBtn.title}" onclick="WidgetEngine.handleAction('${conf.actionToggle}', event)">${conf.controls.minimizeBtn.icon}</button>
                     </div>
                 </div>
-                <div class="explorer-scroll vastu-warnings-container"></div>
+                <div class="${conf.classes.warningsContainer}"></div>
             </div>
 
             <!-- MINIMIZED VIEW -->
-            <div class="vastu-min-view" title="Expand Vastu Inspector" onclick="WidgetEngine.toggle('vastu', event)">
-                <span class="vastu-icon">${conf.icon}</span>
-                <span class="vastu-score-min ${colorClass}">${data.score}%</span>
+            <div class="${conf.classes.minView}" title="${conf.controls.expandBtn.title}" onclick="WidgetEngine.handleAction('${conf.actionToggle}', event)">
+                <span class="${conf.classes.icon}">${conf.icon}</span>
+                <span class="${conf.classes.scoreMin} ${colorClass}">${data.score}%</span>
             </div>
         `;
 
-        const warningsContainer = widget.querySelector('.vastu-warnings-container');
+        const warningsContainer = widget.querySelector(`.${conf.classes.warningsContainer.split(' ')[1]}`);
         
         if (data.score === 0 && data.warnings.length === 0) {
             const emptyEl = document.createElement('div');
-            emptyEl.className = 'vastu-success';
+            emptyEl.className = conf.classes.success;
             emptyEl.style.color = '#94a3b8';
             emptyEl.style.background = 'rgba(255,255,255,0.05)';
             emptyEl.textContent = data.text;
@@ -494,20 +610,19 @@ const WidgetEngine = {
         } else if (data.warnings.length > 0) {
             data.warnings.forEach(w => {
                 const warnEl = document.createElement('div');
-                warnEl.className = w.includes('✅') ? 'vastu-success' : 'vastu-warning';
+                warnEl.className = w.includes('✅') ? conf.classes.success : conf.classes.warning;
                 warnEl.textContent = w;
                 warningsContainer.appendChild(warnEl);
             });
         } else {
             const successEl = document.createElement('div');
-            successEl.className = 'vastu-success';
+            successEl.className = conf.classes.success;
             successEl.textContent = data.text;
             warningsContainer.appendChild(successEl);
         }
     },
 
-    _toggleVastu: function(event) {
-        if (event) event.stopPropagation();
+    _toggleVastu: function() {
         const widget = document.getElementById(WIDGET_CONFIG.VASTU.id);
         if (widget) widget.classList.toggle('minimized');
     },
@@ -527,49 +642,47 @@ const WidgetEngine = {
             canvasWrapper.appendChild(widget);
         }
 
-        // Apply Configured Styles
         widget.className = conf.classes.container;
-        widget.style.cssText = `position: absolute; ${conf.layout.position}; z-index: 100;`;
 
         widget.innerHTML = `
             <!-- Minimized Micro-Input Pill -->
-            <div id="qc-min-btn" class="qc-min-btn">
-                <button onclick="WidgetEngine.toggle('converter')" style="background:transparent; border:none; cursor:pointer; padding:0; display:flex;" title="Maximize Converter">
-                    <span class="icon" style="font-size: 1.1rem; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">${conf.icon}</span>
+            <div id="${conf.domIds.minBtn}" class="${conf.classes.minBtn}">
+                <button onclick="WidgetEngine.handleAction('${conf.actionToggle}')" style="background:transparent; border:none; cursor:pointer; padding:0; display:flex;" title="${conf.controls.expandBtn.title}">
+                    <span class="${conf.classes.icon}" style="font-size: 1.1rem; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">${conf.icon}</span>
                 </button>
                 <div style="display:flex; align-items:center; gap:2px; margin-left:6px;">
                     <!-- Tiny Feet Input -->
-                    <input type="number" id="minFt" class="qc-min-input" placeholder="0" oninput="document.getElementById('calcFt').value = this.value; window.calcInches();">
-                    <span style="color:#94a3b8; font-weight:bold;">'</span>
+                    <input type="number" id="${conf.domIds.minFt}" class="${conf.classes.minInput}" placeholder="${conf.labels.placeholder}" oninput="document.getElementById('${conf.domIds.calcFt}').value = this.value; WidgetEngine.handleAction('${conf.actionCalc}');">
+                    <span style="color:#94a3b8; font-weight:bold;">${conf.labels.symbols.foot}</span>
                     
                     <!-- Tiny Inches Input -->
-                    <input type="number" id="minIn" class="qc-min-input" placeholder="0" oninput="document.getElementById('calcIn').value = this.value; window.calcInches();">
-                    <span style="color:#94a3b8; font-weight:bold;">"</span>
+                    <input type="number" id="${conf.domIds.minIn}" class="${conf.classes.minInput}" placeholder="${conf.labels.placeholder}" oninput="document.getElementById('${conf.domIds.calcIn}').value = this.value; WidgetEngine.handleAction('${conf.actionCalc}');">
+                    <span style="color:#94a3b8; font-weight:bold;">${conf.labels.symbols.inch}</span>
                     
-                    <span style="color:#38bdf8; margin: 0 4px; font-weight:bold;">=</span>
-                    <span id="qc-min-text" style="color:#f8fafc; font-family:monospace; font-weight:bold; font-size:0.9rem;">0"</span>
+                    <span style="color:#38bdf8; margin: 0 4px; font-weight:bold;">${conf.labels.symbols.eq}</span>
+                    <span id="${conf.domIds.minText}" style="color:#f8fafc; font-family:monospace; font-weight:bold; font-size:0.9rem;">0${conf.labels.symbols.inch}</span>
                 </div>
             </div>
             
             <!-- Maximized Full Widget -->
-            <div id="qc-full-widget" class="${conf.classes.inner}">
-                <div class="converter-header">
-                    <div><span class="icon">${conf.icon}</span> ${conf.title}</div>
-                    <button onclick="WidgetEngine.toggle('converter')" title="Minimize Converter" class="converter-close-btn">&times;</button>
+            <div id="${conf.domIds.fullWidget}" class="${conf.classes.inner}">
+                <div class="${conf.classes.header}">
+                    <div><span class="${conf.classes.icon}">${conf.icon}</span> ${conf.title}</div>
+                    <button onclick="WidgetEngine.handleAction('${conf.actionToggle}')" title="${conf.controls.minimizeBtn.title}" class="${conf.controls.minimizeBtn.class}">${conf.controls.minimizeBtn.icon}</button>
                 </div>
-                <div class="converter-row">
-                    <div class="converter-input-group">
-                        <input type="number" id="calcFt" placeholder="0" oninput="window.calcInches()">
-                        <span class="unit">FT</span>
+                <div class="${conf.classes.row}">
+                    <div class="${conf.classes.inputGroup}">
+                        <input type="number" id="${conf.domIds.calcFt}" placeholder="${conf.labels.placeholder}" oninput="WidgetEngine.handleAction('${conf.actionCalc}')">
+                        <span class="${conf.classes.unit}">${conf.labels.ft}</span>
                     </div>
-                    <div class="converter-input-group">
-                        <input type="number" id="calcIn" placeholder="0" oninput="window.calcInches()">
-                        <span class="unit">IN</span>
+                    <div class="${conf.classes.inputGroup}">
+                        <input type="number" id="${conf.domIds.calcIn}" placeholder="${conf.labels.placeholder}" oninput="WidgetEngine.handleAction('${conf.actionCalc}')">
+                        <span class="${conf.classes.unit}">${conf.labels.in}</span>
                     </div>
-                    <span class="converter-equals">=</span>
-                    <div class="converter-input-group result-group">
-                        <input type="text" id="resIn" placeholder="Total" readonly>
-                        <span class="unit">IN</span>
+                    <span class="${conf.classes.equals}">${conf.labels.symbols.eq}</span>
+                    <div class="${conf.classes.inputGroup} ${conf.classes.resultGroup}">
+                        <input type="text" id="${conf.domIds.resIn}" placeholder="${conf.labels.total}" readonly>
+                        <span class="${conf.classes.unit}">${conf.labels.in}</span>
                     </div>
                 </div>
             </div>
@@ -586,28 +699,30 @@ const WidgetEngine = {
     },
 
     _calcConverterInches: function() {
-        const ftInput = document.getElementById('calcFt');
-        const inInput = document.getElementById('calcIn');
+        const conf = WIDGET_CONFIG.CONVERTER;
+        const ftInput = document.getElementById(conf.domIds.calcFt);
+        const inInput = document.getElementById(conf.domIds.calcIn);
         
         const ft = parseFloat(ftInput?.value) || 0; 
         const inc = parseFloat(inInput?.value) || 0; 
         const total = ft * 12 + inc;
         
-        const resIn = document.getElementById('resIn');
-        if (resIn) resIn.value = total + " in"; 
+        const resIn = document.getElementById(conf.domIds.resIn);
+        if (resIn) resIn.value = total + " " + conf.labels.in.toLowerCase(); 
 
-        const minFt = document.getElementById('minFt');
-        const minIn = document.getElementById('minIn');
-        const minText = document.getElementById('qc-min-text');
+        const minFt = document.getElementById(conf.domIds.minFt);
+        const minIn = document.getElementById(conf.domIds.minIn);
+        const minText = document.getElementById(conf.domIds.minText);
         
         if (minFt && document.activeElement !== minFt && ftInput) minFt.value = ftInput.value;
         if (minIn && document.activeElement !== minIn && inInput) minIn.value = inInput.value;
-        if (minText) minText.innerText = total + '"';
+        if (minText) minText.innerText = total + conf.labels.symbols.inch;
     },
 
     _toggleConverter: function() {
-        const fullWidget = document.getElementById('qc-full-widget');
-        const minBtn = document.getElementById('qc-min-btn');
+        const conf = WIDGET_CONFIG.CONVERTER;
+        const fullWidget = document.getElementById(conf.domIds.fullWidget);
+        const minBtn = document.getElementById(conf.domIds.minBtn);
         
         if (!fullWidget || !minBtn) return;    
         const isClosed = fullWidget.style.opacity === '0';
@@ -634,25 +749,24 @@ const WidgetEngine = {
 // 🌐 GLOBAL HOOKS & EXPORTS
 // ==========================================
 
-// Backwards compatibility mappings for older scripts (e.g. settings.js, index.html inline calls)
-window.toggleCheatSheet = () => WidgetEngine.toggle('cheatsheet');
+window.toggleCheatSheet = () => WidgetEngine.handleAction('TOGGLE_CHEATSHEET');
 
 window.runComplianceCheck = () => {
     if (typeof elements !== 'undefined' && typeof fixtures !== 'undefined') {
         WidgetEngine.render('compliance', elements, fixtures);
     }
 };
-window.toggleComplianceWidget = () => WidgetEngine.toggle('compliance');
+window.toggleComplianceWidget = () => WidgetEngine.handleAction('TOGGLE_COMPLIANCE');
 
 window.calculateVastuScore = () => {
     if (typeof elements !== 'undefined') {
         WidgetEngine.render('vastu', elements);
     }
 };
-window.toggleVastuWidget = (e) => WidgetEngine.toggle('vastu', e);
+window.toggleVastuWidget = (e) => WidgetEngine.handleAction('TOGGLE_VASTU', e);
 
-window.calcInches = () => WidgetEngine._calcConverterInches();
-window.toggleQuickConverter = () => WidgetEngine.toggle('converter');
+window.calcInches = () => WidgetEngine.handleAction('CALC_CONVERTER');
+window.toggleQuickConverter = () => WidgetEngine.handleAction('TOGGLE_CONVERTER');
 
 // Auto-Initialize on DOM Load
 document.addEventListener('DOMContentLoaded', () => {

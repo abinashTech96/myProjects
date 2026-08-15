@@ -182,6 +182,39 @@ const WIDGET_CONFIG = {
             unit: 'unit',
             icon: 'icon'
         }
+    },
+
+    // 📷 Camera Configuration
+    CAMERA: {
+        id: 'camera-controls',
+        actionToggle: 'TOGGLE_CAMERA_MENU',
+        actionPan: 'PAN_CAMERA',
+        actionZoom: 'ZOOM_CAMERA',
+        actionReset: 'RESET_CAMERA',
+        classes: {
+            container: 'cam-bar-wrapper',
+            popout: 'cam-pan-popout',
+            mainBar: 'cam-main-bar',
+            btnBase: 'cam-squircle-btn',
+            btnDir: 'pan-dir',
+            btnZoom: 'cam-zoom-btn',
+            btnToggle: 'cam-toggle-btn',
+            iconCam: 'cam-icon',
+            iconClose: 'close-icon',
+            center: 'pan-center',
+            up: 'up', down: 'down', left: 'left', right: 'right',
+            open: 'open'
+        },
+        buttons: {
+            panUp: { icon: '▲', title: 'Pan Up', dx: 0, dy: 50 },
+            panDown: { icon: '▼', title: 'Pan Down', dx: 0, dy: -50 },
+            panLeft: { icon: '◄', title: 'Pan Left', dx: 50, dy: 0 },
+            panRight: { icon: '►', title: 'Pan Right', dx: -50, dy: 0 },
+            reset: { icon: '⚪', title: 'Reset Camera' },
+            zoomIn: { icon: '➕', title: 'Zoom In', factor: 1.2 },
+            zoomOut: { icon: '➖', title: 'Zoom Out', factor: 0.8 },
+            toggle: { icon: '🎥', closeIcon: '✕', title: 'Toggle Pan Controls' }
+        }
     }
 };
 
@@ -191,6 +224,14 @@ const WIDGET_CONFIG = {
 const WidgetEngine = {
     REQUIRE_HTML_CONTAINER: true,
 
+    // Mathematical state formerly attached to global window
+    canvasState: {
+        panX: 0,
+        panY: 0,
+        zoomLvl: 1,
+        snapLines: []
+    },
+
     // -----------------------------------------
     // 1. COMMON ROUTER METHODS & DISPATCHER
     // -----------------------------------------
@@ -199,6 +240,7 @@ const WidgetEngine = {
         else if (type === 'compliance') this._initCompliance();
         else if (type === 'vastu') this._initVastu();
         else if (type === 'converter') this._initConverter();
+        else if (type === 'camera') this._initCamera();
     },
 
     render: function(type, arg1, arg2) {
@@ -227,11 +269,108 @@ const WidgetEngine = {
         }
         else if (actionType === WIDGET_CONFIG.CONVERTER.actionToggle) this.toggle('converter');
         else if (actionType === WIDGET_CONFIG.CONVERTER.actionCalc) this._calcConverterInches();
+        else if (actionType === WIDGET_CONFIG.CAMERA.actionToggle) this._toggleCameraMenu();
+        else if (actionType === WIDGET_CONFIG.CAMERA.actionPan) this._panCamera(payload.dx, payload.dy);
+        else if (actionType === WIDGET_CONFIG.CAMERA.actionZoom) this._zoomCamera(payload.factor, payload.e);
+        else if (actionType === WIDGET_CONFIG.CAMERA.actionReset) this._resetCamera();
         else console.warn(`ActionType '${actionType}' is unhandled in 2D Widget Engine.`);
     },
 
     // -----------------------------------------
-    // 2. CHEATSHEET MODULE
+    // 2. CAMERA CONTROLS MODULE
+    // -----------------------------------------
+    _initCamera: function() {
+        const conf = WIDGET_CONFIG.CAMERA;
+        let widget = document.getElementById(conf.id);
+        
+        if (!widget) {
+            if (this.REQUIRE_HTML_CONTAINER) return;
+            widget = document.createElement('div');
+            widget.id = conf.id;
+            const canvasWrapper = document.getElementById('canvas-wrapper') || document.body;
+            canvasWrapper.appendChild(widget);
+        }
+
+        widget.className = conf.classes.container;
+
+        widget.innerHTML = `
+            <div class="${conf.classes.popout}">
+                <button class="${conf.classes.btnBase} ${conf.classes.btnDir} ${conf.classes.up}" onclick="WidgetEngine.handleAction('${conf.actionPan}', {dx: ${conf.buttons.panUp.dx}, dy: ${conf.buttons.panUp.dy}})" title="${conf.buttons.panUp.title}">${conf.buttons.panUp.icon}</button>
+                <button class="${conf.classes.btnBase} ${conf.classes.btnDir} ${conf.classes.left}" onclick="WidgetEngine.handleAction('${conf.actionPan}', {dx: ${conf.buttons.panLeft.dx}, dy: ${conf.buttons.panLeft.dy}})" title="${conf.buttons.panLeft.title}">${conf.buttons.panLeft.icon}</button>
+                <button class="${conf.classes.btnBase} ${conf.classes.center}" onclick="WidgetEngine.handleAction('${conf.actionReset}')" title="${conf.buttons.reset.title}">${conf.buttons.reset.icon}</button>
+                <button class="${conf.classes.btnBase} ${conf.classes.btnDir} ${conf.classes.right}" onclick="WidgetEngine.handleAction('${conf.actionPan}', {dx: ${conf.buttons.panRight.dx}, dy: ${conf.buttons.panRight.dy}})" title="${conf.buttons.panRight.title}">${conf.buttons.panRight.icon}</button>
+                <button class="${conf.classes.btnBase} ${conf.classes.btnDir} ${conf.classes.down}" onclick="WidgetEngine.handleAction('${conf.actionPan}', {dx: ${conf.buttons.panDown.dx}, dy: ${conf.buttons.panDown.dy}})" title="${conf.buttons.panDown.title}">${conf.buttons.panDown.icon}</button>
+            </div>
+            <div class="${conf.classes.mainBar}">
+                <button class="${conf.classes.btnBase} ${conf.classes.btnZoom}" onclick="WidgetEngine.handleAction('${conf.actionZoom}', {factor: ${conf.buttons.zoomIn.factor}})" title="${conf.buttons.zoomIn.title}">${conf.buttons.zoomIn.icon}</button>
+                <button class="${conf.classes.btnBase} ${conf.classes.btnToggle}" onclick="WidgetEngine.handleAction('${conf.actionToggle}')" title="${conf.buttons.toggle.title}">
+                    <span class="${conf.classes.iconCam}">${conf.buttons.toggle.icon}</span>
+                    <span class="${conf.classes.iconClose}">${conf.buttons.toggle.closeIcon}</span>
+                </button>
+                <button class="${conf.classes.btnBase} ${conf.classes.btnZoom}" onclick="WidgetEngine.handleAction('${conf.actionZoom}', {factor: ${conf.buttons.zoomOut.factor}})" title="${conf.buttons.zoomOut.title}">${conf.buttons.zoomOut.icon}</button>
+            </div>
+        `;
+
+        const cameraCb = document.getElementById('toggle-camera-cb');
+        if (cameraCb) {
+            cameraCb.addEventListener('change', (e) => {
+                if (typeof window.toggleWidget === 'function') {
+                    window.toggleWidget(conf.id, e.target.checked);
+                }
+            });
+        }
+    },
+    _toggleCameraMenu: function() {
+        const conf = WIDGET_CONFIG.CAMERA;
+        const widget = document.getElementById(conf.id);
+        if (widget) {
+            widget.classList.toggle(conf.classes.open);
+        }
+    },
+    _updateViewport: function() {
+        const vp = (typeof UI !== 'undefined' && UI.viewport) ? UI.viewport : document.getElementById('viewport');
+        if (vp) {
+            vp.setAttribute('transform', `matrix(${this.canvasState.zoomLvl}, 0, 0, ${this.canvasState.zoomLvl}, ${this.canvasState.panX}, ${this.canvasState.panY})`);
+        }
+    },
+    _panCamera: function(dx, dy) {
+        this.canvasState.panX += dx; 
+        this.canvasState.panY += dy;
+        this._updateViewport();
+    },
+    _zoomCamera: function(factor, e = null) {
+        const newZoom = this.canvasState.zoomLvl * factor;
+        
+        if (newZoom < 0.2 || newZoom > 5) return;
+        
+        let pointerX = 500;
+        let pointerY = 500;
+        
+        const svg = (typeof UI !== 'undefined' && UI.blueprint) ? UI.blueprint : document.getElementById('blueprint');
+        
+        if (e && svg) {
+            const pt = svg.createSVGPoint();
+            pt.x = e.clientX || (e.touches ? e.touches[0].clientX : 500);
+            pt.y = e.clientY || (e.touches ? e.touches[0].clientY : 500);
+            const svgP = pt.matrixTransform(svg.getScreenCTM().inverse());
+            pointerX = svgP.x;
+            pointerY = svgP.y;
+        }
+        
+        this.canvasState.panX = pointerX - (pointerX - this.canvasState.panX) * factor;
+        this.canvasState.panY = pointerY - (pointerY - this.canvasState.panY) * factor;
+        this.canvasState.zoomLvl = newZoom;
+        this._updateViewport();
+    },
+    _resetCamera: function() {
+        this.canvasState.panX = 0; 
+        this.canvasState.panY = 0; 
+        this.canvasState.zoomLvl = 1;
+        this._updateViewport();
+    },
+
+    // -----------------------------------------
+    // 3. CHEATSHEET MODULE 
     // -----------------------------------------
     _initCheatSheet: function() {
         const conf = WIDGET_CONFIG.CHEATSHEET;
@@ -280,7 +419,6 @@ const WidgetEngine = {
             });
         }
     },
-
     _renderCheatSheet: function() {
         const conf = WIDGET_CONFIG.CHEATSHEET;
         const container = document.getElementById(conf.domIds.content);
@@ -304,7 +442,6 @@ const WidgetEngine = {
 
         container.innerHTML = htmlContent;
     },
-
     _toggleCheatSheet: function() {
         const conf = WIDGET_CONFIG.CHEATSHEET;
         const panel = document.getElementById(conf.domIds.panel);
@@ -326,7 +463,7 @@ const WidgetEngine = {
     },
 
     // -----------------------------------------
-    // 3. COMPLIANCE MODULE
+    // 4. COMPLIANCE MODULE
     // -----------------------------------------
     _initCompliance: function() {
         const conf = WIDGET_CONFIG.COMPLIANCE;
@@ -339,7 +476,6 @@ const WidgetEngine = {
             });
         }
     },
-
     _calculateCompliance: function(elements, fixtures) {
         let warnings = [];
         let passed = 0;
@@ -383,7 +519,6 @@ const WidgetEngine = {
         const score = totalChecks > 0 ? Math.round((passed / totalChecks) * 100) : 100;
         return { score, warnings, totalChecks, passed };
     },
-
     _renderCompliance: function(elementsData, fixturesData) {
         const data = this._calculateCompliance(elementsData, fixturesData);
         if (!data) return;
@@ -441,7 +576,6 @@ const WidgetEngine = {
             warningsContainer.appendChild(successEl);
         }
     },
-
     _toggleCompliance: function() {
         const conf = WIDGET_CONFIG.COMPLIANCE;
         const widget = document.getElementById(conf.id);
@@ -451,7 +585,7 @@ const WidgetEngine = {
     },
 
     // -----------------------------------------
-    // 4. VASTU MODULE
+    // 5. VASTU MODULE
     // -----------------------------------------
     _initVastu: function() {
         const conf = WIDGET_CONFIG.VASTU;
@@ -465,7 +599,6 @@ const WidgetEngine = {
             });
         }
     },
-
     _getVastuDynamicZone: function(cx, cy, plotW, plotH, topDirection) {
         const centerX = plotW / 2;
         const centerY = plotH / 2;
@@ -491,7 +624,6 @@ const WidgetEngine = {
         const index = Math.floor(((normalizedAngle + 11.25) % 360) / 22.5);
         return zones[index];
     },
-
     _calculateVastu: function(elements) {
         const vConf = WIDGET_CONFIG.VASTU;
         let score = 0;
@@ -557,7 +689,6 @@ const WidgetEngine = {
         score = Math.max(0, Math.min(100, score));
         return { score, warnings, text: warnings.length > 0 ? warnings[0] : vConf.messages.success };
     },
-
     _renderVastu: function(elementsData) {
         const data = this._calculateVastu(elementsData);
         const conf = WIDGET_CONFIG.VASTU;
@@ -621,14 +752,13 @@ const WidgetEngine = {
             warningsContainer.appendChild(successEl);
         }
     },
-
     _toggleVastu: function() {
         const widget = document.getElementById(WIDGET_CONFIG.VASTU.id);
         if (widget) widget.classList.toggle('minimized');
     },
 
     // -----------------------------------------
-    // 5. QUICK CONVERTER MODULE
+    // 6. QUICK CONVERTER MODULE
     // -----------------------------------------
     _initConverter: function() {
         const conf = WIDGET_CONFIG.CONVERTER;
@@ -697,7 +827,6 @@ const WidgetEngine = {
             });
         }
     },
-
     _calcConverterInches: function() {
         const conf = WIDGET_CONFIG.CONVERTER;
         const ftInput = document.getElementById(conf.domIds.calcFt);
@@ -718,7 +847,6 @@ const WidgetEngine = {
         if (minIn && document.activeElement !== minIn && inInput) minIn.value = inInput.value;
         if (minText) minText.innerText = total + conf.labels.symbols.inch;
     },
-
     _toggleConverter: function() {
         const conf = WIDGET_CONFIG.CONVERTER;
         const fullWidget = document.getElementById(conf.domIds.fullWidget);
@@ -748,23 +876,19 @@ const WidgetEngine = {
 // ==========================================
 // 🌐 GLOBAL HOOKS & EXPORTS
 // ==========================================
+// Expose the internal state back to the window for backward compatibility with older renderer functions
+window.CanvasState = WidgetEngine.canvasState;
+
+window.updateViewport = () => WidgetEngine._updateViewport();
+window.panCamera = (dx, dy) => WidgetEngine.handleAction('PAN_CAMERA', {dx, dy});
+window.zoomCamera = (factor, e) => WidgetEngine.handleAction('ZOOM_CAMERA', {factor, e});
+window.resetCamera = () => WidgetEngine.handleAction('RESET_CAMERA');
 
 window.toggleCheatSheet = () => WidgetEngine.handleAction('TOGGLE_CHEATSHEET');
-
-window.runComplianceCheck = () => {
-    if (typeof elements !== 'undefined' && typeof fixtures !== 'undefined') {
-        WidgetEngine.render('compliance', elements, fixtures);
-    }
-};
+window.runComplianceCheck = () => { if (typeof elements !== 'undefined' && typeof fixtures !== 'undefined') WidgetEngine.render('compliance', elements, fixtures); };
 window.toggleComplianceWidget = () => WidgetEngine.handleAction('TOGGLE_COMPLIANCE');
-
-window.calculateVastuScore = () => {
-    if (typeof elements !== 'undefined') {
-        WidgetEngine.render('vastu', elements);
-    }
-};
+window.calculateVastuScore = () => { if (typeof elements !== 'undefined') WidgetEngine.render('vastu', elements); };
 window.toggleVastuWidget = (e) => WidgetEngine.handleAction('TOGGLE_VASTU', e);
-
 window.calcInches = () => WidgetEngine.handleAction('CALC_CONVERTER');
 window.toggleQuickConverter = () => WidgetEngine.handleAction('TOGGLE_CONVERTER');
 
@@ -774,4 +898,5 @@ document.addEventListener('DOMContentLoaded', () => {
     WidgetEngine.init('compliance');
     WidgetEngine.init('vastu');
     WidgetEngine.init('converter');
+    WidgetEngine.init('camera');
 });

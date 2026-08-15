@@ -69,14 +69,14 @@ const NavActionEngine = {
 
             if (btn.hasDropdown) {
                 const dropItemsHtml = btn.dropdownItems.map(item => `
-                    <div class="export-drop-item" title="${item.title}" onclick="NavActionEngine.handleAction('${item.actionType}')">${item.label}</div>
+                    <div class="export-drop-item" onclick="NavActionEngine.handleAction('${item.actionType}')">${item.label}</div>
                 `).join('');
 
                 return `
                 <div class="nav-btn-group">
                     ${mainBtnHtml}
                     <button class="${NAV_ACTION_CONFIG.classes.baseBtn} ${btn.themeClass} dropdown-trigger-btn" onclick="NavActionEngine.toggleDropdown('${btn.dropdownId}', event)" title="More Export Options">
-                        ▼
+                        <span class="drop-arrow">▼</span> <!-- ✨ WRAPPED THE ARROW FOR ROTATION -->
                     </button>
                     <div id="${btn.dropdownId}" class="export-dropdown-panel">
                         ${dropItemsHtml}
@@ -95,8 +95,12 @@ const NavActionEngine = {
         const importInput = document.getElementById(NAV_ACTION_CONFIG.fileInputId);
         if (importInput) importInput.addEventListener('change', (e) => this.importProjectJSON(e));
 
+        // ✨ UPDATED: Close menu and reset arrow rotation on outside click
         document.addEventListener('click', () => {
-            document.querySelectorAll('.export-dropdown-panel').forEach(p => p.classList.remove('show'));
+            document.querySelectorAll('.export-dropdown-panel').forEach(p => {
+                p.classList.remove('show');
+                if (p.parentElement) p.parentElement.classList.remove('open');
+            });
         });
 
         // 4. Build the Project Info Popup Panel
@@ -161,10 +165,15 @@ const NavActionEngine = {
         const menu = document.getElementById(dropdownId);
         if (!menu) return;
         
+        // ✨ UPDATED: Manage the 'open' class on the parent group for arrow rotation
         document.querySelectorAll('.export-dropdown-panel').forEach(p => {
-            if (p.id !== dropdownId) p.classList.remove('show');
+            if (p.id !== dropdownId) {
+                p.classList.remove('show');
+                if (p.parentElement) p.parentElement.classList.remove('open');
+            }
         });
         menu.classList.toggle('show');
+        menu.parentElement.classList.toggle('open');
     },
 
     toggleInfoPanel: function() {

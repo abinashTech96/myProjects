@@ -125,16 +125,13 @@
     align-items: center;
     margin-left: 4px;
     height: 26px;
-    border-radius: 13px; /* Unified pill shape */
-    
-    /* Move the Theme-Blue background and border to the Wrapper! */
+    border-radius: 13px; 
     background: rgba(56, 189, 248, 0.15); 
     border: 1px solid rgba(56, 189, 248, 0.3); 
     box-shadow: 3px 3px 6px rgba(0, 0, 0, 0.3), -3px -3px 6px rgba(255, 255, 255, 0.06);
     transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease;
 }
 
-/* Group-level hover animation */
 .nav-btn-group:hover {
     transform: translateY(-1px);
     box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.4), -4px -4px 8px rgba(255, 255, 255, 0.08);
@@ -145,7 +142,6 @@
     box-shadow: inset 2px 2px 4px rgba(0, 0, 0, 0.5), inset -2px -2px 4px rgba(255, 255, 255, 0.03);
 }
 
-/* 🛑 Strip individual button styles so they blend into the wrapper */
 .nav-btn-group .tool-btn {
     margin: 0 !important;
     border: none !important;
@@ -158,11 +154,11 @@
 /* Shape the Main Save Button (Left Side) */
 .nav-btn-group > button:first-of-type {
     border-radius: 12px 0 0 12px !important;
-    border-right: 1px solid rgba(56, 189, 248, 0.3) !important; /* The single divider line */
+    border-right: 1px solid rgba(56, 189, 248, 0.3) !important; 
     width: 28px !important; 
 }
 .nav-btn-group > button:first-of-type:hover {
-    background: rgba(56, 189, 248, 0.2) !important; /* Subtle highlight */
+    background: rgba(56, 189, 248, 0.2) !important; 
 }
 
 /* Shape the Dropdown Arrow (Right Side) */
@@ -177,7 +173,16 @@
     color: #38bdf8 !important;
 }
 .dropdown-trigger-btn:hover {
-    background: rgba(56, 189, 248, 0.2) !important; /* Subtle highlight */
+    background: rgba(56, 189, 248, 0.2) !important; 
+}
+
+/* ✨ NEW: Arrow Rotation Animation */
+.drop-arrow {
+    display: inline-block;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.nav-btn-group.open .drop-arrow {
+    transform: rotate(180deg);
 }
 
 /* --- Dropdown Panel Refined Look --- */
@@ -185,26 +190,24 @@
     display: none;
     opacity: 0;
     position: absolute;
-    top: calc(100% + 12px);
-    left: 0; /* Aligned exactly with the left edge of the button */
-    transform: translateY(-10px);
-    background: #0f172a; /* Dark navy to match image */
+    top: 100%;
+    margin-top: 3px;
+    left: 0; 
+    background: #0f172a; 
     backdrop-filter: blur(10px);
     border: 1px solid rgba(56, 189, 248, 0.3);
     border-radius: 8px;
-    padding: 8px 0;
+    padding: 6px 0;
     min-width: 100px;
     z-index: 10001;
-    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-    box-shadow: 0 10px 25px rgba(0,0,0,0.7), inset 0 1px 1px rgba(255,255,255,0.05);
 }
 
 .export-dropdown-panel.show {
     display: block;
     opacity: 1;
-    transform: translateY(0);
 }
 
+/* ✨ NEW: Staggered Dropdown Items */
 .export-drop-item {
     padding: 10px 16px;
     font-size: 0.8rem;
@@ -215,10 +218,29 @@
     font-weight: 600;
     display: flex;
     align-items: center;
-    gap: 10px; /* Space between emoji and text */
+    gap: 5px;
+    opacity: 0;
+    transform: translateY(-8px);
 }
 
 .export-drop-item:hover {
     background: rgba(56, 189, 248, 0.15);
     color: #f8fafc;
+}
+
+/* Trigger animation when panel opens */
+.export-dropdown-panel.show .export-drop-item {
+    animation: dropStagger 0.3s forwards cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Stagger Delays (One by One effect) */
+.export-dropdown-panel.show .export-drop-item:nth-child(1) { animation-delay: 0.05s; }
+.export-dropdown-panel.show .export-drop-item:nth-child(2) { animation-delay: 0.10s; }
+.export-dropdown-panel.show .export-drop-item:nth-child(3) { animation-delay: 0.15s; }
+.export-dropdown-panel.show .export-drop-item:nth-child(4) { animation-delay: 0.20s; }
+@keyframes dropStagger {
+    to { 
+        opacity: 1; 
+        transform: translateY(0); 
+    }
 }

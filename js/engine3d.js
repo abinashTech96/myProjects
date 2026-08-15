@@ -54,7 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // --- 3D RAYCASTER STATE & SELECTION ---
-let isRaycasterActive = false;
+// let isRaycasterActive = false;
 const raycaster = new THREE.Raycaster();
 const mouse3D = new THREE.Vector2();
 
@@ -92,7 +92,7 @@ window.resetCamera3D = function() {
     Engine3D.controls.target.set(500, 0, 500);
     Engine3D.controls.update();
 };
-
+/*
 window.startWalkthrough = function() {
     if (!window.is3DMode || !Engine3D.fpsControls) return;
     
@@ -100,8 +100,6 @@ window.startWalkthrough = function() {
     Engine3D.controls.enabled = false; 
     const navPad = document.getElementById('nav-pad');
     if(navPad) navPad.style.display = 'none';
-
-    // 🌟 PREMIUM UPGRADE: Glassmorphism HUD overlay
     if (!document.getElementById('fly-hint')) {
         const hint = document.createElement('div');
         hint.id = 'fly-hint';
@@ -117,7 +115,6 @@ window.startWalkthrough = function() {
         document.body.appendChild(hint);
     }
 
-    // 🌟 PREMIUM UPGRADE: Minimalist FPS Crosshair
     if (!document.getElementById('walk-crosshair')) {
         const crosshair = document.createElement('div');
         crosshair.id = 'walk-crosshair';
@@ -125,7 +122,6 @@ window.startWalkthrough = function() {
         document.body.appendChild(crosshair);
     }
 
-    // Lock camera perfectly to human eye level on start
     const scaleInput = document.getElementById('scaleInput');
     const SCALE = scaleInput ? parseFloat(scaleInput.value) || 1.2 : 1.2;
     Engine3D.camera.position.set(Engine3D.camera.position.x, 65 * SCALE, Engine3D.camera.position.z); 
@@ -152,7 +148,7 @@ window.toggleRaycaster = function() {
         if (typeof updateCanvas === 'function') updateCanvas();
     }
 };
-
+*/
 // =========================================
 // 3D EVENT LISTENERS 
 // =========================================
@@ -279,6 +275,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // =========================================
 // 3D PERFORMANCE MANAGEMENT
 // =========================================
+/*
 let isPerformanceMode = false;
 
 window.togglePerformanceMode = function() {
@@ -290,15 +287,9 @@ window.togglePerformanceMode = function() {
         btn.style.background = isPerformanceMode ? 'rgba(234, 179, 8, 0.2)' : 'rgba(15, 23, 42, 0.85)';
         btn.style.color = isPerformanceMode ? '#facc15' : '#38bdf8'; 
     }
-
-    // 1. UI PERFORMANCE: Toggle the CSS class to disable glassmorphism
     document.body.classList.toggle('perf-mode-active', isPerformanceMode);
-
     if (!Engine3D.scene || !Engine3D.renderer) return;
-
-    // 2. WEBGL PERFORMANCE: Lower pixel ratio and disable shadows
     Engine3D.renderer.setPixelRatio(isPerformanceMode ? 1 : window.devicePixelRatio);
-
     Engine3D.scene.traverse((object) => {
         if (object.isDirectionalLight) {
             object.castShadow = !isPerformanceMode;
@@ -309,9 +300,9 @@ window.togglePerformanceMode = function() {
             if (object.material) object.material.needsUpdate = true;
         }
     });
-
     if (window.is3DMode && !Engine3D.isWalkthrough) {
         Engine3D.controls.update();
         Engine3D.renderer.render(Engine3D.scene, Engine3D.camera);
     }
 };
+*/

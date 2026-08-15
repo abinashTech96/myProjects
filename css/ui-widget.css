@@ -2,7 +2,7 @@
    ⌨️ SHORTCUTS GUIDE STYLES
 ========================================= */
 .cs-action-btn {
-    position: fixed; bottom: 5px; left: 5px; z-index: 1000;
+    /* position: fixed; bottom: 5px; left: 5px; z-index: 1000;  injected by js */
     background: #1e293b; color: #f8fafc; border: 0.2px solid #95daf8;
     width: 36px; height: 36px; border-radius: 18px; padding: 0;
     overflow: hidden; display: flex; align-items: center; justify-content: flex-start;
@@ -20,7 +20,7 @@
 @media (max-width: 1024px) { #btn-cheat-sheet, #cheat-sheet-panel { display: none !important; } }
 
 .cs-panel {
-    position: fixed; bottom: 60px; left: 20px; z-index: 1000;
+    /* position: fixed; bottom: 60px; left: 20px; z-index: 1000; injected by js */
     width: 250px; background: #1e293b; border-radius: 12px; padding: 12px 14px;
     box-shadow: 6px 6px 12px #151d2a, -6px -6px 12px #27354c;
     color: #e2e8f0; font-family: 'Segoe UI', system-ui, sans-serif;
@@ -57,10 +57,7 @@
    ✅ BUILDING CODE & COMPLIANCE STYLES
 ========================================== */
 #compliance-widget {
-    position: absolute; 
-    top: 190px;
-    left: 24px; 
-    z-index: 100;
+    /* position: absolute; top: 190px; left: 24px; z-index: 100; injected by js */
     width: 280px; 
     max-height: 400px; 
     padding: 15px; 
@@ -213,10 +210,7 @@
    🧭 VASTU SHASTRA COMPLIANCE STYLES
 ========================================== */
 #vastu-widget {
-    position: absolute; 
-    bottom: 20px; 
-    left: 20px; 
-    z-index: 100;
+    /* position: absolute; bottom: 20px; left: 20px; z-index: 100; injected by js */
     width: 280px; 
     max-height: 400px; 
     padding: 15px; 
@@ -371,10 +365,7 @@
    📏 QUICK CONVERTER WIDGET STYLES
 ========================================= */
 .canvas-widget-top-left {
-    position: absolute;
-    top: 24px;
-    left: 24px;
-    z-index: 100;
+    /* position: absolute;top: 24px;left: 24px; z-index: 100;  injected by js*/
     pointer-events: auto;
     width: 380px;
 }

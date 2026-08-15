@@ -3,41 +3,55 @@
 // =========================================
 const WIDGET_CONFIG = {
     // ⌨️ Shortcuts Guide Configuration
-    CHEATSHEET: [
-        {
-            category: "GENERAL EDITING",
-            color: "#38bdf8",
-            items: [
-                { desc: "Copy / Paste", keys: "Ctrl+C / Ctrl+V" },
-                { desc: "Undo Action", keys: "Ctrl+Z" },
-                { desc: "Duplicate Room", keys: "Ctrl+D" },
-                { desc: "Lock/Unlock", keys: "Ctrl+L" },
-                { desc: "Delete Item", keys: "Del / Bksp", overrideColor: "#ef4444" }
-            ]
+    CHEATSHEET: {
+        id: 'cheatsheet-widget',
+        title: 'KEYBOARD SHORTCUTS',
+        icon: '⌨️',
+        layout: { 
+            buttonPos: 'position: fixed; bottom: 5px; left: 5px; z-index: 1000;', 
+            panelPos: 'position: fixed; bottom: 60px; left: 20px; z-index: 1000;' 
         },
-        {
-            category: "2D CANVAS CONTROLS",
-            color: "#10b981",
-            items: [
-                { desc: "Pan View", keys: "Hold Space" },
-                { desc: "Zoom In / Out", keys: "Mouse Scroll" },
-                { desc: "Straight Line Drag", keys: "Shift + Drag" },
-                { desc: "Nudge Item", keys: "Arrow Keys" }
-            ]
-        },
-        {
-            category: "DRONE MODE (3D)",
-            color: "#f59e0b",
-            items: [
-                { desc: "Fly / Navigate", keys: "WASD + QE" }
-            ]
-        }
-    ],
+        classes: { button: 'cs-action-btn', panel: 'cs-panel' },
+        categories: [
+            {
+                category: "GENERAL EDITING",
+                color: "#38bdf8",
+                items: [
+                    { desc: "Copy / Paste", keys: "Ctrl+C / Ctrl+V" },
+                    { desc: "Undo Action", keys: "Ctrl+Z" },
+                    { desc: "Duplicate Room", keys: "Ctrl+D" },
+                    { desc: "Lock/Unlock", keys: "Ctrl+L" },
+                    { desc: "Delete Item", keys: "Del / Bksp", overrideColor: "#ef4444" }
+                ]
+            },
+            {
+                category: "2D CANVAS CONTROLS",
+                color: "#10b981",
+                items: [
+                    { desc: "Pan View", keys: "Hold Space" },
+                    { desc: "Zoom In / Out", keys: "Mouse Scroll" },
+                    { desc: "Straight Line Drag", keys: "Shift + Drag" },
+                    { desc: "Nudge Item", keys: "Arrow Keys" }
+                ]
+            },
+            {
+                category: "DRONE MODE (3D)",
+                color: "#f59e0b",
+                items: [
+                    { desc: "Fly / Navigate", keys: "WASD + QE" }
+                ]
+            }
+        ]
+    },
 
     // ✅ Building Code & Compliance Rules
     COMPLIANCE: {
-        SQ_INCHES_TO_SQFT: 144,
-        RULES: {
+        id: 'compliance-widget',
+        title: 'CODE INSPECTOR',
+        icon: '✅',
+        layout: { position: 'top: 190px; left: 24px;' },
+        constants: { SQ_INCHES_TO_SQFT: 144 },
+        rules: {
             bedroom: { minAreaSqft: 70, minDimInches: 84, requiresEgress: true }, // 84 inches = 7'0"
             living: { minAreaSqft: 120, minDimInches: 84, requiresEgress: true },
             toilet: { minAreaSqft: 15, minDimInches: 0, requiresEgress: false },
@@ -47,11 +61,27 @@ const WIDGET_CONFIG = {
 
     // 🧭 Vastu Shastra Scoring Rules
     VASTU: {
-        baseScore: 50,
-        kitchen: { ideal: "SE", acceptable: "NW", idealScore: 20, acceptableScore: 10, penalty: -15 },
-        puja: { ideal: "NE", idealScore: 20, penalty: -10 },
-        bedroom: { ideal: "SW", idealScore: 15 },
-        toilet: { prohibited: ["NE", "SW"], penalty: -25, safeScore: 10 }
+        id: 'vastu-widget',
+        title: 'VASTU SCORE',
+        icon: '🧭',
+        layout: { position: 'bottom: 20px; left: 20px;' },
+        classes: { container: 'minimized' },
+        config: {
+            baseScore: 50,
+            kitchen: { ideal: "SE", acceptable: "NW", idealScore: 20, acceptableScore: 10, penalty: -15 },
+            puja: { ideal: "NE", idealScore: 20, penalty: -10 },
+            bedroom: { ideal: "SW", idealScore: 15 },
+            toilet: { prohibited: ["NE", "SW"], penalty: -25, safeScore: 10 }
+        }
+    },
+
+    // 📏 Quick Converter Configuration
+    CONVERTER: {
+        id: 'qc-widget-wrapper',
+        title: 'QUICK CONVERTER',
+        icon: '📏',
+        layout: { position: 'top: 24px; left: 24px;' },
+        classes: { container: 'canvas-widget-top-left qc-wrapper', inner: 'sidebar-converter' }
     }
 };
 
@@ -88,23 +118,24 @@ const WidgetEngine = {
     // 2. CHEATSHEET MODULE
     // -----------------------------------------
     _initCheatSheet: function() {
-        let widget = document.getElementById('cheatsheet-widget');
+        const conf = WIDGET_CONFIG.CHEATSHEET;
+        let widget = document.getElementById(conf.id);
         
         if (!widget) {
             if (this.REQUIRE_HTML_CONTAINER) return;
             widget = document.createElement('div');
-            widget.id = 'cheatsheet-widget';
+            widget.id = conf.id;
             document.body.appendChild(widget);
         }
 
         widget.innerHTML = `
-            <button id="btn-cheat-sheet" class="cs-action-btn" onclick="WidgetEngine.toggle('cheatsheet')">
-                <span class="cs-icon">⌨️</span>
-                <span class="cs-text">Shortcuts Guide</span>
+            <button id="btn-cheat-sheet" class="${conf.classes.button}" style="${conf.layout.buttonPos}" onclick="WidgetEngine.toggle('cheatsheet')">
+                <span class="cs-icon">${conf.icon}</span>
+                <span class="cs-text">${conf.title}</span>
             </button>
-            <div id="cheat-sheet-panel" class="cs-panel">
+            <div id="cheat-sheet-panel" class="${conf.classes.panel}" style="${conf.layout.panelPos}">
                 <div class="cs-panel-header">
-                    <h2>⌨️ KEYBOARD SHORTCUTS</h2>
+                    <h2>${conf.icon} ${conf.title}</h2>
                     <button class="cs-minimize-btn" onclick="WidgetEngine.toggle('cheatsheet')">✕</button>
                 </div>
                 <div class="cs-divider"></div>
@@ -136,11 +167,12 @@ const WidgetEngine = {
     },
 
     _renderCheatSheet: function() {
+        const conf = WIDGET_CONFIG.CHEATSHEET;
         const container = document.getElementById('cs-dynamic-content');
         if (!container) return;
         let htmlContent = '';
 
-        WIDGET_CONFIG.CHEATSHEET.forEach((section, index) => {
+        conf.categories.forEach((section, index) => {
             if (index > 0) htmlContent += `<div class="cs-divider" style="margin: 5px 0;"></div>`;
             const topMargin = index === 0 ? '5px' : '4px';
             htmlContent += `<span class="cs-label" style="color: ${section.color}; margin-top: ${topMargin};">${section.category}</span>`;
@@ -185,7 +217,7 @@ const WidgetEngine = {
         if (complianceCb) {
             complianceCb.addEventListener('change', (e) => {
                 if (typeof window.toggleWidget === 'function') {
-                    window.toggleWidget('compliance-widget', e.target.checked);
+                    window.toggleWidget(WIDGET_CONFIG.COMPLIANCE.id, e.target.checked);
                 }
             });
         }
@@ -195,14 +227,14 @@ const WidgetEngine = {
         let warnings = [];
         let passed = 0;
         let totalChecks = 0;
-        const config = WIDGET_CONFIG.COMPLIANCE;
+        const conf = WIDGET_CONFIG.COMPLIANCE;
 
         elements.forEach((el, index) => {
             if (el.isFurniture || el.type === 'staircase' || el.type === 'balcony') return;
             
-            const sqft = (el.w * el.h) / config.SQ_INCHES_TO_SQFT;
+            const sqft = (el.w * el.h) / conf.constants.SQ_INCHES_TO_SQFT;
             const name = el.customName || el.type.toUpperCase();
-            const rules = config.RULES[el.type];
+            const rules = conf.rules[el.type];
 
             if (!rules) return;
 
@@ -239,37 +271,41 @@ const WidgetEngine = {
         const data = this._calculateCompliance(elementsData, fixturesData);
         if (!data) return;
         
-        let widget = document.getElementById('compliance-widget');
+        const conf = WIDGET_CONFIG.COMPLIANCE;
+        let widget = document.getElementById(conf.id);
         
         if (!widget) {
             if (this.REQUIRE_HTML_CONTAINER) return;            
             widget = document.createElement('div');
-            widget.id = 'compliance-widget';
+            widget.id = conf.id;
             const canvasWrapper = document.getElementById('canvas-wrapper');
             (canvasWrapper || document.body).appendChild(widget);
         }
 
+        // Apply Configured Styles
+        widget.style.cssText = `position: absolute; ${conf.layout.position}; z-index: 100;`;
+
         let colorClass = 'compliance-green';
-        let icon = '✅';
-        if (data.score < 100) { colorClass = 'compliance-yellow'; icon = '⚠️'; } 
-        if (data.score < 70) { colorClass = 'compliance-red'; icon = '🚨'; }  
+        let statusIcon = '✅';
+        if (data.score < 100) { colorClass = 'compliance-yellow'; statusIcon = '⚠️'; } 
+        if (data.score < 70) { colorClass = 'compliance-red'; statusIcon = '🚨'; }  
 
         widget.innerHTML = `
             <!-- MAXIMIZED VIEW -->
             <div class="compliance-max-view">
                 <div class="compliance-header">
-                    <span class="compliance-title">${icon} CODE INSPECTOR</span>
+                    <span class="compliance-title">${statusIcon} ${conf.title}</span>
                     <div class="compliance-score-wrapper">
                         <span class="compliance-score ${colorClass}">${data.score}%</span>
-                        <button class="compliance-close-btn" title="Minimize">&times;</button>
+                        <button class="compliance-close-btn" title="Minimize" onclick="WidgetEngine.toggle('compliance')">&times;</button>
                     </div>
                 </div>
                 <div class="explorer-scroll compliance-warnings-container"></div>
             </div>
 
             <!-- MINIMIZED VIEW -->
-            <div class="compliance-min-view" title="Expand Code Inspector">
-                <span class="compliance-icon">${icon}</span>
+            <div class="compliance-min-view" title="Expand Code Inspector" onclick="WidgetEngine.toggle('compliance')">
+                <span class="compliance-icon">${statusIcon}</span>
                 <span class="compliance-score-min ${colorClass}">${data.score}%</span>
             </div>
         `;
@@ -288,14 +324,11 @@ const WidgetEngine = {
             successEl.textContent = 'All elements meet standard building codes.';
             warningsContainer.appendChild(successEl);
         }
-
-        // Restored exactly from compliance.js
-        widget.querySelector('.compliance-close-btn').addEventListener('click', () => this._toggleCompliance());
-        widget.querySelector('.compliance-min-view').addEventListener('click', () => this._toggleCompliance());
     },
 
     _toggleCompliance: function() {
-        const widget = document.getElementById('compliance-widget');
+        const conf = WIDGET_CONFIG.COMPLIANCE;
+        const widget = document.getElementById(conf.id);
         if (widget) {
             widget.classList.toggle('minimized');
         }
@@ -308,7 +341,7 @@ const WidgetEngine = {
         const vastuCb = document.getElementById('toggle-vastu-cb');
         if (vastuCb) {
             vastuCb.addEventListener('change', (e) => {
-                const widget = document.getElementById('vastu-widget');
+                const widget = document.getElementById(WIDGET_CONFIG.VASTU.id);
                 if (widget) {
                     widget.style.display = e.target.checked ? 'block' : 'none';
                 }
@@ -350,7 +383,7 @@ const WidgetEngine = {
             return { score: 0, warnings: [], text: "Add rooms to calculate Vastu." };
         }
 
-        const vConf = WIDGET_CONFIG.VASTU;
+        const vConf = WIDGET_CONFIG.VASTU.config;
         score = vConf.baseScore; 
         const inW = parseFloat(document.getElementById('inW')?.value || 272);
         const inH = parseFloat(document.getElementById('inH')?.value || 400);
@@ -410,15 +443,20 @@ const WidgetEngine = {
 
     _renderVastu: function(elementsData) {
         const data = this._calculateVastu(elementsData);
-        let widget = document.getElementById('vastu-widget');
+        const conf = WIDGET_CONFIG.VASTU;
+        let widget = document.getElementById(conf.id);
+
         if (!widget) {
             if (this.REQUIRE_HTML_CONTAINER) return;             
             widget = document.createElement('div');
-            widget.id = 'vastu-widget';
-            widget.className = 'minimized';
+            widget.id = conf.id;
+            widget.className = conf.classes.container;
             const canvasWrapper = document.getElementById('canvas-wrapper');
             (canvasWrapper || document.body).appendChild(widget);
         }
+
+        // Apply Configured Styles
+        widget.style.cssText = `position: absolute; ${conf.layout.position}; z-index: 100;`;
 
         let colorClass = 'vastu-green';
         if (data.score < 40) { colorClass = 'vastu-red'; } 
@@ -428,18 +466,18 @@ const WidgetEngine = {
             <!-- MAXIMIZED VIEW -->
             <div class="vastu-max-view">
                 <div class="vastu-header">
-                    <span class="vastu-title">🧭 VASTU SCORE</span>
+                    <span class="vastu-title">${conf.icon} ${conf.title}</span>
                     <div class="vastu-score-wrapper">
                         <span class="vastu-score ${colorClass}">${data.score}/100</span>
-                        <button class="vastu-close-btn" title="Minimize">&times;</button>
+                        <button class="vastu-close-btn" title="Minimize" onclick="WidgetEngine.toggle('vastu', event)">&times;</button>
                     </div>
                 </div>
                 <div class="explorer-scroll vastu-warnings-container"></div>
             </div>
 
             <!-- MINIMIZED VIEW -->
-            <div class="vastu-min-view" title="Expand Vastu Inspector">
-                <span class="vastu-icon">🧭</span>
+            <div class="vastu-min-view" title="Expand Vastu Inspector" onclick="WidgetEngine.toggle('vastu', event)">
+                <span class="vastu-icon">${conf.icon}</span>
                 <span class="vastu-score-min ${colorClass}">${data.score}%</span>
             </div>
         `;
@@ -466,17 +504,11 @@ const WidgetEngine = {
             successEl.textContent = data.text;
             warningsContainer.appendChild(successEl);
         }
-
-        // Restored exactly from vastu.js (including the stopPropagation)
-        widget.querySelector('.vastu-close-btn').addEventListener('click', (e) => {
-            e.stopPropagation(); 
-            this._toggleVastu();
-        });
-        widget.querySelector('.vastu-min-view').addEventListener('click', () => this._toggleVastu());
     },
 
-    _toggleVastu: function() {
-        const widget = document.getElementById('vastu-widget');
+    _toggleVastu: function(event) {
+        if (event) event.stopPropagation();
+        const widget = document.getElementById(WIDGET_CONFIG.VASTU.id);
         if (widget) widget.classList.toggle('minimized');
     },
 
@@ -484,22 +516,26 @@ const WidgetEngine = {
     // 5. QUICK CONVERTER MODULE
     // -----------------------------------------
     _initConverter: function() {
-        let widget = document.getElementById('qc-widget-wrapper');
+        const conf = WIDGET_CONFIG.CONVERTER;
+        let widget = document.getElementById(conf.id);
         
         if (!widget) {
             if (this.REQUIRE_HTML_CONTAINER) return;
             widget = document.createElement('div');
-            widget.id = 'qc-widget-wrapper';
-            widget.className = 'canvas-widget-top-left qc-wrapper';
+            widget.id = conf.id;
             const canvasWrapper = document.getElementById('canvas-wrapper') || document.body;
             canvasWrapper.appendChild(widget);
         }
+
+        // Apply Configured Styles
+        widget.className = conf.classes.container;
+        widget.style.cssText = `position: absolute; ${conf.layout.position}; z-index: 100;`;
 
         widget.innerHTML = `
             <!-- Minimized Micro-Input Pill -->
             <div id="qc-min-btn" class="qc-min-btn">
                 <button onclick="WidgetEngine.toggle('converter')" style="background:transparent; border:none; cursor:pointer; padding:0; display:flex;" title="Maximize Converter">
-                    <span class="icon" style="font-size: 1.1rem; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">📏</span>
+                    <span class="icon" style="font-size: 1.1rem; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">${conf.icon}</span>
                 </button>
                 <div style="display:flex; align-items:center; gap:2px; margin-left:6px;">
                     <!-- Tiny Feet Input -->
@@ -516,9 +552,9 @@ const WidgetEngine = {
             </div>
             
             <!-- Maximized Full Widget -->
-            <div id="qc-full-widget" class="sidebar-converter">
+            <div id="qc-full-widget" class="${conf.classes.inner}">
                 <div class="converter-header">
-                    <div><span class="icon">📏</span> QUICK CONVERTER</div>
+                    <div><span class="icon">${conf.icon}</span> ${conf.title}</div>
                     <button onclick="WidgetEngine.toggle('converter')" title="Minimize Converter" class="converter-close-btn">&times;</button>
                 </div>
                 <div class="converter-row">
@@ -543,7 +579,7 @@ const WidgetEngine = {
         if (qcCb) {
             qcCb.addEventListener('change', (e) => {
                 if (typeof window.toggleWidget === 'function') {
-                    window.toggleWidget('qc-widget-wrapper', e.target.checked);
+                    window.toggleWidget(conf.id, e.target.checked);
                 }
             });
         }
@@ -613,7 +649,7 @@ window.calculateVastuScore = () => {
         WidgetEngine.render('vastu', elements);
     }
 };
-window.toggleVastuWidget = () => WidgetEngine.toggle('vastu');
+window.toggleVastuWidget = (e) => WidgetEngine.toggle('vastu', e);
 
 window.calcInches = () => WidgetEngine._calcConverterInches();
 window.toggleQuickConverter = () => WidgetEngine.toggle('converter');

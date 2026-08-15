@@ -15,6 +15,7 @@
     <link rel="stylesheet" href="css/navbarDrawerTabbed.css">
     <link rel="stylesheet" href="css/sidebar.css">
     <link rel="stylesheet" href="css/ui-widget.css">
+    <link rel="stylesheet" href="css/ui-3dwidget.css">
     <link rel="stylesheet" href="css/studio.css">
 </head>
 <body>
@@ -339,26 +340,18 @@
             </div>
 
             <!-- 3D Navigation Pad (Moved to right canvas) -->
-            <div id="nav-pad" style="position: absolute; bottom: 20px; right: 20px; z-index: 100; display: none; flex-direction: column; align-items: flex-end; gap: 12px;">
-                <button id="btn-raycaster" class="float-action-btn" onclick="toggleRaycaster()">
-                    <span class="icon">🖱️</span><span class="text">3D SELECTION: OFF</span>
-                </button>
-                <button id="btn-performance" class="float-action-btn perf-btn" onclick="togglePerformanceMode()">
-                    <span class="icon">⚡</span><span class="text">PERF MODE: OFF</span>
-                </button>
-                <button class="float-action-btn walk-btn" onclick="startWalkthrough()">
-                    <span class="icon">🚶</span><span class="text">ENTER WALKTHROUGH</span>
-                </button>
-            </div>
+            <div id="nav-pad"></div>
+            
         </div> <!-- END RIGHT SPLIT -->
 
     </div> <!-- END MAIN WORKSPACE -->
 
     <!-- WIDGETS SECTION (CONVERTER, COMPLIANCE, VASTU, SHORTCUT GUIDE)-->
-    <div id="qc-widget-wrapper" class="canvas-widget-top-left qc-wrapper"></div>
+    <div id="qc-widget-wrapper"></div>
     <div id="compliance-widget"></div>
     <div id="vastu-widget" class="minimized"></div>
     <div id="cheatsheet-widget"></div>
+    <div id="presentation-widget"></div>
     <!-- WIDGETS SECTION (COMPLIANCE, VASTU, SHORTCUT GUIDE)-->
 
     <script src="js/event.js"></script>
@@ -382,7 +375,7 @@
     <script src="js/parapet.js"></script>
     <script src="js/advanced3d.js"></script>
     <script src="js/elevation.js"></script>
-    <script src="js/presentationcontrols.js"></script>
+    <script src="js/ui-3dwidget.js"></script>
     <script src="js/onboarding.js"></script>  
     <script src="js/export.js"></script>
     <script src="js/autobuilder.js"></script>

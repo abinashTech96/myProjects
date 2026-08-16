@@ -44,6 +44,41 @@ const BuilderToolsEngine = {
         document.body.appendChild(modalContainer);
     },
 
+    toggleAutoBuilder: function() {
+        // 1. Force the Settings Menu to close
+        const settingsOverlay = document.getElementById('settings-overlay');
+        if (settingsOverlay) {
+            settingsOverlay.style.opacity = '0';
+            settingsOverlay.style.transform = 'scale(0)';
+            setTimeout(() => settingsOverlay.style.display = 'none', 300);
+        }
+
+        // 2. Open the Centered Auto-Builder Modal
+        const backdrop = document.getElementById('autobuilder-backdrop');
+        const modal = document.getElementById('autobuilder-modal');
+        if (!modal || !backdrop) return;
+        
+        const isShowing = modal.style.display === 'block';
+        if (!isShowing) {
+            backdrop.style.display = 'block';
+            modal.style.display = 'block';
+            setTimeout(() => {
+                backdrop.style.opacity = '1';
+                modal.style.opacity = '1';
+                modal.style.transform = 'translate(-50%, -50%) scale(1)';
+            }, 10);
+            if (typeof renderFloorSelectors === 'function') renderFloorSelectors();
+        } else {
+            backdrop.style.opacity = '0';
+            modal.style.opacity = '0';
+            modal.style.transform = 'translate(-50%, -50%) scale(0.9)';
+            setTimeout(() => {
+                backdrop.style.display = 'none';
+                modal.style.display = 'none';
+            }, 300);
+        }
+    },
+
     // -----------------------------------------
     // 2. AI AGENT UI MODULE
     // -----------------------------------------
@@ -81,6 +116,40 @@ const BuilderToolsEngine = {
             </div>
         `;
         document.body.appendChild(modalContainer);
+    },
+
+    toggleAIAgent: function() {
+        // 1. Force the Settings Menu to close
+        const settingsOverlay = document.getElementById('settings-overlay');
+        if (settingsOverlay) {
+            settingsOverlay.style.opacity = '0';
+            settingsOverlay.style.transform = 'scale(0)';
+            setTimeout(() => settingsOverlay.style.display = 'none', 300);
+        }
+
+        // 2. Open the Centered AI Agent Modal
+        const backdrop = document.getElementById('ai-agent-backdrop');
+        const modal = document.getElementById('ai-agent-modal');
+        if (!modal || !backdrop) return;
+        
+        const isShowing = modal.style.display === 'block';
+        if (!isShowing) {
+            backdrop.style.display = 'block';
+            modal.style.display = 'block';
+            setTimeout(() => {
+                backdrop.style.opacity = '1';
+                modal.style.opacity = '1';
+                modal.style.transform = 'translate(-50%, -50%) scale(1)';
+            }, 10);
+        } else {
+            backdrop.style.opacity = '0';
+            modal.style.opacity = '0';
+            modal.style.transform = 'translate(-50%, -50%) scale(0.9)';
+            setTimeout(() => {
+                backdrop.style.display = 'none';
+                modal.style.display = 'none';
+            }, 300);
+        }
     },
 
     populateAIModelDropdown: function() {
@@ -369,7 +438,9 @@ const AIAgent = {
     }
 };
 
-// Global Command Hook
+// =========================================
+// 🌐 GLOBAL HOOKS
+// =========================================
 window.handleAICommand = function() {
     const input = document.getElementById('ai-input');
     const prompt = input.value.trim();
@@ -396,8 +467,10 @@ window.handleAICommand = function() {
     });
 };
 
-// ✨ ADD THIS MISSING GLOBAL HOOK:
+// Expose internal methods to the window for the HTML UI
 window.populateAIModelDropdown = () => BuilderToolsEngine.populateAIModelDropdown();
+window.toggleAutoBuilder = () => BuilderToolsEngine.toggleAutoBuilder();
+window.toggleAIAgent = () => BuilderToolsEngine.toggleAIAgent();
 
 // Initialize everything securely on load
 document.addEventListener('DOMContentLoaded', () => {

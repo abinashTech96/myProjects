@@ -102,7 +102,7 @@ const handleMove = (currentMouse, e) => {
                 }
             });
 
-            const isStrictSnap = UI.gridSnapToggle ? UI.gridSnapToggle.checked : false;
+            const isStrictSnap = CanvasControlsEngine.isGridSnap();
             let snapRes = 12; 
             if (window.CanvasState.zoomLvl > 2.5) snapRes = 1;      
             else if (window.CanvasState.zoomLvl > 1.2) snapRes = 6; 

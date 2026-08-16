@@ -353,10 +353,11 @@ function applyRoomTooltips(r, el) {
             </div>
         `;
     };
+    //room details popup
     r.onmousemove = function(e) {
         const tooltip = document.getElementById('room-tooltip');
-        tooltip.style.left = (e.clientX + 20) + 'px';
-        tooltip.style.top = (e.clientY + 20) + 'px';
+        tooltip.style.left = (e.clientX + 300) + 'px';
+        tooltip.style.top = (e.clientY + 0) + 'px';
     };
     r.onmouseout = function() { 
         const tooltip = document.getElementById('room-tooltip');

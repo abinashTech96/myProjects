@@ -14,14 +14,18 @@
     <link rel="stylesheet" href="css/navbar.css">
     <link rel="stylesheet" href="css/navbarDrawerTabbed.css">
     <link rel="stylesheet" href="css/sidebar.css">
-    <link rel="stylesheet" href="css/settings.css">
-    <link rel="stylesheet" href="css/presentationcontrols.css">
+    <link rel="stylesheet" href="css/ui-3dwidget.css">
     <link rel="stylesheet" href="css/studio.css">
-    <link rel="stylesheet" href="css/converter.css">
+    <link rel="stylesheet" href="ProNavBar/ui-widget.css">
+    <link rel="stylesheet" href="ProNavBar/builderTools.css">
+    <link rel="stylesheet" href="ProNavBar/navActionBtn.css">
+
+    <link rel="stylesheet" href="ProNavBar/dragDropLibrary.css">
 </head>
 <body>
 
-
+    
+    
     <!-- TOP NAVBAR -->
     <div class="pro-studio-navbar">
         <div class="nav-brand">
@@ -34,9 +38,7 @@
             <button id="mode-2d" class="nav-switch-btn active" onclick="setWorkspaceLayout('2d')">2D</button>
             <button id="mode-3d" class="nav-switch-btn" onclick="setWorkspaceLayout('3d')">3D</button>
         </div>
-        
         <div class="nav-divider"></div>
-        
         <div class="nav-floor-controls" style="position: relative;">
             <div id="top-floor-tabs" class="nav-floor-tabs"></div>
             
@@ -46,91 +48,12 @@
                     <line x1="5" y1="12" x2="19" y2="12"></line>
                 </svg>
             </button>
-
-            <!-- 🌟 PROJECT INFO -->
-            <button id="project-info-btn" class="nav-a-->dd-floor-btn tool-btn theme-blue" onclick="toggleProjectInfo()" title="Project Details">
-                <span class="tool-icon italic-serif">i</span>
-            </button>
-            
-            <div id="project-info-overlay" class="glass-panel nav-dropdown-panel offset-right">
-                <div class="panel-header drop-header-blue">
-                    <span class="icon">ℹ️</span>
-                    <h2>PROJECT DETAILS</h2>
-                </div>
-                
-                <div class="nav-stats-hud transparent-hud">
-                    <div class="hud-stat stat-row">
-                        <span class="hud-label">PLOT AREA</span> <span id="plot-area" class="hud-value blue">0</span>
-                    </div>
-                    <div class="hud-stat stat-row">
-                        <span class="hud-label">BUILD AREA</span> <span id="build-area" class="hud-value green">0</span>
-                    </div>
-                    <div class="hud-stat stat-row no-border">
-                        <span class="hud-label">TOTAL BUILT-UP</span> <span id="total-built-area" class="hud-value purple">0</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 🌟 AUTO-BUILDER -->
-            <button id="auto-builder-btn" class="nav-add-floor-btn tool-btn theme-yellow" onclick="toggleAutoBuilder()" title="Auto-Builder">
-                <span class="tool-icon">✨</span>
-            </button>
-            
-            <div id="template-builder-overlay" class="glass-panel nav-dropdown-panel width-sm">
-                <div class="panel-header"><span class="icon">✨</span><h2>AUTO-BUILDER</h2></div>
-                <div class="glass-field">
-                    <label>Total Floors:</label>
-                    <div class="number-input-wrapper">
-                        <input type="number" id="b-floors" value="1" min="1" max="10" oninput="renderFloorSelectors()">
-                    </div>
-                </div>
-                <div id="floor-layout-selectors" class="layout-selectors"></div>
-                <button class="btn-generate" onclick="generateBuilding()">
-                    <span class="btn-icon">🏗️</span><span class="btn-text">GENERATE BUILDING</span>
-                </button>
-            </div>
-
-            <!-- 🌟 AI AGENT -->
-            <button id="ai-agent-btn" class="nav-add-floor-btn tool-btn theme-purple" onclick="toggleAIAgent(); window.populateAIModelDropdown();" title="AI Design Assistant">
-                <span class="tool-icon">🤖</span>
-            </button>
-
-            <div id="ai-agent-overlay" class="glass-panel nav-dropdown-panel width-md">
-                <div class="panel-header drop-header-purple">
-                    <span class="icon">🤖</span>
-                    <h2>AI ASSISTANT</h2>
-                </div>
-                
-                <div style="display: flex; flex-direction: column; gap: 10px;">
-                    <!-- 🚀 Clean Model Selection Dropdown -->
-                    <div style="display: flex; flex-direction: column; gap: 4px;">
-                        <label style="font-size: 0.65rem; color: #94a3b8; font-weight: bold; letter-spacing: 0.5px;">ACTIVE MODEL</label>
-                        <select id="ai-model-select" class="modern-select neo-sunken"></select>
-                    </div>
-
-                    <textarea id="ai-input" class="neo-sunken ai-textarea" placeholder="e.g., Add a 10x12 master bedroom on the left..."></textarea>
-                    
-                    <button id="ai-generate-btn" class="btn-generate theme-purple-btn" onclick="handleAICommand()">
-                        <span class="btn-icon">✨</span><span class="btn-text">GENERATE</span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- 🌟 SETTINGS -->
+            <div class="nav-divider"></div>
+            <div id="nav-action-buttons" style="display: flex; align-items: center;"></div>
+            <div class="nav-divider"></div>
             <button id="settings-btn" class="nav-add-floor-btn nav-settings-btn" title="Settings" onclick="toggleSettings()">
                 <span class="nav-settings-icon">⚙️</span>
             </button>
-
-            <div id="settings-overlay" class="glass-panel settings-dropdown">
-                <div class="panel-header settings-header">
-                    <span class="icon settings-icon-color">⚙️</span>
-                    <h2 class="settings-title">SETTINGS</h2>
-                </div>
-                
-                <div id="settings-content" class="settings-content">
-                    <!-- Automatically populated by settings.js -->
-                </div>
-            </div>
 
         </div>
     </div>
@@ -198,7 +121,6 @@
             <!-- 🏢 FLOORS TAB CONTENT                     -->
             <!-- ========================================= -->
             <div id="drawer-tab-floors" class="drawer-tab-panel">
-                
                 <div class="setting-card" style="padding: 8px; margin-bottom: 8px;">
                     <div class="setting-group" style="grid-column: span 2;">
                         <label class="setting-label">PARAPET STYLE</label>
@@ -264,20 +186,6 @@
                         <button class="tool-btn" onclick="toggleMeasureMode()" title="Tape Measure"><span class="icon">📏</span><span class="btn-label">Measure</span></button>
                     </div>
                     <div style="display: flex; gap: 4px; width: 100%;">
-                        <button class="tool-btn" onclick="exportPNG()" title="Export PNG" style="border-bottom: 2px solid #a855f7;">
-                            <span class="icon">🖼️</span><span class="btn-label">PNG</span>
-                        </button>
-                        <button class="tool-btn" onclick="exportPDF()" title="Export PDF" style="border-bottom: 2px solid #f43f5e;">
-                            <span class="icon">📄</span><span class="btn-label">PDF</span>
-                        </button>
-                        <button class="tool-btn" onclick="exportDXF()" title="Export AutoCAD DXF" style="border-bottom: 2px solid #f59e0b;">
-                            <span class="icon">📐</span><span class="btn-label">DXF</span>
-                        </button>
-                        <button class="tool-btn" onclick="exportGLB()" title="Export 3D Model GLB" style="border-bottom: 2px solid #10b981;">
-                            <span class="icon">🧊</span><span class="btn-label">GLB</span>
-                        </button>
-                    </div>
-                    <div style="display: flex; gap: 4px; width: 100%;">
                         <button class="tool-btn" onclick="exportPDF()" title="Export PDF" style="border-bottom: 2px solid #f43f5e;">
                             <span class="icon">📄</span><span class="btn-label">PDF</span>
                         </button>
@@ -286,7 +194,6 @@
                         </button>
                     </div>
                 </div>
-                <input type="file" id="importFile" style="display:none" onchange="importJSON(event)">
                 <p style="font-size: 0.65rem; color: #10b981; margin-top: 8px; margin-bottom: 0; font-weight: bold; text-align: center;">🖱️ Scroll: Zoom | Mid-Click: Pan</p>
             </div>
 
@@ -327,84 +234,11 @@
             </div>
 
             <!-- ========================================= -->
-            <!-- ⚙️ CONTROLS TAB CONTENT                  -->
+            <!-- ⚙️ CONTROLS TAB CONTENT  Toggles moved to Settings Menu (⚙️) -->
             <!-- ========================================= -->
             <div id="drawer-tab-controls" class="drawer-tab-panel">
-                
-                <div class="setting-card" style="padding: 8px; margin-bottom: 8px;">
-                    <div class="setting-group toggle-group" style="justify-content: flex-end; padding-bottom: 5px;">
-                        <label class="ui-toggle" style="justify-content: flex-end; gap: 10px;">
-                            <span style="font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;">
-                                📏 Show Site Offsets
-                            </span>
-                            <input type="checkbox" id="showOffsetsToggle" onchange="updateCanvas()">
-                            <div class="slider"></div>
-                        </label>                        
-                    </div>
-                    <div class="setting-group toggle-group" style="justify-content: flex-end; padding-bottom: 5px;">
-                        <label class="ui-toggle" style="justify-content: flex-end; gap: 10px;">
-                            <span style="font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;">
-                                🔠 Show Plot Labels
-                            </span>
-                            <input type="checkbox" id="showLabelsToggle" onchange="updateCanvas()" checked>
-                            <div class="slider"></div>
-                        </label>                        
-                    </div>
-                            
-                </div>
-                <div class="neo-divider" style="margin: 10px 0;"></div>
-                <div class="setting-card" style="padding: 8px; margin-bottom: 8px;">
-                    <div class="setting-group toggle-group" style="justify-content: flex-end; padding-bottom: 5px;">
-                        <label class="ui-toggle" style="justify-content: flex-end; gap: 10px;">
-                            <span style="font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;">
-                                🧩 Smart-Merge</span>
-                            <input type="checkbox" id="smartMergeToggle" onchange="updateCanvas()">
-                            <div class="slider"></div>
-                        </label>                      
-                    </div>
-                    <div class="setting-group toggle-group" style="justify-content: flex-end; padding-bottom: 5px;">
-                        <label class="ui-toggle" style="justify-content: flex-end; gap: 10px;">
-                            <span style="font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;">
-                                📐 Snap to 1ft Grid
-                            </span>
-                            <input type="checkbox" id="gridSnapToggle" checked>
-                            <div class="slider"></div>
-                        </label>                        
-                    </div>
-                </div>
-                <div class="neo-divider" style="margin: 10px 0;"></div>
-                <div class="setting-card" style="padding: 8px; margin-bottom: 8px;">
-                    <div class="setting-group toggle-group" style="justify-content: flex-end; padding-bottom: 5px;">
-                        <label class="ui-toggle" style="justify-content: flex-end; gap: 10px;">
-                            <span style="font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;">
-                                🏠 Real3D View</span>
-                            <input type="checkbox" id="real3DToggle" onchange="if(typeof is3DMode !== 'undefined' && is3DMode) generate3DModel()">
-                            <div class="slider"></div>
-                        </label>                        
-                    </div>
-                    <div class="setting-group toggle-group" style="justify-content: flex-end; padding-bottom: 5px;">
-                        <label class="ui-toggle" style="justify-content: flex-end; gap: 10px;">
-                            <span style="font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;">
-                                🏗️ Show Columns</span>
-                            <input type="checkbox" id="showColsToggle" onchange="updateCanvas()">
-                            <div class="slider"></div>
-                        </label>                        
-                    </div>
-                </div>
-                <div class="setting-card" style="padding: 8px; margin-bottom: 8px;">
-                    <div class="setting-group toggle-group" style="justify-content: flex-end; padding-bottom: 5px;">
-                        <label class="ui-toggle" style="justify-content: flex-end; gap: 10px;">
-                            <span style="font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;">
-                                📏 Show Dimensions</span>
-                            <input type="checkbox" id="showDims" onchange="updateCanvas()">
-                            <div class="slider"></div>
-                        </label>                        
-                    </div>
-                </div>
-
                 <p style="font-size: 0.65rem; color: #10b981; margin-top: 8px; margin-bottom: 0; font-weight: bold; text-align: center;">🖱️ Scroll: Zoom | Mid-Click: Pan</p>
             </div>
-
         </div>
     </div>
 
@@ -413,7 +247,8 @@
         <button id="btn-room-studio" class="btn-adv-3d" onclick="RoomStudio.open()">
             <span class="icon">🛋️</span> <span class="adv-text">ROOM STUDIO</span>
         </button>
-        <button class="btn-adv-3d" onclick="Adv3D.toggleWorkspaceMode(true)">
+        <!-- 🌟 UPDATED CLASS NAME BELOW -->
+        <button class="Adv3d_btn-adv-3d" onclick="Adv3D.toggleWorkspaceMode(true)">
             <span class="icon">👁️</span> <span class="adv-text">ADVANCED 3D</span>
         </button>
     </div>
@@ -424,23 +259,12 @@
     <div class="canvas-area workspace-wrapper" id="main-workspace">
         <!-- LEFT CANVAS (2D Engine & Overlays) -->
         <div id="canvas-wrapper" class="split-left">
-            <!-- Context Menu -->
+            <!-- right click Context Menu -->
             <div id="context-menu"></div>
-            <!-- 🌟 QUICK CONVERTER WIDGET (Top Left) -->
-            <div id="qc-widget-wrapper" class="canvas-widget-top-left qc-wrapper"></div>
-
-            <!-- ✨ NEW: COMPLIANCE DASHBOARD WIDGET -->
-            <div id="compliance-widget">
-                <div class="compliance-waiting">Waiting for compliance scan...</div>
-            </div>
-
-            <!--VASTU_WIDGET -->
-            <div id="vastu-widget" class="minimized">
-                <div class="vastu-waiting" style="padding: 10px; color: #94a3b8; font-size: 0.75rem; text-align: center;">Waiting for Vastu scan...</div>
-            </div>
-
             <!-- 🌟 GREEN SQUIRCLE CAMERA CONTROLS -->
             <div id="camera-controls"></div>
+
+            <div id="drag-drop-library-wrapper"></div>
             
             <!-- ROOM TOOLTIP -->
             <div id="room-tooltip" style="position: absolute; display: none; background: rgba(15, 23, 42, 0.9); color: #f8fafc; padding: 8px; border-radius: 6px; border: 1px solid #38bdf8; pointer-events: none; z-index: 1000; font-size: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);"></div>
@@ -488,62 +312,19 @@
             </div>
 
             <!-- 3D Navigation Pad (Moved to right canvas) -->
-            <div id="nav-pad" style="position: absolute; bottom: 20px; right: 20px; z-index: 100; display: none; flex-direction: column; align-items: flex-end; gap: 12px;">
-                <button id="btn-raycaster" class="float-action-btn" onclick="toggleRaycaster()">
-                    <span class="icon">🖱️</span><span class="text">3D SELECTION: OFF</span>
-                </button>
-                <button id="btn-performance" class="float-action-btn perf-btn" onclick="togglePerformanceMode()">
-                    <span class="icon">⚡</span><span class="text">PERF MODE: OFF</span>
-                </button>
-                <button class="float-action-btn walk-btn" onclick="startWalkthrough()">
-                    <span class="icon">🚶</span><span class="text">ENTER WALKTHROUGH</span>
-                </button>
-            </div>
+            <div id="nav-pad"></div>
+            
         </div> <!-- END RIGHT SPLIT -->
 
     </div> <!-- END MAIN WORKSPACE -->
 
-    <!-- 🌟 PRESENTATION CONTROLS (Pro Glass Pill) -->
-    <!-- CLIENT SHOWCASE MODE -->
-    <button id="exit-showcase-btn" onclick="toggleShowcaseMode()">
-        ✕ EXIT PRESENTATION
-    </button>
-    <div id="presentation-controls" class="pc-wrapper" style="display: none;">
-        <!-- Sun Controls -->
-        <div class="pc-sun-group">
-            <span class="pc-sun-icon pc-dawn" title="Dawn">🌅</span>
-            <input type="range" id="sun-slider" class="pc-sun-slider" min="6" max="18" step="0.1" value="12" oninput="updateSunlight(this.value)">
-            <span class="pc-sun-icon pc-dusk" title="Dusk">🌇</span>
-        </div>
-        <div class="pc-divider"></div>
-        <!-- Tour Controls -->
-        <div class="pc-btn-group">
-            <button class="pc-btn pc-btn-set" onclick="captureWaypoint()">
-                <span class="pc-icon">📷</span> Set (<span id="wp-count">0</span>)
-            </button>
-            <button class="pc-btn pc-btn-play" onclick="playCinematicTour()">
-                <span class="pc-icon">▶️</span> Play
-            </button>
-            <button class="pc-btn pc-btn-clear" onclick="clearTour()" title="Clear All">
-                <span class="pc-icon">🗑️</span>
-            </button>
-        </div>
-        <div class="pc-divider"></div>
-        <!-- View Controls -->
-        <div class="pc-btn-group">
-            <button class="pc-btn pc-btn-view" onclick="toggleShowcaseMode()">
-                <span class="pc-icon">🎬</span> SHOW
-            </button>
-            <button id="btn-explode" class="pc-btn pc-btn-view" onclick="toggleExplodeView()">
-                <span class="pc-icon">💥</span> EXPLODE
-            </button>
-        </div>
-    </div>
-    <!-- 🌟 PRESENTATION CONTROLS (Pro Glass Pill) -->
-
-    <!--⌨️ FLOATING SHORTCUT MENU (Cheat Sheet) -->
+    <!-- WIDGETS SECTION (CONVERTER, COMPLIANCE, VASTU, SHORTCUT GUIDE)-->
+    <div id="qc-widget-wrapper"></div>
+    <div id="compliance-widget"></div>
+    <div id="vastu-widget" class="minimized"></div>
     <div id="cheatsheet-widget"></div>
-
+    <div id="presentation-widget"></div>
+    <!-- WIDGETS SECTION (COMPLIANCE, VASTU, SHORTCUT GUIDE)-->
 
     <script src="js/event.js"></script>
     <script src="secrets.js"></script>
@@ -558,22 +339,26 @@
     <script src="js/engine3d.js"></script>
     <script src="js/actions.js"></script>
     <script src="js/ui.js"></script>
-    <script src="js/settings.js"></script>
-    <script src="js/ai-agent.js"></script>
-    <script src="js/camera.js"></script>
-    <script src="js/converter.js"></script>
-    <script src="js/compliance.js"></script>
-    <script src="js/vastu.js"></script>
-    <script src="js/cheatsheet.js"></script>
     <script src="js/studio.js"></script>
     <script src="js/parapet.js"></script>
     <script src="js/advanced3d.js"></script>
     <script src="js/elevation.js"></script>
-    <script src="js/export.js"></script>
-    <script src="js/presentationcontrols.js"></script>
+    <script src="js/ui-3dwidget.js"></script>
     <script src="js/onboarding.js"></script>
+    <!-- <script src="js/ai-agent.js"></script> -->
+    <script src="js/geometry.js"></script>
+    <script src="js/renderer2d.js"></script>
+    <script src="js/interactions.js"></script>
+
+    <script src="ProNavBar/builderTools.js"></script>
+    <script src="ProNavBar/canvasControls.js"></script>
+    <script src="ProNavBar/ui-widget.js"></script>
+    <script src="ProNavBar/navActionBtn.js"></script>
+
     <script src="js/app.js"></script>
     <script src="js/contextmenu.js"></script>
+
+    <script src="ProNavBar/dragDropLibrary.js"></script>
 
 </body>
 </html>

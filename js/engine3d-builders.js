@@ -16,11 +16,9 @@ function getCachedSolidMaterial(hexColor, opacity) {
 }
 
 function generate3DModel() {
-    // 🌟 1. Point to the new encapsulated Engine3D.scene
     if (!Engine3D || !Engine3D.scene) return; 
 
-    const real3DToggle = document.getElementById('real3DToggle');
-    const useReal3D = real3DToggle ? real3DToggle.checked : false;
+    const useReal3D = CanvasControlsEngine.isReal3D();
     if (!Engine3D.buildingGroup) {
         Engine3D.buildingGroup = new THREE.Group();
         Engine3D.scene.add(Engine3D.buildingGroup);

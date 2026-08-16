@@ -132,13 +132,13 @@ const FURNITURE_CATALOG = [
 // 🌟 UI DYNAMIC CATALOGS 
 // =========================================
 const ROOM_CATALOG = [
-    { id: 'living', label: 'Living Room' },
-    { id: 'bedroom', label: 'Bedroom' },
-    { id: 'toilet', label: 'Toilet' },
-    { id: 'kitchen', label: 'Kitchen' },
-    { id: 'puja', label: 'Puja Room' },
-    { id: 'staircase', label: 'Staircase' },
-    { id: 'balcony', label: 'Balcony' }
+    { id: 'living', label: 'Living Room', icon: '📺' },
+    { id: 'bedroom', label: 'Bedroom', icon: '🛏️' },
+    { id: 'toilet', label: 'Toilet', icon: '🚽' },
+    { id: 'kitchen', label: 'Kitchen', icon: '🍳' },
+    { id: 'puja', label: 'Puja Room', icon: '🕉️' },
+    { id: 'staircase', label: 'Staircase', icon: '🪜' },
+    { id: 'balcony', label: 'Balcony', icon: '🌅' }
 ];
 
 // 🌟 NEW: FEATURE CONFIGURATIONS

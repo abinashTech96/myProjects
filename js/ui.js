@@ -198,7 +198,8 @@ function renderSidebar() {
 // SUB-VIEW 1: ROOM EXPLORER
 // =========================================
 function buildExplorerView(animClass) {
-    let count = parseInt(document.getElementById('b-floors').value) || 1;
+    let countOld = parseInt(document.getElementById('b-floors').value) || 1;
+    let count = parseInt(document.getElementById('b-floors')?.value) || 1;
     let floorOptions = '';
     for(let i = 0; i < count; i++) {
         const label = getFloorDisplayName(i);
@@ -401,7 +402,7 @@ function buildFixturesView(i, el) {
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                     <span class="neo-label ${accentColor}" style="font-size: 0.75rem;">${emoji} ${fix.type.toUpperCase()}</span>
                     
-                    <button class="neo-btn-icon danger" onclick="fixtures.splice(${globalIdx},1); renderSidebar(); updateCanvas()" title="Remove ${fix.type}">
+                    <button class="neo-btn-icon danger" onclick="deleteFixture(${globalIdx})" title="Remove ${fix.type}">
                         &times;
                     </button>
                 </div>
@@ -442,7 +443,8 @@ function buildFixturesView(i, el) {
 }
 
 function renderFloorSelectors() {
-    let count = parseInt(document.getElementById('b-floors').value);
+    let countOld = parseInt(document.getElementById('b-floors').value);
+    let count = parseInt(document.getElementById('b-floors')?.value || 1);
     if (count < 1 || isNaN(count)) count = 1;
 
     const container = document.getElementById('floor-layout-selectors');
@@ -474,10 +476,12 @@ function renderFloorSelectors() {
 function toggleTheme() {
     const isClassic = document.body.classList.toggle('classic-theme');
     if (typeof updateCanvas === 'function') updateCanvas(); 
-    if (typeof scene3D !== 'undefined' && scene3D) {
+    
+    // ✨ FIX: Properly reference Engine3D.scene instead of the undefined scene3D
+    if (typeof Engine3D !== 'undefined' && Engine3D.scene) {
         const bgColor = isClassic ? 0xe2e8f0 : 0x0f172a; 
-        scene3D.background.setHex(bgColor);
-        if (scene3D.fog) scene3D.fog.color.setHex(bgColor);
+        Engine3D.scene.background.setHex(bgColor);
+        if (Engine3D.scene.fog) Engine3D.scene.fog.color.setHex(bgColor);
     }
 }
 
@@ -613,18 +617,10 @@ function initSplitScreen() {
 }
 document.addEventListener('DOMContentLoaded', initSplitScreen);
 
-// ==========================================
-// WORKSPACE UI TOGGLES (Floating Panels)
-// ==========================================
-window.toggleAutoBuilder = function() {
-    toggleOverlayPanel('template-builder-overlay', 'auto-builder-btn', 'rgba(245, 158, 11, 0.4)', 'rgba(245, 158, 11, 0.15)');
-};
-window.toggleProjectInfo = function() {
-    toggleOverlayPanel('project-info-overlay', 'project-info-btn', 'rgba(56, 189, 248, 0.4)', 'rgba(56, 189, 248, 0.15)');
-};
-window.toggleAIAgent = function() {
-    toggleOverlayPanel('ai-agent-overlay', 'ai-agent-btn', 'rgba(168, 85, 247, 0.4)', 'rgba(168, 85, 247, 0.15)');
-};
+
+
+
+
 window.toggleSettings = function() {
     toggleOverlayPanel('settings-overlay', 'settings-btn', 'rgba(148, 163, 184, 0.4)', 'rgba(148, 163, 184, 0.15)');
 };

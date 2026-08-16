@@ -74,7 +74,7 @@ const RoomStudio = {
         ).join('');
 
         const uiTemplate = `
-            <div id="room-studio-modal" style="display: none;">
+            <div id="room-studio-modal" style="display: none; z-index: var(--z-overlay);">
                 <div class="std-backdrop"></div>
                 <div class="std-container">
                     <div class="std-header">
@@ -199,36 +199,42 @@ const RoomStudio = {
     },
 
     save() {
-        if (typeof saveState === 'function') saveState();
         if (typeof elements === 'undefined') return;
 
-        const indicesToRemove = this.sandboxFixtures
-            .filter(f => f.globalRef !== undefined)
-            .map(f => f.globalRef)
-            .sort((a, b) => b - a);
+        // ✨ FIX: Wrap the merge logic in a commit block so the Undo/Redo engine catches it!
+        if (typeof ProjectState !== 'undefined') {
+            ProjectState.commit(`Saved Room Studio`, () => {
+                const indicesToRemove = this.sandboxFixtures
+                    .filter(f => f.globalRef !== undefined)
+                    .map(f => f.globalRef)
+                    .sort((a, b) => b - a);
 
-        indicesToRemove.forEach(idx => {
-            elements.splice(idx, 1);
-            if (typeof fixtures !== 'undefined') {
-                fixtures.forEach(fix => {
-                    if (fix.roomId > idx) {
-                        fix.roomId -= 1;
+                indicesToRemove.forEach(idx => {
+                    elements.splice(idx, 1);
+                    if (typeof fixtures !== 'undefined') {
+                        fixtures.forEach(fix => {
+                            if (fix.roomId > idx) {
+                                fix.roomId -= 1;
+                            }
+                        });
                     }
                 });
-            }
-        });
 
-        this.sandboxFixtures.forEach(fix => {
-            const globalFurniture = structuredClone(fix);
-            delete globalFurniture.globalRef;
-            globalFurniture.x = this.activeRoom.x + fix.x;
-            globalFurniture.y = this.activeRoom.y + fix.y;
-            globalFurniture.floor = this.activeRoom.floor;
-            globalFurniture.locked = false;
-            elements.push(globalFurniture);
-        });
+                this.sandboxFixtures.forEach(fix => {
+                    const globalFurniture = structuredClone(fix);
+                    delete globalFurniture.globalRef;
+                    globalFurniture.x = this.activeRoom.x + fix.x;
+                    globalFurniture.y = this.activeRoom.y + fix.y;
+                    globalFurniture.floor = this.activeRoom.floor;
+                    globalFurniture.locked = false;
+                    elements.push(globalFurniture);
+                });
+            });
+        }
 
         this.close();
+        
+        // UI Updates (Fallbacks in case the Event Bus misses the commit)
         if (typeof updateCanvas === 'function') updateCanvas();
         if (typeof renderSidebar === 'function') renderSidebar();
         if (typeof window.is3DMode !== 'undefined' && window.is3DMode && typeof generate3DModel === 'function') generate3DModel();
@@ -253,6 +259,7 @@ const RoomStudio = {
         this.renderProperties(); 
     },
 
+    // 🌟 REFACTORED: Only update the mathematical state and the specific SVG node transform
     handleDragMove(event) {
         if (!this.isDragging || this.selectedFixtureIndex === -1 || this.is3DActive || !this.activeRoom) return;
         const pt = this.getSVGPos(event);
@@ -294,12 +301,26 @@ const RoomStudio = {
         fix.x = newX;
         fix.y = newY;
         
-        this.renderCanvas();
+        // ✨ THE OPTIMIZATION: Do not call renderCanvas(). Just move the specific node!
+        this.updateCanvasTransform(this.selectedFixtureIndex, fix.x, fix.y);
+        
         if (typeof this.renderProperties === 'function') {
             this.renderProperties(); 
         }
     },
+    // ✨ NEW HELPER: Lightning fast coordinate update (No innerHTML destruction)
+    updateCanvasTransform(idx, x, y) {
+        const furnGroup = document.getElementById('std-furniture-group');
+        if (!furnGroup) return;
+        
+        // Find the specific <g> element for this furniture item
+        const node = furnGroup.children[idx];
+        if (node) {
+            node.setAttribute('transform', `translate(${x}, ${y})`);
+        }
+    },
 
+    // 🌟 REFACTORED: Only called when the node tree actually changes (add/delete/rotate)
     renderCanvas() {
         if (!this.activeRoom) return;
         const svg = document.getElementById('studio-svg');
@@ -350,7 +371,8 @@ const RoomStudio = {
         });
         roomGroup.innerHTML = roomHTML;
 
-        furnGroup.innerHTML = '';
+        // Build the Furniture HTML String
+        let furnHTML = '';
         this.sandboxFixtures.forEach((f, idx) => {
             const isSelected = idx === this.selectedFixtureIndex;
             const strokeColor = isSelected ? '#38bdf8' : '#ec4899';
@@ -363,7 +385,7 @@ const RoomStudio = {
             // FIX 3: Reduced font-size from 10 to 4 (real-world inches).
             const displayName = f.type.toUpperCase().substring(0, 8); 
 
-            furnGroup.innerHTML += `
+            furnHTML += `
                 <g transform="translate(${f.x}, ${f.y})" 
                    onmousedown="RoomStudio.startDrag(${idx}, event)" 
                    class="${isSelected ? 'std-cursor-grabbing' : 'std-cursor-grab'}">
@@ -374,6 +396,9 @@ const RoomStudio = {
                 </g>
             `;
         });
+        
+        // Single DOM update for furniture
+        furnGroup.innerHTML = furnHTML;
 
         this.renderProperties();
     },

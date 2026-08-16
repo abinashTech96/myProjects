@@ -1,10 +1,140 @@
-// ai-agent.js
+// =========================================
+// ✨ BUILDER TOOLS & AI AGENT ENGINE
+// =========================================
+
+const BuilderToolsEngine = {
+    init: function() {
+        this.initAutoBuilder();
+        this.initAIAgent();
+        
+        // Execute dropdown population securely
+        if (typeof this.populateAIModelDropdown === 'function') {
+            this.populateAIModelDropdown();
+        }
+    },
+
+    // -----------------------------------------
+    // 1. AUTO-BUILDER UI MODULE
+    // -----------------------------------------
+    initAutoBuilder: function() {
+        if (document.getElementById('autobuilder-modal-container')) return;
+
+        const modalContainer = document.createElement('div');
+        modalContainer.id = 'autobuilder-modal-container';
+        
+        modalContainer.innerHTML = `
+            <div id="autobuilder-backdrop" onclick="toggleAutoBuilder()"></div>
+            <div id="autobuilder-modal" class="glass-panel">
+                <div class="builder-header orange">
+                    <div class="builder-header-title">
+                        <span class="icon">✨</span><h2>AUTO-BUILDER</h2>
+                    </div>
+                    <button class="builder-close-btn" onclick="toggleAutoBuilder()">&times;</button>
+                </div>
+                <div class="glass-field ab-input-row">
+                    <label>Total Floors:</label>
+                    <input type="number" id="b-floors" class="neo-sunken ab-floors-input" value="1" min="1" max="10" oninput="renderFloorSelectors()">
+                </div>
+                <div id="floor-layout-selectors" class="ab-selectors-container"></div>
+                <button class="ab-generate-btn" onclick="generateBuilding(); toggleAutoBuilder();">
+                    <span class="btn-icon">🏗️</span> <span class="btn-text">GENERATE BUILDING</span>
+                </button>
+            </div>
+        `;
+        document.body.appendChild(modalContainer);
+    },
+
+    // -----------------------------------------
+    // 2. AI AGENT UI MODULE
+    // -----------------------------------------
+    initAIAgent: function() {
+        if (document.getElementById('ai-agent-modal-container')) return;
+
+        const modalContainer = document.createElement('div');
+        modalContainer.id = 'ai-agent-modal-container';
+        
+        modalContainer.innerHTML = `
+            <div id="ai-agent-backdrop" onclick="toggleAIAgent()"></div>
+            <div id="ai-agent-modal" class="glass-panel">
+                <div class="builder-header purple">
+                    <div class="builder-header-title">
+                        <span class="icon">🤖</span><h2>AI ASSISTANT</h2>
+                    </div>
+                    <button class="builder-close-btn" onclick="toggleAIAgent()">&times;</button>
+                </div>
+                
+                <div>
+                    <div class="ai-field-group">
+                        <label class="ai-field-label">ACTIVE MODEL</label>
+                        <select id="ai-model-select" class="modern-select neo-sunken" style="width:100%;"></select>
+                    </div>
+
+                    <div class="ai-field-group">
+                        <label class="ai-field-label">PROMPT COMMAND</label>
+                        <textarea id="ai-input" class="neo-sunken ai-prompt-input" placeholder="e.g., Add a 10x12 master bedroom on the left..."></textarea>
+                    </div>
+                    
+                    <button id="ai-generate-btn" class="theme-purple-btn ai-generate-btn" onclick="handleAICommand()">
+                        <span class="btn-icon">✨</span> <span class="btn-text">GENERATE LAYOUT</span>
+                    </button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modalContainer);
+    },
+
+    populateAIModelDropdown: function() {
+        const selectEl = document.getElementById('ai-model-select');
+        if (!selectEl) return;
+        if (selectEl.options.length > 0) return;
+        selectEl.innerHTML = '';
+        if (typeof CONFIG === 'undefined' || !CONFIG.MODELS) {
+            console.error("❌ CONFIG.MODELS is missing. Check config.js!");
+            const errOpt = document.createElement('option');
+            errOpt.textContent = "⚠️ Error: Check config.js";
+            selectEl.appendChild(errOpt);
+            return;
+        }
+        const groups = {};
+        Object.entries(CONFIG.MODELS).forEach(([key, model]) => {
+            const groupName = model.group || 'General';
+            if (!groups[groupName]) {
+                groups[groupName] = document.createElement('optgroup');
+                groups[groupName].label = groupName;
+            }
+            const opt = document.createElement('option');
+            opt.value = key;
+            opt.textContent = model.label;
+            if (key === CONFIG.DEFAULT_MODEL) opt.selected = true;
+            groups[groupName].appendChild(opt);
+        });
+        Object.values(groups).forEach(groupEl => selectEl.appendChild(groupEl));
+        selectEl.addEventListener('change', function() {
+            CONFIG.ACTIVE_LLM = this.value;
+            console.log('🔄 AI Model Switched to:', this.value);
+        });
+        if (selectEl.hasAttribute('data-customized')) {
+            const wrapper = selectEl.parentNode;
+            if (wrapper && wrapper.classList.contains('pro-dropdown-wrapper')) {
+                wrapper.parentNode.insertBefore(selectEl, wrapper);
+                wrapper.remove();
+                selectEl.removeAttribute('data-customized');
+                selectEl.style.display = '';
+                if (typeof initAnimatedDropdowns === 'function') {
+                    initAnimatedDropdowns();
+                }
+            }
+        }
+    }
+};
+
+// =========================================
+// 🧠 AI AGENT LOGIC ENGINE
+// =========================================
 const AIAgent = {
-    // 1. THE ORCHESTRATOR (Main Entry Point)
     async processCommand(userPrompt) {
         const selectEl = document.getElementById('ai-model-select');
         const selectedKey = selectEl ? selectEl.value : (CONFIG.DEFAULT_MODEL || 'gemini-3.5-flash');
-
         const modelConfig = CONFIG.MODELS ? CONFIG.MODELS[selectedKey] : null;
 
         if (!modelConfig || !modelConfig.endpoint) {
@@ -13,13 +143,10 @@ const AIAgent = {
         }
 
         try {
-            // 1. Prepare Data
             const systemPrompt = this._buildSystemPrompt();
             const requestPayload = this._buildPayload(modelConfig, systemPrompt, userPrompt);
-
             console.log(`🚀 [${selectedKey.toUpperCase()}] REQUEST:`, JSON.stringify(requestPayload.body, null, 2));
 
-            // 2. Network Call
             const response = await fetch(requestPayload.url, {
                 method: 'POST',
                 headers: requestPayload.headers,
@@ -29,11 +156,8 @@ const AIAgent = {
             const data = await response.json();
             console.log(`📥 [${selectedKey.toUpperCase()}] RAW RESPONSE:`, JSON.stringify(data, null, 2));
 
-            if (data.error) {
-                throw new Error(data.error.message || JSON.stringify(data.error));
-            }
+            if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
 
-            // 3. Parse and Execute
             const actionPlan = this._parseResponse(modelConfig, data);
             this._executePlan(actionPlan);
 
@@ -42,7 +166,7 @@ const AIAgent = {
             alert(`AI Processing Failed: ${error.message}`);
         }
     },
-    // 2. PROMPT & SCHEMA BUILDERS
+
     _buildSystemPrompt() {
         const layoutContext = JSON.stringify(elements.map((el, index) => ({
             id: index, type: el.type, x: el.x, y: el.y, w: el.w, h: el.h
@@ -84,6 +208,7 @@ const AIAgent = {
           }
         ]`;
     },
+
     _getSchema() {
         return {
             type: "ARRAY",
@@ -101,20 +226,15 @@ const AIAgent = {
                             w: { type: "INTEGER", description: "Width in inches (default 120 if omitted)" },
                             h: { type: "INTEGER", description: "Height in inches (default 120 if omitted)" }
                         }
-                        // 🌟 FIX: Removed the invalid inner 'required' array here
                     }
                 },
-                required: ["action", "params"] // Keep this outer one!
+                required: ["action", "params"]
             }
         };
     },
-    // 3. NETWORK PAYLOAD ROUTER
+
     _buildPayload(modelConfig, systemPrompt, userPrompt) {
-        let payload = {
-            url: modelConfig.endpoint,
-            headers: { 'Content-Type': 'application/json' },
-            body: {}
-        };
+        let payload = { url: modelConfig.endpoint, headers: { 'Content-Type': 'application/json' }, body: {} };
 
         if (modelConfig.protocol === 'gemini') {
             payload.url = `${modelConfig.endpoint}?key=${modelConfig.key}`;
@@ -139,10 +259,9 @@ const AIAgent = {
         }
         return payload;
     },
-    // 4. RESPONSE UNWRAPPER
+
     _parseResponse(modelConfig, data) {
         let aiResponseText = '';
-        
         if (modelConfig.protocol === 'gemini' && data.candidates?.[0]?.content?.parts?.[0]?.text) {
             aiResponseText = data.candidates[0].content.parts[0].text;
         } else if (data.choices?.[0]?.message?.content) {
@@ -150,15 +269,12 @@ const AIAgent = {
         }
 
         if (!aiResponseText) return null;
-        // ✨ FIX: Strip markdown code blocks before parsing!
         aiResponseText = aiResponseText.replace(/```json/gi, '').replace(/```/g, '').trim();
 
         let actionPlan = JSON.parse(aiResponseText);
-        
         if (!Array.isArray(actionPlan) && typeof actionPlan === 'object') {
             actionPlan = actionPlan.actions || actionPlan.modifications || Object.values(actionPlan)[0];
         }
-        
         return actionPlan;
     },
 
@@ -171,7 +287,6 @@ const AIAgent = {
         }
     },
 
-    // 5. EXECUTION & MATH ENGINES
     calculateZoneCoordinates(zone, roomW, roomH) {
         const plotW = parseFloat(document.getElementById('inW').value) || AI_CONFIG.DEFAULT_PLOT_W;
         const plotH = parseFloat(document.getElementById('inH').value) || AI_CONFIG.DEFAULT_PLOT_H;
@@ -186,6 +301,7 @@ const AIAgent = {
             default: return { x: padding, y: padding };
         }
     },
+
     execute(plan) {
         console.log("🤖 AI Executing Room:", plan);
         
@@ -253,7 +369,8 @@ const AIAgent = {
     }
 };
 
-function handleAICommand() {
+// Global Command Hook
+window.handleAICommand = function() {
     const input = document.getElementById('ai-input');
     const prompt = input.value.trim();
     if (!prompt) return;
@@ -262,7 +379,7 @@ function handleAICommand() {
     const originalHTML = btn ? btn.innerHTML : ''; 
     
     if (btn) {
-        btn.disabled = true; // 🌟 Lock the button
+        btn.disabled = true;
         btn.style.cursor = 'not-allowed';
         btn.style.opacity = '0.6';
         btn.innerText = "⏳ Thinking...";
@@ -270,153 +387,19 @@ function handleAICommand() {
     
     AIAgent.processCommand(prompt).then(() => {
         if (btn) {
-            btn.disabled = false; // 🌟 Unlock the button
+            btn.disabled = false;
             btn.style.cursor = 'pointer';
             btn.style.opacity = '1';
             btn.innerHTML = originalHTML; 
         }
         input.value = ""; 
     });
-}
-
-// =========================================
-// 🌟 AI UI INITIALIZATION
-// =========================================
-window.populateAIModelDropdownOld = function() {
-    const selectEl = document.getElementById('ai-model-select');
-    if (!selectEl) return;
-    if (selectEl.options.length > 0) return;
-    selectEl.innerHTML = '';
-    if (typeof CONFIG === 'undefined' || !CONFIG.MODELS) {
-        console.error("❌ CONFIG.MODELS is missing. Check config.js!");
-        const errOpt = document.createElement('option');
-        errOpt.textContent = "⚠️ Error: Check config.js";
-        selectEl.appendChild(errOpt);
-        return;
-    }
-    const groups = {};
-    Object.entries(CONFIG.MODELS).forEach(([key, model]) => {
-        const groupName = model.group || 'General';
-        if (!groups[groupName]) {
-            groups[groupName] = document.createElement('optgroup');
-            groups[groupName].label = groupName;
-        }
-        const opt = document.createElement('option');
-        opt.value = key;
-        opt.textContent = model.label;
-        if (key === CONFIG.DEFAULT_MODEL) opt.selected = true;
-        groups[groupName].appendChild(opt);
-    });
-    Object.values(groups).forEach(groupEl => selectEl.appendChild(groupEl));
-    selectEl.addEventListener('change', function() {
-        CONFIG.ACTIVE_LLM = this.value;
-        console.log('🔄 AI Model Switched to:', this.value);
-    });
-    if (selectEl.hasAttribute('data-customized')) {
-        const wrapper = selectEl.parentNode;
-        if (wrapper && wrapper.classList.contains('pro-dropdown-wrapper')) {
-            wrapper.parentNode.insertBefore(selectEl, wrapper);
-            wrapper.remove();
-            selectEl.removeAttribute('data-customized');
-            selectEl.style.display = '';
-            if (typeof initAnimatedDropdowns === 'function') {
-                initAnimatedDropdowns();
-            }
-        }
-    }
-};
-window.populateAIModelDropdown = function() {
-    const selectEl = document.getElementById('ai-model-select');
-    if (!selectEl) return;
-    if (selectEl.options.length > 0) return;
-    selectEl.innerHTML = '';
-    if (typeof CONFIG === 'undefined' || !CONFIG.MODELS) {
-        console.error("❌ CONFIG.MODELS is missing. Check config.js!");
-        const errOpt = document.createElement('option');
-        errOpt.textContent = "⚠️ Error: Check config.js";
-        selectEl.appendChild(errOpt);
-        return;
-    }
-    const groups = {};
-    Object.entries(CONFIG.MODELS).forEach(([key, model]) => {
-        const groupName = model.group || 'General';
-        if (!groups[groupName]) {
-            groups[groupName] = document.createElement('optgroup');
-            groups[groupName].label = groupName;
-        }
-        const opt = document.createElement('option');
-        opt.value = key;
-        opt.textContent = model.label;
-        if (key === CONFIG.DEFAULT_MODEL) opt.selected = true;
-        groups[groupName].appendChild(opt);
-    });
-    Object.values(groups).forEach(groupEl => selectEl.appendChild(groupEl));
-    selectEl.addEventListener('change', function() {
-        CONFIG.ACTIVE_LLM = this.value;
-        console.log('🔄 AI Model Switched to:', this.value);
-    });
-    if (selectEl.hasAttribute('data-customized')) {
-        const wrapper = selectEl.parentNode;
-        if (wrapper && wrapper.classList.contains('pro-dropdown-wrapper')) {
-            wrapper.parentNode.insertBefore(selectEl, wrapper);
-            wrapper.remove();
-            selectEl.removeAttribute('data-customized');
-            selectEl.style.display = '';
-            if (typeof initAnimatedDropdowns === 'function') {
-                initAnimatedDropdowns();
-            }
-        }
-    }
-};
-// 🚀 THE FIX: Run this synchronously IMMEDIATELY. 
-// Don't wait for DOMContentLoaded, otherwise the UI script will build an empty box first!
-window.populateAIModelDropdown();
-
-// =========================================
-// 🌟 AI UI INJECTION ENGINE
-// =========================================
-const AIAgentUIEngine = {
-    init: function() {
-        if (document.getElementById('ai-agent-modal-container')) return;
-
-        const modalContainer = document.createElement('div');
-        modalContainer.id = 'ai-agent-modal-container';
-        
-        modalContainer.innerHTML = `
-            <div id="ai-agent-backdrop" style="position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(15, 23, 42, 0.75); backdrop-filter:blur(8px); z-index:99998; display:none; opacity:0; transition:opacity 0.3s ease;" onclick="toggleAIAgent()"></div>
-            <div id="ai-agent-modal" class="glass-panel" style="position:fixed; top:50%; left:50%; transform:translate(-50%, -50%) scale(0.9); width:400px; z-index:99999; display:none; opacity:0; transition:all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);">
-                <div class="panel-header" style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid rgba(168, 85, 247, 0.3); padding-bottom: 10px; margin-bottom: 15px;">
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <span class="icon" style="color:#a855f7;">🤖</span><h2 style="margin:0; background:linear-gradient(90deg, #a855f7, #c084fc); -webkit-background-clip:text; -webkit-text-fill-color:transparent; font-size:1.1rem; letter-spacing:1px;">AI ASSISTANT</h2>
-                    </div>
-                    <button onclick="toggleAIAgent()" style="background:transparent; border:none; color:#94a3b8; font-size:1.4rem; cursor:pointer;">&times;</button>
-                </div>
-                
-                <div style="display: flex; flex-direction: column; gap: 15px;">
-                    <div style="display: flex; flex-direction: column; gap: 6px;">
-                        <label style="font-size: 0.7rem; color: #94a3b8; font-weight: bold; letter-spacing: 0.5px;">ACTIVE MODEL</label>
-                        <select id="ai-model-select" class="modern-select neo-sunken" style="width:100%;"></select>
-                    </div>
-
-                    <div style="display: flex; flex-direction: column; gap: 6px;">
-                        <label style="font-size: 0.7rem; color: #94a3b8; font-weight: bold; letter-spacing: 0.5px;">PROMPT COMMAND</label>
-                        <textarea id="ai-input" class="neo-sunken ai-textarea" style="width:100%; height:90px; padding:12px; border-radius:8px; border:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.3); color:white; resize:none; font-family:sans-serif;" placeholder="e.g., Add a 10x12 master bedroom on the left..."></textarea>
-                    </div>
-                    
-                    <button id="ai-generate-btn" class="theme-purple-btn" style="width:100%; padding:12px; border-radius:8px; font-weight:bold; cursor:pointer; color:white; border:none;" onclick="handleAICommand()">
-                        <span class="btn-icon">✨</span> <span class="btn-text">GENERATE LAYOUT</span>
-                    </button>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(modalContainer);
-    }
 };
 
+// ✨ ADD THIS MISSING GLOBAL HOOK:
+window.populateAIModelDropdown = () => BuilderToolsEngine.populateAIModelDropdown();
+
+// Initialize everything securely on load
 document.addEventListener('DOMContentLoaded', () => {
-    AIAgentUIEngine.init();
-});
-
-document.addEventListener('DOMContentLoaded', () => {
-    AIAgentUIEngine.init();
+    BuilderToolsEngine.init();
 });

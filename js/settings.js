@@ -623,7 +623,7 @@ const SETTINGS_CONFIG = [
     {
         id: 'widget-visibility',
         icon: '👁️',
-        title: 'WIDGET VISIBILITY',
+        title: 'UI WIDGETS',
         open: true,
         animation: 'blastAndSparkleFocus',
         items: [
@@ -637,7 +637,7 @@ const SETTINGS_CONFIG = [
     {
         id: 'pro-tools',
         icon: '🚀',
-        title: 'PRO TOOLS & AI',
+        title: 'BUILDER TOOLS',
         open: false,
         isGrid: true,
         animation: 'blastAndSparkleRing',

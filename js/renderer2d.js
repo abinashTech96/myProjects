@@ -209,7 +209,6 @@ function renderRooms(geom) {
     let gRooms = document.getElementById('group-rooms') || createSVGGroup('group-rooms');
     let gText = document.getElementById('group-text') || createSVGGroup('group-text');
 
-    const smartMerge = CanvasControlsEngine.isSmartMerge();
     window.renderedLabels = [];
 
     elements.forEach((el, i) => {
@@ -237,7 +236,8 @@ function renderRooms(geom) {
         r.setAttribute('class', isSelected ? 'room-rect room-selected' : 'room-rect');
         r.onmousedown = function(e) { if(typeof startDrag === 'function') startDrag(e, i); };
 
-        const isColliding = smartMerge ? false : (typeof checkCollision === 'function' ? checkCollision(el, i) : false);
+        const isColliding = CanvasControlsEngine.isSmartMerge() ? false : (typeof checkCollision === 'function' ? checkCollision(el, i) : false);
+        
         let baseColor = ARCH_CONFIG?.COLORS[el.type]?.rgb || '255,255,255';
         if (el.customColor) {
             const hex = el.customColor.replace('#', '');
@@ -247,18 +247,8 @@ function renderRooms(geom) {
         const strokeColor = isSelected ? '#ffffff' : (isColliding ? '#ef4444' : `rgb(${baseColor})`);
         const fillColor = isColliding ? 'rgba(239, 68, 68, 0.4)' : `rgba(${baseColor}, 0.2)`;
 
-        if (el.isFurniture) {
-            r.style.display = 'block'; rb.style.display = 'none'; rh.style.display = 'none';
-            r.setAttribute('style', `fill: rgba(148, 163, 184, 0.2); stroke: #cbd5e1; stroke-width: 2; stroke-dasharray: 4, 4;`);
-            if (isSelected) r.setAttribute('style', `fill: rgba(56,189,248,0.3); stroke: #38bdf8; stroke-width: 3; stroke-dasharray: none;`);
-        } else if (smartMerge) {
-            r.style.display = 'block'; rb.style.display = 'block'; rh.style.display = 'block';
-            rb.setAttribute('style', `fill: ${strokeColor}; stroke: none;`);
-            rh.setAttribute('style', `fill: #0f172a; stroke: none;`);
-            r.setAttribute('style', `fill: ${fillColor}; stroke: none;`);
-        } else {
-            r.style.display = 'block'; rb.style.display = 'none'; rh.style.display = 'none';
-            r.setAttribute('style', `fill: ${fillColor}; stroke: ${strokeColor}; stroke-width: ${isSelected ? '3' : '1.5'}; ${el.type === 'balcony' ? 'stroke-dasharray: 6, 4;' : ''}`);
+        if (typeof CanvasControlsEngine !== 'undefined') {
+            CanvasControlsEngine.applyRoomStyles(r, rb, rh, el, isSelected, fillColor, strokeColor);
         }
         applyRoomTooltips(r, el);
         renderRoomText(i, el, rx, ry, w, h, I.x, I.y);
@@ -376,35 +366,14 @@ function applyRoomTooltips(r, el) {
 
 function renderRoomText(i, el, rx, ry, w, h, IX, IY) {
     let gText = document.getElementById('group-text');
-    const cx = rx + w / 2; const cy = ry + h / 2;
-    const labelText = el.customName || (typeof getRoomDisplayName === 'function' ? getRoomDisplayName(i) : el.type.toUpperCase());
-    
-    if (!CanvasControlsEngine.showLabels()) return;
-    
     const SCALE = parseFloat(UI.scaleInput?.value) || 1.2;
 
-    if (CanvasControlsEngine.isSmartMerge()) {
-        const isDuplicate = window.renderedLabels.find(l => l.text === labelText && Math.hypot(l.x - cx, l.y - cy) < ARCH_CONFIG.REFINEMENTS.SMART_MERGE_TEXT_RADIUS * SCALE);
-        if (isDuplicate) return; 
-        window.renderedLabels.push({ text: labelText, x: cx, y: cy });
-    }
-    
-    const minSize = 45 * SCALE; 
-    
-    if (w < minSize || h < minSize) {
-        ['title', 'dims', 'area'].forEach(t => { 
-            let node = document.getElementById(`txt-${t}-${i}`); 
-            if(node) node.style.display = 'none'; 
-        });
-    } else {
-        const dimsText = `${Math.floor(el.w/12)}'${Math.round(el.w%12)}" × ${Math.floor(el.h/12)}'${Math.round(el.h%12)}"`;
-        const areaText = `${((el.w * el.h)/144).toFixed(1)} sq.ft`;
-        createOrUpdateText(`txt-title-${i}`, gText, cx, cy - 8, labelText, '#ffffff', '12', true);
-        createOrUpdateText(`txt-dims-${i}`, gText, cx, cy + 6, dimsText, '#cbd5e1', '10', false);
-        createOrUpdateText(`txt-area-${i}`, gText, cx, cy + 20, areaText, '#94a3b8', '10', false);
+    // 🌟 DELEGATE LABEL & SMART-MERGE LOGIC TO THE CANVAS CONTROLS ENGINE
+    if (typeof CanvasControlsEngine !== 'undefined') {
+        CanvasControlsEngine.renderLabels(i, el, rx, ry, w, h, SCALE, gText);
     }
 
-    // 🌟 Notice how clean this is now! We deleted the old document.getElementById line.
+    // 🌟 RENDER THE DIMENSION LINES (This logic relies on the showDims toggle)
     let dimTop = document.getElementById(`dim-top-${i}`);
     let dimLeft = document.getElementById(`dim-left-${i}`);
     

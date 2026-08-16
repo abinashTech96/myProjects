@@ -102,14 +102,10 @@ const handleMove = (currentMouse, e) => {
                 }
             });
 
-            const isStrictSnap = CanvasControlsEngine.isGridSnap();
-            let snapRes = 12; 
-            if (window.CanvasState.zoomLvl > 2.5) snapRes = 1;      
-            else if (window.CanvasState.zoomLvl > 1.2) snapRes = 6; 
-
-            if (!snappedX) newX = isStrictSnap ? Math.round(newX / snapRes) * snapRes : Math.round(newX);
-            if (!snappedY) newY = isStrictSnap ? Math.round(newY / snapRes) * snapRes : Math.round(newY);
-
+            // 🌟 NEW CODE: DELEGATE GRID MATH TO THE CONTROLS ENGINE
+            if (!snappedX) newX = CanvasControlsEngine.applyGridSnap(newX, window.CanvasState.zoomLvl);
+            if (!snappedY) newY = CanvasControlsEngine.applyGridSnap(newY, window.CanvasState.zoomLvl);
+            
             newX = Math.max(0, Math.min(newX, inW - el.w));
             newY = Math.max(0, Math.min(newY, inH - el.h));
 

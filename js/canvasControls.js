@@ -211,6 +211,81 @@ const CanvasControlsEngine = {
 
         hideExcessSVG('dim-auto-tline', displayIdx); hideExcessSVG('dim-auto-ttext', displayIdx);
         hideExcessSVG('dim-auto-lline', displayIdx); hideExcessSVG('dim-auto-ltext', displayIdx);
+    },
+
+    renderLabels: function(i, el, rx, ry, w, h, SCALE, gText) {
+        // 1. If Labels are turned OFF, hide them and stop.
+        if (!this.showLabels()) {
+            ['title', 'dims', 'area'].forEach(t => { 
+                let node = document.getElementById(`txt-${t}-${i}`); 
+                if(node) node.style.display = 'none'; 
+            });
+            return;
+        }
+
+        const cx = rx + w / 2; 
+        const cy = ry + h / 2;
+        const labelText = el.customName || (typeof getRoomDisplayName === 'function' ? getRoomDisplayName(i) : el.type.toUpperCase());
+
+        // 2. SMART MERGE LOGIC: Prevent drawing duplicate text in merged rooms
+        if (this.isSmartMerge()) {
+            const radius = typeof ARCH_CONFIG !== 'undefined' ? ARCH_CONFIG.REFINEMENTS.SMART_MERGE_TEXT_RADIUS : 100;
+            const isDuplicate = window.renderedLabels.find(l => l.text === labelText && Math.hypot(l.x - cx, l.y - cy) < radius * SCALE);
+            if (isDuplicate) return; 
+            window.renderedLabels.push({ text: labelText, x: cx, y: cy });
+        }
+        
+        // 3. DRAW THE TEXT: Only if the room is big enough
+        const minSize = 45 * SCALE; 
+        if (w < minSize || h < minSize) {
+            ['title', 'dims', 'area'].forEach(t => { 
+                let node = document.getElementById(`txt-${t}-${i}`); 
+                if(node) node.style.display = 'none'; 
+            });
+        } else {
+            const dimsText = `${Math.floor(el.w/12)}'${Math.round(el.w%12)}" × ${Math.floor(el.h/12)}'${Math.round(el.h%12)}"`;
+            const areaText = `${((el.w * el.h)/144).toFixed(1)} sq.ft`;
+            
+            // Relies on the createOrUpdateText helper from renderer2d
+            if (typeof createOrUpdateText === 'function') {
+                createOrUpdateText(`txt-title-${i}`, gText, cx, cy - 8, labelText, '#ffffff', '12', true);
+                createOrUpdateText(`txt-dims-${i}`, gText, cx, cy + 6, dimsText, '#cbd5e1', '10', false);
+                createOrUpdateText(`txt-area-${i}`, gText, cx, cy + 20, areaText, '#94a3b8', '10', false);
+            }
+        }
+    },
+
+    applyRoomStyles: function(r, rb, rh, el, isSelected, fillColor, strokeColor) {
+        // 1. Furniture Styling (Ignores Smart Merge)
+        if (el.isFurniture) {
+            r.style.display = 'block'; rb.style.display = 'none'; rh.style.display = 'none';
+            r.setAttribute('style', `fill: rgba(148, 163, 184, 0.2); stroke: #cbd5e1; stroke-width: 2; stroke-dasharray: 4, 4;`);
+            if (isSelected) r.setAttribute('style', `fill: rgba(56,189,248,0.3); stroke: #38bdf8; stroke-width: 3; stroke-dasharray: none;`);
+            return;
+        } 
+        
+        // 2. 🧩 SMART MERGE STYLING (Hides inner borders)
+        if (this.isSmartMerge()) {
+            r.style.display = 'block'; rb.style.display = 'block'; rh.style.display = 'block';
+            rb.setAttribute('style', `fill: ${strokeColor}; stroke: none;`);
+            rh.setAttribute('style', `fill: #0f172a; stroke: none;`);
+            r.setAttribute('style', `fill: ${fillColor}; stroke: none;`);
+        } 
+        // 3. STANDARD STYLING (Standalone rooms with borders)
+        else {
+            r.style.display = 'block'; rb.style.display = 'none'; rh.style.display = 'none';
+            r.setAttribute('style', `fill: ${fillColor}; stroke: ${strokeColor}; stroke-width: ${isSelected ? '3' : '1.5'}; ${el.type === 'balcony' ? 'stroke-dasharray: 6, 4;' : ''}`);
+        }
+    },
+
+    applyGridSnap: function(coordValue, zoomLvl) {
+        if (!this.isGridSnap()) {
+            return Math.round(coordValue);
+        }
+        let snapRes = 12; 
+        if (zoomLvl > 2.5) snapRes = 1;      
+        else if (zoomLvl > 1.2) snapRes = 6;
+        return Math.round(coordValue / snapRes) * snapRes;
     }
 };
 

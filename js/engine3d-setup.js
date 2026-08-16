@@ -103,7 +103,21 @@ window.Engine3D = {
         let prevTime = performance.now();
 
         const animate = () => {
-            if (window.isEnginePaused) return; 
+            // ✨ Keep alive for 1 hour, then let it die to save memory/battery
+            if (window.isEnginePaused) {
+                const ONE_HOUR = 60 * 60 * 1000; // 1 hour in milliseconds
+                
+                // If it has been more than 1 hour, kill the loop
+                if (Date.now() - window.enginePauseTime > ONE_HOUR) {
+                    window.isEngineDead = true;
+                    console.log("🛑 3D Engine Killed (Inactive > 1 Hour)");
+                    return; // The loop completely stops here!
+                }
+                
+                // Otherwise, keep it ticking slowly in the background
+                requestAnimationFrame(animate);
+                return; 
+            }
             requestAnimationFrame(animate);
             
             const time = performance.now();

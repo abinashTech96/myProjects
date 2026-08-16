@@ -12,7 +12,7 @@ const onboardingStyles = `
         background: rgba(255, 255, 255, 0.03); 
         backdrop-filter: blur(10px) brightness(115%) saturate(120%);
         -webkit-backdrop-filter: blur(10px) brightness(115%) saturate(120%);
-        z-index: 99998;
+        z-index: calc(var(--z-overlay) - 1); /* Was 99998 */
         opacity: 0;
         display: none;
         transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1);
@@ -21,7 +21,7 @@ const onboardingStyles = `
     .ob-overlay-container {
         position: fixed;
         top: 0; left: 0; width: 100vw; height: 100vh;
-        z-index: 99999;
+        z-index: var(--z-overlay); /* Was 99999 */
         display: none;
         align-items: center;
         justify-content: center;

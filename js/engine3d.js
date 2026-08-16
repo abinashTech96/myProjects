@@ -9,15 +9,24 @@ window.is3DMode = true;
 // 🛑 PHASE 1: DEMAND-DRIVEN RENDERING
 // =========================================
 window.isEnginePaused = false;
+window.enginePauseTime = 0;  // Tracks when the tab was hidden
+window.isEngineDead = false; // Tracks if the loop was killed
 
 document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
         window.isEnginePaused = true;
+        window.enginePauseTime = Date.now(); // Start the 1-hour timer
         console.log("⏸️ 3D Engine Paused (Tab Hidden)");
     } else {
         window.isEnginePaused = false;
         console.log("▶️ 3D Engine Resumed");
-        // Force a fresh render the second they switch back to this tab
+        
+        // ✨ Revive the engine if it was killed after 1 hour!
+        if (window.isEngineDead && typeof Engine3D !== 'undefined') {
+            window.isEngineDead = false;
+            Engine3D.startAnimationLoop();
+            console.log("🔄 3D Engine Revived from deep sleep!");
+        }
         if (typeof request3DUpdate === 'function') request3DUpdate();
     }
 });
@@ -45,7 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // --- 3D RAYCASTER STATE & SELECTION ---
-let isRaycasterActive = false;
+// let isRaycasterActive = false;
 const raycaster = new THREE.Raycaster();
 const mouse3D = new THREE.Vector2();
 
@@ -83,7 +92,7 @@ window.resetCamera3D = function() {
     Engine3D.controls.target.set(500, 0, 500);
     Engine3D.controls.update();
 };
-
+/*
 window.startWalkthrough = function() {
     if (!window.is3DMode || !Engine3D.fpsControls) return;
     
@@ -91,8 +100,6 @@ window.startWalkthrough = function() {
     Engine3D.controls.enabled = false; 
     const navPad = document.getElementById('nav-pad');
     if(navPad) navPad.style.display = 'none';
-
-    // 🌟 PREMIUM UPGRADE: Glassmorphism HUD overlay
     if (!document.getElementById('fly-hint')) {
         const hint = document.createElement('div');
         hint.id = 'fly-hint';
@@ -108,7 +115,6 @@ window.startWalkthrough = function() {
         document.body.appendChild(hint);
     }
 
-    // 🌟 PREMIUM UPGRADE: Minimalist FPS Crosshair
     if (!document.getElementById('walk-crosshair')) {
         const crosshair = document.createElement('div');
         crosshair.id = 'walk-crosshair';
@@ -116,7 +122,6 @@ window.startWalkthrough = function() {
         document.body.appendChild(crosshair);
     }
 
-    // Lock camera perfectly to human eye level on start
     const scaleInput = document.getElementById('scaleInput');
     const SCALE = scaleInput ? parseFloat(scaleInput.value) || 1.2 : 1.2;
     Engine3D.camera.position.set(Engine3D.camera.position.x, 65 * SCALE, Engine3D.camera.position.z); 
@@ -143,7 +148,7 @@ window.toggleRaycaster = function() {
         if (typeof updateCanvas === 'function') updateCanvas();
     }
 };
-
+*/
 // =========================================
 // 3D EVENT LISTENERS 
 // =========================================
@@ -227,35 +232,42 @@ document.addEventListener('DOMContentLoaded', () => {
         let hoveredObject = null;
         let hoveredOriginalEmissive = new THREE.Color(0x000000);
         
+        // ✨ Define the throttle flag just above the event listener (if not already there)
+        let raycastPending = false;
         threeContainer.addEventListener('mousemove', (event) => {
             if (!window.is3DMode || !isRaycasterActive || Engine3D.isWalkthrough) {
                 if (threeContainer.style.cursor === 'pointer') threeContainer.style.cursor = 'default';
                 return;
             }
-            const rect = Engine3D.renderer.domElement.getBoundingClientRect();
-            mouse3D.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-            mouse3D.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-            raycaster.setFromCamera(mouse3D, Engine3D.camera);
-            const intersects = raycaster.intersectObjects(Engine3D.buildingGroup.children, true);
-            let foundHover = null;
-            for (let i = 0; i < intersects.length; i++) {
-                const object = intersects[i].object;
-                if (object.userData && (object.userData.isRoom || object.userData.isParapet)) {
-                    foundHover = object;
-                    break;
+            if (raycastPending) return;
+            raycastPending = true;
+            setTimeout(() => {
+                const rect = Engine3D.renderer.domElement.getBoundingClientRect();
+                mouse3D.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+                mouse3D.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+                raycaster.setFromCamera(mouse3D, Engine3D.camera);
+                const intersects = raycaster.intersectObjects(Engine3D.buildingGroup.children, true);
+                let foundHover = null;
+                for (let i = 0; i < intersects.length; i++) {
+                    const object = intersects[i].object;
+                    if (object.userData && (object.userData.isRoom || object.userData.isParapet)) {
+                        foundHover = object;
+                        break;
+                    }
                 }
-            }
-            if (hoveredObject !== foundHover) {
-                if (hoveredObject && hoveredObject.material) {
-                    hoveredObject.material.emissive.copy(hoveredOriginalEmissive);
+                if (hoveredObject !== foundHover) {
+                    if (hoveredObject && hoveredObject.material) {
+                        hoveredObject.material.emissive.copy(hoveredOriginalEmissive);
+                    }
+                    hoveredObject = foundHover;
+                    if (hoveredObject && hoveredObject.material) {
+                        hoveredOriginalEmissive.copy(hoveredObject.material.emissive);
+                        hoveredObject.material.emissive.setHex(0x38bdf8);
+                    }
                 }
-                hoveredObject = foundHover;
-                if (hoveredObject && hoveredObject.material) {
-                    hoveredOriginalEmissive.copy(hoveredObject.material.emissive);
-                    hoveredObject.material.emissive.setHex(0x38bdf8);
-                }
-            }
-            threeContainer.style.cursor = hoveredObject ? 'pointer' : 'default';
+                threeContainer.style.cursor = hoveredObject ? 'pointer' : 'default';
+                raycastPending = false;
+            }, 40);
         });
     }
 });
@@ -263,23 +275,21 @@ document.addEventListener('DOMContentLoaded', () => {
 // =========================================
 // 3D PERFORMANCE MANAGEMENT
 // =========================================
+/*
 let isPerformanceMode = false;
 
 window.togglePerformanceMode = function() {
     isPerformanceMode = !isPerformanceMode;
     const btn = document.getElementById('btn-performance');
-    
     if (btn) {
         const textSpan = btn.querySelector('.text');
         if(textSpan) textSpan.innerHTML = isPerformanceMode ? 'PERF MODE: ON' : 'PERF MODE: OFF';
         btn.style.background = isPerformanceMode ? 'rgba(234, 179, 8, 0.2)' : 'rgba(15, 23, 42, 0.85)';
-        btn.style.color = isPerformanceMode ? '#facc15' : '#facc15';
+        btn.style.color = isPerformanceMode ? '#facc15' : '#38bdf8'; 
     }
-
+    document.body.classList.toggle('perf-mode-active', isPerformanceMode);
     if (!Engine3D.scene || !Engine3D.renderer) return;
-
     Engine3D.renderer.setPixelRatio(isPerformanceMode ? 1 : window.devicePixelRatio);
-
     Engine3D.scene.traverse((object) => {
         if (object.isDirectionalLight) {
             object.castShadow = !isPerformanceMode;
@@ -290,9 +300,9 @@ window.togglePerformanceMode = function() {
             if (object.material) object.material.needsUpdate = true;
         }
     });
-
     if (window.is3DMode && !Engine3D.isWalkthrough) {
         Engine3D.controls.update();
         Engine3D.renderer.render(Engine3D.scene, Engine3D.camera);
     }
 };
+*/

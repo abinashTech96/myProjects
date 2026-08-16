@@ -897,84 +897,9 @@ select optgroup {
 }
 
 
-
-/* =========================================
-   3D VIEW FLOATING ACTION BUTTONS
-========================================= */
-.float-action-btn {
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    height: 48px;
-    width: 48px; /* Starts as a perfect circle */
-    border-radius: 24px; /* Pill shape when expanded */
-    background: rgba(15, 23, 42, 0.85);
-    border: 1px solid #38bdf8;
-    color: #38bdf8;
-    font-weight: bold;
-    cursor: pointer;
-    overflow: hidden;
-    white-space: nowrap;
-    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s ease, box-shadow 0.3s ease;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-    padding: 0;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-}
-
-/* Hover State - Expands to show text */
-.float-action-btn:hover {
-    width: 230px; 
-    background: rgba(15, 23, 42, 0.95);
-    box-shadow: 0 6px 20px rgba(56, 189, 248, 0.3);
-}
-
-/* Fixed icon size so it stays centered when collapsed */
-.float-action-btn .icon {
-    min-width: 48px;
-    text-align: center;
-    font-size: 1.2rem;
-}
-
-/* Text fades in smoothly */
-.float-action-btn .text {
-    opacity: 0;
-    transition: opacity 0.2s ease;
-    padding-right: 15px;
-    font-size: 0.75rem;
-    letter-spacing: 0.5px;
-}
-
-.float-action-btn:hover .text {
-    opacity: 1;
-    transition-delay: 0.1s; /* Waits for the button to expand first */
-}
-
-/* Specific button color overrides */
-.perf-btn {
-    border-color: #facc15;
-    color: #facc15;
-}
-.perf-btn:hover {
-    box-shadow: 0 6px 20px rgba(250, 204, 21, 0.2);
-}
-
-.walk-btn {
-    background: linear-gradient(135deg, #f59e0b, #d97706);
-    border: none;
-    color: white;
-}
-.walk-btn:hover {
-    background: linear-gradient(135deg, #d97706, #b45309);
-    box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
-}
-
-
 /* =========================================
    UI TRANSITIONS & FLOOR EXPLORER STYLING
 ========================================= */
-
-/* --- Sliding Animations --- */
 @keyframes slideInRight {
     0% { opacity: 0; transform: translateX(30px); }
     100% { opacity: 1; transform: translateX(0); }
@@ -1379,11 +1304,25 @@ select optgroup {
     background: rgba(6, 182, 212, 0.05);
 }
 
-.perf-btn {
-    border-color: #facc15;
-    color: #facc15;
+/* =========================================
+   ⚡ PERFORMANCE MODE OVERRIDES
+========================================= */
+body.perf-mode-active * {
+    /* Globally disable all glassmorphism blurs */
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
 }
-.perf-btn:hover {
-    box-shadow: 0 6px 20px rgba(250, 204, 21, 0.2);
-    background: rgba(250, 204, 21, 0.05);
+
+body.perf-mode-active .glass-panel,
+body.perf-mode-active .panel,
+body.perf-mode-active .sidebar-converter,
+body.perf-mode-active .neo-explorer-panel,
+body.perf-mode-active .adv-3d-panel,
+body.perf-mode-active .std-container,
+body.perf-mode-active .pc-wrapper {
+    /* Fallback to solid, opaque backgrounds to prevent text overlapping */
+    background-color: #0f172a !important; 
+    /* Disable expensive rendering shadows */
+    box-shadow: none !important; 
+    border: 1px solid #334155 !important;
 }

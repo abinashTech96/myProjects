@@ -1,6 +1,6 @@
 /* =========================================
    📦 DRAG & DROP LIBRARY STYLES 
-   (Neo-Glass Premium UI)
+   (Slide-In Carousel Layout)
 ========================================= */
 
 #drag-drop-library-wrapper {
@@ -47,7 +47,7 @@
 
 #dd-library-btn:hover {
     background: linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(15, 23, 42, 0.95));
-    width: 56px !important; /* Playful pull-out on hover */
+    width: 56px !important; 
     color: #ffffff;
 }
 
@@ -70,14 +70,15 @@
 }
 
 /* =========================================
-   🗄️ THE EXPANDED PANEL
+   🗄️ THE CAROUSEL PANEL
 ========================================= */
 #dd-library-panel {
-    width: 170px !important;   /* Slightly wider for a premium feel */
-    height: 250px !important;  
+    width: 130px !important;   
+    height: 250px !important;  /* 🌟 Reduced Height to 250px */
     background: linear-gradient(180deg, rgba(15, 23, 42, 0.95) 0%, rgba(9, 9, 11, 0.95) 100%);
     backdrop-filter: blur(24px) saturate(150%);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid #38bdf8;
+    /* border: 1px solid rgba(255, 255, 255, 0.08); here */
     border-right: none !important; 
     border-top: none !important; 
     border-radius: 0 0 0 16px; 
@@ -86,11 +87,10 @@
     padding: 0 !important; 
     overflow: hidden; 
     
-    /* 🌟 Bouncy Spring Animation */
     opacity: 0;
     pointer-events: none;
     transform: translateX(170px); 
-    transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); /* Apple-style spring */
+    transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); 
 }
 
 #dd-library-panel.open {
@@ -100,85 +100,121 @@
 }
 
 /* =========================================
-   🎛️ MODERN SEGMENTED TABS
+   🌟 TITLE HEADER (FLEXBOX)
 ========================================= */
-.dd-tabs {
+.dd-panel-header {
+    cursor: default;
+    width: 100%;
+    padding: 8px 10px;
+    box-sizing: border-box;
     display: flex;
-    width: calc(100% - 16px);
-    margin: 12px 8px 8px 8px;
-    background: rgba(0, 0, 0, 0.4);
-    border-radius: 10px;
-    padding: 4px;
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+    justify-content: space-between; /* Puts arrows on edges, title in center */
+    align-items: center;
+    background: rgba(0, 0, 0, 0.2);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.dd-tab-btn {
-    flex: 1;
-    background: transparent;
-    border: none;
-    color: #64748b;
-    padding: 6px 0;
-    font-size: 0.75rem;
+#dd-panel-title {
+    font-size: 0.95rem;
     font-weight: 700;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.dd-tab-btn:hover:not(.active) {
-    color: #cbd5e1;
-    background: rgba(255, 255, 255, 0.05);
-}
-
-.dd-tab-btn.active {
-    color: #ffffff;
-    background: #38bdf8;
-    box-shadow: 0 2px 8px rgba(56, 189, 248, 0.4);
+    color: #38bdf8;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    flex-grow: 1;
+    text-align: center;
 }
 
 /* =========================================
-   📜 SCROLLABLE LIST AREA
+   🛤️ SLIDER TRACK & PANES
 ========================================= */
-#dd-content-area {
+.dd-slider-window {
     width: 100%;
+    flex-grow: 1;
+    overflow: hidden;
+    position: relative;
+}
+
+.dd-slider-track {
+    display: flex;
+    width: 200%; /* Holds two panes side-by-side */
     height: 100%;
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.dd-slide-pane {
+    width: 50%; /* Exactly half of the 200% track */
+    height: 100%;
+    padding: 6px 10px 12px 10px;
+    box-sizing: border-box;
     display: flex;
     flex-direction: column;
     gap: 6px; 
-    padding: 4px 10px 12px 10px;
-    box-sizing: border-box;
     overflow-y: auto; 
     overflow-x: hidden;
 }
 
-#dd-content-area::-webkit-scrollbar {
+.dd-slide-pane::-webkit-scrollbar {
     width: 0px !important;
     display: none !important;
 }
 
 /* =========================================
-   🧊 DRAGGABLE ITEM ROWS (BLADE EFFECT)
+   ◀ ▶ HEADER NAV ARROWS (Plain Text)
+========================================= */
+.dd-nav-btn {
+    background: transparent; 
+    border: none; /* 🌟 Removed the circle border */
+    color: #64748b;
+    width: 24px;  
+    height: 24px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    font-size: 1rem; /* 🌟 Made slightly larger for easier clicking */
+    font-weight: 900;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    
+    /* Starts hidden but scaled down for zoom effect */
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(0.5);
+}
+
+.dd-nav-btn.visible {
+    opacity: 1;
+    pointer-events: auto;
+    transform: scale(1);
+}
+
+.dd-nav-btn:hover {
+    color: #38bdf8; /* Turns bright blue */
+    transform: scale(1.25); /* Slight pop effect */
+    text-shadow: 0 0 8px rgba(56, 189, 248, 0.6); /* 🌟 Soft neon glow instead of background */
+}
+
+/* =========================================
+   🧊 DRAGGABLE ITEM ROWS
 ========================================= */
 .dd-item-row {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 10px 12px;
+    padding: 8px 12px;
     border-radius: 8px;
     background: rgba(255, 255, 255, 0.02);
     border: 1px solid transparent;
-    border-left: 3px solid transparent; /* Placeholder for the blade */
+    border-left: 3px solid transparent; 
     cursor: grab;
     transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-    position: relative;
-    overflow: hidden;
 }
 
 .dd-item-row:hover {
     background: linear-gradient(90deg, rgba(56, 189, 248, 0.15) 0%, transparent 100%);
     border-color: rgba(255, 255, 255, 0.05);
-    border-left: 3px solid #38bdf8; /* 🌟 Neon Blade Effect */
-    transform: translateX(-6px);    /* Physically slides out */
+    border-left: 3px solid #38bdf8; 
+    /* here */
+    transform: translateX(-4px);    
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
@@ -189,23 +225,17 @@
 }
 
 .dd-item-icon {
-    font-size: 1.25rem;
+    font-size: 1.1rem;
     filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
     transition: transform 0.3s ease;
 }
 
-.dd-item-row:hover .dd-item-icon {
-    transform: scale(1.15);
-}
-
+.dd-item-row:hover .dd-item-icon { transform: scale(1.15); }
 .dd-item-label {
     color: #94a3b8;
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     font-weight: 600;
     pointer-events: none; 
     transition: color 0.3s ease;
 }
-
-.dd-item-row:hover .dd-item-label {
-    color: #f8fafc;
-}
+.dd-item-row:hover .dd-item-label { color: #f8fafc; }

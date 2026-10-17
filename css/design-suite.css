@@ -1,0 +1,122 @@
+.design-tool-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+.design-tool-grid button {
+  text-align: left;
+}
+.studio-dialog input {
+  max-width: 100%;
+}
+#object-rows input {
+  min-width: 65px;
+}
+#object-rows table {
+  font-size: 11px;
+}
+#design-presentation {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1500;
+  display: flex;
+  gap: 6px;
+  padding: 8px;
+  background: #101b2cee;
+  border: 1px solid #38bdf8;
+  border-radius: 7px;
+}
+#design-health {
+  white-space: nowrap;
+}
+#design-sync-status {
+  font-size: 10px;
+  color: #7dd3fc;
+}
+.design-review-comment {
+  border-left: 3px solid #38bdf8;
+  padding: 8px;
+  margin: 8px 0;
+}
+.design-diff {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.design-viewport {
+  border: 1px solid #33445d;
+  border-radius: 5px;
+  padding: 8px;
+  margin: 6px;
+}
+.design-viewport svg {
+  max-height: 200px;
+  width: 100%;
+}
+.design-tool-grid .studio-button {
+  min-height: 36px;
+}
+@media (max-width: 850px) {
+  .planning-entry button:last-child {
+    display: inline-block;
+  }
+  .design-tool-grid {
+    grid-template-columns: 1fr;
+  }
+  .design-diff {
+    grid-template-columns: 1fr;
+  }
+  #design-health {
+    display: none;
+  }
+  #design-presentation {
+    bottom: 80px;
+    max-width: 95vw;
+  }
+  .studio-dialog table input {
+    min-height: 40px;
+  }
+}
+
+@media (max-width: 850px) {
+  .studio-header {
+    height: 144px;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-rows: 30px 30px 30px 24px;
+    gap: 3px;
+  }
+  .studio-header > * {
+    min-width: 0;
+  }
+  .studio-header > .planning-entry {
+    grid-column: 1/-1;
+    grid-row: 2;
+    max-width: 100%;
+  }
+  .studio-header #studio-floor-tabs + button {
+    grid-column: 2;
+    grid-row: 3;
+  }
+  .studio-header > button:last-child {
+    grid-column: 3;
+    grid-row: 3;
+  }
+  .studio-header #studio-floor-tabs {
+    grid-column: 1/-1;
+    grid-row: 4;
+    max-width: 100%;
+    justify-self: end;
+  }
+  .studio-shell #main-workspace {
+    top: 144px !important;
+  }
+  .studio-catalog,
+  .studio-inspector {
+    top: 144px;
+  }
+  #planning-dock {
+    top: 151px;
+  }
+}

@@ -59,7 +59,7 @@ Autosave stores complete project snapshots in IndexedDB with a localStorage fall
 
 Export offers current/all floors, dimensions, labels, openings, schematic columns, paper and drawing scale.
 
-- **Drawing sheets / PDF** opens a print-ready window with a drawing and room schedule for each floor. Use the browser's Save as PDF and print at 100%/actual size for the chosen scale. Pick a larger paper or scale denominator if the drawing is too large. Schedules report the sum of room bounds and clear area; overlapping rooms are counted separately.
+- **Drawing sheets / PDF** opens a print-ready window with a drawing and room schedule for each floor. Use the browser's Save as PDF and print at 100%/actual size for the chosen scale. Pick a larger paper or scale denominator if the drawing is too large. Room schedules show per-room areas; quantity dashboards use union totals to avoid overlap inflation.
 - **PNG** produces standalone white-background drawings without the editor's zoom, pan, selection or CSS. All floors create one download per floor; a browser may require permission for multiple downloads.
 - **DXF** uses separate named floor layers for walls, labels, dimensions and openings, and declares inches or centimeters in `$INSUNITS`. Dimensions are text annotations, not associative AutoCAD dimension entities.
 - **GLB** exports the selected floor scope, including furniture colors and openings. The matching exporter is loaded on demand from the local bundle.
@@ -109,3 +109,9 @@ npm run test:browser
 The browser regression suite serves the repository on a temporary local port and uses the **actual bundled Three.js renderer**. Matching npm files also fulfill any legacy CDN requests. Remote texture requests use a local test image. It exercises startup, history, modal isolation, units, floors, geometry, constraints, snapshots, AI review, exports and responsive layout. It does not make paid provider requests or certify architectural/structural rules.
 
 Optional test environment variables: `BROWSER_EXECUTABLE` for an installed Chromium, `THREE_TEST_ROOT` for a matching local Three.js package, and `SCREENSHOT_PATH` for the desktop screenshot. Runtime screenshots are temporary test output and are not committed.
+
+## Additional design workflows
+
+The **Design** menu adds connected wall editing, room recognition, geometric constraints, requirements, sun/access/parking studies, finishes, tiles, composed sheets, portable ZIP/SVG/IFC files, presentations and project health tools. See [DESIGN_WORKFLOWS.md](DESIGN_WORKFLOWS.md) for every feature, verification commands and calculation limits.
+
+Cloud projects, expiring read-only reviews, anchored comments, presence and conflict recovery use the optional authenticated Node service. This backend requires separate deployment and configuration; it is not hosted by GitHub Pages. Setup is documented in the workflow guide.

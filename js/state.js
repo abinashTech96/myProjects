@@ -15,6 +15,7 @@ const ProjectState = {
     wallOverrides: {},
     constraints: [],
     planning: PlanningModel.defaults(),
+    design: DesignModel.defaults(),
     view: {},
   },
   history: {
@@ -91,6 +92,7 @@ const ProjectState = {
         "wallOverrides",
         "constraints",
         "planning",
+        "design",
         "view",
       ])
         this.meta[k] = project[k];
@@ -230,6 +232,8 @@ const ProjectState = {
         ARCH3D_CONFIG.DEFAULTS.WALL_HEIGHT = next.wallSettings.height;
       this.data.elements = next.elements;
       this.data.fixtures = next.fixtures;
+      this.meta.planning = next.planning;
+      this.meta.design = next.design;
       this.batchDepth--;
       this.saveState(action);
       if (typeof AppEvents !== "undefined") AppEvents.triggerStateChange();

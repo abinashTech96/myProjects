@@ -2,8 +2,8 @@ const fs = require("node:fs"),
   cp = require("node:child_process"),
   path = require("node:path");
 let failed = false;
-for (const dir of ["js", "ProNavBar", "api"])
-  for (const file of fs.readdirSync(dir).filter((f) => f.endsWith(".js"))) {
+for (const dir of ["js", "ProNavBar", "api", "server"])
+  for (const file of fs.readdirSync(dir).filter((f) => /\.c?js$/.test(f))) {
     const name = path.join(dir, file),
       result = cp.spawnSync(
         process.execPath,
@@ -18,7 +18,9 @@ for (const dir of ["js", "ProNavBar", "api"])
       console.error(name, result.stderr);
     }
   }
-const html = fs.readFileSync("index.html", "utf8");
+const html = ["index.html", "review.html"]
+  .map((name) => fs.readFileSync(name, "utf8"))
+  .join("\n");
 for (const match of html.matchAll(/(?:src|href)="([^"#]+)"/g)) {
   if (!/^https?:/.test(match[1]) && !fs.existsSync(match[1])) {
     failed = true;
@@ -63,3 +65,15 @@ else
   console.log(
     "Offline manifest, service worker and bundled renderer integrity passed.",
   );
+
+for (const [bundled, source] of Object.entries({
+  "vendor/geometry/polygon-clipping.js":
+    "node_modules/polygon-clipping/dist/polygon-clipping.umd.js",
+  "vendor/geometry/clipper.js": "node_modules/clipper-lib/clipper.js",
+  "vendor/fflate/fflate.js": "node_modules/fflate/umd/index.js",
+})) {
+  if (!fs.readFileSync(bundled).equals(fs.readFileSync(source))) {
+    console.error("Geometry/archive vendor mismatch:", bundled);
+    process.exitCode = 1;
+  }
+}

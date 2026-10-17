@@ -2,7 +2,11 @@ const fs = require("node:fs"),
   path = require("node:path"),
   http = require("node:http"),
   assert = require("node:assert/strict");
-const { chromium } = require("playwright");
+const engines = require("playwright");
+const browserEngine = process.env.BROWSER_ENGINE || "chromium";
+const driver = engines[browserEngine];
+if (!["chromium", "firefox", "webkit"].includes(browserEngine))
+  throw Error("Unsupported browser engine");
 (async () => {
   const root = path.resolve(__dirname, ".."),
     threeRoot =
@@ -35,17 +39,26 @@ const { chromium } = require("playwright");
     });
   });
   await new Promise((r) => server.listen(0, "127.0.0.1", r));
-  const browser = await chromium.launch({
-    executablePath: process.env.BROWSER_EXECUTABLE || undefined,
-    headless: true,
-    args: [
-      "--no-sandbox",
-      "--disable-dev-shm-usage",
-      "--enable-unsafe-swiftshader",
-      "--use-gl=angle",
-      "--use-angle=swiftshader",
-    ],
-  });
+  let browser;
+  try {
+    browser = await driver.launch({
+      executablePath: process.env.BROWSER_EXECUTABLE || undefined,
+      headless: true,
+      args:
+        browserEngine === "chromium"
+          ? [
+              "--no-sandbox",
+              "--disable-dev-shm-usage",
+              "--enable-unsafe-swiftshader",
+              "--use-gl=angle",
+              "--use-angle=swiftshader",
+            ]
+          : [],
+    });
+  } catch (error) {
+    await new Promise((r) => server.close(r));
+    throw error;
+  }
   const context = await browser.newContext({
       viewport: { width: 1440, height: 1000 },
     }),
@@ -105,6 +118,11 @@ const { chromium } = require("playwright");
       errors,
     );
     assert.equal(errors.length, 0, "Startup must have no uncaught errors");
+    if (process.env.DESIGN_ONLY) {
+      await require("./design-browser.cjs")({ page, context, assert, server });
+      assert.equal(errors.length, 0, errors.join("\n"));
+      return;
+    }
     if (process.env.PLANNING_ONLY) {
       await require("./planning-browser.cjs")({
         page,
@@ -663,6 +681,7 @@ const { chromium } = require("playwright");
       "Drop/resize/selection, section coordinates, full saves, empty floors, layout choices, dialogs and advanced 3D passed",
     );
     await require("./planning-browser.cjs")({ page, context, assert, server });
+    await require("./design-browser.cjs")({ page, context, assert, server });
     await page.screenshot({
       path: process.env.SCREENSHOT_PATH || "/tmp/archcad-desktop.png",
     });

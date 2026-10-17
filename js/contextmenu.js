@@ -64,12 +64,10 @@ const CONTEXT_MENUS = {
         { id: 'add_floor', icon: '🏢', label: 'Add New Floor' },
         { id: 'delete_floor', icon: '🗑️', label: 'Delete Current Floor', color: '#ef4444' },
         { type: 'divider' },
-        { id: 'future_plot_1', icon: '🏗️', label: 'Add Room Here (Future)' },
-        { id: 'future_plot_2', icon: '📐', label: 'Plot Settings (Future)' }
+        { id: 'plot_settings', icon: '📐', label: 'Plot & units' }
     ],
     outside: [
-        { id: 'future_outside_1', icon: '🌳', label: 'Add Landscape (Future)' },
-        { id: 'future_outside_2', icon: '🛣️', label: 'Road Settings (Future)' }
+        { id: 'plot_settings', icon: '📐', label: 'Plot & units' }
     ]
 };
 
@@ -109,7 +107,7 @@ window.handleContextMenuAction = function(actionId) {
             case 'duplicate': if (typeof cloneElement === 'function') cloneElement(selectedElIndex); break;
             case 'lock': 
                 if (typeof elements !== 'undefined' && elements[selectedElIndex]) {
-                    elements[selectedElIndex].locked = !elements[selectedElIndex].locked; 
+                    ProjectState.updateElement(selectedElIndex,{locked:!elements[selectedElIndex].locked},'Changed lock');
                     if(typeof renderSidebar === 'function') renderSidebar(); 
                 }
                 break;
@@ -124,10 +122,7 @@ window.handleContextMenuAction = function(actionId) {
             case 'add_floor': if (typeof addManualFloor === 'function') addManualFloor(); break;
             case 'delete_floor': if (typeof deleteCurrentFloor === 'function') deleteCurrentFloor(); break;
             
-            case 'future_plot_1': console.log("Future: Add Room Triggered"); break;
-            case 'future_plot_2': console.log("Future: Plot Settings Triggered"); break;
-            case 'future_outside_1': console.log("Future: Add Landscape Triggered"); break;
-            case 'future_outside_2': console.log("Future: Road Settings Triggered"); break;
+            case 'plot_settings': StudioUI.projectDialog(); break;
         }
     }
 };

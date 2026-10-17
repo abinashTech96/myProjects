@@ -23,7 +23,7 @@ function calculateGeometry(SCALE, unit) {
 }
 
 function _calcArea(elements, currentFloor) {
-    let currentFloorTotals = {};
+    let currentFloorTotals = Object.create(null);
     let currentFloorGrandTotal = 0;
     let totalBuiltUpAreaAllFloors = 0;
 
@@ -40,7 +40,7 @@ function _calcArea(elements, currentFloor) {
     });
     
     const sortedRooms = Object.keys(currentFloorTotals).sort((a, b) => currentFloorTotals[b] - currentFloorTotals[a]);
-    let sortedTotals = {};
+    let sortedTotals = Object.create(null);
     sortedRooms.forEach(room => sortedTotals[room] = currentFloorTotals[room]);
 
     return { currentFloorTotals: sortedTotals, currentFloorGrandTotal, totalBuiltUpAreaAllFloors };

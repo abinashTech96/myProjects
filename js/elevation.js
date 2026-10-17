@@ -34,21 +34,24 @@ function getSectionPos(evt) {
     const svg = document.getElementById('blueprint');
     const pt = svg.createSVGPoint();
     pt.x = evt.clientX; pt.y = evt.clientY;
-    return pt.matrixTransform(svg.getScreenCTM().inverse());
+    const p = pt.matrixTransform(document.getElementById('element-container').getScreenCTM().inverse());
+    const {SCALE,I}=Utils.getMetrics();
+    return {x:(p.x-I.x)/SCALE,y:(p.y-I.y)/SCALE};
 }
 function onSectionDown(e) {
     if (!isSectionMode) return;
     sectionStart = getSectionPos(e);
     
     sectionLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
-    sectionLine.setAttribute("x1", sectionStart.x);
-    sectionLine.setAttribute("y1", sectionStart.y);
-    sectionLine.setAttribute("x2", sectionStart.x);
-    sectionLine.setAttribute("y2", sectionStart.y);
+    const {SCALE,I}=Utils.getMetrics();
+    sectionLine.setAttribute("x1", I.x+sectionStart.x*SCALE);
+    sectionLine.setAttribute("y1", I.y+sectionStart.y*SCALE);
+    sectionLine.setAttribute("x2", I.x+sectionStart.x*SCALE);
+    sectionLine.setAttribute("y2", I.y+sectionStart.y*SCALE);
     sectionLine.setAttribute("stroke", "#ef4444");
     sectionLine.setAttribute("stroke-width", "4");
     sectionLine.setAttribute("stroke-dasharray", "10,10");
-    document.getElementById('blueprint').appendChild(sectionLine);
+    document.getElementById('viewport').appendChild(sectionLine);
 }
 function onSectionMove(e) {
     if (!isSectionMode || !sectionStart || !sectionLine) return;
@@ -63,8 +66,9 @@ function onSectionMove(e) {
     if (dx < tol || (e.shiftKey && dx < dy)) pt.x = sectionStart.x;
     if (dy < tol || (e.shiftKey && dy < dx)) pt.y = sectionStart.y;
     
-    sectionLine.setAttribute("x2", pt.x);
-    sectionLine.setAttribute("y2", pt.y);
+    const {SCALE,I}=Utils.getMetrics();
+    sectionLine.setAttribute("x2", I.x+pt.x*SCALE);
+    sectionLine.setAttribute("y2", I.y+pt.y*SCALE);
 }
 function onSectionUp(e) {
     if (!isSectionMode || !sectionStart) return;
@@ -73,7 +77,9 @@ function onSectionUp(e) {
     // Process the cut if line is long enough
     const dist = Math.hypot(pt.x - sectionStart.x, pt.y - sectionStart.y);
     if (dist > 20) {
-        generateElevation(sectionStart.x, sectionStart.y, pt.x, pt.y, dist);
+        const SCALE=Utils.getMetrics().SCALE;
+        const end=sectionLine ? {x:(Number(sectionLine.getAttribute('x2'))-Utils.getMetrics().I.x)/SCALE,y:(Number(sectionLine.getAttribute('y2'))-Utils.getMetrics().I.y)/SCALE} : pt;
+        generateElevation(sectionStart.x, sectionStart.y, end.x, end.y, Math.hypot(end.x-sectionStart.x,end.y-sectionStart.y));
     }
     
     toggleSectionCut(); // Turn tool off after one cut

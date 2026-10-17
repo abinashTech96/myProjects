@@ -13,7 +13,11 @@ let isMeasuringMode = false, measureStart = null, tempMeasureLine = null, measur
 // DRAGGING LOGIC
 // -----------------------------------------
 function startDrag(evt, index) {
-    if (UI.isSpacePanMode || evt.button === 1 || evt.shiftKey) return; 
+    if (UI.isSpacePanMode || evt.button === 1) return;
+    if (typeof Selection !== 'undefined') {
+        if(evt.ctrlKey||evt.metaKey){Selection.toggle(index);return;}
+        Selection.pick(index);
+    }
     selectedElIndex = index;
     if(typeof renderSidebar === 'function') renderSidebar();
     updateCanvas(); 
@@ -22,9 +26,10 @@ function startDrag(evt, index) {
     isDragging = true; dragElIndex = index; hasDragged = false; 
     startMousePos = getMousePos(evt);
     startElPos = { x: elements[index].x, y: elements[index].y };
+    if(typeof Selection !== 'undefined')Selection.beginDrag();
 
     cachedSnapBoundaries = elements.map((other, i) => {
-        if (i === index || other.floor !== elements[index].floor) return null;
+        if (i === index || other.floor !== elements[index].floor || (typeof Selection!=='undefined'&&Selection.ids.has(other.id))) return null;
         return {
             left: other.x, right: other.x + other.w, center: other.x + (other.w / 2),
             top: other.y, bottom: other.y + other.h, middle: other.y + (other.h / 2)
@@ -51,7 +56,7 @@ const handleMove = (currentMouse, e) => {
             const el = elements[fix.roomId];
             const inW = toInches(UI.inW.value, UI.unitSelect.value);
             const inH = toInches(UI.inH.value, UI.unitSelect.value);
-            const Ix = 500 - (inW / 2); const Iy = 500 - (inH / 2);
+            const Ix = 500 - (inW * SCALE / 2); const Iy = 500 - (inH * SCALE / 2);
 
             const relX = (currentMouse.x - (Ix + el.x * SCALE)) / SCALE;
             const relY = (currentMouse.y - (Iy + el.y * SCALE)) / SCALE;
@@ -106,14 +111,16 @@ const handleMove = (currentMouse, e) => {
             if (!snappedX) newX = CanvasControlsEngine.applyGridSnap(newX, window.CanvasState.zoomLvl);
             if (!snappedY) newY = CanvasControlsEngine.applyGridSnap(newY, window.CanvasState.zoomLvl);
             
-            newX = Math.max(0, Math.min(newX, inW - el.w));
-            newY = Math.max(0, Math.min(newY, inH - el.h));
+            const footprint=typeof Selection!=='undefined'?Selection.bounds(el):el;
+            newX = Math.max(0, Math.min(newX, inW - footprint.w));
+            newY = Math.max(0, Math.min(newY, inH - footprint.h));
 
-            el.x = newX; el.y = newY;
+            if(typeof Selection !== 'undefined' && Selection.ids.size>1)Selection.dragTo(dragElIndex,newX,newY);
+            else { el.x = newX; el.y = newY; }
             if (el.type === 'staircase') syncStaircases(dragElIndex);
-            if (typeof applySmartSnap === 'function') applySmartSnap(el, dragElIndex);
+            if (typeof applySmartSnap === 'function' && (typeof Selection==='undefined'||Selection.ids.size<=1)) applySmartSnap(el, dragElIndex);
             
-            if (typeof fastUpdateDrag === 'function') {
+            if (typeof fastUpdateDrag === 'function' && (typeof Selection==='undefined'||Selection.ids.size<=1)) {
                 fastUpdateDrag(dragElIndex);
             } else {
                 updateCanvas(); 
@@ -196,7 +203,10 @@ function initInteractions() {
         }
     }, {passive: false});
     window.endDrag = (e) => {
-        if (hasDragged && typeof saveState === 'function') saveState();
+        if (hasDragged && typeof saveState === 'function') {
+            if(typeof StudioUI!=='undefined')StudioUI.finishDrag();
+            else saveState('Moved elements');
+        }
         UI.isSpacePanning = false; 
         if (UI.isSpacePanMode && UI.blueprint) UI.blueprint.style.cursor = 'grab'; 
         isDragging = false; dragFixtureIndex = -1; isDraggingFixture = false; dragElIndex = -1;
@@ -228,7 +238,7 @@ function initInteractions() {
                 
                 const txt = document.createElementNS("http://www.w3.org/2000/svg", "text");
                 txt.setAttribute('x', measureStart.x + dx/2); txt.setAttribute('y', measureStart.y + dy/2 - 10);
-                txt.setAttribute('class', 'measure-text'); txt.textContent = `${ft}' ${inc}"`;
+                txt.setAttribute('class', 'measure-text'); txt.textContent = formatLength(distInches);
                 measureGroup.appendChild(txt); measureStart = null; 
             }
             return;
@@ -381,7 +391,7 @@ function syncStaircases(sourceIndex) {
     const source = elements[sourceIndex];
     if (!source || source.type !== 'staircase') return;
     elements.forEach((el, index) => {
-        if (el.type === 'staircase' && index !== sourceIndex) {
+        if (el.type === 'staircase' && index !== sourceIndex && el.floor !== source.floor && el.stackId === source.stackId) {
             el.x = source.x; el.y = source.y; el.w = source.w; el.h = source.h; el.dir = source.dir;
         }
     });

@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!Engine3D.scene) Engine3D.init();
         if (typeof generate3DModel === 'function') generate3DModel();
         if (typeof setWorkspaceLayout === 'function') {
-            setWorkspaceLayout('2d'); 
+            setWorkspaceLayout(ProjectState.meta.view.mode || 'split');
         }
     }, 300);
     const real3DToggle = document.getElementById('real3DToggle');

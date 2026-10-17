@@ -203,48 +203,13 @@ const DragDropEngine = {
     },
 
     handleDrop: function(data, clientX, clientY) {
-        const svg = document.getElementById('blueprint');
-        const container = document.getElementById('element-container') || svg; 
-        
-        const pt = svg.createSVGPoint();
-        pt.x = clientX;
-        pt.y = clientY;
-        const svgP = pt.matrixTransform(container.getScreenCTM().inverse());
-        
-        let offsetX = 0; let offsetY = 0;
-        let maxW = 5000; let maxH = 5000;
-
-        if (typeof calculateGeometry === 'function') {
-            const unit = document.getElementById('unitSelect') ? document.getElementById('unitSelect').value : 'in';
-            const SCALE = parseFloat(document.getElementById('scaleInput') ? document.getElementById('scaleInput').value : 1.2) || 1.2;
-            const geom = calculateGeometry(SCALE, unit);
-            if (geom && geom.I) {
-                offsetX = geom.I.x; offsetY = geom.I.y;    
-                maxW = geom.inW || maxW; maxH = geom.inH || maxH;
-            }
-        }
-
-        let relativeX = svgP.x - offsetX;
-        let relativeY = svgP.y - offsetY;
-        const currentFloor = typeof window.currentFloor !== 'undefined' ? window.currentFloor : 0;
-        
-        const w = data.w; const h = data.h;
-
-        const newElement = {
-            id: `${data.category}_${Date.now()}`,
-            type: data.type,
-            x: Math.max(0, Math.min(Math.round(relativeX - (w/2)), maxW - w)),
-            y: Math.max(0, Math.min(Math.round(relativeY - (h/2)), maxH - h)),
-            w: w, h: h, floor: currentFloor,
-            ...(data.category === 'furniture' && { rotation: 0, isFurniture: true })
-        };
-        
-        if (typeof window.elements !== 'undefined') window.elements.push(newElement);
-
-        if (typeof updateCanvas === 'function') updateCanvas();
-        if (typeof ProjectState !== 'undefined' && typeof ProjectState.save === 'function') ProjectState.save();
-        else if (typeof saveState === 'function') saveState(); 
+        if(!ASSET_CATALOGS[data.category]?.items.some(item=>item.type===data.type))return;
+        const item=ASSET_CATALOGS[data.category].items.find(item=>item.type===data.type);
+        const svg=document.getElementById('blueprint'),pt=svg.createSVGPoint();pt.x=clientX;pt.y=clientY;
+        const p=pt.matrixTransform(document.getElementById('element-container').getScreenCTM().inverse());
+        const {SCALE,I,inW,inH}=Utils.getMetrics(),w=item.w,h=item.h;
+        if(w>inW/SCALE||h>inH/SCALE)return StudioUI.message('This asset is larger than the plot.','error');
+        ProjectState.commit('Placed '+item.label,()=>{elements.push({id:ProjectModel.uid(),type:item.type,x:Math.max(0,Math.min((p.x-I.x)/SCALE-w/2,inW/SCALE-w)),y:Math.max(0,Math.min((p.y-I.y)/SCALE-h/2,inH/SCALE-h)),w,h,floor:currentFloor,isFurniture:data.category==='furniture',rot:0});selectedElIndex=elements.length-1;});
     }
 };
-
 document.addEventListener('DOMContentLoaded', () => DragDropEngine.init());

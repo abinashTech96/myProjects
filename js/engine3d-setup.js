@@ -48,6 +48,7 @@ window.Engine3D = {
         this.controls.enableDamping = true; 
         this.controls.dampingFactor = 0.05;
         this.controls.target.set(500, 0, 500);
+        this.controls.addEventListener('change',()=>{this.needsRender=true});
         //this.controls.maxPolarAngle = Math.PI / 2 - 0.05; // <-- This was the restriction for 360deg vertically
         this.controls.maxPolarAngle = Math.PI; // Allows going completely underneath
 
@@ -148,30 +149,22 @@ window.Engine3D = {
                 // X Collision
                 controlObj.translateX(velocity.x * delta);
                 let hitX = false;
-                let camBoxX = new THREE.Box3().setFromCenterAndSize(controlObj.position, new THREE.Vector3(HITBOX_RADIUS, 60, HITBOX_RADIUS));
+                let camBoxX = new THREE.Box3().setFromCenterAndSize(new THREE.Vector3(controlObj.position.x,controlObj.position.y-25*SCALE,controlObj.position.z), new THREE.Vector3(HITBOX_RADIUS, 60*SCALE, HITBOX_RADIUS));
                 
-                if (this.buildingGroup) {
-                    for (let mesh of this.buildingGroup.children) {
-                        if (mesh.geometry && mesh.geometry.type === 'BoxGeometry' && mesh.position.y > 10) {
-                            if (camBoxX.intersectsBox(new THREE.Box3().setFromObject(mesh))) { hitX = true; break; }
-                        }
-                    }
-                }
+                if (this.buildingGroup) this.buildingGroup.traverse(mesh=>{
+                    if(mesh.isMesh&&mesh.userData.isWall&&camBoxX.intersectsBox(new THREE.Box3().setFromObject(mesh)))hitX=true;
+                });
                 if (hitX) { controlObj.position.x = originalPos.x; velocity.x = 0; }
 
                 // Z Collision
                 originalPos.copy(controlObj.position); 
                 controlObj.translateZ(velocity.z * delta);
                 let hitZ = false;
-                let camBoxZ = new THREE.Box3().setFromCenterAndSize(controlObj.position, new THREE.Vector3(HITBOX_RADIUS, 60, HITBOX_RADIUS));
+                let camBoxZ = new THREE.Box3().setFromCenterAndSize(new THREE.Vector3(controlObj.position.x,controlObj.position.y-25*SCALE,controlObj.position.z), new THREE.Vector3(HITBOX_RADIUS, 60*SCALE, HITBOX_RADIUS));
 
-                if (this.buildingGroup) {
-                    for (let mesh of this.buildingGroup.children) {
-                        if (mesh.geometry && mesh.geometry.type === 'BoxGeometry' && mesh.position.y > 10) {
-                            if (camBoxZ.intersectsBox(new THREE.Box3().setFromObject(mesh))) { hitZ = true; break; }
-                        }
-                    }
-                }
+                if (this.buildingGroup) this.buildingGroup.traverse(mesh=>{
+                    if(mesh.isMesh&&mesh.userData.isWall&&camBoxZ.intersectsBox(new THREE.Box3().setFromObject(mesh)))hitZ=true;
+                });
                 if (hitZ) { controlObj.position.z = originalPos.z; velocity.z = 0; }
 
                 // Y Movement (Flying constraints)
@@ -184,7 +177,9 @@ window.Engine3D = {
                 this.controls.update(); 
             }
             
-            this.renderer.render(this.scene, this.camera);
+            if(this.isWalkthrough || window.isPlayingTour || this.controls.autoRotate || this.needsRender) {
+                this.renderer.render(this.scene, this.camera); this.needsRender=false;
+            }
             prevTime = time;
         };
         animate();
@@ -192,13 +187,13 @@ window.Engine3D = {
 
     setupResizeObserver(container) {
         const resizeObserver = new ResizeObserver(entries => {
-            if (!window.is3DMode || !this.camera || !this.renderer) return;
+            if (!this.camera || !this.renderer) return;
             for (let entry of entries) {
                 const { width, height } = entry.contentRect;
                 if (width > 0 && height > 0) {
                     this.camera.aspect = width / height;
                     this.camera.updateProjectionMatrix();
-                    this.renderer.setSize(width, height, false);
+                    this.renderer.setSize(width, height, false);this.needsRender=true;
                 }
             }
         });

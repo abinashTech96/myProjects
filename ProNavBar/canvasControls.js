@@ -69,8 +69,9 @@ const CanvasControlsEngine = {
         const addDim = (x1, y1, x2, y2, v, label, isVert) => {
             if (v <= 0) return;
             const cx = (x1 + x2) / 2; const cy = (y1 + y2) / 2;
+            v /= SCALE;
             const ft = Math.floor(v / 12); const inch = Math.round(v % 12);
-            const text = ft > 0 ? `${ft}'${inch}"` : `${inch}"`;
+            const text = formatLength(v);
             
             const line = getOrCreateSVG('line', `offset-line-${displayIdx}`, siteOffsetsLayer);
             line.setAttribute('x1', x1); line.setAttribute('y1', y1); line.setAttribute('x2', x2); line.setAttribute('y2', y2);
@@ -193,7 +194,7 @@ const CanvasControlsEngine = {
             textWidth.setAttribute('x', rx + w/2); textWidth.setAttribute('y', ry - 15);
             textWidth.setAttribute('fill', '#38bdf8'); textWidth.setAttribute('font-size', '10');
             textWidth.setAttribute('text-anchor', 'middle');
-            textWidth.textContent = `${Math.floor(el.w/12)}'${Math.round(el.w%12)}"`;
+            textWidth.textContent = formatLength(el.w);
 
             const lineLeft = getOrCreateSVG('line', `dim-auto-lline-${displayIdx}`, dimGroup);
             lineLeft.setAttribute('x1', rx - 10); lineLeft.setAttribute('y1', ry);
@@ -204,7 +205,7 @@ const CanvasControlsEngine = {
             textHeight.setAttribute('x', rx - 15); textHeight.setAttribute('y', ry + h/2);
             textHeight.setAttribute('fill', '#38bdf8'); textHeight.setAttribute('font-size', '10');
             textHeight.setAttribute('text-anchor', 'end'); textHeight.setAttribute('alignment-baseline', 'middle'); 
-            textHeight.textContent = `${Math.floor(el.h/12)}'${Math.round(el.h%12)}"`;
+            textHeight.textContent = formatLength(el.h);
             
             displayIdx++;
         });
@@ -243,7 +244,7 @@ const CanvasControlsEngine = {
                 if(node) node.style.display = 'none'; 
             });
         } else {
-            const dimsText = `${Math.floor(el.w/12)}'${Math.round(el.w%12)}" × ${Math.floor(el.h/12)}'${Math.round(el.h%12)}"`;
+            const dimsText = `${formatLength(el.w)} × ${formatLength(el.h)}`;
             const areaText = `${((el.w * el.h)/144).toFixed(1)} sq.ft`;
             
             // Relies on the createOrUpdateText helper from renderer2d

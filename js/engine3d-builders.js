@@ -16,7 +16,8 @@ function getCachedSolidMaterial(hexColor, opacity) {
 }
 
 function generate3DModel() {
-    if (!Engine3D || !Engine3D.scene) return; 
+    if (!Engine3D || !Engine3D.scene) return;
+    Engine3D.needsRender=true;
 
     const useReal3D = CanvasControlsEngine.isReal3D();
     if (!Engine3D.buildingGroup) {
@@ -295,7 +296,7 @@ function buildStandardRoom(el, center, WALL_HEIGHT, useReal3D, isColliding, SCAL
 
     if (useReal3D && !isColliding) {
         // Create the high-definition textured material directly
-        const texType = getTextureForRoom(el.type);
+        const texType = getTextureForRoom(el);
         const roomTex = getProceduralTexture(texType).clone();
         roomTex.repeat.set(width / 60, depth / 60);
         roomTex.needsUpdate = true;
@@ -329,7 +330,7 @@ function buildStandardRoom(el, center, WALL_HEIGHT, useReal3D, isColliding, SCAL
 }
 
 function build3DSlabs(SCALE, I, WALL_HEIGHT, useReal3D) {
-    const floors = elements.map(e => e.floor);
+    const floors = [...elements.map(e => e.floor), Number(document.getElementById('b-floors')?.value || 1)-1];
     const maxFloor = floors.length > 0 ? Math.max(...floors) : 0;
     
     // 🌟 REFACTORED: Get dimensions and center points from helper
@@ -351,7 +352,7 @@ function build3DSlabs(SCALE, I, WALL_HEIGHT, useReal3D) {
             if (el.type === 'staircase') {
                 // ✨ ENHANCEMENT: Cut hole if staircase is on the floor exactly below, 
                 // OR if cutAllFloors is true and the staircase originates below this slab
-                if (el.floor === f - 1 || (el.cutAllFloors && el.floor < f)) {
+                if (el.floor === f || (el.cutAllFloors && el.floor <= f)) {
                     const hole = new THREE.Path();
                     // Map 2D coordinates to 3D center-origin coords
                     const hx = (el.x * SCALE) - (inW/2);
@@ -391,7 +392,7 @@ function build3DSlabs(SCALE, I, WALL_HEIGHT, useReal3D) {
         slab.castShadow = true; 
         slab.receiveShadow = true;
         
-        slab.position.set(CX, slabY, CY); 
+        slab.position.set(CX, slabY, CY);slab.userData={isSlab:true,floor:f};
         // 🌟 FIXED GHOST VARIABLE:
         Engine3D.buildingGroup.add(slab);
     }
@@ -418,11 +419,11 @@ function build3DFixtures(SCALE, I, WALL_HEIGHT, useReal3D) {
 
     fixtures.forEach(fix => {
         const el = elements[fix.roomId];
-        if (!el || el.floor !== currentFloor) return;
+        if (!el) return;
 
         const isDoor = fix.type === 'door';
         const width = fix.size * SCALE;
-        const height = isDoor ? (80 * SCALE) : (40 * SCALE);
+        const height = (fix.height ?? (isDoor ? 80 : 40)) * SCALE;
         const depth = 8 * SCALE; 
         const ft = 3 * SCALE; 
         
@@ -466,7 +467,7 @@ function build3DFixtures(SCALE, I, WALL_HEIGHT, useReal3D) {
         }
 
         // Global positioning
-        const yPos = (el.floor * WALL_HEIGHT) + (height / 2) + (isDoor ? 0 : 40 * SCALE);
+        const yPos = (el.floor * WALL_HEIGHT) + (height / 2) + (fix.sill ?? (isDoor ? 0 : 40)) * SCALE;
         let xPos = I.x + (el.x * SCALE);
         let zPos = I.z + (el.y * SCALE);
 
@@ -475,6 +476,7 @@ function build3DFixtures(SCALE, I, WALL_HEIGHT, useReal3D) {
         else if (fix.edge === 'left') { xPos = I.x + (el.x * SCALE); zPos = I.z + (el.y + fix.offset) * SCALE; }
         else if (fix.edge === 'right') { xPos = I.x + (el.x + el.w) * SCALE; zPos = I.z + (el.y + fix.offset) * SCALE; }
 
+        if(isHoriz)xPos += width/2; else zPos += width/2;
         dummyGroup.position.set(xPos, yPos, zPos);
         dummyGroup.updateMatrixWorld(true);
 
@@ -482,6 +484,8 @@ function build3DFixtures(SCALE, I, WALL_HEIGHT, useReal3D) {
         dummyGroup.children.forEach(child => {
             const geom = child.geometry.clone();
             geom.applyMatrix4(child.matrixWorld); // Converts local position to global!
+            child.geometry.dispose();
+            if(child.material)child.material.dispose();
             
             if (child.userData.matType === 'glass') glassGeoms.push(geom);
             else if (child.userData.matType === 'wood') woodGeoms.push(geom);
@@ -495,18 +499,18 @@ function build3DFixtures(SCALE, I, WALL_HEIGHT, useReal3D) {
         const merged = THREE.BufferGeometryUtils.mergeBufferGeometries(frameGeoms);
         const mesh = new THREE.Mesh(merged, frameMat);
         mesh.castShadow = true; mesh.receiveShadow = true;
-        Engine3D.buildingGroup.add(mesh);
+        Engine3D.buildingGroup.add(mesh); frameGeoms.forEach(g=>g.dispose());
     }
     if (woodGeoms.length) {
         const merged = THREE.BufferGeometryUtils.mergeBufferGeometries(woodGeoms);
         const mesh = new THREE.Mesh(merged, woodMat);
         mesh.castShadow = true; mesh.receiveShadow = true;
-        Engine3D.buildingGroup.add(mesh);
+        Engine3D.buildingGroup.add(mesh); woodGeoms.forEach(g=>g.dispose());
     }
     if (glassGeoms.length) {
         const merged = THREE.BufferGeometryUtils.mergeBufferGeometries(glassGeoms);
         const mesh = new THREE.Mesh(merged, glassMat);
-        Engine3D.buildingGroup.add(mesh);
+        Engine3D.buildingGroup.add(mesh); glassGeoms.forEach(g=>g.dispose());
     }
 }
 
@@ -685,34 +689,17 @@ function createUShapedGroup(run, height, extWidth, material) {
 // 🧹 UPGRADED ENGINE OPTIMIZATION: MEMORY CLEANUP
 // ==========================================
 function disposeScene() {
-    // 🌟 FIXED GHOST VARIABLE:
-    if (!Engine3D || !Engine3D.buildingGroup) return;
-    
-    Engine3D.buildingGroup.traverse((child) => {
-        if (child.isMesh) {
-            // 1. Destroy Geometry
-            if (child.geometry) child.geometry.dispose();
-            
-            // 2. Destroy Materials AND Textures
-            if (child.material) {
-                if (Array.isArray(child.material)) {
-                    child.material.forEach(mat => {
-                        if (mat.map) mat.map.dispose(); // Delete Texture
-                        mat.dispose(); // Delete Material
-                    });
-                } else {
-                    if (child.material.map) child.material.map.dispose(); // Delete Texture
-                    child.material.dispose(); // Delete Material
-                }
-            }
+    if(!Engine3D?.buildingGroup)return;
+    const shared=new Set([...Object.values(SOLID_MAT_CACHE),...Object.values(FurnitureFactory.mats)]),disposed=new Set();
+    Engine3D.buildingGroup.traverse(child=>{
+        if(child.geometry&&!disposed.has(child.geometry)){child.geometry.dispose();disposed.add(child.geometry)}
+        for(const mat of child.material?(Array.isArray(child.material)?child.material:[child.material]):[]){
+            if(shared.has(mat)||disposed.has(mat))continue;
+            if(mat.map&&!Object.values(textureCache).includes(mat.map)&&!disposed.has(mat.map)){mat.map.dispose();disposed.add(mat.map)}mat.dispose();disposed.add(mat);
         }
     });
-    
     Engine3D.buildingGroup.clear();
-    // 🧹 MEMORY LEAK FIX: Explicitly clear the global procedural texture cache
-    if (typeof clearTextureCache === 'function') {
-        clearTextureCache();
-    }
+    if(typeof Adv3DState!=='undefined')Adv3DState.originalMaterials.clear();
 }
 
 function update3DTransforms() {
@@ -740,7 +727,7 @@ function update3DTransforms() {
 // =========================================
 function createFurniture3D(type, w, d, customHexColor = null) { // 🛠️ NEW: Accept custom hex
     const group = new THREE.Group();
-    const mat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.9 });
+
 
     const builderMap = {
         'bed': FurnitureFactory.buildBed,
@@ -779,6 +766,7 @@ function createFurniture3D(type, w, d, customHexColor = null) { // 🛠️ NEW: 
             }
         });
     }
+    if(!group.children.length){const fallback=new THREE.Mesh(new THREE.BoxGeometry(w,24,d),getCachedSolidMaterial(customHexColor??0x94a3b8,1));fallback.position.y=12;group.add(fallback);}
     return group;
 }
 

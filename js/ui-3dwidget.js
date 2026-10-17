@@ -142,6 +142,7 @@ const Widget3DEngine = {
 
     // 🌟 CENTRALIZED ACTION DISPATCHER
     handleAction: function(actionType, payload = null) {
+        Engine3D.needsRender=true;
         if (actionType === WIDGET_3D_CONFIG.PRESENTATION.buttons.set.actionType) this.captureWaypoint();
         else if (actionType === WIDGET_3D_CONFIG.PRESENTATION.buttons.play.actionType) this.playCinematicTour();
         else if (actionType === WIDGET_3D_CONFIG.PRESENTATION.buttons.clear.actionType) this.clearTour();
@@ -293,7 +294,7 @@ const Widget3DEngine = {
     
         Engine3D.buildingGroup.children.forEach(child => {
             if (child.userData.originalY === undefined) child.userData.originalY = child.position.y;
-            const floorLevel = Math.floor((child.userData.originalY + 5) / WALL_HEIGHT);
+            const floorLevel = child.userData.floor ?? Math.floor((child.userData.originalY + 5) / (WALL_HEIGHT*Utils.getMetrics().SCALE));
             const targetFloor = Math.max(0, floorLevel);
             child.userData.targetY = this.isExploded ? child.userData.originalY + (targetFloor * OFFSET_PER_FLOOR) : child.userData.originalY;
         });
@@ -301,6 +302,7 @@ const Widget3DEngine = {
         if (this._explodeAnimation) cancelAnimationFrame(this._explodeAnimation);
     
         const animateExplode = () => {
+            Engine3D.needsRender=true;
             let allArrived = true;
             Engine3D.buildingGroup.children.forEach(child => {
                 const diff = child.userData.targetY - child.position.y;
@@ -319,11 +321,13 @@ const Widget3DEngine = {
     },
 
     captureWaypoint: function() {
+        if(window.tourWaypoints.length>=100)return StudioUI.message('A tour supports up to 100 waypoints.','error');
         if (!window.Engine3D || !Engine3D.camera || !Engine3D.controls) return;
         window.tourWaypoints.push({
             position: { x: Engine3D.camera.position.x, y: Engine3D.camera.position.y, z: Engine3D.camera.position.z },
             target: { x: Engine3D.controls.target.x, y: Engine3D.controls.target.y, z: Engine3D.controls.target.z }
         });
+        ProjectState.saveState('Changed camera tour');
         const wpCount = document.getElementById(WIDGET_3D_CONFIG.PRESENTATION.buttons.set.countId);
         if (wpCount) {
             wpCount.innerText = window.tourWaypoints.length;
@@ -336,6 +340,7 @@ const Widget3DEngine = {
         window.tourWaypoints = [];
         window.isPlayingTour = false;
         if (window.tourAnimationId) cancelAnimationFrame(window.tourAnimationId);
+        ProjectState.saveState('Changed camera tour');
         const wpCount = document.getElementById(WIDGET_3D_CONFIG.PRESENTATION.buttons.set.countId);
         if (wpCount) wpCount.innerText = "0";
     },

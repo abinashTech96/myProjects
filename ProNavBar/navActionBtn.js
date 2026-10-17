@@ -80,17 +80,6 @@ const SETTINGS_CONFIG = [
         ]
     },
     {
-        id: 'demo-section',
-        icon: '🧪',
-        title: 'DEMO FEATURES',
-        open: false,
-        animation: 'blastAndSparkleHotFlash',
-        items: [
-            { type: 'toggle', id: 'demo-toggle-1', label: '🚀 Future Feature A', checked: false, action: "console.log('Feature A toggled')" },
-            { type: 'toggle', id: 'demo-toggle-2', label: '🔮 Future Feature B', checked: false, action: "console.log('Feature B toggled')" }
-        ]
-    },
-    {
         id: 'canvas-controls',
         icon: '🎨',
         title: 'CANVAS CONTROLS',

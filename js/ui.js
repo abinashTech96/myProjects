@@ -447,6 +447,7 @@ function renderFloorSelectors() {
     let count = parseInt(document.getElementById('b-floors')?.value || 1);
     if (count < 1 || isNaN(count)) count = 1;
 
+    if(!ProjectState.applying)document.querySelectorAll('#floor-layout-selectors select').forEach(el=>{ ProjectState.meta.layouts[el.id]=el.value; });
     const container = document.getElementById('floor-layout-selectors');
     if (container) {
         container.innerHTML = '';
@@ -456,10 +457,10 @@ function renderFloorSelectors() {
                 <div class="field">
                     <label>${fName} Floor Layout:</label>
                     <select id="layout-f${i}" class="modern-select">
-                        <option value="none">Empty / Open Terrace</option>
-                        <option value="1bhk">1 BHK</option>
-                        <option value="2bhk" ${i === 0 ? 'selected' : ''}>2 BHK</option>
-                        <option value="3bhk">3 BHK</option>
+                        <option value="none" ${ProjectState.meta.layouts[`layout-f${i}`]==='none'?'selected':''}>Empty / Open Terrace</option>
+                        <option value="1bhk" ${ProjectState.meta.layouts[`layout-f${i}`]==='1bhk'?'selected':''}>1 BHK</option>
+                        <option value="2bhk" ${(ProjectState.meta.layouts[`layout-f${i}`] || (i===0?'2bhk':'none'))==='2bhk'?'selected':''}>2 BHK</option>
+                        <option value="3bhk" ${ProjectState.meta.layouts[`layout-f${i}`]==='3bhk'?'selected':''}>3 BHK</option>
                     </select>
                 </div>`;
         }
@@ -495,84 +496,7 @@ document.addEventListener('click', () => {
 // =========================================
 // PRO ANIMATED DROPDOWNS ENGINE
 // =========================================
-function initAnimatedDropdowns() {
-    const selects = document.querySelectorAll('select:not([data-customized])');
-    
-    selects.forEach(select => {
-        select.style.display = 'none';
-        select.setAttribute('data-customized', 'true');
-        
-        const wrapper = document.createElement('div');
-        wrapper.className = 'pro-dropdown-wrapper';
-        select.parentNode.insertBefore(wrapper, select);
-        wrapper.appendChild(select); 
-        
-        const header = document.createElement('div');
-        header.className = 'pro-dropdown-header';
-        
-        const selectedText = document.createElement('span');
-        selectedText.className = 'pro-dropdown-value';
-        selectedText.textContent = select.options[select.selectedIndex]?.text || '';
-        
-        const arrow = document.createElement('span');
-        arrow.className = 'pro-dropdown-arrow';
-        arrow.textContent = '▼';
-        
-        header.appendChild(selectedText);
-        header.appendChild(arrow);
-        wrapper.appendChild(header);
-        
-        const list = document.createElement('div');
-        list.className = 'pro-dropdown-list';
-        list.style.maxHeight = '300px'; 
-        list.style.overflowY = 'auto';  
-        
-        const createOptionItem = (option) => {
-            const item = document.createElement('div');
-            item.className = 'pro-dropdown-item';
-            const index = Array.from(select.options).indexOf(option);
-            
-            if (index === select.selectedIndex) item.classList.add('selected');
-            item.textContent = option.text;
-            
-            item.addEventListener('click', (e) => {
-                e.stopPropagation();
-                select.selectedIndex = index;
-                selectedText.textContent = option.text;
-                select.dispatchEvent(new Event('change')); 
-                
-                list.querySelectorAll('.pro-dropdown-item').forEach(el => el.classList.remove('selected'));
-                item.classList.add('selected');
-                wrapper.classList.remove('open');
-            });
-            list.appendChild(item);
-        };
-
-        Array.from(select.children).forEach(child => {
-            if (child.tagName === 'OPTGROUP') {
-                const groupLabel = document.createElement('div');
-                groupLabel.className = 'pro-dropdown-group';
-                groupLabel.textContent = child.label;
-                groupLabel.style.cssText = 'font-size: 0.65rem; color: #38bdf8; padding: 10px 12px 4px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; background: rgba(0,0,0,0.5); pointer-events: none;';
-                list.appendChild(groupLabel);
-                
-                Array.from(child.children).forEach(option => createOptionItem(option));
-            } else if (child.tagName === 'OPTION') {
-                createOptionItem(child);
-            }
-        });
-        
-        wrapper.appendChild(list);
-        
-        header.addEventListener('click', (e) => {
-            e.stopPropagation();
-            document.querySelectorAll('.pro-dropdown-wrapper').forEach(w => {
-                if (w !== wrapper) w.classList.remove('open');
-            });
-            wrapper.classList.toggle('open');
-        });
-    });
-}
+function initAnimatedDropdowns() { /* Native selects preserve keyboard, touch and focus behavior. */ }
 
 // =========================================
 // 🌟 SPLIT SCREEN RESIZER ENGINE
@@ -712,7 +636,7 @@ window.switchDrawerTab = function(event, tabId) {
     const targetPanel = document.getElementById(`drawer-tab-${tabId}`);
     const contentContainer = document.querySelector('.drawer-tabs-content');
     if (!targetPanel || !contentContainer) return;
-    const isAlreadyActive = clickedBtn.classList.contains('active');
+    const isAlreadyActive = false;
     document.querySelectorAll('.drawer-tab-btn').forEach(btn => btn.classList.remove('active'));
     document.querySelectorAll('.drawer-tab-panel').forEach(panel => panel.classList.remove('active'));
     if (isAlreadyActive) {

@@ -70,3 +70,8 @@ Stair fit checks now include tread-height samples against entered ceilings and s
 Project library, templates, workspace preferences and versions are stored on the current browser/device. Download project JSON for portable backups. Underlays are embedded in project files and increase their size. Optional remote textures and configured AI services still require a network connection; core editing and exports work offline after the cache is installed.
 
 Additional design, documentation, interoperability and optional collaboration workflows are mapped in [DESIGN_WORKFLOWS.md](DESIGN_WORKFLOWS.md).
+
+
+## Professional workbench extension
+
+The combined 42-item improvement list is mapped to implemented workflows in [WORKBENCH.md](WORKBENCH.md), including explicit deployment, export and algorithm limits. The new modules share existing project persistence, undo, floor/template and export paths.

@@ -7,3 +7,5 @@ test-results/
 server/.data/
 .env
 .env.*
+deployment/users.json
+deployment/.env

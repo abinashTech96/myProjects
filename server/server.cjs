@@ -6,6 +6,8 @@ const http = require("node:http"),
 require("../js/project-model.js");
 require("../js/planning-model.js");
 require("../js/design-model.js");
+require("../js/workbench-model.js");
+require("../js/workbench-building.js");
 const P = global.ProjectModel;
 function createService(options = {}) {
   const root = path.resolve(options.root || path.join(__dirname, "..")),
@@ -14,7 +16,13 @@ function createService(options = {}) {
         process.env.ARCHCAD_DATA_DIR ||
         path.join(__dirname, ".data"),
     ),
-    users = options.users || JSON.parse(process.env.ARCHCAD_USERS || "{}"),
+    users =
+      options.users ||
+      JSON.parse(
+        process.env.ARCHCAD_USERS_FILE
+          ? fs.readFileSync(process.env.ARCHCAD_USERS_FILE, "utf8")
+          : process.env.ARCHCAD_USERS || "{}",
+      ),
     origins =
       options.origins ||
       String(process.env.ARCHCAD_ALLOWED_ORIGINS || "")
@@ -137,7 +145,7 @@ function createService(options = {}) {
         );
         res.setHeader(
           "Access-Control-Allow-Methods",
-          "GET,POST,PUT,DELETE,OPTIONS",
+          "GET,POST,PUT,PATCH,DELETE,OPTIONS",
         );
       }
       const json = (status, data) => {
@@ -165,14 +173,16 @@ function createService(options = {}) {
           !resolved.startsWith(root + path.sep) ||
           name.split("/").some((s) => s.startsWith(".")) ||
           name.startsWith("/server/") ||
+          name.startsWith("/deployment/") ||
           name.startsWith("/tests/") ||
           name.startsWith("/node_modules/") ||
           name.startsWith("/api/")
         )
           throw fail(404, "Not found");
-        const allowed = /\.(html|js|css|json|svg|png|jpg|webp|txt|md)$/i.test(
-          resolved,
-        );
+        const allowed =
+          /\.(html|js|mjs|wasm|gz|css|json|svg|png|jpg|webp|txt|md)$/i.test(
+            resolved,
+          );
         if (
           !allowed ||
           !fs.existsSync(resolved) ||
@@ -181,17 +191,21 @@ function createService(options = {}) {
           throw fail(404, "Not found");
         res.setHeader(
           "Content-Type",
-          resolved.endsWith(".js")
+          /\.m?js$/.test(resolved)
             ? "text/javascript"
-            : resolved.endsWith(".css")
-              ? "text/css"
-              : resolved.endsWith(".html")
-                ? "text/html"
-                : resolved.endsWith(".svg")
-                  ? "image/svg+xml"
-                  : resolved.endsWith(".json")
-                    ? "application/json"
-                    : "text/plain",
+            : resolved.endsWith(".wasm")
+              ? "application/wasm"
+              : resolved.endsWith(".gz")
+                ? "application/octet-stream"
+                : resolved.endsWith(".css")
+                  ? "text/css"
+                  : resolved.endsWith(".html")
+                    ? "text/html"
+                    : resolved.endsWith(".svg")
+                      ? "image/svg+xml"
+                      : resolved.endsWith(".json")
+                        ? "application/json"
+                        : "text/plain",
         );
         res.writeHead(200);
         return req.method === "HEAD"
@@ -213,7 +227,15 @@ function createService(options = {}) {
           if (now() - v.start > 60000) rates.delete(k);
       const user = auth(req),
         parts = url.pathname.split("/").filter(Boolean),
-        body = ["POST", "PUT"].includes(req.method) ? await readBody(req) : {};
+        body = ["POST", "PUT", "PATCH"].includes(req.method)
+          ? await readBody(req)
+          : {};
+      if (parts[1] === "me" && req.method === "GET") {
+        if (user.share)
+          throw fail(403, "Review tokens do not identify an editing account");
+        return json(200, { id: user.id });
+      }
+
       if (parts[1] === "projects" && parts.length === 2) {
         if (user.share) throw fail(403, "Review tokens cannot list projects");
         if (req.method === "GET")
@@ -301,6 +323,7 @@ function createService(options = {}) {
                   ...q.fixtures,
                   ...q.planning.walls,
                   ...q.planning.services,
+                  ...global.WorkbenchModel.objects(q).map((o) => o.record),
                 ].map((e) => [e.id, e]),
               ),
             before = objectMap(p.project),
@@ -364,6 +387,105 @@ function createService(options = {}) {
           project: p.id,
           expires: store.shares[hash(token)].expires,
         });
+      }
+      if (action === "issues") {
+        p.issues ||= [];
+        if (req.method === "GET")
+          return json(200, {
+            issues: [
+              ...new Map(
+                [
+                  ...(p.project.design.workbench?.issues || []),
+                  ...p.issues,
+                ].map((i) => [i.id, i]),
+              ).values(),
+            ],
+          });
+        if (req.method === "POST") {
+          if (user.share && !user.share.comments)
+            throw fail(403, "This review link does not allow issues");
+          if (!user.share && !["owner", "editor"].includes(role))
+            throw fail(403, "Editor access required");
+          const issue = global.WorkbenchModel.validateIssue(
+            {
+              ...body,
+              id: id(),
+              user: user.id,
+              status: "open",
+              revision: p.revision,
+            },
+            p.project,
+          );
+          p.issues.push(issue);
+          p.issues = p.issues.slice(-1000);
+          event(p, user, "Created review issue");
+          persist();
+          return json(201, issue);
+        }
+        if (req.method === "PATCH") {
+          if (!["owner", "editor"].includes(role))
+            throw fail(403, "Only editors can update issues");
+          let index = p.issues.findIndex((i) => i.id === parts[4]);
+          if (index < 0) {
+            const native = p.project.design.workbench.issues.find(
+              (i) => i.id === parts[4],
+            );
+            if (native) {
+              p.issues.push(native);
+              index = p.issues.length - 1;
+            } else throw fail(404, "Issue not found");
+          }
+          const issue = global.WorkbenchModel.validateIssue(
+            {
+              ...p.issues[index],
+              ...Object.fromEntries(
+                Object.entries(body).filter(([k]) =>
+                  [
+                    "title",
+                    "description",
+                    "assignee",
+                    "priority",
+                    "status",
+                    "due",
+                  ].includes(k),
+                ),
+              ),
+            },
+            p.project,
+          );
+          p.issues[index] = issue;
+          event(p, user, "Updated review issue");
+          persist();
+          return json(200, issue);
+        }
+      }
+      if (action === "markups") {
+        p.markups ||= [];
+        if (req.method === "GET")
+          return json(200, {
+            markups: [
+              ...new Map(
+                [
+                  ...(p.project.design.workbench?.markups || []),
+                  ...p.markups,
+                ].map((i) => [i.id, i]),
+              ).values(),
+            ],
+          });
+        if (req.method === "POST") {
+          if (user.share && !user.share.comments)
+            throw fail(403, "This review link does not allow markup");
+          if (!user.share && !["owner", "editor"].includes(role))
+            throw fail(403, "Editor access required");
+          const markup = global.WorkbenchModel.validateMarkup(
+            { ...body, id: id(), user: user.id },
+            p.project,
+          );
+          p.markups.push(markup);
+          p.markups = p.markups.slice(-1000);
+          persist();
+          return json(201, markup);
+        }
       }
       if (action === "comments" && req.method === "POST") {
         if (user.share && !user.share.comments)

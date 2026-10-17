@@ -280,7 +280,21 @@ const DesignIO = {
       depth = vertical ? "y" : "x",
       span = ProjectModel.inches(p.plot[vertical ? "inW" : "inH"], p.unit),
       height = p.wallSettings.height,
-      total = height * p.floorCount,
+      top =
+        typeof WorkbenchModel !== "undefined"
+          ? WorkbenchModel.floorBase(p, p.floorCount - 1) +
+            WorkbenchModel.floorHeight(p, p.floorCount - 1)
+          : height * p.floorCount,
+      low =
+        typeof WorkbenchModel !== "undefined"
+          ? Math.min(
+              0,
+              ...Array.from({ length: p.floorCount }, (_, f) =>
+                WorkbenchModel.floorBase(p, f),
+              ),
+            )
+          : 0,
+      total = top - low,
       roof = p.design.roof,
       reverse = ["back", "right"].includes(side);
     let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-25 ${-roof.rise - 25} ${span + 50} ${total + roof.rise + 60}"><rect x="-25" y="${-roof.rise - 25}" width="${span + 50}" height="${total + roof.rise + 60}" fill="white"/>`;
@@ -323,11 +337,13 @@ const DesignIO = {
         if (!visible) continue;
         const w = visible.w,
           x = reverse ? span - hi : lo,
-          y = total - (f + 1) * height;
-        svg += `<rect x="${x}" y="${y}" width="${hi - lo}" height="${height}" fill="#e2e8f0" stroke="#64748b" stroke-width=".4"/>`;
+          base = w.base ?? f * height,
+          wallHeight = w.height ?? height,
+          y = top - base - wallHeight;
+        svg += `<rect x="${x}" y="${y}" width="${hi - lo}" height="${wallHeight}" fill="#e2e8f0" stroke="#64748b" stroke-width=".4"/>`;
         const at = visible.t * w.length;
         for (const o of w.openings.filter((o) => at >= o.start && at <= o.end))
-          svg += `<rect x="${x}" y="${total - f * height - o.sill - o.height}" width="${hi - lo}" height="${o.height}" fill="${o.type === "window" ? "#bae6fd" : "#fff"}" stroke="#334155" stroke-width=".5"/>`;
+          svg += `<rect x="${x}" y="${top - base - o.sill - o.height}" width="${hi - lo}" height="${o.height}" fill="${o.type === "window" ? "#bae6fd" : "#fff"}" stroke="#334155" stroke-width=".5"/>`;
       }
     }
     const y = 0;
@@ -345,7 +361,21 @@ const DesignIO = {
   section(p, a, b) {
     const len = PlanningModel.distance(a, b),
       height = p.wallSettings.height,
-      total = height * p.floorCount,
+      top =
+        typeof WorkbenchModel !== "undefined"
+          ? WorkbenchModel.floorBase(p, p.floorCount - 1) +
+            WorkbenchModel.floorHeight(p, p.floorCount - 1)
+          : height * p.floorCount,
+      low =
+        typeof WorkbenchModel !== "undefined"
+          ? Math.min(
+              0,
+              ...Array.from({ length: p.floorCount }, (_, f) =>
+                WorkbenchModel.floorBase(p, f),
+              ),
+            )
+          : 0,
+      total = top - low,
       at = (q) => ((q.x - a.x) * (b.x - a.x) + (q.y - a.y) * (b.y - a.y)) / len;
     let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-20 -30 ${len + 40} ${total + 60}"><rect x="-20" y="-30" width="${len + 40}" height="${total + 60}" fill="white"/>`;
     for (const w of ProjectModel.walls(p)) {
@@ -359,16 +389,23 @@ const DesignIO = {
       let bottom = 0;
       const band = (lo, hi) => {
         if (hi > lo)
-          svg += `<rect x="${x - w.thickness / 2}" y="${total - w.floor * height - hi}" width="${w.thickness}" height="${hi - lo}" fill="#334155"/>`;
+          svg += `<rect x="${x - w.thickness / 2}" y="${top - (w.base ?? w.floor * height) - hi}" width="${w.thickness}" height="${hi - lo}" fill="#334155"/>`;
       };
       for (const o of opens) {
         band(bottom, o.sill);
         bottom = Math.max(bottom, o.sill + o.height);
       }
-      band(bottom, height);
+      band(bottom, w.height ?? height);
     }
-    for (let f = 0; f <= p.floorCount; f++)
-      svg += `<line x1="0" y1="${total - f * height}" x2="${len}" y2="${total - f * height}" stroke="#64748b"/>`;
+    for (let f = 0; f <= p.floorCount; f++) {
+      const datum =
+        f === p.floorCount
+          ? top
+          : typeof WorkbenchModel !== "undefined"
+            ? WorkbenchModel.floorBase(p, f)
+            : f * height;
+      svg += `<line x1="0" y1="${top - datum}" x2="${len}" y2="${top - datum}" stroke="#64748b"/>`;
+    }
     for (const c of p.design.ceilings) {
       const ps = PlanningModel.points(c),
         cuts = ps
@@ -379,7 +416,7 @@ const DesignIO = {
           .map(at)
           .sort((a, b) => a - b);
       if (cuts.length >= 2)
-        svg += `<rect x="${cuts[0]}" y="${total - c.floor * height - c.height}" width="${cuts.at(-1) - cuts[0]}" height="3" fill="#0284c7"/>`;
+        svg += `<rect x="${cuts[0]}" y="${top - (typeof WorkbenchModel !== "undefined" ? WorkbenchModel.floorBase(p, c.floor) : c.floor * height) - c.height}" width="${cuts.at(-1) - cuts[0]}" height="3" fill="#0284c7"/>`;
     }
     return (
       svg +

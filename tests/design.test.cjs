@@ -4,6 +4,9 @@ require("../js/project-model.js");
 const M = require("../js/planning-model.js"),
   D = require("../js/design-model.js"),
   P = global.ProjectModel;
+require("../js/workbench-model.js");
+require("../js/workbench-building.js");
+require("../js/workbench-ifc.js");
 const room = (id, x = 0, y = 0, w = 120, h = 120) => ({
     id,
     type: "bedroom",

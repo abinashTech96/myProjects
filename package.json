@@ -4,7 +4,7 @@
   "version": "2.0.0",
   "description": "Static architectural planning workspace",
   "scripts": {
-    "test": "node --test tests/model.test.cjs tests/router.test.cjs tests/planning.test.cjs tests/design.test.cjs tests/server.test.cjs",
+    "test": "node --test tests/model.test.cjs tests/router.test.cjs tests/planning.test.cjs tests/design.test.cjs tests/server.test.cjs tests/workbench.test.cjs tests/workbench-server.test.cjs",
     "test:browser": "node tests/browser-regression.cjs",
     "check": "node tests/check-scripts.cjs",
     "server": "node server/server.cjs",
@@ -13,8 +13,10 @@
   "devDependencies": {
     "clipper-lib": "6.4.2",
     "fflate": "0.8.2",
+    "pdfjs-dist": "6.4.299",
     "playwright": "1.62.1",
     "polygon-clipping": "0.15.7",
+    "tesseract.js": "7.0.0",
     "three": "0.128.0"
   }
 }

@@ -6,6 +6,8 @@ const test = require("node:test"),
 const M = require("../js/project-model.js");
 const Planning = require("../js/planning-model.js");
 const Design = require("../js/design-model.js");
+require("../js/workbench-model.js");
+require("../js/workbench-building.js");
 const room = (id, x = 0, y = 0, w = 120, h = 120, floor = 0) => ({
   id,
   type: "bedroom",

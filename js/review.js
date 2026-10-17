@@ -40,6 +40,7 @@
       return data;
     };
     snapshot = await request();
+    window.ArchCADReviewProject = snapshot.project;
     document.getElementById("title").textContent = snapshot.project.name;
     status.textContent = "Read-only · revision " + snapshot.revision;
     const floor = document.getElementById("floor");
@@ -135,6 +136,7 @@
           anchor,
         });
         snapshot = await request();
+        window.ArchCADReviewProject = snapshot.project;
         comments();
         document.getElementById("comment").value = "";
       } catch (e) {

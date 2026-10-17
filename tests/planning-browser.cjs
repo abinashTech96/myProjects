@@ -152,8 +152,9 @@ module.exports = async ({ page, context, assert, server }) => {
   await page.evaluate(() => StudioUI.rotate(0));
   assert.equal(await page.evaluate(() => elements[0].points.length), 6);
   await page.evaluate(() => PlanningUI.setTool("measure"));
-  await click(280, 280);
-  await click(400, 280);
+  // Aim at grid centres; subpixel mouse rounding differs between engines.
+  await click(282, 282);
+  await click(402, 282);
   assert.equal(
     await page.evaluate(() => PlanningUI.data.measurements.length),
     1,
@@ -295,7 +296,7 @@ module.exports = async ({ page, context, assert, server }) => {
     name: "plan.png",
     mimeType: "image/png",
     buffer: Buffer.from(
-      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a9AAAAABJRU5ErkJggg==",
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4//8/AAX+Av4N70a4AAAAAElFTkSuQmCC",
       "base64",
     ),
   });
@@ -454,11 +455,21 @@ module.exports = async ({ page, context, assert, server }) => {
   });
   await page.reload({ waitUntil: "networkidle" });
   await page.waitForFunction(() => PlanningUI.ready);
-  await context.setOffline(true);
-  await page.reload({ waitUntil: "domcontentloaded" });
-  await page.waitForFunction(() => PlanningUI.ready && Engine3D.scene);
-  assert.ok(await page.locator('[data-widget="converter"]').isVisible());
-  await context.setOffline(false);
+  // Some browser protocols block offline navigation before the service worker runs.
+  // Drop the origin connection instead so its worker's real network fallback is tested.
+  const networkOutage = ["webkit", "firefox"].includes(
+    process.env.BROWSER_ENGINE,
+  );
+  try {
+    if (networkOutage) server.archcadOffline = true;
+    else await context.setOffline(true);
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.waitForFunction(() => PlanningUI.ready && Engine3D.scene);
+    assert.ok(await page.locator('[data-widget="converter"]').isVisible());
+  } finally {
+    server.archcadOffline = false;
+    await context.setOffline(false);
+  }
   await page.evaluate(() => {
     document.body.classList.remove("catalog-open", "inspector-open");
     StudioUI.fitPlan();

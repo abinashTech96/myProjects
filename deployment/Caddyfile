@@ -1,0 +1,5 @@
+{$ARCHCAD_DOMAIN} {
+    encode gzip zstd
+    reverse_proxy project:8080
+    header Referrer-Policy no-referrer
+}

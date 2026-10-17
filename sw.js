@@ -1,5 +1,5 @@
 /* Same-origin application assets only. Project data and AI requests never enter this cache. */
-const CACHE = "archcad-planning-6533d011b386";
+const CACHE = "archcad-design-a68969b0df6c";
 async function cacheApp() {
   const response = await fetch(
     new URL("offline-assets.json", self.registration.scope),

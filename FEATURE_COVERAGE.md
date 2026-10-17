@@ -61,10 +61,12 @@ This checklist maps the approved suggestions to visible entry points. The existi
 
 Layout rules are user-configured design checks. There is no jurisdiction-specific regulation preset or certification. Door-route detection does not certify emergency escape suitability. Window-area checks do not establish operable ventilation. Vastu is a built-in directional preference set, not a regulatory score.
 
-Polygon room clear areas currently use a uniform external-wall inset; invalid concave offsets are reported as unsupported. Mixed-thickness polygon insets and local narrow passages require manual review. Room area totals count overlapping spaces individually. Free walls are independent construction segments and do not automatically split a room into new rooms.
+The next design-workflow batch adds mixed-wall polygon subtraction, floor unions, local passage checks and explicit wall-face room recognition. See [DESIGN_WORKFLOWS.md](DESIGN_WORKFLOWS.md) for the full implementation map and calculation limits.
 
 Auto-builder uses deterministic packing alternatives. It preserves protected geometry and reports conflicts; it does not guarantee an optimal plan, connected circulation or a given Vastu score. Attached toilets share a doorway with their bedroom. Review all warnings before applying.
 
-Stair fit checks evaluate the entered footprint, riser count and landing. Overhead headroom is stored and shown for section review; it is not automatically certified. Elevations are projections of wall outlines and can include internal walls. Electrical/plumbing tools store drawing routes and references; they do not calculate loads or hydraulic capacity.
+Stair fit checks now include tread-height samples against entered ceilings and slab edges. Elevations choose visible wall intervals and include roof profiles. These remain planning checks; decorative facade fabrication details, electrical loads and hydraulic capacity require separate review.
 
 Project library, templates, workspace preferences and versions are stored on the current browser/device. Download project JSON for portable backups. Underlays are embedded in project files and increase their size. Optional remote textures and configured AI services still require a network connection; core editing and exports work offline after the cache is installed.
+
+Additional design, documentation, interoperability and optional collaboration workflows are mapped in [DESIGN_WORKFLOWS.md](DESIGN_WORKFLOWS.md).

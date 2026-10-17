@@ -415,6 +415,7 @@ generate3DModel = function () {
       (k) => document.getElementById(k)?.value,
     ),
     planning: ProjectState.meta.planning,
+    design: ProjectState.meta.design,
     walls: ProjectState.meta.wallSettings,
     overrides: ProjectState.meta.wallOverrides,
     texture: CanvasControlsEngine.isReal3D(),

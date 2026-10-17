@@ -2,6 +2,7 @@ const test = require("node:test"),
   assert = require("node:assert/strict");
 const P = require("../js/project-model.js"),
   M = require("../js/planning-model.js");
+require("../js/design-model.js");
 const room = (id, x = 0, y = 0, w = 120, h = 120, floor = 0) => ({
   id,
   type: "bedroom",

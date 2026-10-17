@@ -1,0 +1,2 @@
+# Preserve the exact upstream bundle, including mixed CRLF license comments.
+vendor/geometry/polygon-clipping.js -text whitespace=cr-at-eol

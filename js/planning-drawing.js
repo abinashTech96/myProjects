@@ -1,3 +1,4 @@
+function pHiddenWall(w){const props=typeof ProjectState!=="undefined"?ProjectState.meta.design?.objectProperties||{}:{};return!!props[w.id]?.hidden||w.owners.some(o=>o.wallId&&props[o.wallId]?.hidden)}
 /* One geometry path for editable plan overlays, 3D walls and drawing sets. */
 const PlanningDrawing = {
   svgNode(tag, attrs = {}, parent) {
@@ -100,6 +101,7 @@ const PlanningDrawing = {
                 return a.x + "," + a.y;
               })
               .join(" "),
+            "data-element-id":e.id,
             fill: e.customColor || "#38bdf8",
             "fill-opacity": ".18",
             stroke: Selection.ids.has(e.id) ? "#fff" : "#38bdf8",
@@ -282,7 +284,7 @@ const PlanningDrawing = {
           t.textContent = a.text;
         });
     p.planning.services
-      .filter((s) => s.floor === currentFloor && layers[s.layer].visible)
+      .filter((s) => s.floor === currentFloor && layers[s.layer].visible && !p.design?.objectProperties?.[s.id]?.hidden)
       .forEach((s) => {
         const color =
             s.layer === "electrical"
@@ -401,7 +403,7 @@ const PlanningDrawing = {
       );
     layer.innerHTML = "";
     WallEngine.getWalls()
-      .filter((w) => w.floor === currentFloor)
+      .filter((w) => w.floor === currentFloor && !pHiddenWall(w))
       .forEach((w) =>
         this.segments(w).forEach(([a, b]) => {
           const x = this.point(w, a),
@@ -409,6 +411,7 @@ const PlanningDrawing = {
           this.svgNode(
             "line",
             {
+              "data-wall-id":w.id,
               x1: I.x + x.x * SCALE,
               y1: I.y + x.y * SCALE,
               x2: I.x + y.x * SCALE,
@@ -524,7 +527,7 @@ const PlanningDrawing = {
     if (!g)
       g = this.svgNode("g", { id: "fixture-container" }, UI.elementContainer);
     g.innerHTML = "";
-    p.fixtures.forEach((f, i) => {
+    p.fixtures.filter(f=>!p.design?.objectProperties?.[f.id]?.hidden).forEach((f, i) => {
       const s = PlanningModel.openingSegment(p, f);
       if (s.room.floor !== currentFloor) return;
       const a = { x: I.x + s.a.x * SCALE, y: I.y + s.a.y * SCALE },
@@ -840,7 +843,7 @@ const PlanningDrawing = {
     if (!popup)
       return StudioUI.message("Allow pop-ups to open drawing sheets.", "error");
     popup.document.write(
-      `<!doctype html><html><head><title>${ProjectModel.escapeHTML(p.name)}</title><style>@page{size:A3 landscape;margin:12mm}body{font:12px Arial;color:#172033}section{break-after:page}section:last-child{break-after:auto}svg{max-width:100%;max-height:215mm}table{border-collapse:collapse;width:100%}td,th{border:1px solid #94a3b8;padding:5px}header{border-bottom:1px solid #334155;display:flex;justify-content:space-between}@media print{button{display:none}}</style></head><body><button onclick="window.print()">Print / Save PDF</button>${sheets.map((s, i) => `<section><header><h2>${ProjectModel.escapeHTML(p.name)} · ${ProjectModel.escapeHTML(s.title)}</h2><span>${i + 1}/${sheets.length} · ${ProjectModel.escapeHTML(p.author)}</span></header>${s.html}</section>`).join("")}</body></html>`,
+      `<!doctype html><html><head><title>${ProjectModel.escapeHTML(p.name)}</title><style>@page{size:A3 landscape;margin:12mm}@page A4{size:A4 landscape;margin:12mm}@page A3{size:A3 landscape;margin:12mm}body{font:12px Arial;color:#172033}section{break-after:page}section:last-child{break-after:auto}svg{max-width:100%;max-height:215mm}table{border-collapse:collapse;width:100%}td,th{border:1px solid #94a3b8;padding:5px}header{border-bottom:1px solid #334155;display:flex;justify-content:space-between}@media print{button{display:none}}</style></head><body><button onclick="window.print()">Print / Save PDF</button>${sheets.map((s, i) => `<section style="page:${s.paper === "A4" ? "A4" : "A3"}"><header><h2>${ProjectModel.escapeHTML(p.name)} · ${ProjectModel.escapeHTML(s.title)}</h2><span>${i + 1}/${sheets.length} · ${ProjectModel.escapeHTML(p.author)}</span></header>${s.html}</section>`).join("")}</body></html>`,
     );
     popup.document.close();
   },

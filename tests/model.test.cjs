@@ -5,6 +5,7 @@ const test = require("node:test"),
   path = require("node:path");
 const M = require("../js/project-model.js");
 const Planning = require("../js/planning-model.js");
+const Design = require("../js/design-model.js");
 const room = (id, x = 0, y = 0, w = 120, h = 120, floor = 0) => ({
   id,
   type: "bedroom",
@@ -135,6 +136,7 @@ function stateHarness() {
   const c = {
     ProjectModel: M,
     PlanningModel: Planning,
+    DesignModel: Design,
     document,
     structuredClone,
     console,

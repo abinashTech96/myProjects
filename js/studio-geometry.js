@@ -414,6 +414,7 @@ generate3DModel = function () {
     plot: Object.keys(ProjectModel.PLOT_DEFAULTS).map(
       (k) => document.getElementById(k)?.value,
     ),
+    planning: ProjectState.meta.planning,
     walls: ProjectState.meta.wallSettings,
     overrides: ProjectState.meta.wallOverrides,
     texture: CanvasControlsEngine.isReal3D(),

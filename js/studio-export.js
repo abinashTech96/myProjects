@@ -298,7 +298,7 @@ const DrawingExport = {
       await new Promise((resolve, reject) => {
         const script = document.createElement("script");
         script.src =
-          "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/GLTFExporter.js";
+          "vendor/three/GLTFExporter.js";
         script.onload = resolve;
         script.onerror = () =>
           reject(new Error("Could not load the 3D exporter."));

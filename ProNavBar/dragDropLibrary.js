@@ -16,8 +16,8 @@ const INTERNAL_ROOM_CATALOG = [
 ];
 
 const INTERNAL_FURNITURE_CATALOG = [
-    { id: 'door', icon: '🚪', label: 'Door', defWdh: 36, defHgt: 6 },
-    { id: 'window', icon: '🪟', label: 'Window', defWdh: 48, defHgt: 6 },
+    //{ id: 'door', icon: '🚪', label: 'Door', defWdh: 36, defHgt: 6 },
+    //{ id: 'window', icon: '🪟', label: 'Window', defWdh: 48, defHgt: 6 },
     { id: 'bed', icon: '🛏️', label: 'King Bed', defWdh: 76, defHgt: 80 },
     { id: 'nightstand', icon: '🪑', label: 'Nightstand', defWdh: 24, defHgt: 24 },
     { id: 'wardrobe', icon: '🚪', label: 'Wardrobe', defWdh: 60, defHgt: 24 },
@@ -39,30 +39,28 @@ const INTERNAL_FURNITURE_CATALOG = [
     { id: 'washing_machine', icon: '🧺', label: 'Washer', defWdh: 30, defHgt: 30 }, // extra
     { id: 'gym_bike', icon: '🚲', label: 'Gym Bike', defWdh: 48, defHgt: 24 }       // extra
 ];
-
-// 🌟 ASSET CATALOG MAPPING (Extracts w and h safely)
 const ASSET_CATALOGS = {
-    rooms: INTERNAL_ROOM_CATALOG.map(room => ({
-        type: room.id,
-        icon: room.icon,
-        label: room.label,
-        w: room.defWdh || 120, // Fallback to 120 if missing
-        h: room.defHgt || 120  // Fallback to 120 if missing
-    })),
-    furniture: INTERNAL_FURNITURE_CATALOG.map(furn => ({
-        type: furn.id,
-        icon: furn.icon,
-        label: furn.label,
-        w: furn.defWdh || 48,  // Fallback to 48 if missing
-        h: furn.defHgt || 48   // Fallback to 48 if missing
-    }))
+    rooms: {
+        title: 'Rooms',
+        items: INTERNAL_ROOM_CATALOG.map(room => ({
+            type: room.id, icon: room.icon, label: room.label,
+            w: room.defWdh || 120, h: room.defHgt || 120
+        }))
+    },
+    furniture: {
+        title: 'Furniture',
+        items: INTERNAL_FURNITURE_CATALOG.map(furn => ({
+            type: furn.id, icon: furn.icon, label: furn.label,
+            w: furn.defWdh || 48, h: furn.defHgt || 48
+        }))
+    }
 };
 
 // =========================================
 // 🚀 DRAG & DROP ENGINE LOGIC
 // =========================================
 const DragDropEngine = {
-    activeTab: 'rooms',
+    currentSlide: 0, // 0 = Rooms, 1 = Furniture
 
     init: function() {
         const wrapper = document.getElementById('drag-drop-library-wrapper');
@@ -73,23 +71,38 @@ const DragDropEngine = {
                 <span class="icon">📦</span>
             </button>
             <div id="dd-library-panel">
-                <div class="dd-tabs">
-                    <button id="tab-rooms" class="dd-tab-btn active" onclick="DragDropEngine.switchTab('rooms')">Rooms</button>
-                    <button id="tab-furniture" class="dd-tab-btn" onclick="DragDropEngine.switchTab('furniture')">Furniture</button>
+                
+                <!-- 🌟 Header Title with Embedded Arrows -->
+                <div class="dd-panel-header">
+                    <div id="dd-nav-left" class="dd-nav-btn" onclick="DragDropEngine.switchSlide(0)">❮</div>
+                    <span id="dd-panel-title">Rooms Catalog</span>
+                    <div id="dd-nav-right" class="dd-nav-btn" onclick="DragDropEngine.switchSlide(1)">❯</div>
                 </div>
-                <div id="dd-content-area" class="explorer-scroll">
-                    ${this.generateCatalogHTML(this.activeTab)}
+
+                <!-- 🌟 Slider Window -->
+                <div class="dd-slider-window">
+                    <!-- The Track that slides left/right -->
+                    <div id="dd-slider-track" class="dd-slider-track">
+                        <!-- Pane 1: Rooms -->
+                        <div class="dd-slide-pane explorer-scroll">
+                            ${this.generateCatalogHTML('rooms')}
+                        </div>
+                        <!-- Pane 2: Furniture -->
+                        <div class="dd-slide-pane explorer-scroll">
+                            ${this.generateCatalogHTML('furniture')}
+                        </div>
+                    </div>
                 </div>
             </div>
         `;
 
         this.bindDragEvents();
         this.bindCanvasDrop();
+        this.updateNavUI();
     },
 
-    // 🌟 Inject width and height into HTML dataset attributes
     generateCatalogHTML: function(category) {
-        const items = ASSET_CATALOGS[category] || [];
+        const items = ASSET_CATALOGS[category]?.items || [];
         return items.map(item => `
             <div class="dd-item-row" draggable="true" data-type="${item.type}" data-category="${category}" data-w="${item.w}" data-h="${item.h}">
                 <span class="dd-item-icon">${item.icon}</span>
@@ -98,16 +111,37 @@ const DragDropEngine = {
         `).join('');
     },
 
-    switchTab: function(tabName) {
-        this.activeTab = tabName;
-        document.querySelectorAll('.dd-tab-btn').forEach(btn => btn.classList.remove('active'));
-        const activeBtn = document.getElementById(`tab-${tabName}`);
-        if (activeBtn) activeBtn.classList.add('active');
+    // 🌟 Slide Transition Logic
+    switchSlide: function(index) {
+        this.currentSlide = index;
+        const track = document.getElementById('dd-slider-track');
+        if (track) {
+            track.style.transform = `translateX(-${index * 50}%)`;
+        }
+        this.updateNavUI();
+    },
 
-        const contentArea = document.getElementById('dd-content-area');
-        if (contentArea) {
-            contentArea.innerHTML = this.generateCatalogHTML(tabName);
-            this.bindDragEvents();
+    // 🌟 Arrow & Title State Manager
+    updateNavUI: function() {
+        const leftBtn = document.getElementById('dd-nav-left');
+        const rightBtn = document.getElementById('dd-nav-right');
+        const title = document.getElementById('dd-panel-title');
+        
+        // 🌟 Map the slide index to the catalog keys
+        const slideKeys = ['rooms', 'furniture'];
+        const currentKey = slideKeys[this.currentSlide];
+
+        if (this.currentSlide === 0) {
+            if(leftBtn) leftBtn.classList.remove('visible');
+            if(rightBtn) rightBtn.classList.add('visible');
+        } else {
+            if(leftBtn) leftBtn.classList.add('visible');
+            if(rightBtn) rightBtn.classList.remove('visible');
+        }
+
+        // 🌟 Inject the dynamic title from the config
+        if(title && ASSET_CATALOGS[currentKey]) {
+            title.innerText = ASSET_CATALOGS[currentKey].title;
         }
     },
 
@@ -133,7 +167,6 @@ const DragDropEngine = {
         const rows = document.querySelectorAll('.dd-item-row');
         rows.forEach(row => {
             row.addEventListener('dragstart', (e) => {
-                // 🌟 Package the payload with exact dimensions
                 const payload = {
                     type: row.dataset.type,
                     category: row.dataset.category,
@@ -144,10 +177,7 @@ const DragDropEngine = {
                 e.dataTransfer.effectAllowed = 'copy';
                 setTimeout(() => row.style.opacity = '0.4', 0);
             });
-
-            row.addEventListener('dragend', () => {
-                row.style.opacity = '1';
-            });
+            row.addEventListener('dragend', () => row.style.opacity = '1');
         });
     },
 
@@ -168,9 +198,7 @@ const DragDropEngine = {
             try {
                 const data = JSON.parse(dataStr);
                 DragDropEngine.handleDrop(data, e.clientX, e.clientY);
-            } catch (err) {
-                console.error("Failed to parse dropped item:", err);
-            }
+            } catch (err) { console.error(err); }
         });
     },
 
@@ -183,26 +211,16 @@ const DragDropEngine = {
         pt.y = clientY;
         const svgP = pt.matrixTransform(container.getScreenCTM().inverse());
         
-        let offsetX = 0;
-        let offsetY = 0;
-        let maxW = 5000; 
-        let maxH = 5000;
+        let offsetX = 0; let offsetY = 0;
+        let maxW = 5000; let maxH = 5000;
 
         if (typeof calculateGeometry === 'function') {
             const unit = document.getElementById('unitSelect') ? document.getElementById('unitSelect').value : 'in';
             const SCALE = parseFloat(document.getElementById('scaleInput') ? document.getElementById('scaleInput').value : 1.2) || 1.2;
             const geom = calculateGeometry(SCALE, unit);
             if (geom && geom.I) {
-                offsetX = geom.I.x;    
-                offsetY = geom.I.y;    
-                maxW = geom.inW || maxW;
-                maxH = geom.inH || maxH;
-            }
-        } else {
-            const innerRect = document.getElementById('inner-rect');
-            if (innerRect) {
-                offsetX = parseFloat(innerRect.getAttribute('x')) || 0;
-                offsetY = parseFloat(innerRect.getAttribute('y')) || 0;
+                offsetX = geom.I.x; offsetY = geom.I.y;    
+                maxW = geom.inW || maxW; maxH = geom.inH || maxH;
             }
         }
 
@@ -210,49 +228,23 @@ const DragDropEngine = {
         let relativeY = svgP.y - offsetY;
         const currentFloor = typeof window.currentFloor !== 'undefined' ? window.currentFloor : 0;
         
-        // 🌟 Pull dimensions directly from the dropped payload
-        const w = data.w;
-        const h = data.h;
+        const w = data.w; const h = data.h;
 
-        if (data.category === 'rooms') {
-            const newRoom = {
-                id: `room_${Date.now()}`,
-                type: data.type,
-                x: Math.max(0, Math.min(Math.round(relativeX - (w/2)), maxW - w)),
-                y: Math.max(0, Math.min(Math.round(relativeY - (h/2)), maxH - h)),
-                w: w, 
-                h: h,
-                floor: currentFloor
-            };
-            
-            if (typeof window.elements !== 'undefined') window.elements.push(newRoom);
-
-        } else if (data.category === 'furniture') {
-            const newFurn = {
-                id: `furn_${Date.now()}`,
-                type: data.type,
-                x: Math.max(0, Math.min(Math.round(relativeX - (w/2)), maxW - w)),
-                y: Math.max(0, Math.min(Math.round(relativeY - (h/2)), maxH - h)),
-                w: w,
-                h: h,
-                rotation: 0,
-                floor: currentFloor,
-                isFurniture: true
-            };
-            
-            if (typeof window.elements !== 'undefined') window.elements.push(newFurn);
-        }
+        const newElement = {
+            id: `${data.category}_${Date.now()}`,
+            type: data.type,
+            x: Math.max(0, Math.min(Math.round(relativeX - (w/2)), maxW - w)),
+            y: Math.max(0, Math.min(Math.round(relativeY - (h/2)), maxH - h)),
+            w: w, h: h, floor: currentFloor,
+            ...(data.category === 'furniture' && { rotation: 0, isFurniture: true })
+        };
+        
+        if (typeof window.elements !== 'undefined') window.elements.push(newElement);
 
         if (typeof updateCanvas === 'function') updateCanvas();
-        
-        if (typeof ProjectState !== 'undefined' && typeof ProjectState.save === 'function') {
-            ProjectState.save();
-        } else if (typeof saveState === 'function') {
-            saveState(); 
-        }
+        if (typeof ProjectState !== 'undefined' && typeof ProjectState.save === 'function') ProjectState.save();
+        else if (typeof saveState === 'function') saveState(); 
     }
 };
 
-document.addEventListener('DOMContentLoaded', () => {
-    DragDropEngine.init();
-});
+document.addEventListener('DOMContentLoaded', () => DragDropEngine.init());

@@ -81,6 +81,7 @@ const WIDGET_CONFIG = {
             expandBtn: { title: 'Expand Code Inspector' }
         },
         classes: {
+            container: 'minimized', // ADD THIS LINE
             maxView: 'compliance-max-view',
             minView: 'compliance-min-view',
             header: 'compliance-header',
@@ -170,7 +171,7 @@ const WIDGET_CONFIG = {
             placeholder: "0"
         },
         classes: { 
-            container: 'canvas-widget-top-left qc-wrapper', 
+            container: 'canvas-widget-top-left qc-wrapper minimized', 
             inner: 'sidebar-converter',
             minBtn: 'qc-min-btn',
             minInput: 'qc-min-input',
@@ -467,6 +468,13 @@ const WidgetEngine = {
     // -----------------------------------------
     _initCompliance: function() {
         const conf = WIDGET_CONFIG.COMPLIANCE;
+
+        // 🌟 ADD THIS: Force the existing HTML element to start minimized
+        const widget = document.getElementById(conf.id);
+        if (widget) {
+            widget.classList.add('minimized');
+        }
+
         const complianceCb = document.getElementById('toggle-compliance-cb');
         if (complianceCb) {
             complianceCb.addEventListener('change', (e) => {
@@ -530,6 +538,7 @@ const WidgetEngine = {
             if (this.REQUIRE_HTML_CONTAINER) return;            
             widget = document.createElement('div');
             widget.id = conf.id;
+            widget.className = conf.classes.container; // ADD THIS LINE
             const canvasWrapper = document.getElementById('canvas-wrapper');
             (canvasWrapper || document.body).appendChild(widget);
         }
@@ -848,6 +857,15 @@ const WidgetEngine = {
         if (minText) minText.innerText = total + conf.labels.symbols.inch;
     },
     _toggleConverter: function() {
+        const conf = WIDGET_CONFIG.CONVERTER;
+        // Target the main wrapper container instead of the individual buttons
+        const widget = document.getElementById(conf.id);
+        
+        if (widget) {
+            widget.classList.toggle('minimized');
+        }
+    }
+    ,_toggleConverterOld: function() {
         const conf = WIDGET_CONFIG.CONVERTER;
         const fullWidget = document.getElementById(conf.domIds.fullWidget);
         const minBtn = document.getElementById(conf.domIds.minBtn);

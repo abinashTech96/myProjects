@@ -4,7 +4,7 @@
   "version": "2.0.0",
   "description": "Static architectural planning workspace",
   "scripts": {
-    "test": "node --test tests/model.test.cjs tests/router.test.cjs",
+    "test": "node --test tests/model.test.cjs tests/router.test.cjs tests/planning.test.cjs",
     "test:browser": "node tests/browser-regression.cjs",
     "check": "node tests/check-scripts.cjs"
   },

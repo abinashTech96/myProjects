@@ -105,6 +105,16 @@ const { chromium } = require("playwright");
       errors,
     );
     assert.equal(errors.length, 0, "Startup must have no uncaught errors");
+    if (process.env.PLANNING_ONLY) {
+      await require("./planning-browser.cjs")({
+        page,
+        context,
+        assert,
+        server,
+      });
+      assert.equal(errors.length, 0, errors.join("\n"));
+      return;
+    }
     await page.evaluate(() => {
       ProjectState.apply(
         { elements: [], fixtures: [], floorCount: 1 },
@@ -652,6 +662,7 @@ const { chromium } = require("playwright");
     console.log(
       "Drop/resize/selection, section coordinates, full saves, empty floors, layout choices, dialogs and advanced 3D passed",
     );
+    await require("./planning-browser.cjs")({ page, context, assert, server });
     await page.screenshot({
       path: process.env.SCREENSHOT_PATH || "/tmp/archcad-desktop.png",
     });

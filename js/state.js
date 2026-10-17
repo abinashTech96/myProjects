@@ -14,6 +14,7 @@ const ProjectState = {
     wallSettings: { external: 9, internal: 4.5, height: 120 },
     wallOverrides: {},
     constraints: [],
+    planning: PlanningModel.defaults(),
     view: {},
   },
   history: {
@@ -89,6 +90,7 @@ const ProjectState = {
         "wallSettings",
         "wallOverrides",
         "constraints",
+        "planning",
         "view",
       ])
         this.meta[k] = project[k];

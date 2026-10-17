@@ -31,7 +31,7 @@ const CoreUtils = {
     },
 
     toInches(val, unit) {
-        return unit === 'cm' ? parseFloat(val) / 2.54 : parseFloat(val);
+        return ProjectModel.inches(val, unit);
     },
 
     getPolygonArea(coords) { 
@@ -156,3 +156,4 @@ window.debounced3DUpdate = CoreUtils.debounce(() => {
 window.debouncedUpdateCanvas = CoreUtils.debounce(() => {
     if (typeof updateCanvas === 'function') updateCanvas();
 }, 50); // 50ms drops ~80% of CPU load while maintaining visual instantaneity
+window.formatLength=function(value){const unit=document.getElementById('unitSelect')?.value||'in';return unit==='cm'?ProjectModel.display(value,'cm')+' cm':ProjectModel.display(value,'ftin')};

@@ -1,347 +1,508 @@
-// =========================================
-// ⏳ PHASE 3: DELTA STATE MANAGEMENT (state.js)
-// Modular Architecture
-// =========================================
-
-// -----------------------------------------
-// 1. CORE STATE & HISTORY MANAGER
-// -----------------------------------------
+/* Complete, validated snapshots shared by history, files and recovery. */
 const ProjectState = {
-    data: {
-        elements: [],
-        fixtures: [],
-        currentFloor: 0,
-        globalCompassDir: 'West',
-        selectedElIndex: -1
-    },
-    history: {
-        stack: [],       
-        redoStack: [],
-        baseState: null, 
-        clipboard: null,
-        MAX_HISTORY: 50  
-    },
-
-    _clone(obj) { 
-        return structuredClone(obj);  
-    },
-
-    _isElementChanged(oldEl, newEl) {
-        if (!oldEl || !newEl) return true;
-        return oldEl.x !== newEl.x || 
-               oldEl.y !== newEl.y || 
-               oldEl.w !== newEl.w || 
-               oldEl.h !== newEl.h || 
-               oldEl.floor !== newEl.floor ||
-               oldEl.rot !== newEl.rot || 
-               oldEl.customColor !== newEl.customColor ||
-               oldEl.customName !== newEl.customName ||
-               oldEl.material !== newEl.material ||
-               oldEl.locked !== newEl.locked ||
-               oldEl.stairStyle !== newEl.stairStyle ||
-               oldEl.dir !== newEl.dir;
-    },
-
-    _isFixtureChanged(oldFix, newFix) {
-        if (!oldFix || !newFix) return true;
-        return oldFix.offset !== newFix.offset ||
-               oldFix.size !== newFix.size ||
-               oldFix.edge !== newFix.edge ||
-               oldFix.roomId !== newFix.roomId ||
-               oldFix.type !== newFix.type;
-    },
-
-    _getDelta(oldState, newState) {
-        const delta = { elements: { length: newState.elements.length }, fixtures: { length: newState.fixtures.length } };
-        let hasChanges = false;
-        const maxEl = Math.max(oldState.elements.length, newState.elements.length);
-        for (let i = 0; i < maxEl; i++) {
-            const oldEl = oldState.elements[i];
-            const newEl = newState.elements[i];
-            if (this._isElementChanged(oldEl, newEl)) {
-                delta.elements[i] = newEl ? this._clone(newEl) : null;
-                hasChanges = true;
-            }
+  data: {
+    elements: [],
+    fixtures: [],
+    currentFloor: 0,
+    globalCompassDir: "West",
+    selectedElIndex: -1,
+  },
+  meta: {
+    name: "Untitled plan",
+    author: "",
+    layouts: {},
+    wallSettings: { external: 9, internal: 4.5, height: 120 },
+    wallOverrides: {},
+    constraints: [],
+    view: {},
+  },
+  history: {
+    stack: [],
+    redoStack: [],
+    baseState: null,
+    clipboard: null,
+    MAX_HISTORY: 50,
+  },
+  applying: false,
+  batchDepth: 0,
+  _clone(value) {
+    return structuredClone(value);
+  },
+  capture() {
+    const value = (id, fallback) =>
+      document.getElementById(id)?.value ?? fallback;
+    const plot = {};
+    for (const [id, fallback] of Object.entries(ProjectModel.PLOT_DEFAULTS))
+      plot[id] = value(id, fallback);
+    const view = {
+      ...this._clone(this.meta.view),
+      parapet: value("parapetStyleSelect", "premium-canopy"),
+      ...(typeof ParapetModule !== "undefined"
+        ? { parapetConfig: this._clone(ParapetModule.config) }
+        : {}),
+      ...(typeof tourWaypoints !== "undefined"
+        ? { tour: this._clone(tourWaypoints) }
+        : {}),
+      theme: document.body?.classList.contains("classic-theme")
+        ? "classic"
+        : "dark",
+      ...(typeof CanvasControlsEngine !== "undefined"
+        ? { toggles: { ...CanvasControlsEngine.state } }
+        : {}),
+      ...(typeof CanvasState !== "undefined"
+        ? {
+            camera: {
+              panX: CanvasState.panX,
+              panY: CanvasState.panY,
+              zoomLvl: CanvasState.zoomLvl,
+            },
+          }
+        : {}),
+    };
+    return {
+      version: "2.0",
+      ...this._clone(this.meta),
+      view,
+      elements: this._clone(this.data.elements),
+      fixtures: this._clone(this.data.fixtures),
+      currentFloor: this.data.currentFloor,
+      compass: this.data.globalCompassDir,
+      unit: value("unitSelect", "in"),
+      scale: Number(value("scaleInput", 1.2)),
+      floorCount: Number(value("b-floors", 1)),
+      plot,
+    };
+  },
+  apply(raw, { rebase = false } = {}) {
+    const project = ProjectModel.normalize(raw);
+    this.applying = true;
+    try {
+      this.data.elements = project.elements;
+      this.data.fixtures = project.fixtures;
+      this.data.currentFloor = project.currentFloor;
+      this.data.globalCompassDir = project.compass;
+      this.data.selectedElIndex = -1;
+      for (const k of [
+        "name",
+        "author",
+        "layouts",
+        "wallSettings",
+        "wallOverrides",
+        "constraints",
+        "view",
+      ])
+        this.meta[k] = project[k];
+      const set = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.value = value;
+      };
+      Object.entries(project.plot).forEach(([id, v]) => set(id, v));
+      set("unitSelect", project.unit);
+      set("scaleInput", project.scale);
+      set("b-floors", project.floorCount);
+      set("compassDir", project.compass);
+      if (typeof ARCH_CONFIG !== "undefined")
+        ARCH_CONFIG.DEFAULTS.WALL_HEIGHT_3D = project.wallSettings.height;
+      if (typeof ARCH3D_CONFIG !== "undefined")
+        ARCH3D_CONFIG.DEFAULTS.WALL_HEIGHT = project.wallSettings.height;
+      if (typeof Selection !== "undefined") Selection.ids.clear();
+      if (project.view.parapet) set("parapetStyleSelect", project.view.parapet);
+      if (typeof ParapetModule !== "undefined" && project.view.parapetConfig)
+        Object.assign(ParapetModule.config, project.view.parapetConfig);
+      if (typeof tourWaypoints !== "undefined" && project.view.tour)
+        window.tourWaypoints = this._clone(project.view.tour);
+      if (document.body && project.view.theme)
+        document.body.classList.toggle(
+          "classic-theme",
+          project.view.theme === "classic",
+        );
+      if (typeof CanvasControlsEngine !== "undefined" && project.view.toggles) {
+        for (const key of Object.keys(CanvasControlsEngine.state)) {
+          if (typeof project.view.toggles[key] === "boolean") {
+            CanvasControlsEngine.state[key] = project.view.toggles[key];
+            const input = document.getElementById(key);
+            if (input) input.checked = project.view.toggles[key];
+          }
         }
-        const maxFix = Math.max(oldState.fixtures.length, newState.fixtures.length);
-        for (let i = 0; i < maxFix; i++) {
-            const oldFix = oldState.fixtures[i];
-            const newFix = newState.fixtures[i];
-            if (this._isFixtureChanged(oldFix, newFix)) {
-                delta.fixtures[i] = newFix ? this._clone(newFix) : null;
-                hasChanges = true;
-            }
-        }
-        if (oldState.elements.length !== newState.elements.length || oldState.fixtures.length !== newState.fixtures.length) {
-            hasChanges = true;
-        }
-        return hasChanges ? delta : null;
-    },
-
-    _applyDelta(state, delta) {
-        const newState = this._clone(state);
-        if (delta.elements) {
-            for (let i in delta.elements) {
-                if (i === 'length') continue;
-                newState.elements[i] = delta.elements[i] ? this._clone(delta.elements[i]) : null;
-            }
-            newState.elements.length = delta.elements.length; 
-        }
-        if (delta.fixtures) {
-            for (let i in delta.fixtures) {
-                if (i === 'length') continue;
-                newState.fixtures[i] = delta.fixtures[i] ? this._clone(delta.fixtures[i]) : null;
-            }
-            newState.fixtures.length = delta.fixtures.length;
-        }
-        return newState;
-    },
-
-    _buildStateFromHistory(targetIndex) {
-        if (!this.history.baseState) return { elements: [], fixtures: [] };
-        let state = this._clone(this.history.baseState);
-        for (let i = 0; i <= targetIndex; i++) {
-            state = this._applyDelta(state, this.history.stack[i].delta);
-        }
-        return state;
-    },
-
-    saveState(actionName = "Action Executed") {
-        const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        const currentState = { elements: this.data.elements, fixtures: this.data.fixtures };
-        if (!this.history.baseState) {
-            this.history.baseState = this._clone(currentState);
-            return;
-        }
-        const lastState = this.history.stack.length > 0
-            ? this._buildStateFromHistory(this.history.stack.length - 1)
-            : this.history.baseState;
-        const delta = this._getDelta(lastState, currentState);
-        if (!delta) return;
-
-        const hist = this.history.stack;
-        if (hist.length > 0 && actionName === "Moved Element" && hist[hist.length - 1].action === "Moved Element") {
-            const stateBeforeMove = hist.length > 1 ? this._buildStateFromHistory(hist.length - 2) : this.history.baseState;
-            const updatedDelta = this._getDelta(stateBeforeMove, currentState);
-            if (updatedDelta) {
-                hist[hist.length - 1].delta = updatedDelta;
-                hist[hist.length - 1].time = timeStr;
-            }
-            if (typeof renderTimeMachine === 'function') renderTimeMachine();
-            return;
-        }
-        hist.push({ action: actionName, time: timeStr, delta: delta });
+      }
+      if (typeof CanvasState !== "undefined" && project.view.camera) {
+        for (const key of ["panX", "panY", "zoomLvl"])
+          if (Number.isFinite(project.view.camera[key]))
+            CanvasState[key] = project.view.camera[key];
+        if (typeof updateViewport === "function") updateViewport();
+      }
+      if (typeof renderFloorSelectors === "function") renderFloorSelectors();
+      if (typeof StudioUI !== "undefined") {
+        StudioUI.syncProject();
+        if (StudioUI.ready && project.view.mode)
+          setWorkspaceLayout(project.view.mode);
+      }
+      if (rebase) {
+        this.history.stack = [];
         this.history.redoStack = [];
-        if (hist.length > this.history.MAX_HISTORY) {
-            const oldestItem = hist.shift();
-            this.history.baseState = this._applyDelta(this.history.baseState, oldestItem.delta);
-        }
-        if (typeof renderTimeMachine === 'function') renderTimeMachine();
-    },
-
-    undo() {
-        if (this.history.stack.length > 0) {
-            const popped = this.history.stack.pop();
-            this.history.redoStack.push(popped);
-            const restoredState = this.history.stack.length > 0
-                ? this._buildStateFromHistory(this.history.stack.length - 1)
-                : this.history.baseState;
-
-            this.data.elements = this._clone(restoredState.elements);
-            this.data.fixtures = this._clone(restoredState.fixtures);
-            if (this.data.selectedElIndex >= this.data.elements.length) {
-                this.data.selectedElIndex = -1;
-            }
-            return true;
-        }
-        return false;
-    },
-
-    redo() {
-        if (this.history.redoStack.length > 0) {
-            const item = this.history.redoStack.pop();
-            this.history.stack.push(item);
-            const restoredState = this._buildStateFromHistory(this.history.stack.length - 1);
-            this.data.elements = this._clone(restoredState.elements);
-            this.data.fixtures = this._clone(restoredState.fixtures);
-            if (this.data.selectedElIndex >= this.data.elements.length) {
-                this.data.selectedElIndex = -1;
-            }
-            return true;
-        }
-        return false;
-    },
-
-    jumpToTime(index) {
-        if (index < 0 || index >= this.history.stack.length) return false;
-        const toRedo = this.history.stack.splice(index + 1);
-        toRedo.reverse().forEach(item => this.history.redoStack.push(item));
-        const restoredState = this._buildStateFromHistory(index);
-        this.data.elements = this._clone(restoredState.elements);
-        this.data.fixtures = this._clone(restoredState.fixtures);
-        if (typeof renderSidebar === 'function') renderSidebar();
-        if (typeof updateCanvas === 'function') updateCanvas(true);
-        if (typeof renderTimeMachine === 'function') renderTimeMachine();
-
-        return true;
-    },
-    
-    deleteElement(idx) {
-        const el = this.data.elements[idx];
-        const elName = el ? (el.customName || el.type.toUpperCase()) : "Element";
-        
-        this.commit(`Deleted ${elName}`, () => {
-            this.data.elements.splice(idx, 1);
-            this.data.fixtures = this.data.fixtures.filter(f => f.roomId !== idx);
-            this.data.fixtures.forEach(f => { if (f.roomId > idx) f.roomId--; });
-            
-            if (this.data.selectedElIndex === idx) this.data.selectedElIndex = -1;
-            else if (this.data.selectedElIndex > idx) this.data.selectedElIndex--;
-        });
-    },
-
-    updateElement(idx, newData, actionName = "Updated Element") {
-        this.commit(actionName, () => {
-            // Safely merge the new data into the existing element
-            Object.assign(this.data.elements[idx], newData);
-        });
-    },
-
-    updateFixture(idx, newData, actionName = "Updated Fixture") {
-        this.commit(actionName, () => {
-            // Safely merge the new data into the existing fixture
-            Object.assign(this.data.fixtures[idx], newData);
-        });
-    },
-
-    commit(actionName, mutationCallback) {
-        mutationCallback();
-        this.saveState(actionName);
-        if (typeof AppEvents !== 'undefined') {
-            AppEvents.triggerStateChange();
-        }
+        this.history.baseState = this.capture();
+      }
+    } finally {
+      this.applying = false;
     }
-};
-
-// Map Global Variables to the State Manager
-['elements', 'fixtures', 'currentFloor', 'globalCompassDir', 'selectedElIndex'].forEach(key => {
-    Object.defineProperty(window, key, {
-        get: () => ProjectState.data[key],
-        set: (value) => { ProjectState.data[key] = value; }
+    return project;
+  },
+  baseline() {
+    if (!this.history.baseState) this.history.baseState = this.capture();
+  },
+  _buildStateFromHistory(i) {
+    return this._clone(
+      i < 0 ? this.history.baseState : this.history.stack[i].after,
+    );
+  },
+  saveState(action = "Edited project") {
+    if (this.applying || this.batchDepth) return;
+    this.baseline();
+    const current = ProjectModel.normalize(this.capture());
+    const previous = this.history.stack.at(-1)?.after || this.history.baseState;
+    const comparable = (p) => {
+      const { mode, camera, toggles, theme, ...designView } = p.view || {};
+      return JSON.stringify(
+        { ...p, currentFloor: 0, view: designView },
+        (_, v) =>
+          v && typeof v === "object" && !Array.isArray(v)
+            ? Object.fromEntries(
+                Object.keys(v)
+                  .sort()
+                  .map((k) => [k, v[k]]),
+              )
+            : v,
+      );
+    };
+    if (comparable(current) === comparable(previous)) return;
+    this.history.stack.push({
+      action,
+      time: new Date().toLocaleTimeString(),
+      before: this._clone(previous),
+      after: current,
     });
-});
-Object.defineProperty(window, 'clipboard', {
-    get: () => ProjectState.history.clipboard,
-    set: (value) => { ProjectState.history.clipboard = value; }
-});
-
-
-// -----------------------------------------
-// 2. STORAGE ENGINE (IndexedDB & Auto-Save)
-// -----------------------------------------
-const StorageEngine = {
-    DB_NAME: 'ArchCAD_Storage',
-    STORE_NAME: 'autosaves',
-    dbNeedsSave: false,
-
-    initDB() {
-        return new Promise((resolve, reject) => {
-            const request = indexedDB.open(this.DB_NAME, 1);
-            request.onupgradeneeded = (e) => e.target.result.createObjectStore(this.STORE_NAME);
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => reject(request.error);
-        });
-    },
-
-    async saveToMemory() {
-        const data = {
-            elements: elements, fixtures: fixtures,
-            inW: document.getElementById('inW')?.value || 278,
-            inH: document.getElementById('inH')?.value || 417,
-            floors: document.getElementById('b-floors')?.value || 1
-        };
-        try {
-            const db = await this.initDB();
-            const tx = db.transaction(this.STORE_NAME, 'readwrite');
-            tx.objectStore(this.STORE_NAME).put(data, 'latest_session');
-        } catch (e) {
-            console.warn("Async save failed. Falling back to LocalStorage.", e);
-            localStorage.setItem('ArchCAD_AutoSave', JSON.stringify(data));
-        }
-    },
-
-    async loadFromMemory() {
-        try {
-            const db = await this.initDB();
-            const tx = db.transaction(this.STORE_NAME, 'readonly');
-            const request = tx.objectStore(this.STORE_NAME).get('latest_session');
-            
-            request.onsuccess = () => {
-                const data = request.result;
-                if (!data && !localStorage.getItem('ArchCAD_AutoSave')) return; 
-                const wantsToRestore = confirm("💾 A previous session was found.\n\nWould you like to restore your last design?");
-                if (wantsToRestore) {
-                    const finalData = data || JSON.parse(localStorage.getItem('ArchCAD_AutoSave'));
-                    if (finalData && finalData.elements && finalData.elements.length > 0) {
-                        elements = finalData.elements;
-                        fixtures = finalData.fixtures || [];
-                        if (finalData.inW && document.getElementById('inW')) document.getElementById('inW').value = finalData.inW;
-                        if (finalData.inH && document.getElementById('inH')) document.getElementById('inH').value = finalData.inH;
-                        let maxFloor = 0;
-                        elements.forEach(el => { if (el.floor > maxFloor) maxFloor = el.floor; });
-                        if (document.getElementById('b-floors')) document.getElementById('b-floors').value = maxFloor + 1;
-                        if (typeof setFloor === 'function') setFloor(currentFloor || 0);
-                        if (typeof renderSidebar === 'function') renderSidebar();
-                        if (typeof updateCanvas === 'function') updateCanvas(false); 
-                    }
-                } else {
-                    db.transaction(this.STORE_NAME, 'readwrite').objectStore(this.STORE_NAME).delete('latest_session');
-                    localStorage.removeItem('ArchCAD_AutoSave');
-                }
-            };
-        } catch (e) { 
-            console.error("Async load failed.", e); 
-        }
-    },
-
-    markDirty() {
-        this.dbNeedsSave = true;
-    },
-
-    startThrottler() {
-        setInterval(() => {
-            if (this.dbNeedsSave) {
-                this.saveToMemory();
-                this.dbNeedsSave = false;
-                console.log("💾 Throttled Auto-Save Complete.");
-            }
-        }, 5000);
+    this.history.redoStack = [];
+    if (this.history.stack.length > this.history.MAX_HISTORY) {
+      this.history.baseState = this.history.stack.shift().after;
     }
+    if (typeof renderTimeMachine === "function") renderTimeMachine();
+    StorageEngine.markDirty();
+    if (typeof StudioUI !== "undefined") StudioUI.updateStatus();
+  },
+  commit(action, mutation) {
+    if (this.batchDepth) {
+      mutation();
+      return true;
+    }
+    this.baseline();
+    this.saveState("Edited project");
+    const before = this.capture();
+    this.batchDepth++;
+    try {
+      mutation();
+      const next = ProjectModel.solveConstraints(
+        ProjectModel.normalize(this.capture()),
+      );
+      const width = ProjectModel.inches(next.plot.inW, next.unit),
+        depth = ProjectModel.inches(next.plot.inH, next.unit);
+      next.elements.forEach((el) => {
+        const old = before.elements.find((e) => e.id === el.id),
+          changed =
+            !old ||
+            ["x", "y", "w", "h", "rot", "floor"].some((k) => el[k] !== old[k]);
+        const turned = el.isFurniture && el.rot % 180 === 90,
+          w = turned ? el.h : el.w,
+          h = turned ? el.w : el.h;
+        if (
+          changed &&
+          (el.x < 0 ||
+            el.y < 0 ||
+            el.x + w > width + 0.001 ||
+            el.y + h > depth + 0.001)
+        )
+          throw new Error("Changed elements must fit inside the plot.");
+      });
+      if (typeof ARCH_CONFIG !== "undefined")
+        ARCH_CONFIG.DEFAULTS.WALL_HEIGHT_3D = next.wallSettings.height;
+      if (typeof ARCH3D_CONFIG !== "undefined")
+        ARCH3D_CONFIG.DEFAULTS.WALL_HEIGHT = next.wallSettings.height;
+      this.data.elements = next.elements;
+      this.data.fixtures = next.fixtures;
+      this.batchDepth--;
+      this.saveState(action);
+      if (typeof AppEvents !== "undefined") AppEvents.triggerStateChange();
+      return true;
+    } catch (error) {
+      this.batchDepth--;
+      this.apply(before);
+      if (typeof AppEvents !== "undefined") AppEvents.triggerStateChange();
+      if (typeof StudioUI !== "undefined")
+        StudioUI.message(error.message, "error");
+      else console.warn(error.message);
+      return false;
+    }
+  },
+  undo() {
+    this.saveState();
+    const item = this.history.stack.pop();
+    if (!item) return false;
+    this.history.redoStack.push(item);
+    this.apply(item.before);
+    StorageEngine.markDirty();
+    return true;
+  },
+  redo() {
+    const item = this.history.redoStack.pop();
+    if (!item) return false;
+    this.history.stack.push(item);
+    this.apply(item.after);
+    StorageEngine.markDirty();
+    return true;
+  },
+  jumpToTime(i) {
+    if (i < 0 || i >= this.history.stack.length) return false;
+    while (this.history.stack.length > i + 1)
+      this.history.redoStack.push(this.history.stack.pop());
+    this.apply(this.history.stack[i].after);
+    StorageEngine.markDirty();
+    if (typeof AppEvents !== "undefined") AppEvents.triggerStateChange();
+    return true;
+  },
+  deleteElement(idx) {
+    if (!this.data.elements[idx] || this.data.elements[idx].locked)
+      return false;
+    return this.commit("Deleted element", () => this.removeIndices([idx]));
+  },
+  removeIndices(indices) {
+    const removed = new Set(indices.map((i) => this.data.elements[i]?.id));
+    const old = this.data.elements;
+    this.data.elements = old.filter((_, i) => !indices.includes(i));
+    this.data.fixtures = this.data.fixtures
+      .filter((f) => !indices.includes(f.roomId))
+      .map((f) => ({
+        ...f,
+        roomId: this.data.elements.indexOf(old[f.roomId]),
+      }));
+    this.meta.constraints = this.meta.constraints.filter(
+      (r) => !removed.has(r.source) && !removed.has(r.target),
+    );
+    this.data.selectedElIndex = -1;
+  },
+  updateElement(idx, patch, action = "Updated element") {
+    if (
+      !this.data.elements[idx] ||
+      (this.data.elements[idx].locked && !("locked" in patch))
+    )
+      return false;
+    return this.commit(action, () =>
+      Object.assign(this.data.elements[idx], patch),
+    );
+  },
+  updateFixture(idx, patch, action = "Updated opening") {
+    return this.commit(action, () =>
+      Object.assign(this.data.fixtures[idx], patch),
+    );
+  },
+};
+[
+  "elements",
+  "fixtures",
+  "currentFloor",
+  "globalCompassDir",
+  "selectedElIndex",
+].forEach((key) =>
+  Object.defineProperty(window, key, {
+    get: () => ProjectState.data[key],
+    set: (value) => {
+      ProjectState.data[key] = value;
+    },
+  }),
+);
+Object.defineProperty(window, "clipboard", {
+  get: () => ProjectState.history.clipboard,
+  set: (value) => {
+    ProjectState.history.clipboard = value;
+  },
+});
+const StorageEngine = {
+  DB_NAME: "ArchCAD_Storage",
+  STORE_NAME: "autosaves",
+  dbNeedsSave: false,
+  loading: true,
+  saving: false,
+  revision: 0,
+  lastSaved: "",
+  error: "",
+  initDB() {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open(this.DB_NAME, 1);
+      request.onupgradeneeded = (e) => {
+        if (!e.target.result.objectStoreNames.contains(this.STORE_NAME))
+          e.target.result.createObjectStore(this.STORE_NAME);
+      };
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  },
+  async write(key, value) {
+    const db = await this.initDB();
+    try {
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction(this.STORE_NAME, "readwrite");
+        tx.oncomplete = resolve;
+        tx.onerror = () => reject(tx.error);
+        tx.onabort = () => reject(tx.error || new Error("Save cancelled"));
+        tx.objectStore(this.STORE_NAME).put(value, key);
+      });
+    } finally {
+      db.close();
+    }
+  },
+  async read(key) {
+    const db = await this.initDB();
+    try {
+      return await new Promise((resolve, reject) => {
+        const request = db
+          .transaction(this.STORE_NAME, "readonly")
+          .objectStore(this.STORE_NAME)
+          .get(key);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+    } finally {
+      db.close();
+    }
+  },
+  async saveToMemory() {
+    if (this.loading || this.saving) return;
+    this.saving = true;
+    const revision = this.revision;
+    try {
+      const data = {
+        ...ProjectModel.normalize(ProjectState.capture()),
+        savedAt: new Date().toISOString(),
+      };
+      try {
+        await this.write("latest_session", data);
+      } catch (error) {
+        localStorage.setItem("ArchCAD_AutoSave", JSON.stringify(data));
+      }
+      this.lastSaved = new Date().toLocaleTimeString();
+      this.error = "";
+      if (revision === this.revision) this.dbNeedsSave = false;
+    } catch (error) {
+      this.error = error.message;
+      this.dbNeedsSave = true;
+    } finally {
+      this.saving = false;
+      if (typeof StudioUI !== "undefined") StudioUI.updateStatus();
+    }
+  },
+  async loadFromMemory() {
+    try {
+      let data;
+      try {
+        data = await this.read("latest_session");
+      } catch {}
+      const fallback = localStorage.getItem("ArchCAD_AutoSave");
+      if (fallback) {
+        const local = JSON.parse(fallback);
+        if (
+          !data ||
+          (Date.parse(local.savedAt) || 0) > (Date.parse(data.savedAt) || 0)
+        )
+          data = local;
+      }
+      if (data && confirm("Restore your last saved design?"))
+        ProjectState.apply(data, { rebase: true });
+    } catch (error) {
+      this.error = `Recovery failed: ${error.message}`;
+    } finally {
+      this.loading = false;
+      ProjectState.baseline();
+      if (typeof AppEvents !== "undefined") AppEvents.triggerStateChange();
+    }
+  },
+  markDirty() {
+    if (!this.loading && !ProjectState.applying) {
+      this.dbNeedsSave = true;
+      this.revision++;
+    }
+  },
+  startThrottler() {
+    setInterval(() => {
+      if (this.dbNeedsSave) this.saveToMemory();
+    }, 1500);
+  },
+  async versions() {
+    try {
+      return (await this.read("versions")) || [];
+    } catch {
+      try {
+        return JSON.parse(localStorage.getItem("ArchCAD_Versions") || "[]");
+      } catch {
+        return [];
+      }
+    }
+  },
+  async snapshot(label) {
+    const versions = await this.versions();
+    versions.unshift({
+      id: ProjectModel.uid(),
+      label: String(label || "Snapshot").slice(0, 80),
+      time: new Date().toISOString(),
+      project: ProjectState.capture(),
+    });
+    const kept = versions.slice(0, 15);
+    try {
+      await this.write("versions", kept);
+    } catch {
+      localStorage.setItem("ArchCAD_Versions", JSON.stringify(kept));
+    }
+    return kept;
+  },
+  async clearSession() {
+    try {
+      const db = await this.initDB();
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction(this.STORE_NAME, "readwrite");
+        tx.objectStore(this.STORE_NAME).delete("latest_session");
+        tx.oncomplete = resolve;
+        tx.onerror = () => reject(tx.error);
+      });
+      db.close();
+    } finally {
+      localStorage.removeItem("ArchCAD_AutoSave");
+    }
+  },
+  emergencySave() {
+    if (this.dbNeedsSave && !this.loading) {
+      try {
+        localStorage.setItem(
+          "ArchCAD_AutoSave",
+          JSON.stringify({
+            ...ProjectState.capture(),
+            savedAt: new Date().toISOString(),
+          }),
+        );
+      } catch {}
+    }
+  },
 };
 StorageEngine.startThrottler();
-
-
-
-// -----------------------------------------
-// 4. GLOBAL BRIDGE (HTML ONCLICK BINDINGS)
-// -----------------------------------------
+window.addEventListener("pagehide", () => StorageEngine.emergencySave());
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) StorageEngine.emergencySave();
+});
 window.undoAction = () => {
-    ProjectState.undo();
-    if (typeof renderSidebar === 'function') renderSidebar();
-    if (typeof updateCanvas === 'function') updateCanvas();
+  ProjectState.undo();
+  AppEvents.triggerStateChange();
 };
-
 window.redoAction = () => {
-    ProjectState.redo();
-    if (typeof renderSidebar === 'function') renderSidebar();
-    if (typeof updateCanvas === 'function') updateCanvas();
+  ProjectState.redo();
+  AppEvents.triggerStateChange();
 };
-
 window.saveToMemory = () => StorageEngine.saveToMemory();
 window.loadFromMemory = () => StorageEngine.loadFromMemory();
 window.markStateDirty = () => StorageEngine.markDirty();
-
-
-window.saveState = (actionName) => {
-    if (typeof ProjectState !== 'undefined') ProjectState.saveState(actionName);
-};
+window.saveState = (action) => ProjectState.saveState(action);

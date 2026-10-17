@@ -15,10 +15,12 @@ function updateCanvas(force3D = true) {
     renderSiteEnvironment(geom);
     renderArchitecture(geom);
     renderOverlaysAndStats(geom);
+    if(typeof WallEngine!=='undefined')WallEngine.render2D();
+    if(typeof StudioUI!=='undefined')StudioUI.refreshChecks();
     cleanupExcessSVG();
     
     if (force3D && typeof request3DUpdate === 'function') request3DUpdate();
-    if (typeof markStateDirty === 'function') markStateDirty();
+
     if (typeof updateAreaDashboard === 'function') updateAreaDashboard();
     if (typeof updateVastuHUD === 'function') updateVastuHUD();
     if (typeof calculateVastuScore === 'function') calculateVastuScore();
@@ -125,11 +127,7 @@ function renderPlotCornerBadges(geom, showLabels) {
 
 function renderPlotMeasurements(geom, showLabels) {
     const { A, B, C, D, I, J, K, L, SCALE } = geom;
-    const formatDim = (inches) => {
-        const ft = Math.floor(inches / 12);
-        const inc = Math.round(inches % 12);
-        return ft > 0 ? `${ft}' ${inc}"` : `${inc}"`;
-    };
+    const formatDim = formatLength;
     const renderText = (id, x, y, text, color = '#f59e0b') => {
         let el = document.getElementById(id);
         if (!showLabels) { if (el) el.style.display = 'none'; return; }
@@ -232,7 +230,9 @@ function renderRooms(geom) {
         [r, rb].forEach(rect => { rect.setAttribute('x', rx); rect.setAttribute('y', ry); rect.setAttribute('width', w); rect.setAttribute('height', h); });
         rh.setAttribute('x', rx + 1.5); rh.setAttribute('y', ry + 1.5); rh.setAttribute('width', w - 3); rh.setAttribute('height', h - 3);
 
-        const isSelected = (i === selectedElIndex);
+        const isSelected = (i === selectedElIndex || (typeof Selection!=='undefined'&&Selection.ids.has(el.id)));
+        const footprint=typeof Selection!=='undefined'?Selection.bounds(el):el;
+        [r,rb].forEach(rect=>{rect.setAttribute('width',footprint.w*SCALE);rect.setAttribute('height',footprint.h*SCALE)});
         r.setAttribute('class', isSelected ? 'room-rect room-selected' : 'room-rect');
         r.onmousedown = function(e) { if(typeof startDrag === 'function') startDrag(e, i); };
 
@@ -333,7 +333,7 @@ function applyRoomTooltips(r, el) {
                         ${icon}
                     </div>
                     <span style="font-weight: 800; color: #38bdf8; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; text-shadow: 0 1px 2px rgba(0,0,0,0.8);">
-                        ${el.customName || el.type}
+                        ${ProjectModel.escapeHTML(el.customName || el.type)}
                     </span>
                 </div>
                 <div style="display: flex; flex-direction: column; gap: 4px; font-size: 0.7rem; color: #e2e8f0;">
@@ -343,7 +343,7 @@ function applyRoomTooltips(r, el) {
                     </div>
                     <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3); padding: 4px 6px; border-radius: 4px;">
                         <span style="color: #94a3b8;">📐 Size</span>
-                        <span style="font-weight: 600; font-family: monospace; color: #f1f5f9;">${Math.floor(el.w/12)}'${Math.round(el.w%12)}" × ${Math.floor(el.h/12)}'${Math.round(el.h%12)}"</span>
+                        <span style="font-weight: 600; font-family: monospace; color: #f1f5f9;">${formatLength(el.w)} × ${formatLength(el.h)}</span>
                     </div>
                     <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); padding: 4px 6px; border-radius: 4px; margin-top: 2px;">
                         <span style="color: #10b981; font-weight: 600;">📏 Area</span>
@@ -421,7 +421,7 @@ window.renderAreaUI = function(areaData) {
     for (const [room, sqft] of Object.entries(areaData.currentFloorTotals)) {
         html += `
             <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 4px;">
-                <span style="color: #cbd5e1;">${room}</span>
+                <span style="color: #cbd5e1;">${ProjectModel.escapeHTML(room)}</span>
                 <span style="color: #38bdf8; font-weight: bold; font-family: monospace;">${sqft.toFixed(1)} sqft</span>
             </div>
         `;
@@ -537,7 +537,7 @@ function renderDynamicDistances(guideLayer, SCALE, Ix, Iy, draggedBounds) {
         const inc = Math.round(distVal % 12);
         if (ft === 0 && inc === 0) return;
         
-        const textStr = ft > 0 ? `${ft}' ${inc}"` : `${inc}"`;
+        const textStr = formatLength(distVal);
         const cx = (x1 + x2) / 2;
         const cy = (y1 + y2) / 2;
         

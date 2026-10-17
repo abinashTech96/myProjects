@@ -26,7 +26,7 @@ const ElementActions = {
                 isFurniture = true;
             }
             elements.push({ 
-                type: type, w: w, h: h,
+                id: ProjectModel.uid(), type: type, w: w, h: h,
                 x: ARCH_CONFIG.DEFAULTS.SPAWN_X,
                 y: ARCH_CONFIG.DEFAULTS.SPAWN_Y,
                 floor: currentFloor, locked: false, 
@@ -44,6 +44,7 @@ const ElementActions = {
     clone: function(idx) {
         ProjectState.commit('Cloned Element', () => {
             const clone = structuredClone(elements[idx]);
+            clone.id = ProjectModel.uid();
             clone.x += ARCH_CONFIG.DEFAULTS.CLONE_OFFSET; 
             clone.y += ARCH_CONFIG.DEFAULTS.CLONE_OFFSET;
             elements.push(clone);
@@ -53,6 +54,8 @@ const ElementActions = {
     rotate: function(idx) {
         ProjectState.commit('Rotated Room', () => {
             const el = elements[idx]; 
+            if (el.locked) throw new Error('Unlock this element first.');
+            if (el.isFurniture) { el.rot=((el.rot||0)+90)%360; return; }
             const tempW = el.w; 
             el.w = el.h; 
             el.h = tempW;
@@ -81,12 +84,13 @@ const FixtureActions = {
         if (elements[selectedElIndex].isFurniture) return alert("Cannot add doors or windows to furniture.");
         
         ProjectState.commit(`Added ${type}`, () => {
+            const room=elements[selectedElIndex];
             fixtures.push({ 
                 type: type, 
                 roomId: selectedElIndex, 
                 edge: 'bottom', 
-                offset: ARCH_CONFIG.DEFAULTS.FIXTURE_OFFSET,
-                size: type === 'door' ? (ARCH_CONFIG?.DEFAULTS?.DOOR_SIZE || 30) : (ARCH_CONFIG?.DEFAULTS?.WINDOW_SIZE || 15)
+                offset: Math.max(0,Math.min(ARCH_CONFIG.DEFAULTS.FIXTURE_OFFSET,room.w-30)),
+                size: Math.min(room.w,type === 'door' ? (ARCH_CONFIG?.DEFAULTS?.DOOR_SIZE || 30) : (ARCH_CONFIG?.DEFAULTS?.WINDOW_SIZE || 15))
             });
         });
     },
@@ -119,7 +123,7 @@ const StaircaseActions = {
         const source = elements[sourceIndex];
         if (!source || source.type !== 'staircase') return;
         elements.forEach((el, index) => {
-            if (el.type === 'staircase' && index !== sourceIndex) {
+            if (el.type === 'staircase' && index !== sourceIndex && el.floor !== source.floor && el.stackId === source.stackId) {
                 el.x = source.x; el.y = source.y; el.w = source.w; el.h = source.h; el.dir = source.dir;
             }
         });
@@ -149,7 +153,7 @@ const FloorActions = {
             if (existingStairs.length > 0) {
                 existingStairs.forEach(stair => {
                     const clone = structuredClone(stair);
-                    clone.floor = newFloorNum; 
+                    clone.id=ProjectModel.uid(); clone.floor = newFloorNum;
                     elements.push(clone);
                 });
             } else {
@@ -157,8 +161,9 @@ const FloorActions = {
                 const spawnX = (typeof ARCH_CONFIG !== 'undefined') ? ARCH_CONFIG.DEFAULTS.SPAWN_X : 20;
                 const spawnY = (typeof ARCH_CONFIG !== 'undefined') ? ARCH_CONFIG.DEFAULTS.SPAWN_Y : 20;
                 
-                elements.push({ type: 'staircase', w: sConf.w, h: sConf.h, x: spawnX, y: spawnY, floor: newFloorNum - 1, locked: false, dir: 'up' });
-                elements.push({ type: 'staircase', w: sConf.w, h: sConf.h, x: spawnX, y: spawnY, floor: newFloorNum, locked: false, dir: 'up' });
+                const stackId=ProjectModel.uid();
+                elements.push({ stackId, type: 'staircase', w: sConf.w, h: sConf.h, x: spawnX, y: spawnY, floor: newFloorNum - 1, locked: false, dir: 'up' });
+                elements.push({ stackId, type: 'staircase', w: sConf.w, h: sConf.h, x: spawnX, y: spawnY, floor: newFloorNum, locked: false, dir: 'up' });
             }
             
             currentFloor = newFloorNum;
@@ -174,13 +179,7 @@ const FloorActions = {
         ProjectState.commit('Deleted Floor', () => {
             const indicesToDelete = [];
             elements.forEach((el, index) => { if (el.floor === currentFloor) indicesToDelete.push(index); });
-            indicesToDelete.reverse();
-
-            indicesToDelete.forEach(idx => {
-                elements.splice(idx, 1);
-                fixtures = fixtures.filter(f => f.roomId !== idx);
-                fixtures.forEach(f => { if (f.roomId > idx) f.roomId--; });
-            });
+            ProjectState.removeIndices(indicesToDelete);
 
             elements.forEach(el => { if (el.floor > currentFloor) el.floor -= 1; });
             
@@ -210,7 +209,7 @@ const FloorActions = {
 
             currentElements.forEach(room => {
                 const clone = structuredClone(room); 
-                clone.floor = targetFloor; 
+                clone.id=ProjectModel.uid(); clone.floor = targetFloor;
                 elements.push(clone);
             });
             
@@ -218,6 +217,7 @@ const FloorActions = {
             currentFixtures.forEach(fix => {
                 const room = elements[fix.roomId];
                 const cloneFix = structuredClone(fix);
+                delete cloneFix.roomUid; cloneFix.id=ProjectModel.uid();
                 cloneFix.roomId = newRoomStartIndex + currentElements.indexOf(room);
                 fixtures.push(cloneFix);
             });
@@ -252,8 +252,8 @@ const FloorActions = {
         }
         
         maxReqW += 20; maxReqH += 20;
-        let currentInW = parseInt(document.getElementById('inW').value) || 0;
-        let currentInH = parseInt(document.getElementById('inH').value) || 0;
+        let currentInW = toInches(document.getElementById('inW').value,document.getElementById('unitSelect').value) || 0;
+        let currentInH = toInches(document.getElementById('inH').value,document.getElementById('unitSelect').value) || 0;
         let scaleFactor = 1;
         
         if (maxReqW > currentInW || maxReqH > currentInH) {
@@ -262,6 +262,7 @@ const FloorActions = {
             else return; 
         }
         
+        const autoStackId=ProjectModel.uid();
         ProjectState.commit('Auto-Generated Building', () => {
             elements = []; 
             fixtures = []; // Wipe old doors and windows
@@ -284,7 +285,7 @@ const FloorActions = {
                 }
                 if (floorCount > 1) {
                     elements.push({ 
-                        type: 'staircase', 
+                        stackId:autoStackId, type: 'staircase',
                         w: Math.round(sConf.w * scaleFactor), h: Math.round(sConf.h * scaleFactor), 
                         x: Math.round(sConf.x * scaleFactor), y: Math.round(sConf.y * scaleFactor), 
                         floor: i, locked: false, dir: 'up' 

@@ -68,12 +68,12 @@ const WIDGET_CONFIG = {
     // ✅ Building Code & Compliance Rules
     COMPLIANCE: {
         id: 'compliance-widget',
-        title: 'CODE INSPECTOR',
+        title: 'LAYOUT CHECKS',
         actionToggle: 'TOGGLE_COMPLIANCE',
         layout: { position: 'top: 190px; left: 24px;' },
         icons: { success: '✅', warning: '⚠️', error: '🚨' },
         messages: {
-            success: 'All elements meet standard building codes.',
+            success: 'All configured layout checks passed.',
             empty: 'Waiting for compliance scan...'
         },
         controls: {
@@ -556,7 +556,7 @@ const WidgetEngine = {
                 <div class="${conf.classes.header}">
                     <span class="${conf.classes.title}">${statusIcon} ${conf.title}</span>
                     <div class="${conf.classes.scoreWrap}">
-                        <span class="${conf.classes.score} ${colorClass}">${data.score}%</span>
+                        <span class="${conf.classes.score} ${colorClass}">${data.totalChecks === 0 ? '—' : data.score+'%'}</span>
                         <button class="${conf.controls.minimizeBtn.class}" title="${conf.controls.minimizeBtn.title}" onclick="WidgetEngine.handleAction('${conf.actionToggle}', event)">${conf.controls.minimizeBtn.icon}</button>
                     </div>
                 </div>
@@ -566,7 +566,7 @@ const WidgetEngine = {
             <!-- MINIMIZED VIEW -->
             <div class="${conf.classes.minView}" title="${conf.controls.expandBtn.title}" onclick="WidgetEngine.handleAction('${conf.actionToggle}', event)">
                 <span class="${conf.classes.icon}">${statusIcon}</span>
-                <span class="${conf.classes.scoreMin} ${colorClass}">${data.score}%</span>
+                <span class="${conf.classes.scoreMin} ${colorClass}">${data.totalChecks === 0 ? '—' : data.score+'%'}</span>
             </div>
         `;
 
@@ -643,12 +643,12 @@ const WidgetEngine = {
         }
 
         score = vConf.config.baseScore; 
-        const inW = parseFloat(document.getElementById('inW')?.value || 272);
-        const inH = parseFloat(document.getElementById('inH')?.value || 400);
+        const inW = toInches(document.getElementById('inW')?.value || 272,document.getElementById('unitSelect')?.value || 'in');
+        const inH = toInches(document.getElementById('inH')?.value || 400,document.getElementById('unitSelect')?.value || 'in');
         const compassDir = document.getElementById('compassDir')?.value || 'West';
 
         elements.forEach(el => {
-            if (el.isFurniture || el.floor > 0) return; 
+            if (el.isFurniture || el.floor !== currentFloor) return;
             
             const cx = el.x + (el.w / 2);
             const cy = el.y + (el.h / 2);
@@ -734,7 +734,7 @@ const WidgetEngine = {
             <!-- MINIMIZED VIEW -->
             <div class="${conf.classes.minView}" title="${conf.controls.expandBtn.title}" onclick="WidgetEngine.handleAction('${conf.actionToggle}', event)">
                 <span class="${conf.classes.icon}">${conf.icon}</span>
-                <span class="${conf.classes.scoreMin} ${colorClass}">${data.score}%</span>
+                <span class="${conf.classes.scoreMin} ${colorClass}">${data.totalChecks === 0 ? '—' : data.score+'%'}</span>
             </div>
         `;
 

@@ -1,0 +1,15 @@
+{
+  "name": "archcad-pro",
+  "private": true,
+  "version": "2.0.0",
+  "description": "Static architectural planning workspace",
+  "scripts": {
+    "test": "node --test tests/model.test.cjs tests/router.test.cjs",
+    "test:browser": "node tests/browser-regression.cjs",
+    "check": "node tests/check-scripts.cjs"
+  },
+  "devDependencies": {
+    "playwright": "1.62.1",
+    "three": "0.128.0"
+  }
+}

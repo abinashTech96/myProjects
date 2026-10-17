@@ -150,6 +150,7 @@ const RoomStudio = {
         }
 
         this.sandboxFixtures = [];
+        this.originalFurnitureIds = [];
         elements.forEach((el, globalIdx) => {
             if (el.isFurniture && el.floor === this.activeRoom.floor) {
                 const cx = el.x + (el.w / 2);
@@ -164,6 +165,7 @@ const RoomStudio = {
                     localFurniture.globalRef = globalIdx; 
                     localFurniture.rot = el.rot || 0; 
                     this.sandboxFixtures.push(localFurniture);
+                    this.originalFurnitureIds.push(el.id);
                 }
             }
         });
@@ -204,25 +206,15 @@ const RoomStudio = {
         // ✨ FIX: Wrap the merge logic in a commit block so the Undo/Redo engine catches it!
         if (typeof ProjectState !== 'undefined') {
             ProjectState.commit(`Saved Room Studio`, () => {
-                const indicesToRemove = this.sandboxFixtures
-                    .filter(f => f.globalRef !== undefined)
-                    .map(f => f.globalRef)
-                    .sort((a, b) => b - a);
-
-                indicesToRemove.forEach(idx => {
-                    elements.splice(idx, 1);
-                    if (typeof fixtures !== 'undefined') {
-                        fixtures.forEach(fix => {
-                            if (fix.roomId > idx) {
-                                fix.roomId -= 1;
-                            }
-                        });
-                    }
-                });
+                const indicesToRemove = elements.map((el,i)=>(this.originalFurnitureIds||[]).includes(el.id)?i:-1).filter(i=>i>=0);
+                const roomId = this.activeRoom.id;
+                ProjectState.removeIndices(indicesToRemove);
+                this.activeRoomIndex = elements.findIndex(el=>el.id===roomId);
 
                 this.sandboxFixtures.forEach(fix => {
                     const globalFurniture = structuredClone(fix);
                     delete globalFurniture.globalRef;
+                    globalFurniture.id = globalFurniture.id || ProjectModel.uid();
                     globalFurniture.x = this.activeRoom.x + fix.x;
                     globalFurniture.y = this.activeRoom.y + fix.y;
                     globalFurniture.floor = this.activeRoom.floor;
@@ -453,18 +445,14 @@ const RoomStudio = {
     },
 
     modifyFixture(prop, value) {
-        if (this.selectedFixtureIndex === -1 || !this.activeRoom) return;
-        let num = parseInt(value);
-        if (isNaN(num)) return;
-        
-        this.sandboxFixtures[this.selectedFixtureIndex][prop] = num;
-        
-        const fix = this.sandboxFixtures[this.selectedFixtureIndex];
-        fix.x = Math.max(0, Math.min(fix.x, this.activeRoom.w - fix.w));
-        fix.y = Math.max(0, Math.min(fix.y, this.activeRoom.h - fix.h));
-
-        if (this.is3DActive) this.build3DScene();
-        else this.renderCanvas();
+        if (this.selectedFixtureIndex === -1 || !this.activeRoom || !['x','y','w','h'].includes(prop)) return;
+        const num=Number(value);if(!String(value).trim()||!Number.isFinite(num))return;
+        const fix={...this.sandboxFixtures[this.selectedFixtureIndex],[prop]:num};
+        const turned=fix.rot%180===90,drawW=turned?fix.h:fix.w,drawH=turned?fix.w:fix.h;
+        if(fix.w<1||fix.h<1||drawW>this.activeRoom.w||drawH>this.activeRoom.h){if(typeof StudioUI!=='undefined')StudioUI.message('Furniture must fit inside the room.','error');return;}
+        fix.x=Math.max(0,Math.min(fix.x,this.activeRoom.w-drawW));fix.y=Math.max(0,Math.min(fix.y,this.activeRoom.h-drawH));
+        this.sandboxFixtures[this.selectedFixtureIndex]=fix;
+        if(this.is3DActive)this.build3DScene();else this.renderCanvas();
     },
 
     rotateSelected() {
@@ -641,9 +629,9 @@ const RoomStudio = {
                     drawW = fix.h;
                     drawH = fix.w;
                 }
-                const mesh = createFurniture3D(fix.type, drawW, drawH);
-                if (fix.rot) mesh.rotation.y = fix.rot * (Math.PI / 180);
-                mesh.position.set(fix.x + (fix.w/2), 0, fix.y + (fix.h/2));
+                const mesh = createFurniture3D(fix.type, fix.w, fix.h, fix.customColor?parseInt(fix.customColor.slice(1),16):null);
+                if (fix.rot) mesh.rotation.y = -fix.rot * (Math.PI / 180);
+                mesh.position.set(fix.x + (drawW/2), 0, fix.y + (drawH/2));
                 mesh.userData = { isFurniture: true, index: idx };
                 mesh.traverse(child => { 
                     if(child.isMesh){ 
@@ -720,13 +708,14 @@ const RoomStudio = {
             this.raycaster.ray.intersectPlane(this.dragPlane, intersectPoint);
             if (intersectPoint) {
                 const fix = this.sandboxFixtures[this.selectedFixtureIndex];
-                let newX = intersectPoint.x - this.dragOffset3D.x - (fix.w/2);
-                let newY = intersectPoint.z - this.dragOffset3D.z - (fix.h/2); 
+                const turned=Math.abs(fix.rot%180)===90,drawW=turned?fix.h:fix.w,drawH=turned?fix.w:fix.h;
+                let newX = intersectPoint.x - this.dragOffset3D.x - (drawW/2);
+                let newY = intersectPoint.z - this.dragOffset3D.z - (drawH/2);
                 const snap = (typeof STUDIO_CONFIG !== 'undefined' && STUDIO_CONFIG.GRID_SNAP_INCHES) ? STUDIO_CONFIG.GRID_SNAP_INCHES : 6;
                 newX = Math.round(newX / snap) * snap;
                 newY = Math.round(newY / snap) * snap;
-                newX = Math.max(0, Math.min(newX, this.activeRoom.w - fix.w));
-                newY = Math.max(0, Math.min(newY, this.activeRoom.h - fix.h));
+                newX = Math.max(0, Math.min(newX, this.activeRoom.w - drawW));
+                newY = Math.max(0, Math.min(newY, this.activeRoom.h - drawH));
                 fix.x = newX;
                 fix.y = newY;
 
@@ -735,7 +724,7 @@ const RoomStudio = {
                     child.userData && child.userData.index === this.selectedFixtureIndex
                 );
                 if (activeMesh) {
-                    activeMesh.position.set(fix.x + (fix.w/2), 0, fix.y + (fix.h/2));
+                    activeMesh.position.set(fix.x + (drawW/2), 0, fix.y + (drawH/2));
                     if (this.renderer3D.shadowMap.enabled) {
                         this.renderer3D.shadowMap.needsUpdate = true;
                     }

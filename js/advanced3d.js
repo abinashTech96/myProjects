@@ -672,6 +672,7 @@ function animateCinematicReset(startCam, endCam, startTarget, endTarget, clipPla
 
 // 🌟 Render Modes & Clipping
 function setAdvRenderMode(mode, btnElement) {
+    Engine3D.needsRender=true;
     if (!Engine3D.buildingGroup) return;
 
     const tabs = document.querySelectorAll('#render-mode-tabs .adv-tab');
@@ -706,6 +707,7 @@ function setAdvRenderMode(mode, btnElement) {
 }
 
 function updateClippingPlane(val) {
+    Engine3D.needsRender=true;
     if (!Engine3D.buildingGroup || typeof Engine3D.renderer === 'undefined') return;
     
     Engine3D.renderer.localClippingEnabled = true;

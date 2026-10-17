@@ -340,7 +340,7 @@ const ParapetModule = {
             else if (parseType === 'float') parsedVal = parseFloat(val);
             else if (parseType === 'string') parsedVal = String(val);
             
-            ParapetModule.config[key] = parsedVal;
+            ProjectState.commit('Changed facade',()=>{ParapetModule.config[key] = parsedVal;});
             const displayEl = document.getElementById(`val-${key}`);
             if (displayEl) displayEl.innerText = val;
             

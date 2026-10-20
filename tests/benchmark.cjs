@@ -3,6 +3,8 @@ const assert = require("node:assert/strict");
 require("../js/project-model.js");
 require("../js/planning-model.js");
 const D = require("../js/design-model.js");
+require("../js/workbench-model.js");
+require("../js/workbench-building.js");
 const p = ProjectModel.normalize({
   name: "500-room benchmark",
   plot: { inW: "5000", inH: "5000" },

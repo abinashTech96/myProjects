@@ -192,7 +192,7 @@ function buildBalcony(el, center, WALL_HEIGHT, useReal3D, isColliding, SCALE) {
     mesh.add(floor);
 
     const railMat = new THREE.MeshStandardMaterial({ color: 0x64748b });
-    const railH = 30 * SCALE;
+    const railH = (typeof WorkbenchUI !== 'undefined' ? WorkbenchUI.data.facade.railHeight : 30) * SCALE;
     const thickness = 4 * SCALE;
 
     const rails = [
@@ -515,7 +515,7 @@ function build3DFixtures(SCALE, I, WALL_HEIGHT, useReal3D) {
 }
 
 function build3DBoundaries(SCALE, unit, I, inW, inH) {
-    const toInches3D = (val, u) => u === 'cm' ? parseFloat(val) / 2.54 : parseFloat(val);
+    const toInches3D = (val, u) => ProjectModel.inches(val, u);
     const val = (id) => toInches3D(document.getElementById(id)?.value || 0, unit) * SCALE;
     const plotA = { x: I.x - val('aL'), z: I.z - val('aU') };
     const plotB = { x: I.x + inW + val('bR'), z: I.z - val('bU') };
@@ -828,7 +828,7 @@ function get3DEnvironmentParams() {
     const unitSelect = document.getElementById('unitSelect');
     const SCALE = scaleInput ? parseFloat(scaleInput.value) || ARCH_CONFIG.CANVAS.DEFAULT_SCALE : ARCH_CONFIG.CANVAS.DEFAULT_SCALE;
     const unit = unitSelect ? unitSelect.value : 'in';
-    const toInches3D = (val, u) => u === 'cm' ? parseFloat(val) / 2.54 : parseFloat(val);
+    const toInches3D = (val, u) => ProjectModel.inches(val, u);
     const inW = toInches3D(document.getElementById('inW')?.value || 0, unit) * SCALE;
     const inH = toInches3D(document.getElementById('inH')?.value || 0, unit) * SCALE;
     const CX = ARCH_CONFIG.CANVAS.CENTER_X;

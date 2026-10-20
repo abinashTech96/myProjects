@@ -5,17 +5,45 @@ on:
 permissions:
   contents: read
 jobs:
-  regression:
+  model-and-api:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: "24"
           cache: npm
       - run: npm ci
       - run: npm test
       - run: npm run check
       - run: npm run test:benchmark
-      - run: npx playwright install --with-deps chromium
-      - run: npm run test:browser
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install ifcopenshell==0.9.0.post1
+      - run: python tests/ifc-roundtrip.py
+  browser:
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [chromium, firefox, webkit]
+    env:
+      BROWSER_ENGINE: ${{ matrix.engine }}
+      BROWSER_HEADFUL: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps ${{ matrix.engine }}
+      - run: xvfb-run -a npm run test:browser
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: browser-${{ matrix.engine }}
+          path: /tmp/archcad-*.png
+          if-no-files-found: ignore

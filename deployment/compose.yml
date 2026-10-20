@@ -1,0 +1,36 @@
+services:
+  project:
+    build: ..
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      HOST: 0.0.0.0
+      ARCHCAD_DATA_DIR: /data
+      ARCHCAD_USERS_FILE: /run/secrets/archcad_users
+    volumes:
+      - project_data:/data
+    secrets:
+      - archcad_users
+    expose:
+      - "8080"
+  proxy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      project:
+        condition: service_healthy
+secrets:
+  archcad_users:
+    file: ./users.json
+volumes:
+  project_data:
+  caddy_data:
+  caddy_config:

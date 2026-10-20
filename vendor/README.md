@@ -17,3 +17,13 @@ Refresh all files together if changing Three.js versions and run both browser su
 - `fflate/fflate.js`: `fflate@0.8.2`, UMD distribution, MIT. License included.
 
 These files are copied unmodified from the pinned npm packages. Browser startup does not fetch them from a CDN.
+
+## Import and editing runtimes
+
+- `three/TransformControls.js` and `three/GLTFLoader.js`: unmodified matching `three@0.128.0` helpers, MIT.
+- `pdfjs/pdf.min.mjs` and `pdfjs/pdf.worker.min.mjs`: unmodified browser distribution from `pdfjs-dist@6.4.299`, Apache-2.0; LICENSE included.
+- `ocr/tesseract.min.js` and `ocr/worker.min.js`: unmodified `tesseract.js@7.0.0` distribution, Apache-2.0, with bundled third-party notice files.
+- `ocr/tesseract-core-lstm.wasm.js`: unmodified embedded-WASM LSTM runtime from `tesseract.js-core@7.0.0`, Apache-2.0 (CORE-LICENSE).
+- `ocr/eng.traineddata.gz`: English LSTM data from `@tesseract.js-data/eng@1.0.0`, `4.0.0_best_int/eng.traineddata.gz`, Apache-2.0. The checksum is verified by `npm run check`.
+
+PDF/OCR modules load only when requested. All workers, model data and import assets are same-origin and included in the offline manifest. Refresh vendored files with their pinned npm distributions and retain licenses; never replace just the renderer core or worker independently.

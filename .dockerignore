@@ -1,0 +1,11 @@
+.git
+node_modules
+server/.data
+.env
+.env.*
+tests
+playwright-report
+test-results
+*.log
+
+deployment/users.json

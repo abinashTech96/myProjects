@@ -13,6 +13,10 @@ if (!["chromium", "firefox", "webkit"].includes(browserEngine))
       process.env.THREE_TEST_ROOT ||
       path.dirname(require.resolve("three/package.json"));
   const server = http.createServer((req, res) => {
+    if (server.archcadOffline) {
+      req.socket.destroy();
+      return;
+    }
     const file = path.join(
       root,
       decodeURIComponent(req.url.split("?")[0]) === "/"
@@ -27,7 +31,7 @@ if (!["chromium", "firefox", "webkit"].includes(browserEngine))
       if (err) return res.writeHead(404).end();
       res.setHeader(
         "Content-Type",
-        file.endsWith(".js")
+        /\.m?js$/.test(file)
           ? "text/javascript"
           : file.endsWith(".css")
             ? "text/css"
@@ -43,7 +47,22 @@ if (!["chromium", "firefox", "webkit"].includes(browserEngine))
   try {
     browser = await driver.launch({
       executablePath: process.env.BROWSER_EXECUTABLE || undefined,
-      headless: true,
+      headless: process.env.BROWSER_HEADFUL !== "1",
+      ...(browserEngine === "firefox"
+        ? {
+            env: {
+              ...process.env,
+              MOZ_DISABLE_CONTENT_SANDBOX: "1",
+              LIBGL_ALWAYS_SOFTWARE: "1",
+            },
+            firefoxUserPrefs: {
+              "webgl.force-enabled": true,
+              "webgl.allow-software-renderer": true,
+              "gfx.webrender.software": true,
+              "webgl.out-of-process": false,
+            },
+          }
+        : {}),
       args:
         browserEngine === "chromium"
           ? [
@@ -88,7 +107,7 @@ if (!["chromium", "firefox", "webkit"].includes(browserEngine))
     route.fulfill({
       contentType: "image/png",
       body: Buffer.from(
-        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a9AAAAABJRU5ErkJggg==",
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4//8/AAX+Av4N70a4AAAAAElFTkSuQmCC",
         "base64",
       ),
     }),
@@ -118,6 +137,22 @@ if (!["chromium", "firefox", "webkit"].includes(browserEngine))
       errors,
     );
     assert.equal(errors.length, 0, "Startup must have no uncaught errors");
+    if (process.env.INTEGRATION_ONLY) {
+      await require("./workbench-integration.cjs")({ page, context, assert });
+      assert.equal(errors.length, 0, errors.join("\n"));
+      return;
+    }
+
+    if (process.env.WORKBENCH_ONLY) {
+      await require("./workbench-browser.cjs")({
+        page,
+        context,
+        assert,
+        server,
+      });
+      assert.equal(errors.length, 0, errors.join("\n"));
+      return;
+    }
     if (process.env.DESIGN_ONLY) {
       await require("./design-browser.cjs")({ page, context, assert, server });
       assert.equal(errors.length, 0, errors.join("\n"));
@@ -682,6 +717,8 @@ if (!["chromium", "firefox", "webkit"].includes(browserEngine))
     );
     await require("./planning-browser.cjs")({ page, context, assert, server });
     await require("./design-browser.cjs")({ page, context, assert, server });
+    await require("./workbench-browser.cjs")({ page, context, assert, server });
+    await require("./workbench-integration.cjs")({ page, context, assert });
     await page.screenshot({
       path: process.env.SCREENSHOT_PATH || "/tmp/archcad-desktop.png",
     });

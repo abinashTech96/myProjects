@@ -2,6 +2,10 @@
 
 A static floor-plan workspace with a shared-wall model, live Three.js preview, floor management, furniture editing, drawing sheets, and optional AI-assisted changes.
 
+## Professional workbench
+
+**Pro** exposes the combined 42-item roadmap through 30 workflows: direct 3D/wall editing, site/building/interior tools, PDF/OCR and GLB import, material/procurement planning, review, offline sync and presentation exports. See [coverage, usage, validation and practical limits](WORKBENCH.md). Existing widgets and editing workflows remain available.
+
 ## Run
 
 Serve this folder over HTTP, for example `python -m http.server 8000`, then open `http://localhost:8000`. The site can be published directly through GitHub Pages. No frontend build is required. Three.js r128 and its matching helpers are bundled locally under `vendor/three` with their license. A service worker caches the application after its first successful HTTP load. Keep the files and folders together.

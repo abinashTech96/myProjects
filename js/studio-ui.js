@@ -380,10 +380,11 @@ const StudioUI = {
       )
         return this.message("Enter a valid positive dimension.", "error");
     }
+    const geometryChanged = ["x", "y", "w", "h", "rot"].includes(key) && patch !== el[key];
     return ProjectState.commit("Changed " + key, () => {
       el[key] = patch;
-      this.assertBounds([el]);
-      for (const f of fixtures.filter((f) => f.roomId === index)) {
+      if (geometryChanged) this.assertBounds([el]);
+      for (const f of fixtures.filter((f) => f.roomId === index && geometryChanged && ["w", "h"].includes(key))) {
         const max = ["top", "bottom"].includes(f.edge) ? el.w : el.h;
         f.size = Math.min(f.size, max);
         f.offset = Math.max(0, Math.min(f.offset, max - f.size));
@@ -514,11 +515,7 @@ const StudioUI = {
         kind: "offset-" + axis,
         distance,
       });
-      const solved = ProjectModel.solveConstraints(
-        ProjectModel.normalize(ProjectState.capture()),
-      );
-      this.assertBounds(solved.elements);
-      elements = solved.elements;
+      // commit() solves constraints and validates only the geometry they change.
     });
   },
   removeConstraint(id) {
@@ -533,7 +530,12 @@ const StudioUI = {
       const candidate = ProjectModel.solveConstraints(
         ProjectModel.normalize(ProjectState.capture()),
       );
-      this.assertBounds(candidate.elements);
+      const previous = ProjectState.history.stack.at(-1)?.after || ProjectState.history.baseState;
+      const previousById = new Map((previous?.elements || []).map(el => [el.id, el]));
+      this.assertBounds(candidate.elements.filter(el => {
+        const old = previousById.get(el.id);
+        return !old || ["x", "y", "w", "h", "rot", "floor"].some(key => el[key] !== old[key]) || JSON.stringify(el.points) !== JSON.stringify(old.points);
+      }));
       elements = candidate.elements;
       ProjectState.saveState("Moved elements");
     } catch (error) {
@@ -1170,6 +1172,7 @@ const StudioUI = {
       return;
     }
     if (input) return;
+    if (event.target?.closest?.("#planning-dock") && ["ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) return;
     const modifier = event.ctrlKey || event.metaKey,
       key = event.key.toLowerCase();
     if (modifier && ["z", "y", "d", "l", "s"].includes(key)) {

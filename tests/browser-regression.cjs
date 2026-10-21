@@ -137,6 +137,11 @@ if (!["chromium", "firefox", "webkit"].includes(browserEngine))
       errors,
     );
     assert.equal(errors.length, 0, "Startup must have no uncaught errors");
+    if (process.env.PROPERTIES_ONLY) {
+      await require("./property-widgets-browser.cjs")({page,assert});
+      assert.equal(errors.length,0,errors.join("\n"));
+      return;
+    }
     if (process.env.INSPECTOR_ONLY) {
       await require("./inspector-browser.cjs")({page,assert});
       assert.equal(errors.length,0,errors.join("\n"));
@@ -180,6 +185,7 @@ if (!["chromium", "firefox", "webkit"].includes(browserEngine))
     }
     await require("./workspace-browser.cjs")({ page, context, assert });
     await require("./inspector-browser.cjs")({page,assert});
+    await require("./property-widgets-browser.cjs")({page,assert});
     await page.evaluate(() => {
       ProjectState.apply(
         { elements: [], fixtures: [], floorCount: 1 },

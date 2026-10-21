@@ -75,7 +75,7 @@ const ProjectState = {
       plot,
     };
   },
-  apply(raw, { rebase = false } = {}) {
+  apply(raw, { rebase = false, selection = null } = {}) {
     const project = ProjectModel.normalize(raw);
     this.applying = true;
     try {
@@ -83,7 +83,7 @@ const ProjectState = {
       this.data.fixtures = project.fixtures;
       this.data.currentFloor = project.currentFloor;
       this.data.globalCompassDir = project.compass;
-      this.data.selectedElIndex = -1;
+      this.data.selectedElIndex = selection ? project.elements.findIndex(el => el.id === selection.primary) : -1;
       for (const k of [
         "name",
         "author",
@@ -109,7 +109,8 @@ const ProjectState = {
         ARCH_CONFIG.DEFAULTS.WALL_HEIGHT_3D = project.wallSettings.height;
       if (typeof ARCH3D_CONFIG !== "undefined")
         ARCH3D_CONFIG.DEFAULTS.WALL_HEIGHT = project.wallSettings.height;
-      if (typeof Selection !== "undefined") Selection.ids.clear();
+      if (typeof Selection !== "undefined")
+        Selection.ids = new Set(selection ? selection.ids.filter(id => project.elements.some(el => el.id === id)) : []);
       if (project.view.parapet) set("parapetStyleSelect", project.view.parapet);
       if (typeof ParapetModule !== "undefined" && project.view.parapetConfig)
         Object.assign(ParapetModule.config, project.view.parapetConfig);
@@ -242,10 +243,7 @@ const ProjectState = {
       return true;
     } catch (error) {
       this.batchDepth--;
-      this.apply(before);
-      this.data.selectedElIndex = this.data.elements.findIndex(el => el.id === selectedId);
-      if (typeof Selection !== "undefined")
-        Selection.ids = new Set(selectionIds.filter(id => this.data.elements.some(el => el.id === id)));
+      this.apply(before, {selection: {primary: selectedId, ids: selectionIds}});
       if (typeof AppEvents !== "undefined") AppEvents.triggerStateChange();
       if (typeof StudioUI !== "undefined")
         StudioUI.message(error.message, "error");

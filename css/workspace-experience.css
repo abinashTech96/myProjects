@@ -76,11 +76,33 @@ body.experience-shell {
 .experience-shell .experience-widget-option input { margin: 0; }
 .experience-shell .experience-widget-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; gap: 6px; }
 .experience-shell .experience-widget-footer .studio-button { font-size: 10px; padding: 5px 7px; margin: 0; box-shadow: none; }
-.experience-shell[data-viewport-mode="3d"] #planning-dock, .experience-shell[data-viewport-mode="split"] #planning-dock { top: auto; bottom: calc(var(--workspace-status) + 110px); }
-.experience-shell #planning-dock { gap: 6px; padding: 0 1px 5px; }
-.experience-shell .planning-widget { min-width: 0; width: auto; flex: none; display: flex; flex-direction: row; align-items: center; gap: 9px; padding: 7px 10px; border-radius: 9px; background: #1c293bed; border-color: #425b73; box-shadow: 2px 2px 6px #07101a60; }
-.experience-shell .planning-widget strong { font-size: 10px; white-space: nowrap; }
-.experience-shell .planning-widget span { font-size: 10px; color: #7fe0db; white-space: nowrap; }
+/* A narrow icon rail leaves the drawing visible until a widget is opened. */
+.experience-shell #planning-dock {
+  display: flex; flex-direction: column; align-items: center; gap: 7px;
+  top: calc(var(--workspace-header) + 42px); bottom: auto;
+  left: calc(var(--workspace-catalog-space) + 10px); right: auto;
+  width: 42px; max-width: 42px;
+  max-height: calc(100dvh - var(--workspace-header) - var(--workspace-status) - 128px);
+  overflow-x: hidden; overflow-y: auto; padding: 3px 2px; pointer-events: auto; touch-action: pan-y;
+  scrollbar-width: none; overscroll-behavior: contain;
+}
+.experience-shell #planning-dock::-webkit-scrollbar { display: none; }
+.experience-shell .planning-widget {
+  display: grid; place-items: center; width: 36px; min-width: 36px; height: 36px;
+  flex: 0 0 36px; margin: 0; padding: 8px; border-radius: 10px;
+  background: #1c293bf5; color: #91e1ed; border: 1px solid #425b73;
+  box-shadow: 2px 2px 5px #07101a75, inset 1px 1px 0 #48607c55;
+}
+.experience-shell .planning-widget svg { width: 19px; height: 19px; }
+.experience-shell .planning-widget:hover { background: #29435a; border-color: #7ccbd9; }
+.experience-shell .planning-widget:active { box-shadow: var(--inset-shadow); }
+.experience-shell .studio-dialog[data-kind="widget-detail"] .studio-dialog-header { position: sticky; top: 0; z-index: 2; }
+.experience-shell .studio-dialog[data-kind="widget-detail"] .studio-list-item { width: 100%; white-space: normal; }
+@media (max-width:850px) { .experience-shell #planning-dock { left: 8px; } }
+@media (pointer:coarse) {
+  .experience-shell #planning-dock { width: 48px; max-width: 48px; }
+  .experience-shell .planning-widget { width: 42px; min-width: 42px; height: 42px; flex-basis: 42px; }
+}
 .experience-shell #planning-navigation { border-radius: 10px; background: #1c293bec; box-shadow: var(--raised-shadow); padding: 4px; }
 .experience-shell #planning-navigation .studio-button { box-shadow: none; min-height: 28px; padding: 4px 7px; }
 .experience-shell #nav-pad, .experience-shell #presentation-controls { display: none !important; }

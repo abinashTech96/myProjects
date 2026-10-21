@@ -16,10 +16,11 @@ const WorkspaceExperience = {
   icon(name) {
     return `<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${this.icons[name] || ''}</svg>`;
   },
-  decorate(dialog, title) {
-    const kind = this.kinds[title] || 'workflow';
+  decorate(dialog, title, widget) {
+    const kind = widget ? 'widget-detail' : this.kinds[title] || 'workflow';
+    if (widget) dialog.dataset.widget = widget;
     dialog.dataset.kind = kind;
-    const compact = ['widgets','settings','project','floors','pan','render','camera','view-tools'].includes(kind);
+    const compact = ['widgets','settings','project','floors','pan','render','camera','view-tools','widget-detail'].includes(kind);
     dialog.classList.toggle('experience-popover', compact);
     dialog.onpointerdown = event => {
       if (event.target !== dialog) return;
@@ -32,6 +33,18 @@ const WorkspaceExperience = {
     });
   },
   position(dialog, kind) {
+    if (kind === 'widget-detail') {
+      const anchor = document.querySelector(`#planning-dock [data-widget="${dialog.dataset.widget}"]`);
+      const r = anchor?.getBoundingClientRect();
+      const header = document.querySelector('.studio-header').getBoundingClientRect().bottom;
+      const width = Math.min(380, innerWidth - 24);
+      const left = innerWidth <= 600 ? 12 : Math.max(12, Math.min((r?.right || 44) + 10, innerWidth - width - 12));
+      const available = innerHeight - header - 24;
+      const height = Math.min(540, available);
+      const top = Math.max(header + 8, Math.min(r?.top || header + 8, innerHeight - height - 12));
+      Object.assign(dialog.style, {width:`${width}px`,left:`${left}px`,top:`${top}px`,margin:'0',maxHeight:`${Math.max(120, Math.min(height, innerHeight-top-12))}px`});
+      return;
+    }
     const selectors = { widgets: '[aria-label="Workspace widgets"]', settings: '[aria-label="Canvas settings"]',
       project: '.studio-file-actions > button:first-child', floors: '[aria-label="Manage floors"]',
       render: '#viewport-render-button', camera: '#viewport-views-button' };
@@ -231,7 +244,13 @@ const ViewportUI = {
   },
 };
 const experienceDialog = StudioUI.dialog;
-StudioUI.dialog = function(title, html) { const dialog=experienceDialog.call(this,title,html);WorkspaceExperience.decorate(dialog,title);return dialog; };
+StudioUI.dialog = function(title, html) {
+  const previous = document.querySelector('#studio-dialog[open]');
+  const widget = PlanningUI.openingWidget || (previous?.dataset.widget && previous.querySelector('.studio-dialog-header strong')?.textContent === title ? previous.dataset.widget : null);
+  const dialog=experienceDialog.call(this,title,html);
+  WorkspaceExperience.decorate(dialog,title,widget);
+  return dialog;
+};
 const experienceQuality = PlanningUI.quality;
 PlanningUI.quality = function() { experienceQuality.call(this);ViewportUI.applyProfile(this.preferences.quality,false); };
 const experienceFit3D = PlanningUI.fit3D;

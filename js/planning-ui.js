@@ -100,6 +100,15 @@ const PlanningUI = {
     const dock = document.createElement("div");
     dock.id = "planning-dock";
     dock.setAttribute("aria-label", "Pinned widgets");
+    dock.setAttribute("role", "toolbar");
+    dock.setAttribute("aria-orientation", "vertical");
+    dock.addEventListener("keydown", event => {
+      const buttons = [...dock.querySelectorAll("button")], index = buttons.indexOf(event.target);
+      if (index < 0 || !["ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) return;
+      event.preventDefault(); event.stopPropagation();
+      const next = event.key === "Home" ? 0 : event.key === "End" ? buttons.length - 1 : (index + (event.key === "ArrowDown" ? 1 : -1) + buttons.length) % buttons.length;
+      buttons[next].focus();
+    });
     document.body.appendChild(dock);
     const mode = document.createElement("div");
     mode.id = "planning-mode";
@@ -406,63 +415,41 @@ const PlanningUI = {
   renderWidgets() {
     const dock = document.getElementById("planning-dock");
     if (!dock) return;
-    const { p, analysis, vastu, quantities } = this.cache,
-      rows = quantities.floors.find((f) => f.floor === currentFloor),
-      selection = Selection.indices().map((i) => elements[i]),
-      widgets = {
-        checks: {
-          title: "Layout checks",
-          text: `${analysis.results.length} warnings · ${analysis.passed}/${analysis.total} checks`,
-          action: "StudioUI.checksDialog()",
-        },
-        vastu: {
-          title: "Vastu",
-          text:
-            vastu.score === null
-              ? "Not evaluated"
-              : `${vastu.score}% · ${vastu.count} rooms`,
-          action: "PlanningUI.vastuDialog()",
-        },
-        area: {
-          title: "Floor area",
-          text: `${(rows?.floorArea || 0).toFixed(1)} sq ft clear`,
-          action: "PlanningUI.areaDialog()",
-        },
-        converter: {
-          title: "Unit converter",
-          text: "Length · area · fractions",
-          action: "PlanningUI.converterDialog()",
-        },
-        measurements: {
-          title: "Measurements",
-          text: `${p.planning.measurements.length} saved`,
-          action: "PlanningUI.measurementsDialog()",
-        },
-        selection: {
-          title: "Selection",
-          text: `${selection.length} items · ${(selection.reduce((s, e) => s + PlanningModel.area(PlanningModel.points(e)), 0) / 144).toFixed(1)} sq ft bounds`,
-          action: "PlanningUI.selectionDialog()",
-        },
-        navigation: {
-          title: "Navigation",
-          text: `${globalCompassDir} ↑ · ${Math.round(CanvasState.zoomLvl * 100)}%`,
-          action: "PlanningUI.savedViewsDialog()",
-        },
-        shortcuts: {
-          title: "Shortcuts",
-          text: "Keyboard & touch guide",
-          action: "StudioUI.shortcuts()",
-        },
-      };
-    const summaries = { checks: `${analysis.results.length} alerts`, vastu: vastu.score === null ? 'Not evaluated' : `${vastu.score}%`, area: `${(rows?.floorArea||0).toFixed(1)} ft²`, converter:'Length / area', measurements:`${p.planning.measurements.length} saved`, selection:`${selection.length} items`, navigation:`${Math.round(CanvasState.zoomLvl*100)}%`, shortcuts:'Guide' };
+    const widgets = {
+      checks: { title: "Layout checks", open: () => StudioUI.checksDialog() },
+      vastu: { title: "Vastu", open: () => this.vastuDialog() },
+      area: { title: "Floor area", open: () => this.areaDialog() },
+      converter: { title: "Unit converter", open: () => this.converterDialog() },
+      measurements: { title: "Measurements", open: () => this.measurementsDialog() },
+      selection: { title: "Selection", open: () => this.selectionDialog() },
+      navigation: { title: "Navigation", open: () => this.savedViewsDialog() },
+      shortcuts: { title: "Shortcuts", open: () => StudioUI.shortcuts() },
+    };
+    this.widgetActions = widgets;
+    const icons = {
+      checks: '<path d="m5 12 4 4L19 6"/><rect x="3" y="3" width="18" height="18" rx="4"/>',
+      vastu: '<circle cx="12" cy="12" r="9"/><path d="m16 8-3 5-5 3 3-5z"/>',
+      area: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 3v4M13 3v3M18 3v4M3 8h4M3 13h3M3 18h4"/>',
+      converter: '<path d="M4 7h15m-4-4 4 4-4 4M20 17H5m4-4-4 4 4 4"/>',
+      measurements: '<path d="m3 16 13-13 5 5L8 21zM9 10l3 3m1-7 3 3M5 14l3 3"/>',
+      selection: '<path d="m5 3 14 9-7 2-3 7z"/>',
+      navigation: '<path d="m12 3 8 18-8-4-8 4z"/>',
+      shortcuts: '<rect x="2" y="5" width="20" height="14" rx="3"/><path d="M6 9h1m4 0h1m4 0h1M6 12h1m4 0h1m4 0h1M7 16h10"/>',
+    };
     const html = Object.entries(widgets)
       .filter(([k]) => this.preferences.widgets?.[k])
       .map(
         ([k, w]) =>
-          `<button class="planning-widget" data-widget="${k}" onclick="${w.action}" title="${this.esc(w.title+': '+w.text)}" aria-label="${this.esc(w.title+': '+w.text)}"><strong>${w.title}</strong><span>${this.esc(summaries[k])}</span></button>`,
+          `<button type="button" class="planning-widget" data-widget="${k}" onclick="PlanningUI.openWidget('${k}')" title="${this.esc(w.title)}" aria-label="${this.esc(w.title)}" aria-haspopup="dialog"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${icons[k]}</svg></button>`,
       )
       .join("");
     if (dock.innerHTML !== html) dock.innerHTML = html;
+  },
+  openWidget(key) {
+    const widget = this.widgetActions?.[key];
+    if (!widget || !this.preferences.widgets?.[key]) return;
+    this.openingWidget = key;
+    try { widget.open(); } finally { this.openingWidget = null; }
   },
   widgetsDialog() {
     const items = [
@@ -2041,13 +2028,19 @@ const planningOldInspector = StudioUI.renderInspector;
 StudioUI.renderInspector = function () {
   const inspector = document.getElementById("studio-properties");
   const active = document.activeElement;
+  const editing = this.inspectorChangeTarget?.isConnected ? this.inspectorChangeTarget : active;
+  const sameSelection = this.inspectedId === elements[selectedElIndex]?.id;
+  const sectionState = sameSelection && inspector ? new Map([...inspector.querySelectorAll("details")].map(d => [d.querySelector("summary")?.textContent.split(" · ")[0], d.open])) : new Map();
+  const scroll = document.querySelector(".studio-inspector")?.scrollTop || 0;
   // A blur commits before the next control receives its click. Replacing the
   // inspector here destroys that control, its focus, and native spinner repeats.
   if (!ProjectState.applying && inspector?.dataset.unit === document.getElementById("unitSelect").value &&
-      this.inspectedId === elements[selectedElIndex]?.id && inspector?.contains(active) &&
-      active.matches("input,select,textarea,[contenteditable=true]")) {
+      sameSelection && inspector?.contains(editing) &&
+      editing.matches("input,select,textarea,[contenteditable=true]")) {
     this.inspectorRenderPending = true;
-    inspector.querySelectorAll("input").forEach(input => { if (input !== active) input.inspectorSync?.(); });
+    const heading = inspector.querySelector(".studio-selection-title");
+    if (heading) heading.textContent = Selection.ids.size > 1 ? `${Selection.ids.size} selected` : elements[selectedElIndex].customName || elements[selectedElIndex].type;
+    inspector.querySelectorAll("input").forEach(input => { if (input !== editing) input.inspectorSync?.(); });
     const clearLabel = inspector.querySelector("[data-clear-interior]");
     if (clearLabel) {
       const clear = WallEngine.clearDimensions(elements[selectedElIndex]);
@@ -2122,6 +2115,13 @@ StudioUI.renderInspector = function () {
     "beforeend",
     `<details open><summary>Planning tools</summary>${el.type === "bedroom" ? `<label>Bedroom role<select onchange="PlanningUI.change('Changed bedroom role',()=>elements[selectedElIndex].role=this.value)"><option value="bedroom" ${el.role !== "master" ? "selected" : ""}>Bedroom</option><option value="master" ${el.role === "master" ? "selected" : ""}>Master bedroom</option></select></label>` : ""}${!el.isFurniture ? PlanningUI.button(el.points ? "Edit vertices" : "Make polygon", `PlanningUI.editVertices(${selectedElIndex})`) + PlanningUI.button("Opening editor", "PlanningUI.openingsDialog()") + PlanningUI.button("Save room template", "PlanningUI.templatesDialog()") : ""}${el.type === "staircase" ? PlanningUI.button("Stair designer", "PlanningUI.stairDialog()") : ""}</details>`,
   );
+  if (sameSelection) {
+    panel.querySelectorAll("details").forEach(d => {
+      const key = d.querySelector("summary")?.textContent.split(" · ")[0];
+      if (sectionState.has(key)) d.open = sectionState.get(key);
+    });
+    document.querySelector(".studio-inspector").scrollTop = scroll;
+  }
 };
 const planningOldEdit = StudioUI.edit;
 StudioUI.edit = function (index, key, value) {
@@ -2646,3 +2646,11 @@ document.addEventListener("focusout", event => {
     if (StudioUI.inspectorRenderPending && !panel?.contains(document.activeElement)) StudioUI.renderInspector();
   }, 0);
 });
+
+// Native text/color/select changes can fire while activeElement is temporarily
+// the document body. Keep their controls alive until the change has completed.
+document.addEventListener("change", event => {
+  if (!event.target.closest?.("#studio-properties")) return;
+  StudioUI.inspectorChangeTarget = event.target;
+  queueMicrotask(() => { if (StudioUI.inspectorChangeTarget === event.target) StudioUI.inspectorChangeTarget = null; });
+}, true);

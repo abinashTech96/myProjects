@@ -1254,6 +1254,7 @@ const Workbench3D = {
         "Workbench3D.stopRecording()",
       );
       document.body.append(bar);
+      const started = new Promise(resolve => { recorder.onstart = resolve; });
       const stopped = new Promise((resolve, reject) => {
         recorder.onstop = resolve;
         recorder.onerror = (e) =>
@@ -1265,6 +1266,15 @@ const Workbench3D = {
       try {
         draw(views[0]);
         recorder.start(100);
+        draw(views[0]);
+        track.requestFrame?.();
+        // Count the requested duration after the asynchronous encoder starts.
+        await Promise.race([
+          started,
+          stopped.then(() => { if (!this.recordingCancelled) throw Error("Recording stopped before the encoder started"); }),
+          new Promise((_, reject) => setTimeout(() => reject(Error("Video encoder did not start")), 10000)),
+        ]);
+        draw(views[0]);
         track.requestFrame?.();
         const start = performance.now(),
           total = (views.length - 1) * seconds * 1000;
@@ -1313,6 +1323,8 @@ const Workbench3D = {
             ),
           ),
         ]);
+        if (!chunks.length && !this.recordingCancelled)
+          throw Error("The browser produced no usable video frames");
         if (chunks.length && !this.recordingCancelled) {
           const blob = new Blob(chunks, { type });
           if (blob.size < 500)

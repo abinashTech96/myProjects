@@ -361,15 +361,33 @@ window.StudioEnhancements = {
   theme(value, persist = true) {
     if (!this.themes.includes(value)) value = "graphite";
     document.body.dataset.uiTheme = value;
+    this.canvasBackground =
+      getComputedStyle(document.body).getPropertyValue("--enh-bg").trim() || "#0f172a";
+    this.applyViewportTheme();
     if (persist)
       try {
         localStorage.setItem("ArchCAD_UI_Theme", value);
       } catch {}
   },
+  viewportBackground() {
+    return this.canvasBackground || "#0f172a";
+  },
+  applyViewportTheme() {
+    for (const engine of [window.Engine3D, window.Engine4D]) {
+      if (!engine?.scene) continue;
+      const color = new THREE.Color(this.viewportBackground());
+      // The presentation compositor applies gamma to its linear render target.
+      if (engine === window.Engine4D) color.convertSRGBToLinear();
+      if (engine.scene.background?.isColor) engine.scene.background.copy(color);
+      else engine.scene.background = color;
+      if (engine.scene.fog) engine.scene.fog.color.copy(color);
+    }
+    if (window.Engine3D?.scene) Engine3D.needsRender = true;
+  },
   themeDialog() {
     this.show(
       "Workspace themes",
-      `<p>Theme colors do not change project materials or render lighting.</p><div class="enhancement-theme-row">${this.themes.map((t) => this.b(t, `StudioEnhancements.theme('${t}')`)).join("")}</div>`,
+      `<p>Themes apply to panels and the 2D / 3D / 4D canvas background. Project materials and render lighting stay independent.</p><div class="enhancement-theme-row">${this.themes.map((t) => this.b(t, `StudioEnhancements.theme('${t}')`)).join("")}</div>`,
     );
   },
   close() {
@@ -1589,7 +1607,6 @@ window.StudioEnhancements = {
       );
       Engine4D.key.intensity = 3.2 * factor;
       Engine4D.fill.intensity = factor > 0 ? 1.15 : 0.12;
-      Engine4D.scene.background.set(factor > 0 ? 0xe8edf2 : 0x101a2c);
     }
   },
   afterRender(ms) {

@@ -3,13 +3,14 @@ module.exports = async ({ page, assert }) => {
       project: ProjectState.capture(),
       preferences: structuredClone(PlanningUI.preferences),
       theme: document.body.dataset.uiTheme,
+      engineReady: !!Engine3D.scene,
     })),
     viewport = page.viewportSize();
   await page
     .getByRole("button", { name: "Studio upgrades", exact: true })
     .click();
   assert.equal(await page.locator(".enhancement-hub button").count(), 18);
-  const colors = new Set();
+  const colors = new Set(), canvasColors = new Set();
   for (const theme of ["graphite", "pearl", "ocean", "sand"]) {
     await page.evaluate((t) => StudioEnhancements.theme(t), theme);
     colors.add(
@@ -17,12 +18,15 @@ module.exports = async ({ page, assert }) => {
         .locator(".studio-header")
         .evaluate((n) => getComputedStyle(n).backgroundColor),
     );
+    canvasColors.add(await page.locator("#blueprint").evaluate(n => getComputedStyle(n).backgroundColor));
+    assert.equal(await page.evaluate(() => !!Engine3D.scene), original.engineReady, "Theme switching must keep 2D startup lazy");
     assert.equal(
       await page.evaluate(() => localStorage.getItem("ArchCAD_UI_Theme")),
       theme,
     );
   }
   assert.equal(colors.size, 4);
+  assert.equal(canvasColors.size, 4);
   await page.evaluate(() => {
     StudioEnhancements.theme("graphite");
     StudioEnhancements.close();
@@ -110,6 +114,50 @@ module.exports = async ({ page, assert }) => {
     setWorkspaceLayout("4d");
   });
   await page.waitForFunction(() => Engine4D.ready && Engine4D.frames > 0);
+  const themePixels = new Set();
+  for (const theme of ["graphite", "pearl", "ocean", "sand"]) {
+    const result = await page.evaluate(theme => {
+      const before = JSON.stringify(ProjectState.capture());
+      const lights = [Engine4D.key.intensity, Engine4D.fill.intensity, Engine4D.exposure];
+      StudioEnhancements.theme(theme);
+      const lightingUnchanged = JSON.stringify(lights) === JSON.stringify([Engine4D.key.intensity, Engine4D.fill.intensity, Engine4D.exposure]);
+      const css = new THREE.Color(StudioEnhancements.viewportBackground());
+      const sourceMatches = Engine3D.scene.background.getHexString() === css.getHexString();
+      const expected = css.clone().convertSRGBToLinear().getHexString();
+      const expectedPixel = css.toArray().map(v => Math.round(v * 255));
+      const backgrounds = [];
+      for (const preset of ["daylight", "interior", "studio"]) {
+        Engine4D.setPreset(preset);
+        backgrounds.push(Engine4D.scene.background.getHexString());
+      }
+      Engine4D.setPreset("daylight");
+      StudioEnhancements.sunStudy = true;
+      for (const hour of [0, 12]) {
+        StudioEnhancements.sunKey = JSON.stringify(ProjectState.meta.design.site);
+        StudioEnhancements.sunPosition = DesignModel.sun({...ProjectState.meta.design.site, hour});
+        StudioEnhancements.applyPresentation();
+        backgrounds.push(Engine4D.scene.background.getHexString());
+      }
+      StudioEnhancements.sunStudy = false;
+      StudioEnhancements.sunKey = null;
+      Engine4D.setPreset("daylight");
+      Engine4D.render(Engine3D.camera);
+      const gl = Engine4D.renderer.getContext(), pixel = new Uint8Array(4);
+      gl.readPixels(4, 4, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixel);
+      return { expected, expectedPixel, sourceMatches, backgrounds, pixel: [...pixel], lightingUnchanged, projectUnchanged: before === JSON.stringify(ProjectState.capture()) };
+    }, theme);
+    assert.ok(result.backgrounds.every(color => color === result.expected), theme + " must survive preset changes and sun study");
+    assert.equal(result.sourceMatches, true);
+    // Dark colors incur up to ~7 sRGB levels of rounding in the 8-bit linear target.
+    assert.ok(result.expectedPixel.every((v, i) => Math.abs(result.pixel[i] - v) <= 8), theme + " canvas pixels must match the theme palette: " + JSON.stringify({actual: result.pixel, expected: result.expectedPixel}));
+    assert.equal(result.lightingUnchanged, true);
+    assert.equal(result.projectUnchanged, true);
+    assert.equal(result.pixel[3], 255);
+    themePixels.add(result.pixel.join(","));
+  }
+  assert.equal(themePixels.size, 4, "The actual 4D framebuffer must show four distinct canvas themes");
+  await page.evaluate(() => StudioEnhancements.theme("graphite"));
+
   await page.evaluate(() => StudioEnhancements.materials());
   await page.locator("#enh-finish").selectOption("wood");
   await page.locator("#enh-color").fill("#c7a681");

@@ -25,7 +25,7 @@ Open **✦ Studio+** beside Search to access the coordinated editing and present
 
 ## Four themes
 
-**Graphite**, **Pearl**, **Ocean** and **Sand** are available in Studio+ and the theme menu. Theme choices persist on the current device and affect the workspace interface independently of model materials and lighting.
+**Graphite**, **Pearl**, **Ocean** and **Sand** are available in Studio+ and the theme menu. Theme choices persist on the current device and affect the workspace interface and the 2D / 3D / 4D canvas background independently of model materials and lighting. Rendering presets and sun study preserve the chosen canvas theme.
 
 ## Saving and view state
 

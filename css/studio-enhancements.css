@@ -53,7 +53,8 @@ body[data-ui-theme]
     #planning-navigation,
     .experience-popover,
     .planning-widget,
-    .viewport-orientation button
+    .viewport-orientation button,
+    #viewport-toolbar
   ) {
   background: var(--enh-panel) !important;
   color: var(--enh-text) !important;
@@ -104,9 +105,12 @@ body[data-ui-theme] :is(#studio-search, #studio-asset-kind) {
   color: var(--enh-text);
   border-color: var(--enh-border);
 }
-body[data-ui-theme="pearl"] :is(#canvas-wrapper, #blueprint),
-body[data-ui-theme="sand"] :is(#canvas-wrapper, #blueprint) {
+body[data-ui-theme] :is(#canvas-wrapper, #right-canvas-wrapper, #blueprint, #three-container) {
   background: var(--enh-bg);
+}
+body[data-ui-theme] :is(.viewport-topline, .viewport-bottomline) {
+  color: var(--enh-muted) !important;
+  text-shadow: none !important;
 }
 body[data-ui-theme] .enhancement-form :is(input, select) {
   min-width: 0;

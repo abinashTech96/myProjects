@@ -1,5 +1,5 @@
 /* Same-origin application assets only. Project data and AI requests never enter this cache. */
-const CACHE = "archcad-studio-eighteen-themes-v7";
+const CACHE = "archcad-themed-viewports-v8";
 async function cacheApp() {
   const response = await fetch(
     new URL("offline-assets.json", self.registration.scope),

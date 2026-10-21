@@ -25,7 +25,7 @@ window.Engine3D = {
         
         // 1. Setup Scene & Camera (Theme-Aware)
         const isClassic = document.body.classList.contains('classic-theme');
-        const bgColor = isClassic ? 0xe2e8f0 : 0x0f172a;
+        const bgColor = typeof StudioEnhancements !== "undefined" ? StudioEnhancements.viewportBackground() : (isClassic ? 0xe2e8f0 : 0x0f172a);
         
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(bgColor); 

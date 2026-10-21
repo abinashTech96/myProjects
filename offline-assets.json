@@ -85,5 +85,15 @@
   "./vendor/three/three.min.js",
   "css/workspace-simple.css",
   "css/workspace-experience.css",
-  "js/workspace-experience.js"
+  "js/workspace-experience.js",
+  "./js/engine4d.js",
+  "./vendor/three/CopyShader.js",
+  "./vendor/three/SSAOShader.js",
+  "./vendor/three/GammaCorrectionShader.js",
+  "./vendor/three/FXAAShader.js",
+  "./vendor/three/Pass.js",
+  "./vendor/three/ShaderPass.js",
+  "./vendor/three/EffectComposer.js",
+  "./vendor/three/SSAOPass.js",
+  "./vendor/three/SimplexNoise.js"
 ]

@@ -53,6 +53,16 @@ for (const [name, original] of Object.entries({
   "GLTFExporter.js": "examples/js/exporters/GLTFExporter.js",
   "GLTFLoader.js": "examples/js/loaders/GLTFLoader.js",
   "TransformControls.js": "examples/js/controls/TransformControls.js",
+  "CopyShader.js": "examples/js/shaders/CopyShader.js",
+  "SSAOShader.js": "examples/js/shaders/SSAOShader.js",
+  "GammaCorrectionShader.js": "examples/js/shaders/GammaCorrectionShader.js",
+  "FXAAShader.js": "examples/js/shaders/FXAAShader.js",
+  "Pass.js": "examples/js/postprocessing/Pass.js",
+  "ShaderPass.js": "examples/js/postprocessing/ShaderPass.js",
+  "EffectComposer.js": "examples/js/postprocessing/EffectComposer.js",
+  "SSAOPass.js": "examples/js/postprocessing/SSAOPass.js",
+  "SimplexNoise.js": "examples/js/math/SimplexNoise.js",
+
 })) {
   const source = fs.readFileSync(
     path.join(path.dirname(require.resolve("three/package.json")), original),

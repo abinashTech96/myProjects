@@ -27,3 +27,5 @@ These files are copied unmodified from the pinned npm packages. Browser startup 
 - `ocr/eng.traineddata.gz`: English LSTM data from `@tesseract.js-data/eng@1.0.0`, `4.0.0_best_int/eng.traineddata.gz`, Apache-2.0. The checksum is verified by `npm run check`.
 
 PDF/OCR modules load only when requested. All workers, model data and import assets are same-origin and included in the offline manifest. Refresh vendored files with their pinned npm distributions and retain licenses; never replace just the renderer core or worker independently.
+
+The 4D presentation pipeline lazily loads matching Three.js r128 examples: EffectComposer, Pass, ShaderPass, SSAOPass, CopyShader, SSAOShader, GammaCorrectionShader, FXAAShader and SimplexNoise. These files retain the Three.js MIT license above and are checked byte-for-byte against the pinned npm package by `npm run check`.

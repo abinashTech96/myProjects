@@ -166,3 +166,32 @@ body.experience-shell {
 #advanced-view-panel .studio-action-grid {gap:6px;}
 #advanced-view-panel .studio-button {min-height:34px;font-size:12px;margin:0;padding:7px 8px;}
 @media(max-width:600px) {#advanced-view-panel {top:115px;width:210px;max-height:calc(100% - 155px);}}
+
+/* 4D owns its presentation controls. Plan navigation remains available in 2D/3D. */
+body[data-workspace="4d"] #planning-navigation,
+body[data-workspace="4d"] #viewport-toolbar {display:none!important;}
+#four-d-canvas {position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2;}
+#four-d-canvas[hidden] {display:none!important;}
+.presentation-input-surface {opacity:0;}
+body[data-workspace="4d"] #advanced-view-panel {top:46px;max-height:calc(100% - 70px);width:244px;padding:10px;}
+body[data-workspace="4d"]:has(#planning-dock .planning-widget) #advanced-view-panel {left:66px;width:min(244px,calc(100% - 80px));}
+#advanced-view-panel p {font-size:10px;margin:7px 0;color:#b5d9df;}
+#advanced-view-panel label {gap:5px;margin:9px 0;font-size:11px;}
+#advanced-view-panel select {width:100%;min-height:30px;padding:5px 7px;border:1px solid #40536a;border-radius:7px;background:#152132;color:#edf4ff;font:11px system-ui;}
+#advanced-view-panel .four-d-camera-tools {display:flex;gap:4px;margin:8px 0;}
+#advanced-view-panel .four-d-camera-tools .studio-button {flex:1;min-width:0;}
+#advanced-view-panel .studio-action-grid {display:grid;grid-template-columns:1fr 1fr;gap:5px;}
+#advanced-view-panel .studio-button {min-height:30px;padding:5px 7px;font-size:11px;line-height:1.2;border-radius:7px;box-shadow:2px 2px 5px #0003,inset 1px 1px 0 #ffffff06;}
+#advanced-view-panel input[type="range"] {margin:3px 0;}
+body[data-workspace="4d"] .viewport-bottomline {bottom:12px;}
+@media(max-width:600px) {
+ body[data-workspace="4d"] #advanced-view-panel {top:40px;width:205px;max-height:calc(100% - 60px);}
+ body[data-workspace="4d"]:has(#planning-dock .planning-widget) #advanced-view-panel {left:64px;width:min(205px,calc(100% - 76px));}
+ body[data-workspace="4d"] .viewport-orientation {top:34px;}
+}
+@media(pointer:coarse) {#advanced-view-panel .studio-button {min-height:36px;}#advanced-view-panel select {min-height:36px;}}
+
+body[data-workspace="4d"] .viewport-topline,body[data-workspace="4d"] .viewport-bottomline {color:#33445a;text-shadow:0 1px 2px #fff8;}
+
+@media(max-width:600px) {body[data-workspace="4d"] .viewport-orientation {display:none;}}
+#advanced-view-panel .studio-action-grid > .studio-button:last-child:nth-child(odd) {grid-column:1 / -1;}

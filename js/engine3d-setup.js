@@ -199,7 +199,7 @@ window.Engine3D = {
             
             const continuous = this.isWalkthrough || window.isPlayingTour || this.controls.autoRotate || !!this.cameraTween;
             if (continuous || controlsChanged || this.needsRender) {
-                this.renderer.render(this.scene, this.camera);
+                if (!(typeof Engine4D !== "undefined" && Engine4D.render(this.camera))) this.renderer.render(this.scene, this.camera);
                 this.renderFrames = (this.renderFrames || 0) + 1;
                 this.needsRender = false;
                 this.afterRender?.(time, !continuous && !controlsChanged);

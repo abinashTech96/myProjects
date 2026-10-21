@@ -566,6 +566,7 @@ const Workbench3D = {
       const old = Engine3D.elementObjects.get(e.id);
       if (old) old.visible = false;
       this.group.add(holder);
+      if(typeof Engine4D !== "undefined" && Engine4D.active) Engine4D.modelVersion=null;
       Engine3D.needsRender = true;
     } catch (error) {
       StudioUI.message("Model " + asset.name + ": " + error.message, "error");
@@ -1173,7 +1174,8 @@ const Workbench3D = {
       const seconds = WorkbenchUI.num("wb-video-duration");
       ProjectModel.finite(seconds, "View duration", 0.5, 30);
       setWorkspaceLayout(StudioUI.mode === "4d" ? "4d" : "3d");
-      const source = Engine3D.renderer.domElement;
+      const presentation = typeof Engine4D !== 'undefined' && Engine4D.active && Engine4D.ready;
+      const source = (presentation ? Engine4D.renderer : Engine3D.renderer).domElement;
       if (!window.MediaRecorder || !source.captureStream)
         throw Error("Video recording is unavailable in this browser");
       const type = [
@@ -1189,7 +1191,7 @@ const Workbench3D = {
       canvas.height = source.height;
       const context = canvas.getContext("2d");
       const draw = (view) => {
-        Engine3D.renderer.render(Engine3D.scene, Engine3D.camera);
+        if(presentation) Engine4D.render(); else Engine3D.renderer.render(Engine3D.scene, Engine3D.camera);
         context.drawImage(source, 0, 0, canvas.width, canvas.height);
         const scale = canvas.width / 1440;
         context.font = Math.max(16, 20 * scale) + "px system-ui";

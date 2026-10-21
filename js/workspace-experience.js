@@ -105,23 +105,26 @@ const ViewportUI = {
     if (enabled) {
       this.previousProfile = this.profile;
       this.previousSection = Workbench3D.section;
-      this.applyProfile('high', false);
+      Engine4D.enable();
       let panel = document.getElementById('advanced-view-panel');
       if (!panel) {
         panel = document.createElement('details');
         panel.id = 'advanced-view-panel'; panel.open = !matchMedia('(max-width:600px)').matches;
-        panel.innerHTML = `<summary>4D · Advanced view</summary><p>Studio lighting · textured surfaces · live cutaway</p>
+        panel.innerHTML = `<summary>4D · Advanced view</summary><p id="four-d-render-status" role="status">Loading presentation renderer…</p>
+          <label>Rendering style<select id="four-d-engine-preset" onchange="Engine4D.setPreset(this.value)"><option value="daylight">Daylight</option><option value="interior">Warm interior</option><option value="studio">Studio</option></select></label>
+          <div class="four-d-camera-tools" role="toolbar" aria-label="4D camera controls"><button class="studio-button" onclick="ViewportUI.orbit()">Orbit</button><button class="studio-button" onclick="ViewportUI.fit()">Fit</button><button class="studio-button" onclick="ViewportUI.viewsDialog()">Views</button><button class="studio-button" onclick="StudioUI.viewToolsDialog()">More</button></div>
           <label>Inspect floor<select aria-label="Inspect floor" onchange="ViewportUI.inspectFloor(this.value)"></select></label><label>Cutaway height <output id="advanced-cut-label">Full building</output><input aria-label="Cutaway height" type="range" min="5" max="100" value="100" oninput="ViewportUI.cutaway(this.value)"></label>
-          <div class="studio-action-grid"><button class="studio-button" onclick="ViewportUI.orient('top')">Floor plan</button><button class="studio-button" onclick="ViewportUI.orient('iso')">Isometric</button><button class="studio-button" onclick="ViewportUI.walk()">Walk inside</button><button class="studio-button" onclick="WorkbenchUI.viewDialog()">Section & measure</button><button class="studio-button" onclick="ViewportUI.renderDialog()">Lighting</button><button class="studio-button" onclick="Workbench3D.isolateSelection()">Isolate selection</button><button class="studio-button" onclick="Workbench3D.clearIsolation();document.querySelector('#advanced-view-panel select').value='all';ViewportUI.inspectFloor('all')">Show building</button><button class="studio-button" onclick="StudioUI.exportDialog()">Capture & export</button></div>`;
+          <div class="studio-action-grid"><button class="studio-button" onclick="ViewportUI.orient('top')">Floor plan</button><button class="studio-button" onclick="ViewportUI.orient('iso')">Isometric</button><button class="studio-button" onclick="ViewportUI.walk()">Walk inside</button><button class="studio-button" onclick="WorkbenchUI.viewDialog()">Section & measure</button><button class="studio-button" onclick="Engine4D.lightingDialog()">Lighting</button><button class="studio-button" onclick="Workbench3D.isolateSelection()">Isolate selection</button><button class="studio-button" onclick="Workbench3D.clearIsolation();ViewportUI.inspectFloor('all')">Show building</button><button class="studio-button" onclick="Engine4D.capture()">Capture render</button><button class="studio-button" onclick="StudioUI.exportDialog()">All exports</button></div>`;
         document.getElementById('right-canvas-wrapper').append(panel);
       }
       panel.hidden = false;
-      panel.querySelector('select').innerHTML = '<option value="all">Whole building</option>' + Array.from({length:ProjectState.capture().floorCount},(_,floor)=>`<option value="${floor}">${floor===0?'Ground':`Floor ${floor}`}</option>`).join('');
+      panel.querySelector('select[aria-label="Inspect floor"]').innerHTML = '<option value="all">Whole building</option>' + Array.from({length:ProjectState.capture().floorCount},(_,floor)=>`<option value="${floor}">${floor===0?'Ground':`Floor ${floor}`}</option>`).join('');
       this.advancedFloor = null;
       this.cutaway(100);
     } else {
       const panel = document.getElementById('advanced-view-panel');
       if (panel) panel.hidden = true;
+      Engine4D.disable();
       Workbench3D.section = this.previousSection || null;
       if (Workbench3D.section) Workbench3D.applySection(); else Workbench3D.clearSection();
       this.applyProfile(this.previousProfile || 'balanced', false);
@@ -131,6 +134,8 @@ const ViewportUI = {
   inspectFloor(value) {
     const floor = Number(value);
     this.advancedFloor = value === 'all' || !Number.isInteger(floor) || floor < 0 || floor >= ProjectState.capture().floorCount ? null : floor;
+    const select=document.querySelector('#advanced-view-panel select[aria-label="Inspect floor"]');
+    if(select) select.value=this.advancedFloor === null ? 'all' : String(this.advancedFloor);
     this.cutaway(this.advancedFloor === null ? 100 : 65);
   },
   cutaway(value) {
@@ -172,9 +177,9 @@ const ViewportUI = {
     if (!context) return;
     const floor = currentFloor === 0 ? 'Ground' : `Floor ${currentFloor}`;
     context.textContent = `${floor} · ${StudioUI.unit === 'ftin' ? 'ft / in' : StudioUI.unit === 'cm' ? 'cm' : 'inches'}`;
-    document.getElementById('viewport-quality').textContent = {low:'Draft',balanced:'Balanced',high:'Studio'}[this.profile] || 'Balanced';
+    document.getElementById('viewport-quality').textContent = StudioUI.mode === '4d' ? (Engine4D.ready ? `${Engine4D.preset} · ${Engine4D.supportsAO && Engine4D.ao.output===THREE.SSAOPass.OUTPUT.Default?'PBR + AO':'PBR'}` : 'Loading 4D…') : {low:'Draft',balanced:'Balanced',high:'Studio'}[this.profile] || 'Balanced';
     document.getElementById('viewport-view-label').textContent = `${this.projectionMode === 'orthographic' ? 'Orthographic' : 'Perspective'} · ${{iso:'Isometric',top:'Top',front:'Front',right:'Right',left:'Left',back:'Back'}[this.view] || 'Free orbit'}`;
-    document.getElementById('viewport-model-info').textContent = `${elements.filter(e=>!e.isFurniture).length} rooms · ${Engine3D.renderer?.info.render.triangles?.toLocaleString() || 0} triangles`;
+    document.getElementById('viewport-model-info').textContent = `${elements.filter(e=>!e.isFurniture).length} rooms · ${(StudioUI.mode==='4d' ? Engine4D.modelTriangles : Engine3D.renderer?.info.render.triangles)?.toLocaleString() || 0} triangles`;
     document.querySelectorAll('#viewport-toolbar .viewport-button').forEach((button,index) => { if(index<2){ const active=index === (Engine3D.isWalkthrough?1:0); button.classList.toggle('active',active);button.setAttribute('aria-pressed',String(active)); } });
     document.querySelectorAll('.viewport-orientation button').forEach(button => button.setAttribute('aria-pressed', String(button.getAttribute('onclick')?.includes(`'${this.view}'`))));
   },
@@ -285,6 +290,7 @@ const ViewportUI = {
   },
   renderDialog() {
     this.ensure();
+    if(StudioUI.mode === '4d') return Engine4D.lightingDialog();
     StudioUI.dialog('3D rendering',`<div class="experience-render-profiles" role="group" aria-label="Rendering quality">${[['low','Draft'],['balanced','Balanced'],['high','Studio']].map(([value,label])=>`<button class="studio-button ${this.profile===value?'active':''}" aria-pressed="${this.profile===value}" onclick="ViewportUI.applyProfile('${value}');ViewportUI.renderDialog()">${label}</button>`).join('')}</div><p class="experience-hint">${{low:'Fast navigation · no shadows · native 1× resolution',balanced:'Soft shadows · 1× resolution · efficient editing',high:'Studio reflections · detailed shadows · up to 2× resolution'}[this.profile]}</p><label>Exposure <output id="viewport-exposure-value">${this.exposure.toFixed(2)}</output><input aria-label="Render exposure" type="range" min="0.6" max="1.8" step="0.05" value="${this.exposure}" oninput="ViewportUI.setExposure(this.value)"></label><label>Sun position<input aria-label="Sun position" type="range" min="6" max="18" step="0.25" value="${Widget3DEngine.sunHour || 12}" oninput="updateSunlight(Number(this.value));Engine3D.needsRender=true"></label><div class="experience-render-toggles"><label><input type="checkbox" ${Engine3D.gridHelper.visible?'checked':''} onchange="Engine3D.gridHelper.visible=this.checked;Engine3D.needsRender=true">Ground grid</label><label><input type="checkbox" ${CanvasControlsEngine.isReal3D()?'checked':''} onchange="StudioUI.toggleView('real3DToggle',this.checked)">Textures</label><label><input type="checkbox" ${Workbench3D.labelsEnabled?'checked':''} onchange="Workbench3D.labelsEnabled=this.checked">Room labels</label></div><p class="experience-hint">Lighting is a visual aid, not a daylight or energy compliance calculation.</p>`);
   },
   modelUpdated(force = false) {
@@ -302,6 +308,7 @@ const ViewportUI = {
       Engine3D.renderer.shadowMap.needsUpdate=true;
     }
     if (this.advancedActive && this.cutPercent < 100) this.cutaway(this.cutPercent);
+    if (Engine4D.active && Engine4D.ready) Engine4D.syncModel();
     if (!this.initialFit && !box.isEmpty()) {this.initialFit=true;this.orient('iso',false);}
     this.updateInfo();
   },

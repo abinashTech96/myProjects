@@ -273,7 +273,7 @@
           for (const axis of ["x", "y", "z"])
             finite(p[key]?.[axis], "Waypoint");
     }
-    if (project.view.mode && !["2d", "split", "3d"].includes(project.view.mode))
+    if (project.view.mode && !["2d", "split", "3d", "4d"].includes(project.view.mode))
       throw new Error("Invalid workspace mode.");
     if (project.view.camera) {
       finite(project.view.camera.zoomLvl, "Zoom", 0.2, 5);

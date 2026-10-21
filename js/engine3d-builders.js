@@ -277,7 +277,7 @@ function buildIsolatedLivingRoom(el, center, WALL_HEIGHT, useReal3D, isColliding
     mesh.add(createRoomWalls(width, WALL_HEIGHT, depth, t, wallMaterial));
 
     // Floor
-    const floorMaterial = getFloorMaterial(texType);
+    const floorMaterial = getFloorMaterial(texType, el.material && el.material !== "auto");
     const floorMesh = new THREE.Mesh(new THREE.BoxGeometry(width, 2, depth), floorMaterial);
     floorMesh.position.set(0, 1, 0); 
     floorMesh.receiveShadow = true;

@@ -721,7 +721,7 @@ const Workbench3D = {
   },
   enableEdit(mode = "translate") {
     document.getElementById("studio-dialog")?.close();
-    setWorkspaceLayout("3d");
+    setWorkspaceLayout(StudioUI.mode === "4d" ? "4d" : "3d");
     this.enabled = true;
     if (!this.target && elements[selectedElIndex])
       this.target = { kind: "element", id: elements[selectedElIndex].id };
@@ -944,7 +944,7 @@ const Workbench3D = {
   },
   startMeasure() {
     document.getElementById("studio-dialog")?.close();
-    setWorkspaceLayout("3d");
+    setWorkspaceLayout(StudioUI.mode === "4d" ? "4d" : "3d");
     this.measurePoints = [];
     this.enabled = false;
     this.controls.detach();
@@ -1014,7 +1014,7 @@ const Workbench3D = {
         if (this.section[axis + "min"] >= this.section[axis + "max"])
           throw Error("Section minima must be less than maxima");
       document.getElementById("studio-dialog").close();
-      setWorkspaceLayout("3d");
+      setWorkspaceLayout(StudioUI.mode === "4d" ? "4d" : "3d");
       this.applySection();
     });
   },
@@ -1089,7 +1089,7 @@ const Workbench3D = {
     Engine3D.needsRender = true;
   },
   lighting(night) {
-    if (!Engine3D.scene) setWorkspaceLayout("3d");
+    if (!Engine3D.scene) setWorkspaceLayout(StudioUI.mode === "4d" ? "4d" : "3d");
     const scene = Engine3D.scene;
     scene.traverse((o) => {
       if (o.isLight) {
@@ -1107,7 +1107,7 @@ const Workbench3D = {
   async panorama() {
     await WorkbenchUI.asyncRun(async () => {
       document.getElementById("studio-dialog")?.close();
-      setWorkspaceLayout("3d");
+      setWorkspaceLayout(StudioUI.mode === "4d" ? "4d" : "3d");
       const renderer = Engine3D.renderer,
         scene = Engine3D.scene,
         target = new THREE.WebGLCubeRenderTarget(512, {
@@ -1172,7 +1172,7 @@ const Workbench3D = {
         throw Error("Capture at least two named viewpoints");
       const seconds = WorkbenchUI.num("wb-video-duration");
       ProjectModel.finite(seconds, "View duration", 0.5, 30);
-      setWorkspaceLayout("3d");
+      setWorkspaceLayout(StudioUI.mode === "4d" ? "4d" : "3d");
       const source = Engine3D.renderer.domElement;
       if (!window.MediaRecorder || !source.captureStream)
         throw Error("Video recording is unavailable in this browser");
@@ -1183,7 +1183,7 @@ const Workbench3D = {
       ].find((t) => MediaRecorder.isTypeSupported(t));
       if (!type) throw Error("No compatible video encoder found");
       document.getElementById("studio-dialog").close();
-      setWorkspaceLayout("3d");
+      setWorkspaceLayout(StudioUI.mode === "4d" ? "4d" : "3d");
       const canvas = document.createElement("canvas");
       canvas.width = source.width;
       canvas.height = source.height;

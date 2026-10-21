@@ -185,7 +185,7 @@ build3DRooms = function (SCALE, I, WALL_HEIGHT, useReal3D) {
     else {
       group = new THREE.Group();
       let texture;
-      const textured = useReal3D || (el.material && el.material !== "auto");
+      const textured = StudioUI.mode === "4d" || useReal3D || (el.material && el.material !== "auto");
       if (textured) {
         texture = getProceduralTexture(getTextureForRoom(el)).clone();
         texture.repeat.set(center.width / 60, center.depth / 60);
@@ -195,7 +195,7 @@ build3DRooms = function (SCALE, I, WALL_HEIGHT, useReal3D) {
         ? new THREE.MeshStandardMaterial({
             map: texture,
             color: el.customColor || "#f1f5f9",
-            roughness: 0.8,
+            roughness: ({wood:0.55,"kitchen-tile":0.25,"bathroom-tile":0.3,grass:1,concrete:0.95,shingle:0.9})[getTextureForRoom(el)] || 0.8,
           })
         : getCachedSolidMaterial(
             el.customColor
@@ -418,7 +418,7 @@ generate3DModel = function () {
     design: ProjectState.meta.design,
     walls: ProjectState.meta.wallSettings,
     overrides: ProjectState.meta.wallOverrides,
-    texture: CanvasControlsEngine.isReal3D(),
+    texture: CanvasControlsEngine.isReal3D() || StudioUI.mode === "4d",
     facade: ParapetModule.config,
     style: document.getElementById("parapetStyleSelect")?.value,
     performance: window.isPerformanceMode,

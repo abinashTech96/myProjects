@@ -156,3 +156,13 @@ body.experience-shell {
   .experience-shell .studio-header .studio-button { min-height: 34px; }
 }
 @media (prefers-reduced-motion:reduce) { .experience-shell *, .experience-shell *::before, .experience-shell *::after { animation:none !important; transition:none !important; scroll-behavior:auto !important; } }
+
+#advanced-view-panel {position:absolute;left:12px;top:100px;width:min(260px,calc(100% - 24px));max-height:calc(100% - 170px);overflow:auto;z-index:251;padding:12px;border:1px solid var(--studio-border,#475569);border-radius:16px;background:var(--studio-panel,#172033);color:var(--studio-text,#f1f5f9);box-shadow:8px 8px 20px #0004,-3px -3px 12px #ffffff08;font-size:12px;}
+#advanced-view-panel[hidden] {display:none}
+#advanced-view-panel summary {cursor:pointer;font-weight:700;}
+#advanced-view-panel p {opacity:.75;line-height:1.5;}
+#advanced-view-panel label {display:grid;gap:8px;margin:12px 0;}
+#advanced-view-panel input {width:100%;}
+#advanced-view-panel .studio-action-grid {gap:6px;}
+#advanced-view-panel .studio-button {min-height:34px;font-size:12px;margin:0;padding:7px 8px;}
+@media(max-width:600px) {#advanced-view-panel {top:115px;width:210px;max-height:calc(100% - 155px);}}

@@ -19,6 +19,43 @@ module.exports = async ({page,assert}) => {
   await panel.locator('input[type="color"]').fill('#5a93d6');
   await page.waitForFunction(()=>Engine3D.elementObjects.get('legacy-bedroom')?.children[0]?.material.color.getHexString()==='5a93d6');
   assert.equal(await page.evaluate(()=>selectedElIndex),0,'3D color edits retain selection');
+  const finishPreviews = new Set();
+  for (const finish of ['wood','kitchen-tile','bathroom-tile','grass','concrete','shingle']) {
+    await panel.locator('select[onchange*="material"]').selectOption(finish);
+    await page.waitForFunction(finish=>elements[0].material===finish && Engine3D.elementObjects.get('legacy-bedroom')?.children[0]?.material.map?.image === getProceduralTexture(finish).image,finish);
+    const texture = await page.evaluate(()=>Engine3D.elementObjects.get('legacy-bedroom').children[0].material.map.image.toDataURL());
+    assert.ok(texture.length>500,'Explicit finish has a rendered local texture');
+    finishPreviews.add(texture);
+  }
+  assert.equal(finishPreviews.size,6,'Every selectable finish renders a distinct texture');
+  await page.evaluate(()=>setWorkspaceLayout('2d'));
+  assert.match(await page.locator('#rect-0').getAttribute('style'),/room-finish-shingle/,'Plan shows the selected finish');
+  await page.locator('[data-mode="4d"]').click();
+  await page.waitForFunction(()=>StudioUI.mode==='4d' && ViewportUI.profile==='high');
+  assert.equal(await page.locator('#canvas-wrapper').isVisible(),false,'4D uses the full visualization viewport');
+  assert.equal(await page.locator('#advanced-view-panel').isVisible(),true);
+  await page.locator('input[aria-label="Cutaway height"]').fill('45');
+  assert.equal(await page.evaluate(()=>Engine3D.renderer.clippingPlanes.length),1,'Cutaway clips the actual renderer');
+  await page.getByLabel('Inspect floor',{exact:true}).selectOption('2');
+  assert.equal(await page.evaluate(()=>Engine3D.renderer.clippingPlanes.length),2,'Floor inspection clips above and below the chosen level');
+  await page.evaluate(()=>ProjectModel.normalize(ProjectState.capture()));
+  await page.locator('#advanced-view-panel summary').click();
+  await page.locator('#advanced-view-panel summary').click();
+  await page.waitForTimeout(200);
+  await page.screenshot({path:'/tmp/archcad-advanced-floor-inspection.png'});
+  await page.setViewportSize({width:320,height:560});
+  await page.evaluate(()=>StudioUI.closeProperties());
+  const advancedBox = await page.locator('#advanced-view-panel').boundingBox();
+  assert.ok(advancedBox.x>=0 && advancedBox.x+advancedBox.width<=320 && advancedBox.y+advancedBox.height<=560,'Advanced controls fit a small viewport');
+  await page.screenshot({path:'/tmp/archcad-advanced-mobile.png'});
+  await page.setViewportSize(viewport);
+  await page.evaluate(()=>StudioUI.select(0));
+  const appearance = panel.locator('details').filter({has:page.getByText('Appearance',{exact:true})});
+  if (await appearance.getAttribute('open') === null) await appearance.locator('summary').click();
+  await page.locator('[data-mode="3d"]').click();
+  assert.equal(await page.evaluate(()=>Engine3D.renderer.clippingPlanes.length),0,'Leaving advanced view restores clipping');
+  assert.equal(await page.locator('#advanced-view-panel').isVisible(),false);
+
   await page.evaluate(()=>setWorkspaceLayout('2d'));
   const originalX=await page.evaluate(()=>elements[0].x);
   await page.evaluate(()=>StudioUI.edit(0,'x',elements[0].x+1));

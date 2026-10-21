@@ -170,7 +170,7 @@ const StudioUI = {
     shell.innerHTML = `
             <header class="studio-header"><div class="studio-brand">ArchCAD <span>PRO</span></div>
             <div class="studio-file-actions">${this.button("Project", "StudioUI.projectMenu()")}${this.button("Save", "exportJSON()", "primary")}<div class="studio-history">${this.button("Undo", "undoAction()")}${this.button("Redo", "redoAction()")}</div></div>
-            <div class="studio-view-modes" role="group" aria-label="Workspace view">${["2d", "split", "3d"].map((v) => `<button class="studio-button" data-mode="${v}" onclick="setWorkspaceLayout('${v}')">${v === "split" ? "Split" : v.toUpperCase()}</button>`).join("")}</div>
+            <div class="studio-view-modes" role="group" aria-label="Workspace view">${["2d", "split", "3d", "4d"].map((v) => `<button class="studio-button" data-mode="${v}" onclick="setWorkspaceLayout('${v}')">${v === "split" ? "Split" : v.toUpperCase()}</button>`).join("")}</div>
             <div class="studio-floor-controls"><div id="studio-floor-tabs"></div><button class="studio-button" onclick="StudioUI.floorMenu()" title="Manage floors" aria-label="Manage floors">Floors ▾</button></div></header>
             <aside class="studio-catalog" aria-label="Asset catalog"><div class="studio-panel-heading"><strong>Build</strong><button class="studio-button" onclick="PlanningUI.collapse('catalog')" aria-label="Close Build panel">✕</button></div><input id="studio-search" aria-label="Search assets" placeholder="Search rooms or furniture" oninput="StudioUI.filter=this.value;StudioUI.renderCatalog()"><select id="studio-asset-kind" aria-label="Asset category" onchange="StudioUI.assetKind=this.value;StudioUI.renderCatalog()"><option value="rooms">Rooms</option><option value="furniture">Furniture</option><option value="openings">Doors & windows</option></select><div id="studio-assets"></div><p class="studio-hint">Drag onto the plan or click to place.<br>Ctrl / ⌘ + click to select several items.</p><div class="studio-tools">${this.button("Auto-builder", "toggleAutoBuilder()")}${this.button("AI assistant", "StudioUI.aiDialog()")}${this.button("Plot & units", "StudioUI.projectDialog()")}${this.button("Measure", "toggleMeasureMode()")}${this.button("Section cut", "toggleSectionCut()")}${this.button("3D tools", "StudioUI.viewToolsDialog()")}${this.button("Layout checks", "StudioUI.checksDialog()")}${this.button("Shortcuts", "StudioUI.shortcuts()")}</div></aside>
             <aside id="studio-inspector" class="studio-inspector" aria-label="Properties"><div class="studio-panel-heading"><strong>Properties</strong><button class="studio-button" onclick="StudioUI.closeProperties()" aria-label="Close properties">✕</button></div><div id="studio-selection-actions"></div><div id="studio-properties"></div></aside>
@@ -915,7 +915,7 @@ const StudioUI = {
   },
   viewToolsDialog() {
     // These controls operate on a live scene, including night mode and camera tours.
-    setWorkspaceLayout("3d");
+    setWorkspaceLayout(StudioUI.mode === "4d" ? "4d" : "3d");
     this.dialog(
       "View tools",
       `<div class="studio-action-grid">${this.button("Section & inspect", "WorkbenchUI.viewDialog()")}${this.button("Advanced 3D", "document.getElementById('studio-dialog').close();setWorkspaceLayout('3d');Adv3D.toggleWorkspaceMode(true)")}${this.button("Walkthrough", "document.getElementById('studio-dialog').close();setWorkspaceLayout('3d');Widget3DEngine.startWalkthrough()")}${this.button("3D selection", "Widget3DEngine.toggleRaycaster()")}${this.button("Presentation mode", "document.getElementById('studio-dialog').close();Widget3DEngine.toggleShowcaseMode()")}${this.button("Capture camera", "captureWaypoint()")}${this.button("Play camera tour", "playCinematicTour()")}${this.button("Clear tour", "clearTour()")}${this.button("Night / day", "toggleNightMode();Engine3D.needsRender=true")}${this.button("Exploded view", "toggleExplodeView()")}${this.button("Performance mode", "Widget3DEngine.togglePerformanceMode()")}${this.button("Theme", "toggleTheme()")}${this.button("Frame plan", "resetCamera()")}${this.button("Canvas settings", "StudioUI.canvasSettingsDialog()")}</div><label>Sun position<input type="range" min="6" max="18" value="12" step="0.25" oninput="updateSunlight(Number(this.value));Engine3D.needsRender=true"></label><label>Roof / parapet<select onchange="StudioUI.parapetStyle(this.value)">${Array.from(
@@ -1262,7 +1262,7 @@ window.setFloor = function (f) {
   );
 };
 window.setWorkspaceLayout = function (mode) {
-  if (!["2d", "split", "3d"].includes(mode)) mode = "split";
+  if (!["2d", "split", "3d", "4d"].includes(mode)) mode = "split";
   StudioUI.mode = mode;
   ProjectState.meta.view.mode = mode;
   window.is3DMode = mode !== "2d";

@@ -102,8 +102,8 @@ const PlanningDrawing = {
               })
               .join(" "),
             "data-element-id":e.id,
-            fill: e.customColor || "#38bdf8",
-            "fill-opacity": ".18",
+            fill: e.material && e.material !== "auto" ? `url(#room-finish-${e.material})` : e.customColor || "#38bdf8",
+            "fill-opacity": e.material && e.material !== "auto" ? "1" : ".18",
             stroke: Selection.ids.has(e.id) ? "#fff" : "#38bdf8",
             "stroke-width": 2,
           },

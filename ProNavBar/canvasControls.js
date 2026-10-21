@@ -265,6 +265,27 @@ const CanvasControlsEngine = {
             return;
         } 
         
+        // Explicit finishes remain visible in plan view, including while selected.
+        const finish = el.material && el.material !== 'auto' ? el.material : null;
+        if (finish) {
+            const id = 'room-finish-' + finish;
+            if (!document.getElementById(id)) {
+                const ns = 'http://www.w3.org/2000/svg';
+                const defs = UI.blueprint.querySelector('defs') || UI.blueprint.insertBefore(document.createElementNS(ns, 'defs'), UI.blueprint.firstChild);
+                const pattern = document.createElementNS(ns, 'pattern');
+                pattern.id = id;
+                pattern.setAttribute('patternUnits', 'userSpaceOnUse');
+                pattern.setAttribute('width', '24'); pattern.setAttribute('height', '24');
+                const colors = {wood:'#ad7a4c',grass:'#5c9b49','kitchen-tile':'#e2e8f0','bathroom-tile':'#bae6fd',concrete:'#a6adb5',shingle:'#995e4c'};
+                const paths = {wood:'M0 0H24 M0 12H24 M12 0V12 M5 12V24',grass:'M3 9l2 -5 2 5 M14 20l2 -6 2 6','kitchen-tile':'M0 0H24V24H0Z M0 12H24 M12 0V24','bathroom-tile':'M0 0H24V24H0Z M0 8H24 M0 16H24 M8 0V24 M16 0V24',concrete:'M3 5h1 M15 18h1 M20 8h1',shingle:'M0 0H24 M0 12H24 M12 0V12 M6 12V24 M18 12V24'};
+                const bg = document.createElementNS(ns, 'rect');
+                bg.setAttribute('width','24'); bg.setAttribute('height','24'); bg.setAttribute('fill',colors[finish] || colors.concrete);
+                const path = document.createElementNS(ns, 'path');
+                path.setAttribute('d',paths[finish] || paths.concrete); path.setAttribute('fill','none'); path.setAttribute('stroke','#334155'); path.setAttribute('stroke-opacity','.45');
+                pattern.append(bg,path); defs.append(pattern);
+            }
+            fillColor = `url(#${id})`;
+        }
         // 2. 🧩 SMART MERGE STYLING (Hides inner borders)
         if (this.isSmartMerge()) {
             r.style.display = 'block'; rb.style.display = 'block'; rh.style.display = 'block';

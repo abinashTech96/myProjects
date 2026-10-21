@@ -86,17 +86,78 @@ const ViewportUI = {
       <div class="viewport-orientation" aria-label="Camera orientation"><button onclick="ViewportUI.orient('top')" title="Top view">Top</button><div><button onclick="ViewportUI.orient('left')" title="Left elevation">L</button><button class="viewport-cube" onclick="ViewportUI.orient('iso')" title="Isometric view">ISO</button><button onclick="ViewportUI.orient('right')" title="Right elevation">R</button></div><button onclick="ViewportUI.orient('front')" title="Front elevation">Front</button></div>
       <div class="viewport-bottomline"><span id="viewport-view-label">Perspective · Isometric</span><span id="viewport-model-info">Ready</span></div>`;
     container.append(ui);
+    matchMedia('(max-width:600px)').addEventListener('change', event => {
+      const panel = document.getElementById('advanced-view-panel');
+      if (event.matches && panel) panel.open = false;
+    });
     AppEvents.onStateChange(() => this.updateInfo());
     AppEvents.onSelectionChange(() => this.updateInfo());
     const layout = window.setWorkspaceLayout;
-    window.setWorkspaceLayout = function(mode) { layout(mode); ViewportUI.updateInfo(); };
+    window.setWorkspaceLayout = function(mode) { layout(mode); ViewportUI.advancedMode(mode === '4d'); ViewportUI.updateInfo(); };
     this.updateInfo();
     if (Engine3D.scene) this.engineReady();
+    this.advancedMode(StudioUI.mode === '4d');
+  },
+  advancedMode(enabled) {
+    if (enabled === !!this.advancedActive) return;
+    this.advancedActive = enabled;
+    if (enabled) {
+      this.previousProfile = this.profile;
+      this.previousSection = Workbench3D.section;
+      this.applyProfile('high', false);
+      let panel = document.getElementById('advanced-view-panel');
+      if (!panel) {
+        panel = document.createElement('details');
+        panel.id = 'advanced-view-panel'; panel.open = !matchMedia('(max-width:600px)').matches;
+        panel.innerHTML = `<summary>4D · Advanced view</summary><p>Studio lighting · textured surfaces · live cutaway</p>
+          <label>Inspect floor<select aria-label="Inspect floor" onchange="ViewportUI.inspectFloor(this.value)"></select></label><label>Cutaway height <output id="advanced-cut-label">Full building</output><input aria-label="Cutaway height" type="range" min="5" max="100" value="100" oninput="ViewportUI.cutaway(this.value)"></label>
+          <div class="studio-action-grid"><button class="studio-button" onclick="ViewportUI.orient('top')">Floor plan</button><button class="studio-button" onclick="ViewportUI.orient('iso')">Isometric</button><button class="studio-button" onclick="ViewportUI.walk()">Walk inside</button><button class="studio-button" onclick="WorkbenchUI.viewDialog()">Section & measure</button><button class="studio-button" onclick="ViewportUI.renderDialog()">Lighting</button><button class="studio-button" onclick="Workbench3D.isolateSelection()">Isolate selection</button><button class="studio-button" onclick="Workbench3D.clearIsolation();document.querySelector('#advanced-view-panel select').value='all';ViewportUI.inspectFloor('all')">Show building</button><button class="studio-button" onclick="StudioUI.exportDialog()">Capture & export</button></div>`;
+        document.getElementById('right-canvas-wrapper').append(panel);
+      }
+      panel.hidden = false;
+      panel.querySelector('select').innerHTML = '<option value="all">Whole building</option>' + Array.from({length:ProjectState.capture().floorCount},(_,floor)=>`<option value="${floor}">${floor===0?'Ground':`Floor ${floor}`}</option>`).join('');
+      this.advancedFloor = null;
+      this.cutaway(100);
+    } else {
+      const panel = document.getElementById('advanced-view-panel');
+      if (panel) panel.hidden = true;
+      Workbench3D.section = this.previousSection || null;
+      if (Workbench3D.section) Workbench3D.applySection(); else Workbench3D.clearSection();
+      this.applyProfile(this.previousProfile || 'balanced', false);
+    }
+    request3DUpdate();
+  },
+  inspectFloor(value) {
+    const floor = Number(value);
+    this.advancedFloor = value === 'all' || !Number.isInteger(floor) || floor < 0 || floor >= ProjectState.capture().floorCount ? null : floor;
+    this.cutaway(this.advancedFloor === null ? 100 : 65);
+  },
+  cutaway(value) {
+    const percent = Math.max(5, Math.min(100, Number(value)));
+    if (!Number.isFinite(percent)) return;
+    this.cutPercent = percent;
+    const box = this.bounds(false);
+    if (this.advancedFloor !== null && this.advancedFloor !== undefined) {
+      const p = ProjectState.capture(), {SCALE} = get3DEnvironmentParams();
+      const base = WorkbenchModel.floorBase(p,this.advancedFloor) * SCALE;
+      const height = WorkbenchModel.floorHeight(p,this.advancedFloor) * SCALE;
+      Engine3D.renderer.clippingPlanes = [new THREE.Plane(new THREE.Vector3(0,1,0),-base + 2*SCALE),new THREE.Plane(new THREE.Vector3(0,-1,0),base + height*percent/100)];
+      Engine3D.needsRender = true;
+    } else if (percent === 100 || box.isEmpty()) Workbench3D.clearSection();
+    else {
+      const top = box.min.y + (box.max.y - box.min.y) * percent / 100;
+      Engine3D.renderer.clippingPlanes = [new THREE.Plane(new THREE.Vector3(0,-1,0),top)];
+      Engine3D.needsRender = true;
+    }
+    const label = document.getElementById('advanced-cut-label');
+    if (label) label.textContent = percent === 100 ? (this.advancedFloor == null ? 'Full building' : 'Full floor') : `${percent}% height`;
+    const slider = document.querySelector('#advanced-view-panel input');
+    if (slider) slider.value = percent;
   },
   engineReady() {
     this.profile = PlanningUI.preferences.quality || PlanningUI.readPrefs().quality || 'balanced';
     this.exposure = Number(PlanningUI.preferences.exposure) || 1.05;
-    this.applyProfile(this.profile, false);
+    this.applyProfile(this.advancedActive ? 'high' : this.profile, false);
     if (!this.renderHooked) {
       const previous = Engine3D.afterRender;
       Engine3D.afterRender = (now, settled) => { previous?.(now, settled); if (settled || now - (this.lastInfo||0)>150) {this.lastInfo=now;this.updateInfo();} };
@@ -239,6 +300,7 @@ const ViewportUI = {
       shadow.left=-extent;shadow.right=extent;shadow.top=extent;shadow.bottom=-extent;shadow.far=Math.max(3000,extent*8);shadow.updateProjectionMatrix();
       Engine3D.renderer.shadowMap.needsUpdate=true;
     }
+    if (this.advancedActive && this.cutPercent < 100) this.cutaway(this.cutPercent);
     if (!this.initialFit && !box.isEmpty()) {this.initialFit=true;this.orient('iso',false);}
     this.updateInfo();
   },

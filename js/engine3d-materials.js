@@ -14,18 +14,10 @@ function loadRepeatTex(url, scale) {
 const HD_TEXTURES = {};
 function getHDMaterial(type) {
     if (HD_TEXTURES[type]) return HD_TEXTURES[type];
-    const definitions = {
-        wood: { url: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/hardwood2_diffuse.jpg', scale: 4, roughness: 0.6 },
-        grass: { url: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/terrain/grasslight-big.jpg', scale: 8, roughness: 1 },
-        'kitchen-tile': { url: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/floors/FloorsCheckerboard_S_Diffuse.jpg', scale: 8, roughness: 0.2 },
-        'bathroom-tile': { color: 0xe0e7ff, roughness: 0.2 },
-        concrete: { color: 0x94a3b8, roughness: 0.9 }
-    };
-    const definition = definitions[type];
-    if (!definition) return null;
-    const { url, scale, ...properties } = definition;
-    if (url) properties.map = loadRepeatTex(url, scale);
-    return HD_TEXTURES[type] = new THREE.MeshStandardMaterial(properties);
+    // Local procedural finishes work offline and never depend on remote texture URLs.
+    const roughness = {wood:0.55,grass:1,'kitchen-tile':0.25,'bathroom-tile':0.3,concrete:0.95,shingle:0.9};
+    if (!(type in roughness)) return null;
+    return HD_TEXTURES[type] = new THREE.MeshStandardMaterial({map:getProceduralTexture(type), roughness:roughness[type]});
 }
 const FAST_COLORS = {
     'wood': new THREE.MeshStandardMaterial({ color: 0x8b5a2b }),
@@ -142,10 +134,10 @@ function getTextureForRoom(roomObj) {
     return 'concrete';
 }
 // 🧠 THE DECISION MAKER
-function getFloorMaterial(texType) {
+function getFloorMaterial(texType, explicit = false) {
     const real3DCheckbox = document.getElementById('real3DToggle');
     const isReal3D = real3DCheckbox ? real3DCheckbox.checked : false;
-    if (isReal3D) {
+    if (isReal3D || explicit || (typeof StudioUI !== "undefined" && StudioUI.mode === "4d")) {
         const material = getHDMaterial(texType);
         if (material) return material;
     }

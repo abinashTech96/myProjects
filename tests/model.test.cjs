@@ -215,3 +215,9 @@ test("storage failure leaves dirty state and reports failure", async () => {
   assert.equal(run("StorageEngine.dbNeedsSave"), true);
   assert.match(run("StorageEngine.error"), /Quota/);
 });
+
+test("advanced visualization workspace survives project round trip", () => {
+  const p = project({view:{mode:"4d"}});
+  assert.equal(M.normalize(JSON.parse(JSON.stringify(p))).view.mode,"4d");
+  assert.throws(() => project({view:{mode:"unsupported"}}), /workspace mode/);
+});

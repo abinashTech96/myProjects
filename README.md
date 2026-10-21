@@ -16,7 +16,9 @@ The dark workspace opens in 2D with the drawing canvas in focus. **Build** opens
 
 New workspaces start with widgets hidden; existing saved widget and panel choices are retained. The WebGL scene and 3D editing controls initialize on the first 3D/Split view or model export. The main 3D animation loop stops in 2D and while the tab is hidden, and resumes when 3D becomes visible.
 
-- **2D / Split / 3D** choose the working view. Narrow screens show one canvas at a time; choose 3D to switch to its canvas.
+- **2D / Split / 3D / 4D** choose the working view. Narrow screens show one canvas at a time; choose 3D to switch to its canvas.
+- **4D** is the advanced visualization workspace: studio reflections and shadows, local floor textures, per-floor inspection, an adjustable horizontal cutaway, camera presets, walkthrough and section/measurement tools. Its compact panel collapses to a single heading on mobile. Leaving restores the previous render quality and section settings. This is a visualization mode, not a construction timeline.
+- **Properties → Appearance → Material** previews the chosen finish in both 2D and 3D; explicit finishes work independently of the global Textures switch. Choose Auto to return to room defaults.
 - The left catalog supports search, dragging and click-to-place. Every placement path uses the same dimensions.
 - Select an element to edit its geometry, appearance, openings, wall thickness or distance constraints in Properties. Geometry, opening and wall-thickness fields in Properties use the selected display unit. Feet/inches accepts fractional values such as `10' 6 1/2"`; the model stores inches.
 - Ctrl/Command-click toggles multiple selections. Shift-drag a box to select enclosed elements. Use Align, Distribute, Group and Ungroup in Properties.

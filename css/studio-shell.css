@@ -335,6 +335,8 @@ body.studio-shell {
 .studio-shell[data-workspace="2d"] #split-resizer {
   display: none !important;
 }
+.studio-shell[data-workspace="4d"] #canvas-wrapper,
+.studio-shell[data-workspace="4d"] #split-resizer,
 .studio-shell[data-workspace="3d"] #canvas-wrapper,
 .studio-shell[data-workspace="3d"] #split-resizer {
   display: none !important;

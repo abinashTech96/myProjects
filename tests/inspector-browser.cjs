@@ -1,5 +1,6 @@
 /* Exercise actual focused controls, not only their underlying mutation APIs. */
 module.exports = async ({page,assert}) => {
+  const originalViewport = page.viewportSize();
   const original = await page.evaluate(() => ProjectState.capture());
   await page.evaluate(() => {
     ProjectState.apply({elements:[{id:'input-bedroom',type:'bedroom',customName:'Bedroom 1',x:30,y:30,w:150,h:180,floor:0}],fixtures:[
@@ -62,7 +63,7 @@ module.exports = async ({page,assert}) => {
   assert.equal(await page.locator('.studio-inspector').isVisible(),true);
   await page.evaluate(()=>{document.activeElement.blur();StudioUI.closeProperties();});
   assert.equal(await page.locator('.studio-inspector').isVisible(),false,'Explicit close still works');
-  await page.setViewportSize({width:1440,height:1000});
+  await page.setViewportSize(originalViewport);
   await page.evaluate(project=>{ProjectState.apply(project,{rebase:true});setWorkspaceLayout('2d');updateCanvas();},original);
   console.log('Inspector: opening arrows, typed placement, wall changes, rollback selection, centimeters and feet/inches passed');
 };

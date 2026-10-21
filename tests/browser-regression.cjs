@@ -137,6 +137,11 @@ if (!["chromium", "firefox", "webkit"].includes(browserEngine))
       errors,
     );
     assert.equal(errors.length, 0, "Startup must have no uncaught errors");
+    if (process.env.POLISH_ONLY) {
+      await require('./polish-browser.cjs')({page,context,assert});
+      assert.equal(errors.length,0,errors.join('\n'));
+      return;
+    }
     if (process.env.ENHANCEMENTS_ONLY) {
       await require('./enhancements-browser.cjs')({page,context,assert});
       assert.equal(errors.length,0,errors.join('\n'));
@@ -192,6 +197,7 @@ if (!["chromium", "firefox", "webkit"].includes(browserEngine))
     await require("./inspector-browser.cjs")({page,assert});
     await require("./property-widgets-browser.cjs")({page,assert});
     await require('./enhancements-browser.cjs')({page,context,assert});
+    await require('./polish-browser.cjs')({page,context,assert});
     await page.evaluate(() => {
       ProjectState.apply(
         { elements: [], fixtures: [], floorCount: 1 },

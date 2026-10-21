@@ -244,7 +244,7 @@ function renderRooms(geom) {
             baseColor = `${parseInt(hex.substring(0,2),16)}, ${parseInt(hex.substring(2,4),16)}, ${parseInt(hex.substring(4,6),16)}`;
         }
 
-        const strokeColor = isSelected ? '#ffffff' : (isColliding ? '#ef4444' : `rgb(${baseColor})`);
+        const strokeColor = isSelected ? 'var(--plan-selection, #ffffff)' : (isColliding ? '#ef4444' : `rgb(${baseColor})`);
         const fillColor = isColliding ? 'rgba(239, 68, 68, 0.4)' : `rgba(${baseColor}, 0.2)`;
 
         if (typeof CanvasControlsEngine !== 'undefined') {

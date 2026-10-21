@@ -25,7 +25,7 @@ window.Engine3D = {
         
         // 1. Setup Scene & Camera (Theme-Aware)
         const isClassic = document.body.classList.contains('classic-theme');
-        const bgColor = typeof StudioEnhancements !== "undefined" ? StudioEnhancements.viewportBackground() : (isClassic ? 0xe2e8f0 : 0x0f172a);
+        const bgColor = typeof StudioEnhancements !== "undefined" ? StudioEnhancements.viewportBackground("3d") : (isClassic ? 0xe2e8f0 : 0x0f172a);
         
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(bgColor); 
@@ -87,6 +87,7 @@ window.Engine3D = {
         gridHelper.material.transparent = true;
         gridHelper.material.opacity = 0.24;
         gridHelper.material.depthWrite = false;
+        if (window.WorkspacePolish) WorkspacePolish.grid();
 
         // 5. Setup FPS Controls for Walkthrough
         this.fpsControls = new THREE.PointerLockControls(this.camera, document.body);

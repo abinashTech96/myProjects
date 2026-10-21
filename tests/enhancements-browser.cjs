@@ -122,7 +122,7 @@ module.exports = async ({ page, assert }) => {
       StudioEnhancements.theme(theme);
       const lightingUnchanged = JSON.stringify(lights) === JSON.stringify([Engine4D.key.intensity, Engine4D.fill.intensity, Engine4D.exposure]);
       const css = new THREE.Color(StudioEnhancements.viewportBackground());
-      const sourceMatches = Engine3D.scene.background.getHexString() === css.getHexString();
+      const sourceMatches = Engine3D.scene.background.getHexString() === new THREE.Color(StudioEnhancements.viewportBackground("3d")).getHexString();
       const expected = css.clone().convertSRGBToLinear().getHexString();
       const expectedPixel = css.toArray().map(v => Math.round(v * 255));
       const backgrounds = [];
@@ -313,7 +313,10 @@ module.exports = async ({ page, assert }) => {
     return { start, a, b };
   });
   const handle = page.getByRole("button", { name: "Drag section xmax", exact: true });
+  await page.waitForFunction(() => !Engine3D.cameraTween);
+  await page.evaluate(() => { WorkspacePolish.positionSectionHandles(); });
   const handleBox = await handle.boundingBox();
+  assert.equal(await handle.evaluate(node => { const r=node.getBoundingClientRect(); return document.elementFromPoint(r.x+r.width/2,r.y+r.height/2) === node; }),true,'Section handle must be reachable above the canvas');
   await page.mouse.move(handleBox.x + handleBox.width / 2, handleBox.y + handleBox.height / 2);
   await page.mouse.down();
   await page.mouse.move(handleBox.x + handleBox.width / 2 + drag.b.x - drag.a.x, handleBox.y + handleBox.height / 2 + drag.b.y - drag.a.y, { steps: 4 });

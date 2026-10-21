@@ -1102,7 +1102,7 @@ const Workbench3D = {
           : o.userData.wbIntensity;
       }
     });
-    scene.background = new THREE.Color(typeof StudioEnhancements !== "undefined" ? StudioEnhancements.viewportBackground() : (night ? 0x07101f : 0xe2e8f0));
+    scene.background = new THREE.Color(typeof StudioEnhancements !== "undefined" ? StudioEnhancements.viewportBackground("3d") : (night ? 0x07101f : 0xe2e8f0));
     Engine3D.needsRender = true;
   },
   async panorama() {

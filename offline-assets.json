@@ -98,5 +98,7 @@
   "./vendor/three/SimplexNoise.js",
   "./js/presentation-model.js",
   "./js/studio-enhancements.js",
-  "./css/studio-enhancements.css"
+  "./css/studio-enhancements.css",
+  "./css/workspace-polish.css",
+  "./js/workspace-polish.js"
 ]

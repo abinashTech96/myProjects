@@ -402,7 +402,7 @@ const Widget3DEngine = {
                 Engine3D.sunLight.castShadow = false;
             }
             if (Engine3D.hemiLight) Engine3D.hemiLight.intensity = 0.1;
-            Engine3D.scene.background = new THREE.Color(typeof StudioEnhancements !== "undefined" ? StudioEnhancements.viewportBackground() : 0x020617);
+            Engine3D.scene.background = new THREE.Color(typeof StudioEnhancements !== "undefined" ? StudioEnhancements.viewportBackground("3d") : 0x020617);
             if (Engine3D.scene.fog) Engine3D.scene.fog.color.copy(Engine3D.scene.background);
         } else {
             if (Engine3D.sunLight) {
@@ -411,7 +411,7 @@ const Widget3DEngine = {
             }
             if (Engine3D.hemiLight) Engine3D.hemiLight.intensity = 0.6;
             const isClassic = document.body.classList.contains('classic-theme');
-            const bgColor = typeof StudioEnhancements !== "undefined" ? StudioEnhancements.viewportBackground() : (isClassic ? 0xe2e8f0 : 0x0f172a);
+            const bgColor = typeof StudioEnhancements !== "undefined" ? StudioEnhancements.viewportBackground("3d") : (isClassic ? 0xe2e8f0 : 0x0f172a);
             Engine3D.scene.background = new THREE.Color(bgColor);
             if (Engine3D.scene.fog) Engine3D.scene.fog.color.copy(Engine3D.scene.background);
         }

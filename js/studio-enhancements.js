@@ -355,7 +355,7 @@ window.StudioEnhancements = {
     ];
     this.show(
       "Studio+ · Design and presentation",
-      `<p>Shared project geometry · independent 4D presentation</p><div class="enhancement-theme-row">${this.themes.map((t) => this.b(t, `StudioEnhancements.theme('${t}')`)).join("")}</div><div class="enhancement-hub">${rows.map(([title, action]) => this.b(title, action)).join("")}</div>`,
+      `<p>Shared project geometry · independent 4D presentation</p><div class="enhancement-theme-row">${window.WorkspacePolish ? WorkspacePolish.themePicker() : this.themes.map((t) => this.b(t, `StudioEnhancements.theme('${t}')`)).join("")}</div><div class="enhancement-hub">${rows.map(([title, action]) => this.b(title, action)).join("")}</div>`,
     );
   },
   theme(value, persist = true) {
@@ -363,19 +363,22 @@ window.StudioEnhancements = {
     document.body.dataset.uiTheme = value;
     this.canvasBackground =
       getComputedStyle(document.body).getPropertyValue("--enh-bg").trim() || "#0f172a";
+    const style = getComputedStyle(document.body);
+    this.canvasPalette = Object.fromEntries(["2d", "3d", "4d"].map(mode => [mode, style.getPropertyValue("--canvas-" + mode).trim() || this.canvasBackground]));
     this.applyViewportTheme();
+    if (window.WorkspacePolish) WorkspacePolish.themeChanged();
     if (persist)
       try {
         localStorage.setItem("ArchCAD_UI_Theme", value);
       } catch {}
   },
-  viewportBackground() {
-    return this.canvasBackground || "#0f172a";
+  viewportBackground(mode = StudioUI.mode) {
+    return this.canvasPalette?.[mode === "split" ? "3d" : mode] || this.canvasBackground || "#0f172a";
   },
   applyViewportTheme() {
     for (const engine of [window.Engine3D, window.Engine4D]) {
       if (!engine?.scene) continue;
-      const color = new THREE.Color(this.viewportBackground());
+      const color = new THREE.Color(this.viewportBackground(engine === window.Engine4D ? "4d" : "3d"));
       // The presentation compositor applies gamma to its linear render target.
       if (engine === window.Engine4D) color.convertSRGBToLinear();
       if (engine.scene.background?.isColor) engine.scene.background.copy(color);
@@ -387,7 +390,7 @@ window.StudioEnhancements = {
   themeDialog() {
     this.show(
       "Workspace themes",
-      `<p>Themes apply to panels and the 2D / 3D / 4D canvas background. Project materials and render lighting stay independent.</p><div class="enhancement-theme-row">${this.themes.map((t) => this.b(t, `StudioEnhancements.theme('${t}')`)).join("")}</div>`,
+      `<p>Distinct panels, a readable drafting canvas and contrasting model backdrops. Choose a theme to preview it immediately.</p><div class="enhancement-theme-row">${window.WorkspacePolish ? WorkspacePolish.themePicker() : this.themes.map((t) => this.b(t, `StudioEnhancements.theme('${t}')`)).join("")}</div>${window.WorkspacePolish ? WorkspacePolish.densityControls() : ""}`,
     );
   },
   close() {
@@ -1198,6 +1201,7 @@ window.StudioEnhancements = {
   },
   clearSection() {
     this.section = null;
+    this.sectionDragging = false;
     Workbench3D.clearSection();
     if (this.sectionHelper) this.sectionHelper.visible = false;
     document.getElementById("section-handles")?.replaceChildren();
@@ -1218,6 +1222,7 @@ window.StudioEnhancements = {
         event.preventDefault();
         this.close();
         button.setPointerCapture(event.pointerId);
+        this.sectionDragging = true;
         const key = button.dataset.plane,
           axis = key[0],
           start = this.section[key],
@@ -1256,6 +1261,8 @@ window.StudioEnhancements = {
           Engine3D.needsRender = true;
         };
         const stop = () => {
+          this.sectionDragging = false;
+          Engine3D.needsRender = true;
           button.removeEventListener("pointermove", move);
           button.removeEventListener("pointerup", stop);
           button.removeEventListener("pointercancel", stop);
@@ -1643,7 +1650,8 @@ window.StudioEnhancements = {
       this.lastLabelModel = Engine4D.modelVersion;
       this.renderLabels();
     }
-    if (this.section) {
+    if (this.section && window.WorkspacePolish) WorkspacePolish.positionSectionHandles();
+    else if (this.section) {
       for (const button of document.querySelectorAll(
         "#section-handles [data-plane]",
       )) {

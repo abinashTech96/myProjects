@@ -28,6 +28,10 @@ New workspaces start with widgets hidden; existing saved widget and panel choice
 - **Room Studio** edits the selected room's furniture in a sandbox. Save to Plan applies the changes as one undoable action; Discard leaves the plan unchanged. Its keyboard shortcuts are isolated from the background plan.
 - **Layout checks** lists boundary/overlap issues and the configured room rules. Click a geometry warning to select its element. Vastu guidance follows the selected compass orientation and active floor. The score averages applicable kitchen, puja, toilet and explicitly marked master-bedroom checks. Empty or unsupported floors show Not evaluated. Column markers are schematic symbols.
 
+## Workspace themes and UI refinements
+
+Graphite, Pearl, Ocean and Sand now use distinct panel colors, drafting surfaces and contrasting 3D/4D backdrops. Compact button panels, theme preview cards and saved control spacing are joined by [37 further UI/usability improvements](UI_REFINEMENTS.md), including keyboard navigation, pointer/keyboard pane resizing, zoom feedback and more readable drawing labels.
+
 ## Studio+ upgrades
 
 **✦ Studio+** beside Search opens eighteen coordinated editing and presentation tools, plus Graphite, Pearl, Ocean and Sand themes. Room focus, separate floor/wall/ceiling finishes, precise placement, clearance checks, linked 2D/4D, animated openings, walkthrough, exploded floors, sun study, draggable sections and measurement overlays share the existing project and history. See [Studio+ guide](STUDIO_PLUS.md) for all eighteen tools, saved versus temporary settings, and practical limits.

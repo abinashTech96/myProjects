@@ -91,6 +91,9 @@ function renderFloorButtons(containerId, count, activeFloor, callback) {
         const btn = document.createElement('button');
         btn.className = `floor-btn ${i === activeFloor ? 'active' : ''}`;
         btn.dataset.floor = i;
+        btn.setAttribute('aria-label', i === 0 ? 'Ground floor' : 'Floor ' + i);
+        btn.setAttribute('aria-pressed', String(i === activeFloor));
+        btn.title = i === 0 ? 'Ground floor' : 'Floor ' + i;
         btn.textContent = getFloorLabel(i);
         btn.onclick = () => {
             if (typeof callback === 'function') callback(i);

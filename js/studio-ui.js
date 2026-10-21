@@ -246,6 +246,8 @@ const StudioUI = {
     }
     node.textContent = text;
     node.dataset.kind = kind;
+    node.setAttribute("role", kind === "error" ? "alert" : "status");
+    node.setAttribute("aria-live", kind === "error" ? "assertive" : "polite");
     node.classList.add("show");
     clearTimeout(this.toastTimer);
     this.toastTimer = setTimeout(() => node.classList.remove("show"), 4500);
@@ -311,15 +313,18 @@ const StudioUI = {
       box.innerHTML = `<p class="studio-hint">Select a room, then add an opening.</p>${this.button("Add door", "addFixture('door')")}${this.button("Add window", "addFixture('window')")}${this.button("Edit openings", "PlanningUI.openingsDialog()")}`;
       return;
     }
-    for (const item of ASSET_CATALOGS[this.assetKind].items.filter((i) =>
-      i.label.toLowerCase().includes(this.filter.toLowerCase()),
-    )) {
+    const matches = ASSET_CATALOGS[this.assetKind].items.filter(i => i.label.toLowerCase().includes(this.filter.trim().toLowerCase()));
+    if (!matches.length) {
+      box.innerHTML = `<div class="catalog-empty">No matching assets. Try another name.<br><button class="studio-button" onclick="StudioUI.filter='';document.getElementById('studio-search').value='';StudioUI.renderCatalog()">Clear search</button></div>`;
+      return;
+    }
+    for (const item of matches) {
       const button = document.createElement("button");
       button.type = "button";
       button.className = "studio-asset";
       button.draggable = true;
-      button.innerHTML = `<span>${this.escape(item.label)}</span><small>${item.w} × ${item.h} in</small>`;
-      button.title = `${item.w} × ${item.h} inches`;
+      button.innerHTML = `<span>${this.escape(item.label)}</span><small>${ProjectModel.display(item.w, this.unit)} × ${ProjectModel.display(item.h, this.unit)} ${this.unit === "ftin" ? "" : this.unit}</small>`;
+      button.title = `${item.label} · ${ProjectModel.display(item.w, this.unit)} × ${ProjectModel.display(item.h, this.unit)} ${this.unit === "ftin" ? "" : this.unit}`;
       button.onclick = () => this.place(item, this.assetKind);
       button.addEventListener("dragstart", (e) => {
         e.dataTransfer.setData(
@@ -1155,6 +1160,9 @@ const StudioUI = {
         'input,textarea,select,[contenteditable="true"]',
       ),
       dialog = document.querySelector("dialog[open]");
+    if (window.WorkspacePolish && !dialog && !input &&
+        event.target?.closest?.('.studio-view-modes,#viewport-toolbar,#planning-navigation,.viewport-orientation,#split-resizer') &&
+        ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'].includes(event.key)) return;
     if (typeof StudioEnhancements !== "undefined" && !dialog && !input) {
       if (event.key === "Escape" &&
           (StudioEnhancements.walking || document.body.classList.contains("presentation-focus"))) {

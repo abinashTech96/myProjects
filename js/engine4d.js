@@ -104,7 +104,7 @@ window.Engine4D = {
     this.preset=value;
     if (!this.renderer) return;
     const p=presets[value];
-    this.scene.background=new THREE.Color(typeof StudioEnhancements !== "undefined" ? StudioEnhancements.viewportBackground() : p.background);
+    this.scene.background=new THREE.Color(typeof StudioEnhancements !== "undefined" ? StudioEnhancements.viewportBackground("4d") : p.background);
     if (typeof StudioEnhancements !== "undefined") this.scene.background.convertSRGBToLinear();
     this.key.color.setHex(p.key); this.key.intensity=p.intensity;
     this.fill.intensity=p.fill; this.rim.intensity=p.rim;

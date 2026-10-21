@@ -28,6 +28,7 @@ const WorkspaceExperience = {
       if (event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom) dialog.close();
     };
     if (compact) this.position(dialog, kind);
+    if (window.WorkspacePolish) WorkspacePolish.decorateDialog(dialog);
     dialog.querySelectorAll('button').forEach(button => {
       if (!button.title && button.textContent.trim()) button.title = button.textContent.trim();
     });
@@ -35,7 +36,7 @@ const WorkspaceExperience = {
   position(dialog, kind) {
     if (kind === 'widget-detail') {
       const anchor = document.querySelector(`#planning-dock [data-widget="${dialog.dataset.widget}"]`);
-      const r = anchor?.getBoundingClientRect();
+      const r = anchor?.getClientRects().length ? anchor.getBoundingClientRect() : null;
       const header = document.querySelector('.studio-header').getBoundingClientRect().bottom;
       const width = Math.min(380, innerWidth - 24);
       const left = innerWidth <= 600 ? 12 : Math.max(12, Math.min((r?.right || 44) + 10, innerWidth - width - 12));
@@ -43,6 +44,7 @@ const WorkspaceExperience = {
       const height = Math.min(540, available);
       const top = Math.max(header + 8, Math.min(r?.top || header + 8, innerHeight - height - 12));
       Object.assign(dialog.style, {width:`${width}px`,left:`${left}px`,top:`${top}px`,margin:'0',maxHeight:`${Math.max(120, Math.min(height, innerHeight-top-12))}px`});
+      if (window.WorkspacePolish) WorkspacePolish.clampDialog(dialog);
       return;
     }
     const selectors = { widgets: '[aria-label="Workspace widgets"]', settings: '[aria-label="Canvas settings"]',
@@ -50,12 +52,13 @@ const WorkspaceExperience = {
       render: '#viewport-render-button', camera: '#viewport-views-button' };
     const anchor = document.querySelector(selectors[kind] || '#planning-navigation');
     const width = Math.min(kind === 'settings' ? 360 : kind === 'render' ? 350 : 336, innerWidth - 24);
-    const r = anchor?.getBoundingClientRect();
+    const r = anchor?.getClientRects().length ? anchor.getBoundingClientRect() : null;
     const header = document.querySelector('.studio-header').getBoundingClientRect().bottom;
     const left = Math.max(12, Math.min(r?.left || (innerWidth-width)/2, innerWidth-width-12));
     let top = r && r.top < innerHeight/2 ? r.bottom+9 : header+9;
     top = Math.min(top, Math.max(12, innerHeight-230));
     Object.assign(dialog.style, { width: `${width}px`, left: `${left}px`, top: `${top}px`, margin: '0', maxHeight: `${Math.max(190,innerHeight-top-12)}px` });
+    if (window.WorkspacePolish) WorkspacePolish.clampDialog(dialog);
   },
   init() {
     document.body.classList.add('experience-shell');

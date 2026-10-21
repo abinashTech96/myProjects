@@ -48,9 +48,9 @@ module.exports = async ({ page, context, assert, server }) => {
   };
   await reset({ elements: [room("bed")] });
   assert.equal(await page.locator("#planning-dock [data-widget]").count(), 0);
-  await page.locator(".planning-entry").getByRole("button", { name: "Tools", exact: true }).click();
+
   await page
-    .getByRole("button", { name: "Widgets", exact: true })
+    .getByRole("button", { name: "Workspace widgets", exact: true })
     .first()
     .click();
   await page.getByLabel("Unit converter", { exact: true }).check();

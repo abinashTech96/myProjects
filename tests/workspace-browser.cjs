@@ -11,7 +11,30 @@ module.exports = async ({ page, assert }) => {
   assert.equal(await page.locator("#planning-dock .planning-widget").count(), 0);
   assert.equal(await page.locator(".studio-catalog").isVisible(), false);
   assert.equal(await page.locator(".studio-inspector").isVisible(), false);
-  assert.deepEqual(await page.locator(".planning-entry button").allTextContents(), ["Build", "Tools", "Search"]);
+  assert.deepEqual(await page.locator(".planning-entry button").allTextContents(), ["Build", "Tools", "Widgets", "Settings", "Search"]);
+  assert.equal(await page.evaluate(() => PlanningUI.tools().length), 102);
+  assert.equal(await page.evaluate(() => PlanningUI.toolActions().length), 102);
+  assert.equal(await page.evaluate(() => DesignUI.tools().length), 36);
+  assert.equal(await page.evaluate(() => WorkbenchUI.tools().length), 30);
+  await page.getByRole('button', { name: 'Canvas settings', exact: true }).click();
+  await page.getByLabel('Smart-Merge', { exact: true }).check();
+  assert.equal(await page.evaluate(() => CanvasControlsEngine.isSmartMerge()), true);
+  await page.getByLabel('Drawing scale', { exact: true }).fill('1.5');
+  await page.getByLabel('Drawing scale', { exact: true }).press('Tab');
+  assert.equal(await page.evaluate(() => Number(document.getElementById('scaleInput').value)), 1.5);
+  assert.equal(await page.evaluate(() => StudioUI.mode), '2d');
+  assert.equal(await page.evaluate(() => !!Engine3D.scene), false);
+  await page.getByRole('button', { name: 'Close dialog', exact: true }).click();
+  await page.evaluate(() => { ProjectState.undo(); ProjectState.undo(); });
+  await page.getByRole('button', { name: 'Pan', exact: true }).click();
+  const panX = await page.evaluate(() => CanvasState.panX);
+  await page.getByRole('button', { name: 'Right →', exact: true }).click();
+  assert.notEqual(await page.evaluate(() => CanvasState.panX), panX);
+  await page.getByRole('button', { name: 'Close dialog', exact: true }).click();
+  await page.evaluate(() => StudioUI.fitPlan());
+  await page.getByRole('button', { name: 'Objects', exact: true }).click();
+  assert.equal(await page.locator('.workspace-object-list').count(), 1);
+  await page.getByRole('button', { name: 'Close dialog', exact: true }).click();
   await page.screenshot({ path: "/tmp/archcad-simple-desktop.png" });
   await page.locator('.studio-file-actions').getByRole('button', { name: 'Project', exact: true }).click();
   assert.equal(await page.getByRole('button', { name: 'Open project', exact: true }).isVisible(), true);
@@ -25,6 +48,20 @@ module.exports = async ({ page, assert }) => {
   assert.equal(await page.locator(".studio-catalog").isVisible(), true);
   await page.locator("#studio-assets .studio-asset").first().click();
   assert.equal(await page.locator(".studio-inspector").isVisible(), true);
+  assert.equal(await page.locator('#wb-context-toolbar').isVisible(), true);
+  assert.deepEqual(await page.locator('#wb-context-toolbar button').allTextContents(), ['Move','3D edit','Interiors','Duplicate','Isolate','More']);
+  await page.getByRole('button', { name: 'Objects', exact: true }).click();
+  await page.locator('.workspace-object-list button').first().click();
+  assert.equal(await page.evaluate(() => selectedElIndex), 0);
+  assert.equal(await page.locator('#studio-properties').getByRole('button', { name: 'Room Studio', exact: true }).isVisible(), true);
+  await page.screenshot({ path: '/tmp/archcad-restored-selected-desktop.png' });
+  await page.locator('#wb-context-toolbar').getByRole('button', { name: 'Move', exact: true }).click();
+  assert.equal(await page.locator('#transform-mode').isVisible(), true);
+  await page.getByRole('button', { name: 'Close dialog', exact: true }).click();
+  await page.locator('#wb-context-toolbar').getByRole('button', { name: '3D edit', exact: true }).click();
+  await page.waitForFunction(() => Workbench3D.enabled && Engine3D.buildingGroup);
+  assert.equal(await page.evaluate(() => StudioUI.mode), '3d');
+  await page.evaluate(() => { Workbench3D.disableEdit(); setWorkspaceLayout('2d'); });
   await page.locator('#studio-asset-kind').selectOption('openings');
   await page.getByRole('button', { name: 'Add door', exact: true }).click();
   assert.equal(await page.evaluate(() => fixtures.length), 1);
@@ -35,7 +72,17 @@ module.exports = async ({ page, assert }) => {
   await page.evaluate(() => { undoAction(); PlanningUI.collapse('catalog'); });
   await page.locator(".planning-entry button").getByText("Tools", { exact: true }).click();
   assert.ok(await page.locator(".planning-tool-list button").count() > 10);
-  await page.getByRole("button", { name: "Widgets", exact: true }).click();
+  await page.locator('.workspace-tool-sections').getByRole('button', { name: 'Design', exact: true }).click();
+  assert.equal(await page.locator('.design-tool-grid button').count(), 36);
+  await page.evaluate(() => PlanningUI.toolsDialog());
+  await page.locator('.workspace-tool-sections').getByRole('button', { name: 'Pro', exact: true }).click();
+  assert.equal(await page.locator('.wb-tool-grid button').count(), 30);
+  await page.getByRole("button", { name: "Close dialog", exact: true }).click();
+  await page.getByRole("button", { name: "Workspace widgets", exact: true }).click();
+  await page.getByRole('button', { name: 'Show core widgets', exact: true }).click();
+  assert.equal(await page.locator('#planning-dock .planning-widget').count(), 4);
+  await page.getByRole('button', { name: 'Hide all widgets', exact: true }).click();
+  assert.equal(await page.locator('#planning-dock .planning-widget').count(), 0);
   await page.locator('#studio-dialog input[type="checkbox"]').first().check();
   await page.getByRole("button", { name: "Close dialog", exact: true }).click();
   assert.equal(await page.locator("#planning-dock .planning-widget").count(), 1);
@@ -59,7 +106,7 @@ module.exports = async ({ page, assert }) => {
   });
   assert.equal(await page.evaluate(() => Engine3D.loopRunning), true);
   await page.locator('[data-mode="2d"]').click();
-  for (const width of [390, 768]) {
+  for (const width of [320, 390, 768, 900]) {
     await page.setViewportSize({ width, height: 844 });
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     const sections = await page.locator('.studio-header > *:visible').all();
@@ -78,13 +125,31 @@ module.exports = async ({ page, assert }) => {
     await page.locator('.planning-entry button').getByText('Build', { exact: true }).click();
     assert.equal(await page.locator('.studio-catalog').isVisible(), true);
     await page.locator('#studio-assets .studio-asset').first().click();
-    assert.equal(await page.locator('.studio-catalog').isVisible(), false);
     assert.equal(await page.locator('.studio-inspector').isVisible(), true);
+    if (width <= 850) {
+      if (width === 390) await page.screenshot({ path: '/tmp/archcad-restored-selected-mobile.png' });
+      assert.equal(await page.locator('.studio-catalog').isVisible(), false);
+      await page.locator('.planning-entry button').getByText('Build', { exact: true }).click();
+      assert.equal(await page.locator('.studio-catalog').isVisible(), true);
+      assert.equal(await page.locator('.studio-inspector').isVisible(), false);
+      const selected = await page.evaluate(() => selectedElIndex);
+      await page.locator('#studio-asset-kind').selectOption('openings');
+      await page.getByRole('button', { name: 'Add door', exact: true }).click();
+      assert.equal(await page.evaluate(() => selectedElIndex), selected);
+      assert.equal(await page.evaluate(() => fixtures.length), 1);
+      await page.evaluate(() => { undoAction(); StudioUI.select(0); });
+      await page.locator('.planning-entry button').getByText('Build', { exact: true }).click();
+      await page.locator('#studio-asset-kind').selectOption('rooms');
+      await page.getByRole('button', { name: 'Close Build panel', exact: true }).click();
+      assert.equal(await page.locator('.studio-inspector').isVisible(), true);
+    } else {
+      await page.getByRole('button', { name: 'Close Build panel', exact: true }).click();
+    }
     await page.getByRole('button', { name: 'Close properties', exact: true }).click();
     await page.evaluate(() => undoAction());
   }
   await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({ path: '/tmp/archcad-simple-mobile.png' });
   await page.setViewportSize({ width: 1440, height: 900 });
-  console.log('Simple workspace: navigation, contextual panels, widgets, 3D suspend/resume and responsive header passed');
+  console.log('Workspace access: 102 workflows, Design/Pro, Objects, selection actions, 2D settings, Widgets and 320–900px panels passed');
 };

@@ -149,6 +149,10 @@ const WorkbenchUI = {
       return;
     }
     bar.hidden = false;
+    const slot = document.getElementById("studio-selection-actions"),
+      parent = e && slot ? slot : document.body;
+    if (bar.parentElement !== parent) parent.appendChild(bar);
+    bar.classList.toggle("in-inspector", !!e && !!slot);
     let buttons;
     if (target?.kind === "wall")
       buttons =
@@ -166,7 +170,11 @@ const WorkbenchUI = {
           ? this.b("Furniture fit", "WorkbenchUI.furnitureDialog()")
           : this.b("Interiors", "WorkbenchUI.interiorDialog()")) +
         this.b("Duplicate", 'Selection.action("Duplicate")');
-    bar.innerHTML = `<strong>${this.e(e?.customName || e?.type || target?.kind || "Selection")}</strong>${buttons}${this.b("Isolate", "Workbench3D.isolateSelection()")}${this.b("More", "DesignUI.contextDialog()")}`;
+    const html = `<strong>${this.e(e?.customName || e?.type || target?.kind || "Selection")}</strong>${buttons}${this.b("Isolate", "Workbench3D.isolateSelection()")}${this.b("More", "DesignUI.contextDialog()")}`;
+    if (this.contextHTML !== html) {
+      bar.innerHTML = html;
+      this.contextHTML = html;
+    }
   },
   wallDialog() {
     const p = this.p(),

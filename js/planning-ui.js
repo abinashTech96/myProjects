@@ -70,6 +70,8 @@ const PlanningUI = {
     entry.innerHTML =
       this.button("Build", "PlanningUI.collapse('catalog')") +
       this.button("Tools", "PlanningUI.toolsDialog()") +
+      '<button type="button" class="studio-button" aria-label="Workspace widgets" onclick="PlanningUI.widgetsDialog()">Widgets</button>' +
+      '<button type="button" class="studio-button" aria-label="Canvas settings" onclick="StudioUI.canvasSettingsDialog()">Settings</button>' +
       this.button("Search", "PlanningUI.commandDialog()");
     entry.lastElementChild.setAttribute("aria-label", "Search tools");
     entry.lastElementChild.title = "Search tools (Ctrl/⌘ K)";
@@ -79,7 +81,8 @@ const PlanningUI = {
     tools.innerHTML =
       this.button("Draw walls", "PlanningUI.setTool('wall')") +
       this.button("Auto-builder", "PlanningUI.builderDialog()") +
-      this.button("Plot & units", "StudioUI.projectDialog()");
+      this.button("Plot & units", "StudioUI.projectDialog()") +
+      this.button("Rooms & objects", "StudioUI.objectsDialog()");
     tools.insertAdjacentHTML(
       "afterbegin",
       '<div id="planning-favourites"></div>',
@@ -108,6 +111,8 @@ const PlanningUI = {
     const nav = document.createElement("div");
     nav.id = "planning-navigation";
     nav.innerHTML =
+      this.button("Objects", "StudioUI.objectsDialog()") +
+      this.button("Pan", "StudioUI.panDialog()") +
       this.button("−", "PlanningUI.zoom(0.8)") +
       this.button("Fit plot", "StudioUI.fitPlan()") +
       this.button("Fit selection", "centerOnSelection()") +
@@ -184,7 +189,9 @@ const PlanningUI = {
       }),
     );
     AppEvents.onStateChange(() => this.refresh());
-    AppEvents.onSelectionChange(() => this.refresh());
+    AppEvents.onSelectionChange(() => {
+      if (this.ready && this.cache) this.renderWidgets();
+    });
     window.addEventListener("online", () => this.refresh());
     window.addEventListener("offline", () => this.refresh());
     if ("serviceWorker" in navigator && location.protocol !== "file:")
@@ -255,9 +262,14 @@ const PlanningUI = {
   },
   collapse(side) {
     if (matchMedia("(max-width:850px)").matches) {
-      document.body.classList.toggle(
-        side === "catalog" ? "catalog-open" : "inspector-open",
-      );
+      if (side === "catalog") {
+        const opening = !document.body.classList.contains("catalog-open");
+        document.body.classList.toggle("catalog-open", opening);
+        document.body.classList.toggle("inspector-open", !opening && !!elements[selectedElIndex]);
+      } else {
+        document.body.classList.remove("catalog-open");
+        document.body.classList.toggle("inspector-open");
+      }
       return;
     }
     this.preferences[side + "Collapsed"] =
@@ -423,8 +435,15 @@ const PlanningUI = {
   widgetsDialog() {
     this.dialog(
       "Workspace widgets",
-      `<p>Choose compact cards to keep visible. Select a card to expand its tool.</p>${["checks", "vastu", "area", "converter", "measurements", "selection", "navigation", "shortcuts"].map((k) => `<label><input type="checkbox" ${this.preferences.widgets?.[k] ? "checked" : ""} onchange="PlanningUI.toggleWidget('${k}',this.checked)">${this.esc({ checks: "Compliance / layout checks", vastu: "Vastu score", area: "Live floor area", converter: "Unit converter", measurements: "Measurements", selection: "Selection summary", navigation: "Navigation & saved views", shortcuts: "Shortcuts" }[k])}</label>`).join("")}${this.button("Reset workspace", "PlanningUI.resetWorkspace()")}`,
+      `<p>Pin the cards you use. Your choices are saved on this device.</p><div class="studio-action-row">${this.button("Show core widgets", "PlanningUI.widgetPreset(true)")}${this.button("Hide all widgets", "PlanningUI.widgetPreset(false)")}</div>${["checks", "vastu", "area", "converter", "measurements", "selection", "navigation", "shortcuts"].map((k) => `<label><input type="checkbox" ${this.preferences.widgets?.[k] ? "checked" : ""} onchange="PlanningUI.toggleWidget('${k}',this.checked)">${this.esc({ checks: "Compliance / layout checks", vastu: "Vastu score", area: "Live floor area", converter: "Unit converter", measurements: "Measurements", selection: "Selection summary", navigation: "Navigation & saved views", shortcuts: "Shortcuts" }[k])}</label>`).join("")}${this.button("Reset workspace", "PlanningUI.resetWorkspace()")}`,
     );
+  },
+  widgetPreset(core) {
+    const keys = ["checks", "vastu", "area", "converter", "measurements", "selection", "navigation", "shortcuts"];
+    this.preferences.widgets = Object.fromEntries(keys.map((key, i) => [key, core && i < 4]));
+    this.savePrefs();
+    this.refresh();
+    this.widgetsDialog();
   },
   toggleWidget(k, value) {
     this.preferences.widgets ||= {};
@@ -478,12 +497,14 @@ const PlanningUI = {
       ["View", "Versions", "StudioUI.versionsDialog()"],
       ["View", "AI assistant", "StudioUI.aiDialog()"],
       ["Inspect", "Section cut", "toggleSectionCut()"],
+      ["View", "Canvas settings", "StudioUI.canvasSettingsDialog()"],
+      ["View", "Rooms & objects", "StudioUI.objectsDialog()"],
     ];
   },
   toolsDialog(category = "Build") {
     this.dialog(
       "Tools",
-      `<div class="studio-action-row">${this.button("Search all tools", "PlanningUI.commandDialog()")}${this.button("Widgets", "PlanningUI.widgetsDialog()")}</div><div class="planning-tabs">${["Build", "Inspect", "Utilities", "View"].map((c) => this.button(c, `PlanningUI.toolsDialog('${c}')`, c === category ? "active" : "")).join("")}</div><div class="planning-tool-list">${this.tools()
+      `<div class="workspace-tool-sections" aria-label="Tool collections">${this.button("Design", "DesignUI.menu()")}${this.button("Pro", "WorkbenchUI.menu()")}${this.button("3D tools", "StudioUI.viewToolsDialog()")}${this.button("Search all tools", "PlanningUI.commandDialog()")}</div><div class="planning-tabs">${["Build", "Inspect", "Utilities", "View"].map((c) => this.button(c, `PlanningUI.toolsDialog('${c}')`, c === category ? "active" : "")).join("")}</div><div class="planning-tool-list">${this.tools()
         .map((t, i) =>
           t[0] === category
             ? `<div>${this.button(t[1], `PlanningUI.launch(${i})`)}<button class="studio-button" aria-label="Favourite ${this.esc(t[1])}" onclick="PlanningUI.favourite(${i});PlanningUI.toolsDialog('${category}')">${this.preferences.favourites?.includes(t[1]) ? "★" : "☆"}</button></div>`
@@ -527,6 +548,8 @@ const PlanningUI = {
       () => StudioUI.versionsDialog(),
       () => StudioUI.aiDialog(),
       () => toggleSectionCut(),
+      () => StudioUI.canvasSettingsDialog(),
+      () => StudioUI.objectsDialog(),
     ];
   },
   launch(i) {

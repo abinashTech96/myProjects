@@ -221,3 +221,24 @@ test("advanced visualization workspace survives project round trip", () => {
   assert.equal(M.normalize(JSON.parse(JSON.stringify(p))).view.mode,"4d");
   assert.throws(() => project({view:{mode:"unsupported"}}), /workspace mode/);
 });
+
+test("explicit save waits for an older autosave and flushes newer edits", async () => {
+  const {run,c}=stateHarness();
+  let release;
+  const gate=new Promise(resolve=>{release=resolve;});
+  const saved=[];
+  c.saveGate=gate;
+  c.saveRecord=data=>saved.push(data);
+  run(`StorageEngine.loading=false;StorageEngine.write=async(key,data)=>{if(data.name==='Older')await saveGate;saveRecord(data)};ProjectState.meta.name='Older';StorageEngine.markDirty()`);
+  const older=run('StorageEngine.saveToMemory()');
+  run(`ProjectState.meta.name='Latest';document.getElementById('aL').value='11.25';StorageEngine.markDirty()`);
+  let finished=false;
+  const newer=run('StorageEngine.saveToMemory()').then(()=>{finished=true;});
+  await Promise.resolve();
+  assert.equal(finished,false,'A concurrent save must wait for storage');
+  release();
+  await Promise.all([older,newer]);
+  assert.deepEqual(saved.map(data=>data.name),['Older','Latest']);
+  assert.equal(saved.at(-1).plot.aL,'11.25');
+  assert.equal(run('StorageEngine.dbNeedsSave'),false);
+});

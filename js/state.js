@@ -383,7 +383,19 @@ const StorageEngine = {
     }
   },
   async saveToMemory() {
-    if (this.loading || this.saving) return;
+    if (this.loading) return;
+    if (this.saveInFlight) {
+      await this.saveInFlight;
+      // An explicit save must also flush edits made during an older autosave.
+      if (this.dbNeedsSave && !this.error) return this.saveToMemory();
+      return;
+    }
+    const pending = this.persistToMemory();
+    this.saveInFlight = pending;
+    try { await pending; }
+    finally { if (this.saveInFlight === pending) this.saveInFlight = null; }
+  },
+  async persistToMemory() {
     this.saving = true;
     const revision = this.revision;
     try {

@@ -126,7 +126,7 @@ window.Engine4D = {
     if (!this.renderer) return;
     const box=document.getElementById('three-container');
     if (!box.clientWidth || !box.clientHeight) return;
-    const ratio=Math.min(devicePixelRatio || 1,1.5,Math.sqrt(1600000/(box.clientWidth*box.clientHeight)));
+    const ratio=Math.min(devicePixelRatio || 1,1.5,Math.sqrt(1600000/(box.clientWidth*box.clientHeight)))*(this.dynamicScale||1);
     this.renderer.setPixelRatio(ratio);
     this.renderer.setSize(box.clientWidth,box.clientHeight,false);
     this.composer.setPixelRatio(ratio); this.composer.setSize(box.clientWidth,box.clientHeight);
@@ -279,7 +279,7 @@ window.Engine4D = {
     else this.camera.copy(source,false);
     // The editing camera allows a very wide depth range. Fit the presentation
     // camera to the model so the AO depth texture can resolve nearby surfaces.
-    const box=this.modelBounds;
+    const box=(typeof StudioEnhancements!=='undefined'&&StudioEnhancements.explodedBounds)||this.modelBounds;
     if(box && !box.isEmpty()) {
       const distance=source.position.distanceTo(box.getCenter(new THREE.Vector3()));
       const radius=Math.max(10,box.getSize(new THREE.Vector3()).length()/2);
@@ -298,7 +298,8 @@ window.Engine4D = {
     for(const [source,copy] of this.pairs) {
       copy.position.copy(source.position);copy.quaternion.copy(source.quaternion);copy.scale.copy(source.scale);copy.visible=source.visible;if(source.matrixAutoUpdate===false)copy.matrix.copy(source.matrix);
     }
-    this.renderer.clippingPlanes=Engine3D.renderer.clippingPlanes;
+    if(typeof StudioEnhancements!=='undefined')StudioEnhancements.applyPresentation();
+    this.renderer.clippingPlanes=typeof StudioEnhancements!=='undefined'?StudioEnhancements.clipping(Engine3D.renderer.clippingPlanes):Engine3D.renderer.clippingPlanes;
     // Match the shared sun control while retaining this engine's own light rig.
     this.key.position.copy(Engine3D.sunLight.position);
     if(!this.lastSun || !this.lastSun.equals(this.key.position)) {this.renderer.shadowMap.needsUpdate=true;this.lastSun=this.key.position.clone();}

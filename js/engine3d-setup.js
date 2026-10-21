@@ -144,7 +144,7 @@ window.Engine3D = {
 
             let controlsChanged = false;
             if (typeof ViewportUI !== 'undefined') ViewportUI.tick(time);
-            if (this.isWalkthrough && this.fpsControls.isLocked) {
+            if (this.isWalkthrough && this.fpsControls.isLocked && !(typeof StudioEnhancements!=="undefined" && StudioEnhancements.walking)) {
                 // Physics & Friction
                 velocity.x -= velocity.x * 10.0 * delta;
                 velocity.y -= velocity.y * 10.0 * delta; 
@@ -193,7 +193,7 @@ window.Engine3D = {
                     controlObj.position.y = 40 * SCALE;
                     velocity.y = 0;
                 }
-            } else {
+            } else if (!(typeof StudioEnhancements !== "undefined" && StudioEnhancements.walking)) {
                 controlsChanged = this.controls.update();
             }
             

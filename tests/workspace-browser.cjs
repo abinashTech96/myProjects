@@ -11,7 +11,7 @@ module.exports = async ({ page, assert }) => {
   assert.equal(await page.locator("#planning-dock .planning-widget").count(), 0);
   assert.equal(await page.locator(".studio-catalog").isVisible(), false);
   assert.equal(await page.locator(".studio-inspector").isVisible(), false);
-  assert.deepEqual(await page.locator(".planning-entry button").allTextContents(), ["Build", "Tools", "Widgets", "Settings", "Search"]);
+  assert.deepEqual(await page.locator(".planning-entry button").allTextContents(), ["Build", "Tools", "Widgets", "Settings", "Search", "✦"]);
   assert.equal(await page.evaluate(() => PlanningUI.tools().length), 102);
   assert.equal(await page.evaluate(() => PlanningUI.toolActions().length), 102);
   assert.equal(await page.evaluate(() => DesignUI.tools().length), 36);

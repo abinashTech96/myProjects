@@ -1155,6 +1155,25 @@ const StudioUI = {
         'input,textarea,select,[contenteditable="true"]',
       ),
       dialog = document.querySelector("dialog[open]");
+    if (typeof StudioEnhancements !== "undefined" && !dialog && !input) {
+      if (event.key === "Escape" &&
+          (StudioEnhancements.walking || document.body.classList.contains("presentation-focus"))) {
+        StudioEnhancements.stopWalk();
+        StudioEnhancements.setFocus(false);
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        return;
+      }
+      if (StudioEnhancements.pickMode && event.key === "Escape") {
+        StudioEnhancements.pickMode = null;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        return;
+      }
+      if (StudioEnhancements.walking &&
+          ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Delete", "Backspace", "r", "R"].includes(event.key))
+        return;
+    }
     if (RoomStudio.activeRoom) {
       if (input) return;
       event.stopImmediatePropagation();

@@ -1,6 +1,7 @@
 /* Geometry, design requirements and analysis shared by browser, server and tests. */
 (function (root) {
   "use strict";
+  const Presentation = root.PresentationModel || (typeof require === "function" ? require("./presentation-model.js") : null);
   const P = root.ProjectModel,
     M = root.PlanningModel,
     PC =
@@ -44,6 +45,7 @@
   function defaults() {
     return {
       version: 1,
+      presentation: Presentation.defaults(),
       autoRooms: false,
       guides: [],
       constraints: [],
@@ -87,6 +89,7 @@
     ])
       if (!Array.isArray(d[k]) || d[k].length > 2000)
         throw Error("Invalid design " + k);
+    d.presentation = Presentation.validate(d.presentation, p);
     d.autoRooms = !!d.autoRooms;
     const f = (n, label, min = 0, max = 100000) => P.finite(n, label, min, max);
     for (const g of d.guides) {

@@ -251,20 +251,29 @@ const ProjectState = {
       return false;
     }
   },
+  selectionSnapshot() {
+    const primary = this.data.elements[this.data.selectedElIndex]?.id;
+    return {
+      primary,
+      ids: typeof Selection !== "undefined" ? [...Selection.ids] : primary ? [primary] : [],
+    };
+  },
   undo() {
+    const selection = this.selectionSnapshot();
     this.saveState();
     const item = this.history.stack.pop();
     if (!item) return false;
     this.history.redoStack.push(item);
-    this.apply(item.before);
+    this.apply(item.before, { selection });
     StorageEngine.markDirty();
     return true;
   },
   redo() {
+    const selection = this.selectionSnapshot();
     const item = this.history.redoStack.pop();
     if (!item) return false;
     this.history.stack.push(item);
-    this.apply(item.after);
+    this.apply(item.after, { selection });
     StorageEngine.markDirty();
     return true;
   },

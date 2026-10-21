@@ -242,3 +242,5 @@ test("explicit save waits for an older autosave and flushes newer edits", async 
   assert.equal(saved.at(-1).plot.aL,'11.25');
   assert.equal(run('StorageEngine.dbNeedsSave'),false);
 });
+
+test("undo and redo retain a surviving selected element",()=>{const {run}=stateHarness();run(`ProjectState.apply({elements:[{id:'selected',type:'bedroom',x:0,y:0,w:120,h:120,floor:0}],fixtures:[]},{rebase:true});selectedElIndex=0;ProjectState.updateElement(0,{material:'wood'});ProjectState.undo()`);assert.equal(run('selectedElIndex'),0);run('ProjectState.redo()');assert.equal(run('selectedElIndex'),0);});

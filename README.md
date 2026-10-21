@@ -28,6 +28,10 @@ New workspaces start with widgets hidden; existing saved widget and panel choice
 - **Room Studio** edits the selected room's furniture in a sandbox. Save to Plan applies the changes as one undoable action; Discard leaves the plan unchanged. Its keyboard shortcuts are isolated from the background plan.
 - **Layout checks** lists boundary/overlap issues and the configured room rules. Click a geometry warning to select its element. Vastu guidance follows the selected compass orientation and active floor. The score averages applicable kitchen, puja, toilet and explicitly marked master-bedroom checks. Empty or unsupported floors show Not evaluated. Column markers are schematic symbols.
 
+## Studio+ upgrades
+
+**✦ Studio+** beside Search opens eighteen coordinated editing and presentation tools, plus Graphite, Pearl, Ocean and Sand themes. Room focus, separate floor/wall/ceiling finishes, precise placement, clearance checks, linked 2D/4D, animated openings, walkthrough, exploded floors, sun study, draggable sections and measurement overlays share the existing project and history. See [Studio+ guide](STUDIO_PLUS.md) for all eighteen tools, saved versus temporary settings, and practical limits.
+
 ## Planning tools
 
 Optional **Layout checks**, **Vastu**, **Floor area** and **Unit converter** cards can be pinned from **Tools → Widgets**. **Widgets** controls visibility and optional measurement, selection, navigation and shortcut cards. Choices, favourites and panel sizes persist on the current device. Asset scrolling is independent of the grouped tool buttons. **Tools** opens Build, Inspect, Utilities and View; **Ctrl/Command K** searches tools and rooms.

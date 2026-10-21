@@ -1,0 +1,351 @@
+body[data-ui-theme] {
+  --enh-bg: #0f172a;
+  --enh-panel: #192638;
+  --enh-inset: #121e2f;
+  --enh-text: #e7eef8;
+  --enh-muted: #afbed0;
+  --enh-border: #40546c;
+  --enh-accent: #68d3e1;
+  --enh-shadow: #0005;
+  --enh-shine: #ffffff0c;
+}
+body[data-ui-theme="pearl"] {
+  --enh-bg: #eef2f6;
+  --enh-panel: #f9fbfd;
+  --enh-inset: #e8eef4;
+  --enh-text: #21334a;
+  --enh-muted: #52657c;
+  --enh-border: #b7c6d5;
+  --enh-accent: #086f91;
+  --enh-shadow: #61758c30;
+  --enh-shine: #fff;
+}
+body[data-ui-theme="ocean"] {
+  --enh-bg: #071d29;
+  --enh-panel: #102e3d;
+  --enh-inset: #0a2331;
+  --enh-text: #dff5f8;
+  --enh-muted: #a3c7d0;
+  --enh-border: #315b6c;
+  --enh-accent: #65e5d0;
+  --enh-shadow: #0005;
+  --enh-shine: #b6ffff10;
+}
+body[data-ui-theme="sand"] {
+  --enh-bg: #e9e0d5;
+  --enh-panel: #f7f1e8;
+  --enh-inset: #e9dfd2;
+  --enh-text: #44382c;
+  --enh-muted: #74614e;
+  --enh-border: #c6b49c;
+  --enh-accent: #8d5428;
+  --enh-shadow: #78604230;
+  --enh-shine: #fff8;
+}
+body[data-ui-theme]
+  :is(
+    .studio-header,
+    .studio-status,
+    .studio-catalog,
+    .studio-inspector,
+    .studio-dialog,
+    #advanced-view-panel,
+    #planning-navigation,
+    .experience-popover,
+    .planning-widget,
+    .viewport-orientation button
+  ) {
+  background: var(--enh-panel) !important;
+  color: var(--enh-text) !important;
+  border-color: var(--enh-border) !important;
+}
+body[data-ui-theme]
+  :is(.studio-button, .studio-dialog .studio-button, .viewport-button) {
+  background: var(--enh-panel);
+  color: var(--enh-text);
+  border-color: var(--enh-border);
+  box-shadow:
+    2px 3px 7px var(--enh-shadow),
+    inset 1px 1px 0 var(--enh-shine);
+}
+body[data-ui-theme]
+  :is(.studio-dialog, .studio-inspector, .studio-catalog, #advanced-view-panel)
+  :is(
+    input:not([type="color"]):not([type="checkbox"]):not([type="range"]),
+    select,
+    textarea
+  ) {
+  background: var(--enh-inset) !important;
+  color: var(--enh-text) !important;
+  border-color: var(--enh-border) !important;
+}
+body[data-ui-theme]
+  :is(.studio-dialog, .studio-inspector, .studio-catalog, #advanced-view-panel)
+  :is(p, label, summary, small) {
+  color: var(--enh-muted);
+}
+body[data-ui-theme]
+  :is(
+    .studio-panel-heading,
+    .studio-selection-title,
+    .studio-dialog-header,
+    strong
+  ) {
+  color: var(--enh-text);
+}
+body[data-ui-theme] .studio-button:is(:hover, .active, [aria-pressed="true"]),
+body[data-ui-theme] .studio-button.primary {
+  color: var(--enh-accent);
+  border-color: var(--enh-accent);
+  background: var(--enh-inset);
+}
+body[data-ui-theme] :is(#studio-search, #studio-asset-kind) {
+  background: var(--enh-inset);
+  color: var(--enh-text);
+  border-color: var(--enh-border);
+}
+body[data-ui-theme="pearl"] :is(#canvas-wrapper, #blueprint),
+body[data-ui-theme="sand"] :is(#canvas-wrapper, #blueprint) {
+  background: var(--enh-bg);
+}
+body[data-ui-theme] .enhancement-form :is(input, select) {
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+body[data-ui-theme] .enhancement-form input[type="checkbox"] {
+  width: 16px;
+  min-height: 16px;
+}
+.enhancement-hub {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+.enhancement-hub .studio-button {
+  text-align: left;
+  margin: 0;
+  font-size: 11px;
+  min-height: 36px;
+}
+.enhancement-theme-row,
+.enhancement-quick {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  margin: 8px 0;
+}
+.enhancement-theme-row .studio-button {
+  text-transform: capitalize;
+}
+.enhancement-quick .studio-button {
+  font-size: 11px;
+  min-height: 30px;
+  padding: 5px 8px;
+  margin: 0;
+}
+#studio-plus-tools {
+  border-top: 1px solid var(--enh-border);
+  padding-top: 7px;
+}
+.studio-plus-entry {
+  width: 30px;
+  padding: 5px !important;
+  flex: none;
+}
+#enhancement-labels,
+#section-handles {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  overflow: hidden;
+}
+.enhancement-dimension,
+#section-handles button {
+  position: absolute;
+  pointer-events: auto;
+  transform: translate(-50%, -50%);
+  border: 1px solid var(--enh-border);
+  border-radius: 5px;
+  background: var(--enh-panel);
+  color: var(--enh-text);
+  padding: 4px 6px;
+  font: 10px/1.3 system-ui;
+  max-width: 220px;
+  cursor: pointer;
+  box-shadow: 1px 2px 5px #0002;
+}
+#section-handles button {
+  border-color: #0ea5e9;
+  background: #082f49;
+  color: #e0f2fe;
+  cursor: grab;
+  touch-action: none;
+}
+#enhancement-fps {
+  position: absolute;
+  bottom: 26px;
+  right: 10px;
+  z-index: 4;
+  background: var(--enh-panel);
+  color: var(--enh-muted);
+  padding: 3px 6px;
+  border-radius: 5px;
+  font: 10px system-ui;
+  pointer-events: none;
+}
+#enh-walk-hud {
+  position: absolute;
+  bottom: 36px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 260;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: calc(100% - 20px);
+  padding: 7px;
+  background: var(--enh-panel);
+  color: var(--enh-text);
+  border: 1px solid var(--enh-border);
+  border-radius: 10px;
+  font: 10px system-ui;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+#enh-walk-hud > div {
+  display: flex;
+  gap: 3px;
+}
+#enh-walk-hud .studio-button {
+  min-height: 36px;
+  min-width: 36px;
+  margin: 0;
+  touch-action: none;
+}
+#focus-exit {
+  display: none;
+}
+body.presentation-focus
+  :is(
+    .studio-header,
+    .studio-status,
+    .studio-catalog,
+    .studio-inspector,
+    #planning-dock,
+    #planning-navigation,
+    #advanced-view-panel,
+    #viewport-ui,
+    #enhancement-fps
+  ) {
+  display: none !important;
+}
+body.studio-shell.presentation-focus #main-workspace {
+  top: 0 !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+}
+body.presentation-focus #focus-exit {
+  display: block;
+  position: fixed;
+  right: 12px;
+  top: 12px;
+  z-index: 20000;
+}
+body.studio-shell[data-workspace="4d"][data-linked4d="true"] #canvas-wrapper {
+  display: block !important;
+  flex: 1 !important;
+}
+body.studio-shell[data-workspace="4d"][data-linked4d="true"]
+  #right-canvas-wrapper {
+  flex: 1 !important;
+}
+body.studio-shell[data-workspace="4d"][data-linked4d="true"] #split-resizer {
+  display: block !important;
+}
+@media (max-width: 700px) {
+  .enhancement-hub {
+    grid-template-columns: 1fr;
+  }
+  body[data-workspace="4d"][data-linked4d="true"] #main-workspace {
+    flex-direction: column !important;
+  }
+  body.studio-shell[data-linked4d="true"] #canvas-wrapper,
+  body.studio-shell[data-linked4d="true"] #right-canvas-wrapper {
+    height: 50% !important;
+    min-height: 0;
+  }
+  .enhancement-theme-row {
+    gap: 4px;
+  }
+  .enhancement-dimension {
+    max-width: 165px;
+    font-size: 9px;
+  }
+  #enh-walk-hud > span {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  #enh-walk-hud,
+  .enhancement-dimension {
+    transition: none;
+  }
+}
+
+body[data-ui-theme] .studio-brand span {
+  color: var(--enh-accent);
+}
+body[data-ui-theme="pearl"] #blueprint text,
+body[data-ui-theme="sand"] #blueprint text {
+  fill: var(--enh-text);
+  text-shadow: none !important;
+}
+body[data-ui-theme] input[type="range"],
+body[data-ui-theme] input[type="checkbox"] {
+  accent-color: var(--enh-accent);
+}
+@media (max-width: 700px) {
+  body.studio-shell[data-linked4d="true"] #split-resizer {
+    height: 5px !important;
+    min-height: 5px;
+    width: 100% !important;
+    flex: none;
+  }
+}
+body.presentation-focus :is(#enhancement-labels, #section-handles) {
+  display: none !important;
+}
+@media (max-width: 850px) {
+  body.experience-shell .studio-header {
+    grid-template-rows: 36px 30px 26px;
+    align-content: center;
+  }
+  body.experience-shell .studio-header > .planning-entry {
+    grid-template-columns: repeat(5, minmax(0, 1fr)) 30px !important;
+    grid-auto-rows: 30px;
+    gap: 4px;
+  }
+  body.experience-shell .studio-header .studio-view-modes {
+    padding: 2px;
+    gap: 2px;
+  }
+  body.experience-shell .studio-header .studio-view-modes .studio-button {
+    min-height: 28px;
+    padding: 4px 6px;
+  }
+  body.experience-shell .studio-header > .planning-entry .studio-button {
+    margin: 0;
+    padding: 4px 2px;
+  }
+}
+@media (max-width: 850px) and (pointer: coarse) {
+  body.experience-shell .studio-header {
+    grid-template-rows: 40px 36px 30px;
+  }
+  body.experience-shell .studio-header > .planning-entry {
+    grid-auto-rows: 36px;
+  }
+}

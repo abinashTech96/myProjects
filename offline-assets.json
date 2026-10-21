@@ -95,5 +95,8 @@
   "./vendor/three/ShaderPass.js",
   "./vendor/three/EffectComposer.js",
   "./vendor/three/SSAOPass.js",
-  "./vendor/three/SimplexNoise.js"
+  "./vendor/three/SimplexNoise.js",
+  "./js/presentation-model.js",
+  "./js/studio-enhancements.js",
+  "./css/studio-enhancements.css"
 ]

@@ -201,6 +201,8 @@ const ProjectState = {
     this.baseline();
     this.saveState("Edited project");
     const before = this.capture();
+    const selectedId = this.data.elements[this.data.selectedElIndex]?.id;
+    const selectionIds = typeof Selection !== "undefined" ? [...Selection.ids] : [];
     this.batchDepth++;
     try {
       mutation();
@@ -241,6 +243,9 @@ const ProjectState = {
     } catch (error) {
       this.batchDepth--;
       this.apply(before);
+      this.data.selectedElIndex = this.data.elements.findIndex(el => el.id === selectedId);
+      if (typeof Selection !== "undefined")
+        Selection.ids = new Set(selectionIds.filter(id => this.data.elements.some(el => el.id === id)));
       if (typeof AppEvents !== "undefined") AppEvents.triggerStateChange();
       if (typeof StudioUI !== "undefined")
         StudioUI.message(error.message, "error");

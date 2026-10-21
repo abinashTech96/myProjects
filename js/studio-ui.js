@@ -380,7 +380,7 @@ const StudioUI = {
       )
         return this.message("Enter a valid positive dimension.", "error");
     }
-    ProjectState.commit("Changed " + key, () => {
+    return ProjectState.commit("Changed " + key, () => {
       el[key] = patch;
       this.assertBounds([el]);
       for (const f of fixtures.filter((f) => f.roomId === index)) {
@@ -427,7 +427,7 @@ const StudioUI = {
           )
           .join(
             "",
-          )}</div>${clear ? `<p class="studio-hint">Clear interior: ${ProjectModel.display(clear.w, "ftin")} × ${ProjectModel.display(clear.h, "ftin")}<br>Bounds follow wall centerlines.</p>` : ""}<div class="studio-action-row">${this.button("Rotate 90°", `StudioUI.rotate(${selectedElIndex})`)}${this.button("Frame", "centerOnSelection()")}</div></details>
+          )}</div>${clear ? `<p class="studio-hint" data-clear-interior>Clear interior: ${ProjectModel.display(clear.w, "ftin")} × ${ProjectModel.display(clear.h, "ftin")}<br>Bounds follow wall centerlines.</p>` : ""}<div class="studio-action-row">${this.button("Rotate 90°", `StudioUI.rotate(${selectedElIndex})`)}${this.button("Frame", "centerOnSelection()")}</div></details>
         <details><summary>Appearance</summary><label>Name<input value="${this.escape(el.customName)}" ${disabled} onchange="StudioUI.edit(${selectedElIndex},'customName',this.value)"></label><label>Color<input type="color" value="${el.customColor || "#94a3b8"}" ${disabled} onchange="StudioUI.edit(${selectedElIndex},'customColor',this.value)"></label><label>Material<select ${disabled} onchange="StudioUI.edit(${selectedElIndex},'material',this.value)">${["auto", "wood", "kitchen-tile", "bathroom-tile", "grass", "concrete", "shingle"].map((v) => `<option ${el.material === v ? "selected" : ""}>${v}</option>`).join("")}</select></label></details>
         ${!el.isFurniture ? `<details open><summary>Openings & interiors</summary><div class="studio-action-row">${this.button("+ Door", "addFixture('door')")}${this.button("+ Window", "addFixture('window')")}${this.button("Room Studio", "RoomStudio.open()")}</div>${fixtures.map((f, i) => (f.roomId === selectedElIndex ? `<div class="studio-opening"><strong>${f.type}</strong><label>Wall<select ${disabled} onchange="StudioUI.editOpening(${i},'edge',this.value)">${["top", "bottom", "left", "right"].map((edge) => `<option ${f.edge === edge ? "selected" : ""}>${edge}</option>`).join("")}</select></label><div class="studio-field-grid">${["size", "offset", "height", "sill"].map((k) => `<label>${k}<input type="number" min="${k === "offset" || k === "sill" ? 0 : 1}" step="0.25" value="${f[k] ?? (k === "height" ? (f.type === "door" ? 80 : 40) : k === "sill" ? (f.type === "door" ? 0 : 40) : 0)}" ${disabled} onchange="StudioUI.editOpening(${i},'${k}',this.value)"></label>`).join("")}</div>${this.button("Remove", `deleteFixture(${i})`, "danger")}</div>` : "")).join("")}</details>` : ""}
         ${el.type === "staircase" ? `<details open><summary>Staircase</summary><label>Style<select onchange="StudioUI.edit(${selectedElIndex},'stairStyle',this.value)">${["straight", "l-shape", "u-shape"].map((v) => `<option ${el.stairStyle === v ? "selected" : ""}>${v}</option>`).join("")}</select></label><label>Direction<select onchange="StudioUI.edit(${selectedElIndex},'dir',this.value)">${["up", "right", "down", "left"].map((v) => `<option ${el.dir === v ? "selected" : ""}>${v}</option>`).join("")}</select></label><label><input type="checkbox" ${el.cutAllFloors ? "checked" : ""} onchange="StudioUI.edit(${selectedElIndex},'cutAllFloors',this.checked)"> Open upper slabs</label></details>` : ""}
@@ -492,7 +492,7 @@ const StudioUI = {
   editOpening(i, key, value) {
     if (elements[fixtures[i].roomId].locked)
       return this.message("Unlock the room first.", "error");
-    ProjectState.updateFixture(i, {
+    return ProjectState.updateFixture(i, {
       [key]: key === "edge" ? value : Number(value),
     });
   },

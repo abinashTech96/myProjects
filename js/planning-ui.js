@@ -312,6 +312,37 @@ const PlanningUI = {
       throw Error("Enter a measurement such as 10' 6 1/2\"");
     return v;
   },
+  bindMeasurement(input, read, write, minimum = 0) {
+    const unit = document.getElementById("unitSelect").value;
+    // Keep fraction entry available in every unit, with explicit spinbutton keys.
+    input.type = "text";
+    input.title = "Arrow Up/Down: 0.25 " + (unit === "cm" ? "cm" : "in") + ". Enter applies.";
+    input.step = "0.25";
+    input.min = ProjectModel.display(minimum, unit === "ftin" ? "in" : unit);
+    input.value = ProjectModel.display(read(), unit);
+    input.setAttribute("role", "spinbutton");
+    input.setAttribute("aria-valuemin", String(unit === "cm" ? minimum * 2.54 : minimum));
+    const sync = () => {
+      const value = read();
+      input.value = ProjectModel.display(value, unit);
+      input.setAttribute("aria-valuenow", String(unit === "cm" ? value * 2.54 : value));
+      input.setAttribute("aria-valuetext", input.value + (unit === "ftin" ? "" : " " + unit));
+    };
+    input.inspectorSync = sync;
+    input.onchange = () => { this.run(() => write(this.parse(input.value, unit))); sync(); };
+    input.onkeydown = event => {
+      if (event.key === "Enter") { event.preventDefault(); event.stopPropagation(); input.blur(); return; }
+      if (!["ArrowUp", "ArrowDown"].includes(event.key)) return;
+      event.preventDefault(); event.stopPropagation();
+      this.run(() => {
+        const step = 0.25 / (unit === "cm" ? 2.54 : 1);
+        const value = Math.max(minimum, this.parse(input.value, unit) + (event.key === "ArrowUp" ? step : -step));
+        input.value = ProjectModel.display(value, unit);
+        input.dispatchEvent(new Event("change", {bubbles:true}));
+      });
+    };
+    sync();
+  },
   zoom(factor) {
     CanvasState.zoomLvl = Math.max(
       0.2,
@@ -2008,11 +2039,29 @@ const PlanningUnits = PlanningModel.units;
 // Integrate existing public actions rather than leaving parallel hidden controls.
 const planningOldInspector = StudioUI.renderInspector;
 StudioUI.renderInspector = function () {
+  const inspector = document.getElementById("studio-properties");
+  const active = document.activeElement;
+  // A blur commits before the next control receives its click. Replacing the
+  // inspector here destroys that control, its focus, and native spinner repeats.
+  if (!ProjectState.applying && inspector?.dataset.unit === document.getElementById("unitSelect").value &&
+      this.inspectedId === elements[selectedElIndex]?.id && inspector?.contains(active) &&
+      active.matches("input,select,textarea,[contenteditable=true]")) {
+    this.inspectorRenderPending = true;
+    inspector.querySelectorAll("input").forEach(input => { if (input !== active) input.inspectorSync?.(); });
+    const clearLabel = inspector.querySelector("[data-clear-interior]");
+    if (clearLabel) {
+      const clear = WallEngine.clearDimensions(elements[selectedElIndex]);
+      clearLabel.innerHTML = `Clear interior: ${ProjectModel.display(clear.w, "ftin")} × ${ProjectModel.display(clear.h, "ftin")}<br>Bounds follow wall centerlines.`;
+    }
+    return;
+  }
+  this.inspectorRenderPending = false;
   planningOldInspector.call(this);
   if (!PlanningUI.ready) return;
   const el = elements[selectedElIndex],
     panel = document.getElementById("studio-properties");
   if (!el) return;
+  panel.dataset.unit = document.getElementById("unitSelect").value;
   panel
     .querySelector("summary")
     ?.setAttribute("data-unit", PlanningUI.length(1));
@@ -2026,17 +2075,10 @@ StudioUI.renderInspector = function () {
   for (const key of ["x", "y", "w", "h"]) {
     const input = panel.querySelector(`input[onchange*="'${key}'"]`);
     if (input) {
-      input.type = "text";
-      input.removeAttribute("min");
-      input.value = ProjectModel.display(
-        el[key],
-        document.getElementById("unitSelect").value,
-      );
       input.dataset.measure = key;
-      input.onchange = () =>
-        PlanningUI.run(() =>
-          StudioUI.edit(selectedElIndex, key, PlanningUI.parse(input.value)),
-        );
+      const id = el.id;
+      PlanningUI.bindMeasurement(input, () => elements.find(e => e.id === id)?.[key] ?? 0,
+        value => StudioUI.edit(elements.findIndex(e => e.id === id), key, value), ["w","h"].includes(key) ? 1 : 0);
     }
   }
   if (el.points) {
@@ -2063,28 +2105,17 @@ StudioUI.renderInspector = function () {
     ) {
       const index = +m[1],
         key = m[2];
-      input.type = "text";
-      input.value = ProjectModel.display(
-        fixtures[index][key] || 0,
-        document.getElementById("unitSelect").value,
-      );
-      input.onchange = () =>
-        PlanningUI.run(() =>
-          StudioUI.editOpening(index, key, PlanningUI.parse(input.value)),
-        );
+      input.dataset.opening = String(index);
+      input.dataset.openingField = key;
+      PlanningUI.bindMeasurement(input, () => fixtures[index]?.[key] ?? 0,
+        value => StudioUI.editOpening(index, key, value), ["size","height"].includes(key) ? 1 : 0);
       input.closest("label").firstChild.textContent =
         key + " (" + document.getElementById("unitSelect").value + ")";
     } else if ((m = action.match(/^StudioUI\.wallThickness\('([^']+)'/))) {
       const id = m[1];
-      input.type = "text";
-      input.value = ProjectModel.display(
-        Number(input.value),
-        document.getElementById("unitSelect").value,
-      );
-      input.onchange = () =>
-        PlanningUI.run(() =>
-          StudioUI.wallThickness(id, PlanningUI.parse(input.value)),
-        );
+      const fallback = Number(input.value);
+      PlanningUI.bindMeasurement(input, () => ProjectState.meta.wallOverrides[id] ?? fallback,
+        value => StudioUI.wallThickness(id, value));
     }
   }
   panel.insertAdjacentHTML(
@@ -2607,3 +2638,11 @@ PlanningUI.toolActions = function () {
     () => this.dimensionChainsDialog(),
   ];
 };
+
+document.addEventListener("focusout", event => {
+  if (!event.target.closest?.("#studio-properties")) return;
+  setTimeout(() => {
+    const panel = document.getElementById("studio-properties");
+    if (StudioUI.inspectorRenderPending && !panel?.contains(document.activeElement)) StudioUI.renderInspector();
+  }, 0);
+});

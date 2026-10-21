@@ -181,7 +181,9 @@ test("failed mutations roll back geometry and history", () => {
   run(
     `ProjectState.baseline();ProjectState.commit('Add',()=>elements.push({id:'a',type:'bedroom',x:0,y:0,w:120,h:120,floor:0}));`,
   );
+  run("selectedElIndex=0");
   assert.equal(run(`ProjectState.updateElement(0,{w:-10})`), false);
+  assert.equal(run("selectedElIndex"), 0, "Rejected edits preserve the selected room");
   assert.equal(run("elements[0].w"), 120);
   assert.equal(run("ProjectState.history.stack.length"), 1);
 });

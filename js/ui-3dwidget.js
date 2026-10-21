@@ -204,6 +204,7 @@ const Widget3DEngine = {
     },
 
     updateSunlight: function(hour) {
+        this.sunHour = hour;
         if (!Engine3D.sunLight || !Engine3D.scene) return; 
         const conf = WIDGET_3D_CONFIG.PRESENTATION.timeStages;
         const timeDisplayId = WIDGET_3D_CONFIG.PRESENTATION.timeDisplayId;
@@ -231,7 +232,7 @@ const Widget3DEngine = {
             }
         }
     
-        if (typeof Engine3D.renderer !== 'undefined') Engine3D.renderer.shadowMap.needsUpdate = true;
+        if (Engine3D.renderer) { Engine3D.renderer.shadowMap.needsUpdate = true; Engine3D.needsRender = true; }
     },
 
     toggleShowcaseMode: function() {
@@ -265,10 +266,8 @@ const Widget3DEngine = {
     
         setTimeout(() => {
             if (typeof Engine3D !== 'undefined' && Engine3D.camera && Engine3D.renderer) {
-                Engine3D.camera.aspect = window.innerWidth / window.innerHeight;
-                Engine3D.camera.updateProjectionMatrix();
-                Engine3D.renderer.setSize(window.innerWidth, window.innerHeight);
-                if (Engine3D.scene) Engine3D.renderer.render(Engine3D.scene, Engine3D.camera);
+                const container = document.getElementById('three-container');
+                Engine3D.resize(container.clientWidth, container.clientHeight);
             }
         }, 450); 
     },
@@ -350,6 +349,7 @@ const Widget3DEngine = {
         if (!window.Engine3D || !Engine3D.camera || !Engine3D.controls || window.isPlayingTour) return;
         
         window.isPlayingTour = true;
+        Engine3D.needsRender = true;
         Engine3D.controls.enabled = false; 
         let currentWpIndex = 0;
         const durationPerPoint = 3000;
@@ -469,6 +469,10 @@ const Widget3DEngine = {
     },
 
     togglePerformanceMode: function() {
+        if (typeof ViewportUI !== 'undefined') {
+            ViewportUI.applyProfile(ViewportUI.profile === 'low' ? 'balanced' : 'low');
+            return;
+        }
         window.isPerformanceMode = !window.isPerformanceMode;
         const confObj = WIDGET_3D_CONFIG.NAVPAD;
         const conf = confObj.buttons.performance;
@@ -504,6 +508,7 @@ const Widget3DEngine = {
     },
 
     startWalkthrough: function() {
+        if (typeof ViewportUI !== 'undefined' && Engine3D.scene) ViewportUI.projection('perspective');
         if (!window.is3DMode || !Engine3D.fpsControls) return;
         
         Engine3D.isWalkthrough = true;
@@ -544,6 +549,7 @@ const Widget3DEngine = {
         Engine3D.camera.position.set(Engine3D.camera.position.x, 65 * SCALE, Engine3D.camera.position.z); 
         
         Engine3D.fpsControls.lock();
+        Engine3D.needsRender = true;
     }
 };
 

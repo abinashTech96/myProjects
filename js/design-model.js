@@ -219,6 +219,10 @@
       [...view.position, ...view.target].forEach((v) =>
         f(v, "Camera coordinate", -1e6, 1e6),
       );
+      if (view.projection != null && !["perspective", "orthographic"].includes(view.projection))
+        throw Error("Invalid viewpoint projection");
+      if (view.orthoHeight != null) f(view.orthoHeight, "View height", 0.001, 1e7);
+      if (view.zoom != null) f(view.zoom, "View zoom", 0.001, 1e5);
       view.name = String(view.name || "View").slice(0, 100);
       view.note = String(view.note || "").slice(0, 1000);
       f(view.floor, "View floor", 0, p.floorCount - 1);

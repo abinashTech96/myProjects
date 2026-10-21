@@ -83,5 +83,7 @@
   "./vendor/three/PointerLockControls.js",
   "./vendor/three/TransformControls.js",
   "./vendor/three/three.min.js",
-  "css/workspace-simple.css"
+  "css/workspace-simple.css",
+  "css/workspace-experience.css",
+  "js/workspace-experience.js"
 ]

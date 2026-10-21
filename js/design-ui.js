@@ -1445,6 +1445,11 @@ const DesignUI = {
         floor: currentFloor,
         position: Engine3D.camera.position.toArray(),
         target: Engine3D.controls.target.toArray(),
+        projection: Engine3D.camera.isOrthographicCamera ? "orthographic" : "perspective",
+        ...(Engine3D.camera.isOrthographicCamera ? {
+          orthoHeight: Engine3D.camera.top - Engine3D.camera.bottom,
+          zoom: Engine3D.camera.zoom,
+        } : {}),
       }),
     );
     this.presentationDialog();
@@ -1453,6 +1458,16 @@ const DesignUI = {
     const v = this.data.views[i];
     setFloor(v.floor);
     setWorkspaceLayout("3d");
+    if (typeof ViewportUI !== "undefined") {
+      ViewportUI.projection(v.projection || "perspective");
+      Engine3D.cameraTween = null;
+      if (Engine3D.camera.isOrthographicCamera && v.orthoHeight) {
+        const half = v.orthoHeight / 2, camera = Engine3D.camera;
+        camera.top = half; camera.bottom = -half;
+        camera.left = -half * camera.aspect; camera.right = half * camera.aspect;
+        camera.zoom = v.zoom || 1; camera.updateProjectionMatrix();
+      }
+    }
     Engine3D.camera.position.fromArray(v.position);
     Engine3D.controls.target.fromArray(v.target);
     Engine3D.controls.update();

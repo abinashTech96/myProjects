@@ -251,3 +251,14 @@ test("wall cache invalidates in-place geometry changes", () => {
   project.elements[0].w = 150;
   assert.notEqual(P.walls(project), before);
 });
+
+test("saved architectural viewpoints retain projection and reject invalid camera metadata", () => {
+  const view = {name:"Plan", floor:0, position:[0,500,0], target:[0,0,0], projection:"orthographic", orthoHeight:600, zoom:2};
+  const project = p({design:{views:[view]}});
+  assert.equal(project.design.views[0].orthoHeight,600);
+  assert.equal(project.design.views[0].projection,"orthographic");
+  for (const invalid of [{projection:"fisheye"},{orthoHeight:-1},{zoom:0}]) {
+    assert.throws(() => p({design:{views:[{...view,...invalid}]}}));
+  }
+  assert.equal(p({design:{views:[{...view,projection:undefined,orthoHeight:undefined,zoom:undefined}]}}).design.views.length,1);
+});

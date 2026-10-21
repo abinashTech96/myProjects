@@ -430,9 +430,10 @@ generate3DModel = function () {
 };
 let pendingModelUpdate;
 window.request3DUpdate = function () {
+  if (!Engine3D.scene || !window.is3DMode || document.hidden) return;
   if (pendingModelUpdate) return;
   pendingModelUpdate = setTimeout(() => {
     pendingModelUpdate = null;
-    generate3DModel();
+    if (window.is3DMode && !document.hidden) generate3DModel();
   }, 60);
 };

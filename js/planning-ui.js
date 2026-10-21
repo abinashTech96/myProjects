@@ -423,20 +423,28 @@ const PlanningUI = {
           action: "StudioUI.shortcuts()",
         },
       };
+    const summaries = { checks: `${analysis.results.length} alerts`, vastu: vastu.score === null ? 'Not evaluated' : `${vastu.score}%`, area: `${(rows?.floorArea||0).toFixed(1)} ft²`, converter:'Length / area', measurements:`${p.planning.measurements.length} saved`, selection:`${selection.length} items`, navigation:`${Math.round(CanvasState.zoomLvl*100)}%`, shortcuts:'Guide' };
     const html = Object.entries(widgets)
       .filter(([k]) => this.preferences.widgets?.[k])
       .map(
         ([k, w]) =>
-          `<button class="planning-widget" data-widget="${k}" onclick="${w.action}"><strong>${w.title}</strong><span>${this.esc(w.text)}</span></button>`,
+          `<button class="planning-widget" data-widget="${k}" onclick="${w.action}" title="${this.esc(w.title+': '+w.text)}" aria-label="${this.esc(w.title+': '+w.text)}"><strong>${w.title}</strong><span>${this.esc(summaries[k])}</span></button>`,
       )
       .join("");
     if (dock.innerHTML !== html) dock.innerHTML = html;
   },
   widgetsDialog() {
-    this.dialog(
-      "Workspace widgets",
-      `<p>Pin the cards you use. Your choices are saved on this device.</p><div class="studio-action-row">${this.button("Show core widgets", "PlanningUI.widgetPreset(true)")}${this.button("Hide all widgets", "PlanningUI.widgetPreset(false)")}</div>${["checks", "vastu", "area", "converter", "measurements", "selection", "navigation", "shortcuts"].map((k) => `<label><input type="checkbox" ${this.preferences.widgets?.[k] ? "checked" : ""} onchange="PlanningUI.toggleWidget('${k}',this.checked)">${this.esc({ checks: "Compliance / layout checks", vastu: "Vastu score", area: "Live floor area", converter: "Unit converter", measurements: "Measurements", selection: "Selection summary", navigation: "Navigation & saved views", shortcuts: "Shortcuts" }[k])}</label>`).join("")}${this.button("Reset workspace", "PlanningUI.resetWorkspace()")}`,
-    );
+    const items = [
+      ['checks','Layout checks','Room & boundary warnings','Compliance / layout checks'],
+      ['vastu','Vastu','Directional guidance','Vastu score'],
+      ['area','Floor area','Clear area totals','Live floor area'],
+      ['converter','Converter','Lengths & areas','Unit converter'],
+      ['measurements','Measures','Saved dimensions','Measurements'],
+      ['selection','Selection','Selected objects','Selection summary'],
+      ['navigation','Navigation','Views & orientation','Navigation & saved views'],
+      ['shortcuts','Shortcuts','Keyboard & touch','Shortcuts']
+    ];
+    this.dialog('Workspace widgets', `<div class="experience-widget-grid">${items.map(([key,title,hint,label]) => `<label class="experience-widget-option"><span><strong>${title}</strong><small>${hint}</small></span><input type="checkbox" role="switch" aria-label="${label}" ${this.preferences.widgets?.[key]?'checked':''} onchange="PlanningUI.toggleWidget('${key}',this.checked)"></label>`).join('')}</div><div class="experience-widget-footer">${this.button('Show core widgets','PlanningUI.widgetPreset(true)')}${this.button('Hide all widgets','PlanningUI.widgetPreset(false)')}</div><details><summary>Workspace options</summary><p class="experience-hint">Widget visibility is saved on this device.</p>${this.button('Reset workspace','PlanningUI.resetWorkspace()')}</details>`);
   },
   widgetPreset(core) {
     const keys = ["checks", "vastu", "area", "converter", "measurements", "selection", "navigation", "shortcuts"];

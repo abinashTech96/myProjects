@@ -573,7 +573,7 @@ const Workbench3D = {
   },
   disposeObject(object) {
     const shared = new Set([
-        ...Object.values(SOLID_MAT_CACHE),
+        ...Object.values(SOLID_MAT_CACHE), ...Object.values(HD_TEXTURES), ...Object.values(FAST_COLORS),
         ...Object.values(FurnitureFactory.mats),
       ]),
       disposed = new Set();
@@ -679,15 +679,13 @@ const Workbench3D = {
     this.labels = document.createElement("div");
     this.labels.id = "wb-3d-labels";
     document.getElementById("three-container")?.append(this.labels);
-    let last = 0;
-    const labels = (now) => {
-      if (now - last > 100) {
-        last = now;
+    this.lastLabels = 0;
+    Engine3D.afterRender = (now, settled) => {
+      if (settled || now - this.lastLabels > 80) {
+        this.lastLabels = now;
         this.renderLabels();
       }
-      requestAnimationFrame(labels);
     };
-    requestAnimationFrame(labels);
   },
   hit(event) {
     const rect = Engine3D.renderer.domElement.getBoundingClientRect(),
@@ -1348,6 +1346,7 @@ const wbGenerate = generate3DModel;
 generate3DModel = function () {
   wbGenerate();
   Workbench3D.rebuild();
+  if (typeof ViewportUI !== "undefined") ViewportUI.modelUpdated();
 };
 const wbRooms = build3DRooms;
 build3DRooms = function (...args) {
@@ -1444,3 +1443,8 @@ buildStaircase = function (e, ...args) {
   return group;
 };
 document.addEventListener("DOMContentLoaded", () => Workbench3D.init());
+
+Object.defineProperty(Workbench3D, "labelsEnabled", {
+  get() { return !!this._labelsEnabled; },
+  set(value) { this._labelsEnabled = !!value; Engine3D.needsRender = true; }
+});

@@ -87,14 +87,52 @@ module.exports = async ({ page, assert }) => {
   await page.getByRole("button", { name: "Close dialog", exact: true }).click();
   assert.equal(await page.locator("#planning-dock .planning-widget").count(), 1);
   await page.evaluate(() => PlanningUI.toggleWidget('checks', false));
+  await page.evaluate(() => StudioUI.place(ASSET_CATALOGS.rooms.items.find(item => item.type === 'bedroom'), 'rooms'));
   await page.locator('[data-mode="3d"]').click();
   await page.waitForFunction(() => Engine3D.buildingGroup && Workbench3D.controls);
-  assert.equal(await page.evaluate(() => Engine3D.loopRunning), true);
+  await page.waitForFunction(() => !Engine3D.loopRunning && Engine3D.renderFrames > 0);
   await page.locator('[data-mode="2d"]').click();
   assert.equal(await page.evaluate(() => Engine3D.loopRunning), false);
   await page.locator('[data-mode="3d"]').click();
-  assert.equal(await page.evaluate(() => Engine3D.loopRunning), true);
+  await page.waitForFunction(() => !Engine3D.loopRunning && Engine3D.renderFrames > 0);
   assert.equal(await page.locator('#three-container canvas').count(), 1);
+  await page.waitForTimeout(500);
+  await page.waitForFunction(() => !Engine3D.loopRunning);
+  const idleFrames = await page.evaluate(() => Engine3D.renderFrames);
+  await page.waitForTimeout(250);
+  assert.equal(await page.evaluate(() => Engine3D.renderFrames), idleFrames, 'Idle 3D must not keep rendering');
+  await page.evaluate(() => Engine3D.needsRender = true);
+  await page.waitForFunction(before => Engine3D.renderFrames > before && !Engine3D.loopRunning, idleFrames);
+  await page.evaluate(() => ViewportUI.viewsDialog());
+  await page.getByLabel('Camera projection', {exact:true}).selectOption('orthographic');
+  assert.equal(await page.evaluate(() => Engine3D.camera.isOrthographicCamera && Workbench3D.controls.camera === Engine3D.camera), true);
+  await page.getByRole('button', {name:'Top / plan',exact:true}).click();
+  await page.waitForFunction(() => !Engine3D.cameraTween && !Engine3D.loopRunning);
+  assert.equal(await page.evaluate(() => {
+    const c=Engine3D.camera,b=ViewportUI.bounds();
+    for(const x of [b.min.x,b.max.x])for(const y of [b.min.y,b.max.y])for(const z of [b.min.z,b.max.z]) {
+      const projected=new THREE.Vector3(x,y,z).project(c);
+      if(Math.abs(projected.x)>1 || Math.abs(projected.y)>1)return false;
+    }
+    return true;
+  }),true,'Orthographic fit keeps the entire building visible');
+  await page.evaluate(() => DesignUI.presentationDialog());
+  await page.getByLabel('Viewpoint name',{exact:true}).fill('Orthographic plan');
+  await page.getByRole('button',{name:'Capture viewpoint',exact:true}).click();
+  await page.evaluate(() => {ViewportUI.projection('perspective');DesignUI.visitPresentation(DesignUI.data.views.length-1);});
+  assert.equal(await page.evaluate(() => Engine3D.camera.isOrthographicCamera),true,'Named view restores its projection');
+  await page.getByRole('button', {name:'Close dialog',exact:true}).click();
+  await page.evaluate(() => ViewportUI.renderDialog());
+  await page.getByRole('button', {name:'Studio',exact:true}).click();
+  assert.equal(await page.evaluate(() => !!Engine3D.scene.environment && Engine3D.renderer.shadowMap.enabled),true);
+  await page.getByRole('button', {name:'Draft',exact:true}).click();
+  assert.equal(await page.evaluate(() => Engine3D.renderer.shadowMap.enabled),false);
+  await page.getByRole('button', {name:'Balanced',exact:true}).click();
+  await page.getByRole('button', {name:'Close dialog',exact:true}).click();
+  await page.evaluate(() => {ViewportUI.projection('perspective');ViewportUI.orient('iso',false);});
+  assert.equal(await page.evaluate(() => Engine3D.camera === Engine3D.perspectiveCamera && Workbench3D.controls.camera === Engine3D.camera), true);
+  await page.screenshot({path:'/tmp/archcad-neumorphic-3d.png'});
+
   await page.evaluate(() => {
     Object.defineProperty(document, 'hidden', { configurable: true, value: true });
     document.dispatchEvent(new Event('visibilitychange'));
@@ -104,11 +142,26 @@ module.exports = async ({ page, assert }) => {
     delete document.hidden;
     document.dispatchEvent(new Event('visibilitychange'));
   });
-  assert.equal(await page.evaluate(() => Engine3D.loopRunning), true);
+  await page.waitForFunction(() => !Engine3D.loopRunning && Engine3D.renderFrames > 0);
   await page.locator('[data-mode="2d"]').click();
+  await page.waitForTimeout(100);
+  await page.evaluate(() => {
+    window.workspaceOriginalGenerate=window.generate3DModel;window.workspaceHiddenBuilds=0;
+    window.generate3DModel=function(...args){window.workspaceHiddenBuilds++;return window.workspaceOriginalGenerate(...args);};
+    ProjectState.commit('Moved room in 2D',()=>{elements[0].x+=1;});
+  });
+  await page.waitForTimeout(150);
+  assert.equal(await page.evaluate(() => window.workspaceHiddenBuilds),0,'2D editing must not rebuild a hidden 3D model');
+  await page.evaluate(() => {window.generate3DModel=window.workspaceOriginalGenerate;ProjectState.undo();ProjectState.undo();ProjectState.undo();});
   for (const width of [320, 390, 768, 900]) {
     await page.setViewportSize({ width, height: 844 });
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    await page.getByRole('button',{name:'Workspace widgets',exact:true}).click();
+    await page.waitForTimeout(180);
+    const popup = await page.locator('#studio-dialog').boundingBox();
+    assert.ok(popup.width <= 336 && popup.x >= 0 && popup.x+popup.width <= width+1,'Widgets popover stays compact inside the viewport');
+    await page.mouse.click(2,840);
+    assert.equal(await page.locator('#studio-dialog').isVisible(),false,'Backdrop dismisses utility popup');
     const sections = await page.locator('.studio-header > *:visible').all();
     const rects = await Promise.all(sections.map(section => section.boundingBox()));
     for (let a = 0; a < rects.length; a++) for (let b = a + 1; b < rects.length; b++) {

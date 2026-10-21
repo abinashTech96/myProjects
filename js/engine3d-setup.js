@@ -29,10 +29,11 @@ window.Engine3D = {
         
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(bgColor); 
-        this.scene.fog = new THREE.FogExp2(bgColor, 0.0005);
+        this.scene.fog = null; // Keep distant architectural geometry readable.
         
         this.camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 1, 10000);
-        this.camera.position.set(500, 800, 1000); 
+        this.camera.position.set(500, 800, 1000);
+        this.perspectiveCamera = this.camera;
 
         // 2. Setup Renderer
         this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
@@ -42,7 +43,9 @@ window.Engine3D = {
         this.renderer.shadowMap.enabled = quality !== 'low';
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         this.renderer.shadowMap.autoUpdate = false; // Shadow optimization
-        this.renderer.outputEncoding = THREE.sRGBEncoding; 
+        this.renderer.outputEncoding = THREE.sRGBEncoding;
+        this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        this.renderer.toneMappingExposure = 1.05;
         container.appendChild(this.renderer.domElement);
 
         // 3. Setup Orbit Controls
@@ -51,6 +54,7 @@ window.Engine3D = {
         this.controls.dampingFactor = 0.05;
         this.controls.target.set(500, 0, 500);
         this.controls.addEventListener('change',()=>{this.needsRender=true});
+        this.controls.addEventListener('start',()=>{this.cameraTween=null;if(typeof ViewportUI!=='undefined')ViewportUI.view='free';this.needsRender=true});
         //this.controls.maxPolarAngle = Math.PI / 2 - 0.05; // <-- This was the restriction for 360deg vertically
         this.controls.maxPolarAngle = Math.PI; // Allows going completely underneath
 
@@ -79,6 +83,10 @@ window.Engine3D = {
         const gridHelper = new THREE.GridHelper(3000, 100, 0x334155, 0x1e293b);
         gridHelper.position.set(500, -1, 500); 
         this.scene.add(gridHelper);
+        this.gridHelper = gridHelper;
+        gridHelper.material.transparent = true;
+        gridHelper.material.opacity = 0.24;
+        gridHelper.material.depthWrite = false;
 
         // 5. Setup FPS Controls for Walkthrough
         this.fpsControls = new THREE.PointerLockControls(this.camera, document.body);
@@ -99,6 +107,7 @@ window.Engine3D = {
         this.syncVisibility();
         this.setupResizeObserver(container);
         if (typeof Workbench3D !== 'undefined') Workbench3D.init();
+        if (typeof ViewportUI !== 'undefined') ViewportUI.engineReady();
     },
 
     syncVisibility() {
@@ -123,16 +132,17 @@ window.Engine3D = {
         let prevTime = performance.now();
 
         const animate = () => {
+            this.animationFrame = null;
             if (document.hidden || !window.is3DMode) {
                 this.loopRunning = false;
                 this.animationFrame = null;
                 return;
             }
-            this.animationFrame = requestAnimationFrame(animate);
-
             const time = performance.now();
             const delta = Math.min((time - prevTime) / 1000, 0.1);
 
+            let controlsChanged = false;
+            if (typeof ViewportUI !== 'undefined') ViewportUI.tick(time);
             if (this.isWalkthrough && this.fpsControls.isLocked) {
                 // Physics & Friction
                 velocity.x -= velocity.x * 10.0 * delta;
@@ -183,15 +193,37 @@ window.Engine3D = {
                     velocity.y = 0;
                 }
             } else {
-                this.controls.update(); 
+                controlsChanged = this.controls.update();
             }
             
-            if(this.isWalkthrough || window.isPlayingTour || this.controls.autoRotate || this.needsRender) {
-                this.renderer.render(this.scene, this.camera); this.needsRender=false;
+            const continuous = this.isWalkthrough || window.isPlayingTour || this.controls.autoRotate || !!this.cameraTween;
+            if (continuous || controlsChanged || this.needsRender) {
+                this.renderer.render(this.scene, this.camera);
+                this.renderFrames = (this.renderFrames || 0) + 1;
+                this.needsRender = false;
+                this.afterRender?.(time, !continuous && !controlsChanged);
             }
             prevTime = time;
+            if (continuous || controlsChanged || this.needsRender) {
+                this.animationFrame = requestAnimationFrame(animate);
+            } else {
+                this.loopRunning = false;
+            }
         };
-        animate();
+        this.animationFrame = requestAnimationFrame(animate);
+    },
+
+    resize(width, height) {
+        if (!this.camera || !this.renderer || width <= 0 || height <= 0) return;
+        this.camera.aspect = width / height;
+        if (this.camera.isOrthographicCamera) {
+            const half = (this.camera.top - this.camera.bottom) / 2;
+            this.camera.left = -half * this.camera.aspect;
+            this.camera.right = half * this.camera.aspect;
+        }
+        this.camera.updateProjectionMatrix();
+        this.renderer.setSize(width, height, false);
+        this.needsRender = true;
     },
 
     setupResizeObserver(container) {
@@ -200,15 +232,22 @@ window.Engine3D = {
             for (let entry of entries) {
                 const { width, height } = entry.contentRect;
                 if (width > 0 && height > 0) {
-                    this.camera.aspect = width / height;
-                    this.camera.updateProjectionMatrix();
-                    this.renderer.setSize(width, height, false);this.needsRender=true;
+                    this.resize(width, height);
                 }
             }
         });
         resizeObserver.observe(container);
     }
 };
+
+Object.defineProperty(Engine3D, 'needsRender', {
+    get() { return !!this._needsRender; },
+    set(value) {
+        this._needsRender = !!value;
+        if (value && this.scene && window.is3DMode && !document.hidden && !this.loopRunning)
+            this.startAnimationLoop();
+    }
+});
 
 // =========================================
 // 🌐 GLOBAL BRIDGE & TOGGLE LOGIC

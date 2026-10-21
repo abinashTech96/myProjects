@@ -916,7 +916,7 @@ const StudioUI = {
     setWorkspaceLayout("3d");
     this.dialog(
       "View tools",
-      `<div class="studio-action-grid">${this.button("Advanced 3D", "document.getElementById('studio-dialog').close();setWorkspaceLayout('3d');Adv3D.toggleWorkspaceMode(true)")}${this.button("Walkthrough", "document.getElementById('studio-dialog').close();setWorkspaceLayout('3d');Widget3DEngine.startWalkthrough()")}${this.button("Capture camera", "captureWaypoint()")}${this.button("Play camera tour", "playCinematicTour()")}${this.button("Clear tour", "clearTour()")}${this.button("Night / day", "toggleNightMode();Engine3D.needsRender=true")}${this.button("Exploded view", "toggleExplodeView()")}${this.button("Performance mode", "Widget3DEngine.togglePerformanceMode()")}${this.button("Theme", "toggleTheme()")}${this.button("Frame plan", "resetCamera()")}${this.button("Canvas settings", "StudioUI.canvasSettingsDialog()")}</div><label>Sun position<input type="range" min="6" max="18" value="12" step="0.25" oninput="updateSunlight(Number(this.value));Engine3D.needsRender=true"></label><label>Roof / parapet<select onchange="StudioUI.parapetStyle(this.value)">${Array.from(
+      `<div class="studio-action-grid">${this.button("Section & inspect", "WorkbenchUI.viewDialog()")}${this.button("Advanced 3D", "document.getElementById('studio-dialog').close();setWorkspaceLayout('3d');Adv3D.toggleWorkspaceMode(true)")}${this.button("Walkthrough", "document.getElementById('studio-dialog').close();setWorkspaceLayout('3d');Widget3DEngine.startWalkthrough()")}${this.button("3D selection", "Widget3DEngine.toggleRaycaster()")}${this.button("Presentation mode", "document.getElementById('studio-dialog').close();Widget3DEngine.toggleShowcaseMode()")}${this.button("Capture camera", "captureWaypoint()")}${this.button("Play camera tour", "playCinematicTour()")}${this.button("Clear tour", "clearTour()")}${this.button("Night / day", "toggleNightMode();Engine3D.needsRender=true")}${this.button("Exploded view", "toggleExplodeView()")}${this.button("Performance mode", "Widget3DEngine.togglePerformanceMode()")}${this.button("Theme", "toggleTheme()")}${this.button("Frame plan", "resetCamera()")}${this.button("Canvas settings", "StudioUI.canvasSettingsDialog()")}</div><label>Sun position<input type="range" min="6" max="18" value="12" step="0.25" oninput="updateSunlight(Number(this.value));Engine3D.needsRender=true"></label><label>Roof / parapet<select onchange="StudioUI.parapetStyle(this.value)">${Array.from(
         document.getElementById("parapetStyleSelect").options,
       )
         .map(
@@ -1278,9 +1278,7 @@ window.setWorkspaceLayout = function (mode) {
     request3DUpdate();
     const box = document.getElementById("three-container");
     if (box?.clientWidth && box?.clientHeight) {
-      Engine3D.camera.aspect = box.clientWidth / box.clientHeight;
-      Engine3D.camera.updateProjectionMatrix();
-      Engine3D.renderer.setSize(box.clientWidth, box.clientHeight);
+      Engine3D.resize(box.clientWidth, box.clientHeight);
     }
   }
 };

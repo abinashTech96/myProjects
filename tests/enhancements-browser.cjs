@@ -10,6 +10,8 @@ module.exports = async ({ page, assert }) => {
     .getByRole("button", { name: "Studio upgrades", exact: true })
     .click();
   assert.equal(await page.locator(".enhancement-hub button").count(), 18);
+  await page.getByRole("button", {name:"Theme & spacing",exact:true}).click();
+  assert.equal(await page.locator("[data-theme-choice]").count(),4);
   const colors = new Set(), canvasColors = new Set();
   for (const theme of ["graphite", "pearl", "ocean", "sand"]) {
     await page.evaluate((t) => StudioEnhancements.theme(t), theme);

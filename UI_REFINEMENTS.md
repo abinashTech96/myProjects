@@ -1,6 +1,6 @@
 # Workspace contrast and UI refinement release
 
-This release addresses the supplied screenshots and adds **37 further UI/usability improvements**. Open ✦ → Themes for the four visual previews and the Compact / Comfortable spacing preference. All original planning workflows and the eighteen Studio+ tools remain available.
+This release addresses the supplied screenshots and adds **37 further UI/usability improvements**. Open ✦ → Theme & spacing for the four visual previews and the Compact / Comfortable spacing preference. All original planning workflows and the eighteen Studio+ tools remain available.
 
 ## Screenshot fixes
 

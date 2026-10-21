@@ -355,7 +355,7 @@ window.StudioEnhancements = {
     ];
     this.show(
       "Studio+ · Design and presentation",
-      `<p>Shared project geometry · independent 4D presentation</p><div class="enhancement-theme-row">${window.WorkspacePolish ? WorkspacePolish.themePicker() : this.themes.map((t) => this.b(t, `StudioEnhancements.theme('${t}')`)).join("")}</div><div class="enhancement-hub">${rows.map(([title, action]) => this.b(title, action)).join("")}</div>`,
+      `<p>Choose a tool or personalize your workspace.</p><div class="enhancement-quick">${this.b("Theme & spacing", "StudioEnhancements.themeDialog()")}</div><div class="enhancement-hub">${rows.map(([title, action]) => this.b(title, action)).join("")}</div>`,
     );
   },
   theme(value, persist = true) {

@@ -372,15 +372,8 @@ if (!["chromium", "firefox", "webkit"].includes(browserEngine))
       StudioUI.select(0);
       StudioUI.edit(0, "customColor", "#ff0000");
     });
-    await page.waitForTimeout(100);
-    assert.equal(
-      await page.evaluate(() =>
-        Engine3D.elementObjects
-          .get("room-a")
-          .children[0].material.color.getHexString(),
-      ),
-      "ff0000",
-    );
+    await page.waitForFunction(() => Engine3D.elementObjects
+      .get("room-a")?.children[0]?.material.color.getHexString() === "ff0000");
     console.log("Shared walls and actual Three.js rendering passed");
     await page.evaluate(() => {
       setWorkspaceLayout("2d");

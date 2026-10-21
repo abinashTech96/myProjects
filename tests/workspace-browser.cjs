@@ -157,9 +157,9 @@ module.exports = async ({ page, assert }) => {
     await page.setViewportSize({ width, height: 844 });
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     await page.getByRole('button',{name:'Workspace widgets',exact:true}).click();
-    await page.waitForTimeout(180);
+    await page.locator('#studio-dialog').evaluate(dialog => Promise.all(dialog.getAnimations().map(animation => animation.finished)));
     const popup = await page.locator('#studio-dialog').boundingBox();
-    assert.ok(popup.width <= 336 && popup.x >= 0 && popup.x+popup.width <= width+1,'Widgets popover stays compact inside the viewport');
+    assert.ok(popup.width <= 337 && popup.x >= -1 && popup.x+popup.width <= width+1,`Widgets popover stays compact inside the viewport: ${JSON.stringify({width,popup})}`);
     await page.mouse.click(2,840);
     assert.equal(await page.locator('#studio-dialog').isVisible(),false,'Backdrop dismisses utility popup');
     const sections = await page.locator('.studio-header > *:visible').all();

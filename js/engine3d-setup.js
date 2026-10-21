@@ -39,7 +39,7 @@ window.Engine3D = {
         this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
         const quality = typeof PlanningUI !== 'undefined' ? PlanningUI.preferences.quality || PlanningUI.readPrefs().quality || 'balanced' : 'balanced';
         this.renderer.setPixelRatio(quality === 'high' ? Math.min(window.devicePixelRatio, 2) : 1);
-        this.renderer.setSize(container.clientWidth, container.clientHeight);
+        this.renderer.setSize(container.clientWidth, container.clientHeight, false);
         this.renderer.shadowMap.enabled = quality !== 'low';
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         this.renderer.shadowMap.autoUpdate = false; // Shadow optimization

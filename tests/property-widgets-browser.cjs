@@ -45,8 +45,11 @@ module.exports = async ({page,assert}) => {
   await page.screenshot({path:'/tmp/archcad-advanced-floor-inspection.png'});
   await page.setViewportSize({width:320,height:560});
   await page.evaluate(()=>StudioUI.closeProperties());
+  await page.waitForTimeout(300);
   const advancedBox = await page.locator('#advanced-view-panel').boundingBox();
   assert.ok(advancedBox.x>=0 && advancedBox.x+advancedBox.width<=320 && advancedBox.y+advancedBox.height<=560,'Advanced controls fit a small viewport');
+  const canvasBox = await page.locator('#three-container canvas').boundingBox();
+  assert.ok(canvasBox.width<=320,'Renderer canvas follows the resized viewport, rather than its initial inline width');
   await page.screenshot({path:'/tmp/archcad-advanced-mobile.png'});
   await page.setViewportSize(viewport);
   await page.evaluate(()=>StudioUI.select(0));

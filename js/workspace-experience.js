@@ -89,6 +89,7 @@ const ViewportUI = {
     matchMedia('(max-width:600px)').addEventListener('change', event => {
       const panel = document.getElementById('advanced-view-panel');
       if (event.matches && panel) panel.open = false;
+      if (this.advancedActive) requestAnimationFrame(() => requestAnimationFrame(() => this.fit(false, false)));
     });
     AppEvents.onStateChange(() => this.updateInfo());
     AppEvents.onSelectionChange(() => this.updateInfo());

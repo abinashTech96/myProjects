@@ -90,9 +90,6 @@ const DesignUI = {
       ...oldActions.call(PlanningUI),
       ...this.tools().map((t) => t[2]),
     ];
-    document
-      .querySelector(".planning-entry")
-      .insertAdjacentHTML("beforeend", this.b("Design", "DesignUI.menu()"));
     const status = document.createElement("button");
     status.id = "design-health";
     status.className = "studio-link";
@@ -1439,7 +1436,7 @@ const DesignUI = {
     );
   },
   capturePresentation() {
-    if (!Engine3D.camera) return;
+    if (!Engine3D.camera) setWorkspaceLayout("3d");
     this.commit("Captured presentation viewpoint", () =>
       this.data.views.push({
         id: ProjectModel.uid(),

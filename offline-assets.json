@@ -82,5 +82,6 @@
   "./vendor/three/OrbitControls.js",
   "./vendor/three/PointerLockControls.js",
   "./vendor/three/TransformControls.js",
-  "./vendor/three/three.min.js"
+  "./vendor/three/three.min.js",
+  "css/workspace-simple.css"
 ]

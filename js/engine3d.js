@@ -2,55 +2,16 @@
 // 3D ENGINE & WALKTHROUGH (engine3d.js)
 // =========================================
 
-// 🌟 REFACTORED: 3D Mode is now PERMANENTLY TRUE for the Split Screen live preview!
-window.is3DMode = true;
-
-// =========================================
-// 🛑 PHASE 1: DEMAND-DRIVEN RENDERING
-// =========================================
+// The 2D workspace does not allocate a WebGL scene until requested.
+window.is3DMode = false;
 window.isEnginePaused = false;
-window.enginePauseTime = 0;  // Tracks when the tab was hidden
-window.isEngineDead = false; // Tracks if the loop was killed
-
 document.addEventListener('visibilitychange', () => {
-    if (document.hidden) {
-        window.isEnginePaused = true;
-        window.enginePauseTime = Date.now(); // Start the 1-hour timer
-        console.log("⏸️ 3D Engine Paused (Tab Hidden)");
-    } else {
-        window.isEnginePaused = false;
-        console.log("▶️ 3D Engine Resumed");
-        
-        // ✨ Revive the engine if it was killed after 1 hour!
-        if (window.isEngineDead && typeof Engine3D !== 'undefined') {
-            window.isEngineDead = false;
-            Engine3D.startAnimationLoop();
-            console.log("🔄 3D Engine Revived from deep sleep!");
-        }
-        if (typeof request3DUpdate === 'function') request3DUpdate();
-    }
+    Engine3D.syncVisibility();
+    if (!document.hidden && window.is3DMode) request3DUpdate();
 });
-
-// =========================================
-// 🌟 AUTO-START THE DUAL ENGINE
-// =========================================
 document.addEventListener('DOMContentLoaded', () => {
-    window.is3DMode = false;
-    setTimeout(() => {
-        if (!Engine3D.scene) Engine3D.init();
-        if (typeof generate3DModel === 'function') generate3DModel();
-        if (typeof setWorkspaceLayout === 'function') {
-            setWorkspaceLayout(ProjectState.meta.view.mode || 'split');
-        }
-    }, 300);
     const real3DToggle = document.getElementById('real3DToggle');
-    if (real3DToggle) {
-        real3DToggle.addEventListener('change', () => {
-            if (typeof generate3DModel === 'function') {
-                generate3DModel();
-            }
-        });
-    }
+    real3DToggle?.addEventListener('change', () => request3DUpdate());
 });
 
 // --- 3D RAYCASTER STATE & SELECTION ---
@@ -62,8 +23,9 @@ const mouse3D = new THREE.Vector2();
 let render3DTimeout = null;
 window.request3DUpdate = function() {
     if (render3DTimeout) clearTimeout(render3DTimeout);
+    if (!Engine3D.scene || !window.is3DMode || document.hidden) return;
     render3DTimeout = setTimeout(() => {
-        if (typeof generate3DModel === 'function') generate3DModel();
+        if (window.is3DMode && !document.hidden && typeof generate3DModel === 'function') generate3DModel();
     }, 50); 
 };
 

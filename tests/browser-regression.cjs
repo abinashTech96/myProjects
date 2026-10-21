@@ -137,6 +137,11 @@ if (!["chromium", "firefox", "webkit"].includes(browserEngine))
       errors,
     );
     assert.equal(errors.length, 0, "Startup must have no uncaught errors");
+    if (process.env.WORKSPACE_ONLY || process.argv.includes("--workspace")) {
+      await require("./workspace-browser.cjs")({ page, context, assert });
+      assert.equal(errors.length, 0, errors.join("\n"));
+      return;
+    }
     if (process.env.INTEGRATION_ONLY) {
       await require("./workbench-integration.cjs")({ page, context, assert });
       assert.equal(errors.length, 0, errors.join("\n"));
@@ -168,6 +173,7 @@ if (!["chromium", "firefox", "webkit"].includes(browserEngine))
       assert.equal(errors.length, 0, errors.join("\n"));
       return;
     }
+    await require("./workspace-browser.cjs")({ page, context, assert });
     await page.evaluate(() => {
       ProjectState.apply(
         { elements: [], fixtures: [], floorCount: 1 },

@@ -105,6 +105,7 @@ module.exports = async ({ page, context, assert }) => {
       StudioUI.fitPlan();
     }, extra || {});
   };
+  await page.evaluate(() => setWorkspaceLayout("3d"));
   await page.waitForFunction(() => !!Workbench3D.controls);
   await reset();
   // Every advertised professional workflow must be discoverable and open without a script error.

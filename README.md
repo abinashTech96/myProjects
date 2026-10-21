@@ -12,6 +12,10 @@ Serve this folder over HTTP, for example `python -m http.server 8000`, then open
 
 ## Workspace
 
+The dark workspace opens in 2D with the drawing canvas in focus. **Build** opens the collapsible room, furniture and opening catalog. Selecting a room or furniture item reveals **Properties**; close Properties or clear the selection to reclaim that space. **Project** groups plot settings, file open/export, versions and the project library. **Floors** groups add, clone and delete actions. **Tools** contains the combined planning, Design and professional workflows, with search and optional pinned widgets.
+
+New workspaces start with widgets hidden; existing saved widget and panel choices are retained. The WebGL scene and 3D editing controls initialize on the first 3D/Split view or model export. The main 3D animation loop stops in 2D and while the tab is hidden, and resumes when 3D becomes visible.
+
 - **2D / Split / 3D** choose the working view. Narrow screens show one canvas at a time; choose 3D to switch to its canvas.
 - The left catalog supports search, dragging and click-to-place. Every placement path uses the same dimensions.
 - Select an element to edit its geometry, appearance, openings, wall thickness or distance constraints in Properties. Geometry, opening and wall-thickness fields in Properties use the selected display unit. Feet/inches accepts fractional values such as `10' 6 1/2"`; the model stores inches.
@@ -24,7 +28,7 @@ Serve this folder over HTTP, for example `python -m http.server 8000`, then open
 
 ## Planning tools
 
-The default workspace has compact **Layout checks**, **Vastu**, **Floor area** and **Unit converter** cards. **Widgets** controls visibility and optional measurement, selection, navigation and shortcut cards. Choices, favourites and panel sizes persist on the current device. Asset scrolling is independent of the grouped tool buttons. **Tools** opens Build, Inspect, Utilities and View; **Ctrl/Command K** searches tools and rooms.
+Optional **Layout checks**, **Vastu**, **Floor area** and **Unit converter** cards can be pinned from **Tools → Widgets**. **Widgets** controls visibility and optional measurement, selection, navigation and shortcut cards. Choices, favourites and panel sizes persist on the current device. Asset scrolling is independent of the grouped tool buttons. **Tools** opens Build, Inspect, Utilities and View; **Ctrl/Command K** searches tools and rooms.
 
 - **Build:** polygon rooms, connected walls, wall split/join, the opening editor, calibrated image tracing, room templates and stair design. Click plan points to draw; Enter finishes and Escape cancels. Editing a selected room dimension label opens an input; polygon vertices can also be entered numerically. Wall faces, endpoints, midpoints, perpendicular directions and grid spacing are controlled in Snapping.
 - **Inspect:** clear-area rules, exterior-window area, access and door-route checks, directional preferences, furniture/door clearances, editable dimension chains and floor overlays. Every warning identifies its room and floor. Rules are editable design targets; no local regulatory rule pack is supplied.
@@ -108,6 +112,7 @@ npm test
 npm run check
 npx playwright install chromium
 npm run test:browser
+npm run test:workspace
 ```
 
 The browser regression suite serves the repository on a temporary local port and uses the **actual bundled Three.js renderer**. Matching npm files also fulfill any legacy CDN requests. Remote texture requests use a local test image. It exercises startup, history, modal isolation, units, floors, geometry, constraints, snapshots, AI review, exports and responsive layout. It does not make paid provider requests or certify architectural/structural rules.

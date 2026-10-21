@@ -19,6 +19,7 @@ window.Engine3D = {
 
     // Core Initialization
     init() {
+        if (this.scene) return;
         const container = document.getElementById('three-container');
         if (!container) return;
         
@@ -94,35 +95,42 @@ window.Engine3D = {
 
         this.scene.add(this.fpsControls.getObject());
         
-        this.startAnimationLoop();
+        this.syncVisibility();
         this.setupResizeObserver(container);
+        if (typeof Workbench3D !== 'undefined') Workbench3D.init();
+    },
+
+    syncVisibility() {
+        const visible = !document.hidden && window.is3DMode;
+        window.isEnginePaused = !visible;
+        if (!visible) {
+            for (const key of Object.keys(this.moveState)) this.moveState[key] = false;
+            if (this.fpsControls?.isLocked) this.fpsControls.unlock();
+            if (this.animationFrame != null) cancelAnimationFrame(this.animationFrame);
+            this.animationFrame = null;
+            this.loopRunning = false;
+            return;
+        }
+        if (this.scene && !this.loopRunning) this.startAnimationLoop();
     },
 
     startAnimationLoop() {
+        if (this.loopRunning || !this.scene) return;
+        this.loopRunning = true;
         const velocity = new THREE.Vector3();
         const direction = new THREE.Vector3();
         let prevTime = performance.now();
 
         const animate = () => {
-            // ✨ Keep alive for 1 hour, then let it die to save memory/battery
-            if (window.isEnginePaused) {
-                const ONE_HOUR = 60 * 60 * 1000; // 1 hour in milliseconds
-                
-                // If it has been more than 1 hour, kill the loop
-                if (Date.now() - window.enginePauseTime > ONE_HOUR) {
-                    window.isEngineDead = true;
-                    console.log("🛑 3D Engine Killed (Inactive > 1 Hour)");
-                    return; // The loop completely stops here!
-                }
-                
-                // Otherwise, keep it ticking slowly in the background
-                requestAnimationFrame(animate);
-                return; 
+            if (document.hidden || !window.is3DMode) {
+                this.loopRunning = false;
+                this.animationFrame = null;
+                return;
             }
-            requestAnimationFrame(animate);
-            
+            this.animationFrame = requestAnimationFrame(animate);
+
             const time = performance.now();
-            const delta = (time - prevTime) / 1000;
+            const delta = Math.min((time - prevTime) / 1000, 0.1);
 
             if (this.isWalkthrough && this.fpsControls.isLocked) {
                 // Physics & Friction
@@ -246,12 +254,7 @@ window.toggle3D = function(targetMode = null) {
         }
     }
 
-    let frames = 0;
-    const resizeInterval = setInterval(() => {
-        window.dispatchEvent(new Event('resize'));
-        frames++;
-        if (frames > 25) clearInterval(resizeInterval);
-    }, 16);
+
 };
 
 window.setWorkspaceLayout = function(mode) {

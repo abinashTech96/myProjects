@@ -291,7 +291,7 @@ const DrawingExport = {
     );
   },
   async glb() {
-    if (!Engine3D.scene) throw new Error("Open the 3D view first.");
+    if (!Engine3D.scene) setWorkspaceLayout("3d");
     Engine3D.modelSignature = null;
     generate3DModel();
     if (!THREE.GLTFExporter)

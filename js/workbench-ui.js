@@ -115,9 +115,6 @@ const WorkbenchUI = {
       ...oldActions.call(PlanningUI),
       ...this.tools().map((t) => t[2]),
     ];
-    document
-      .querySelector(".planning-entry")
-      .insertAdjacentHTML("beforeend", this.b("Pro", "WorkbenchUI.menu()"));
     const toolbar = document.createElement("div");
     toolbar.id = "wb-context-toolbar";
     toolbar.setAttribute("aria-label", "Selection actions");

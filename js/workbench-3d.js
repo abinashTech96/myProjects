@@ -600,11 +600,7 @@ const Workbench3D = {
     });
   },
   init() {
-    if (!Engine3D.renderer) {
-      if ((this.initAttempts = (this.initAttempts || 0) + 1) < 200)
-        setTimeout(() => this.init(), 50);
-      return;
-    }
+    if (!Engine3D.renderer || this.controls) return;
     const canvas = Engine3D.renderer.domElement;
     this.controls = new THREE.TransformControls(Engine3D.camera, canvas);
     this.controls.showY = false;
@@ -747,7 +743,7 @@ const Workbench3D = {
     this.controls?.detach();
     if (this.proxy) this.proxy.visible = false;
     this.target = null;
-    Engine3D.controls.enabled = true;
+    if (Engine3D.controls) Engine3D.controls.enabled = true;
     WorkbenchUI.context();
   },
   attach() {
@@ -1025,7 +1021,7 @@ const Workbench3D = {
     });
   },
   applySection() {
-    if (!this.section) return;
+    if (!this.section || !Engine3D.renderer) return;
     const s = this.section,
       min = this.coordinates({ x: s.xmin, y: s.ymin, z: s.zmin }),
       max = this.coordinates({ x: s.xmax, y: s.ymax, z: s.zmax });
@@ -1041,7 +1037,7 @@ const Workbench3D = {
   },
   clearSection() {
     this.section = null;
-    Engine3D.renderer.clippingPlanes = [];
+    if (Engine3D.renderer) Engine3D.renderer.clippingPlanes = [];
     Engine3D.needsRender = true;
   },
   isolateSelection() {
@@ -1055,7 +1051,7 @@ const Workbench3D = {
     this.applyIsolation();
   },
   applyIsolation() {
-    if (!this.isolation) return;
+    if (!this.isolation || !Engine3D.buildingGroup) return;
     const ids = this.isolation;
     for (const child of Engine3D.buildingGroup.children) {
       const data = child.userData || {};
@@ -1086,7 +1082,7 @@ const Workbench3D = {
   },
   clearIsolation() {
     this.isolation = null;
-    Engine3D.buildingGroup.traverse((c) => {
+    Engine3D.buildingGroup?.traverse((c) => {
       if (c.userData.wbPreviousVisible !== undefined) {
         c.visible = c.userData.wbPreviousVisible;
         delete c.userData.wbPreviousVisible;
@@ -1095,6 +1091,7 @@ const Workbench3D = {
     Engine3D.needsRender = true;
   },
   lighting(night) {
+    if (!Engine3D.scene) setWorkspaceLayout("3d");
     const scene = Engine3D.scene;
     scene.traverse((o) => {
       if (o.isLight) {
@@ -1177,6 +1174,7 @@ const Workbench3D = {
         throw Error("Capture at least two named viewpoints");
       const seconds = WorkbenchUI.num("wb-video-duration");
       ProjectModel.finite(seconds, "View duration", 0.5, 30);
+      setWorkspaceLayout("3d");
       const source = Engine3D.renderer.domElement;
       if (!window.MediaRecorder || !source.captureStream)
         throw Error("Video recording is unavailable in this browser");

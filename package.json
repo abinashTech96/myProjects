@@ -8,7 +8,8 @@
     "test:browser": "node tests/browser-regression.cjs",
     "check": "node tests/check-scripts.cjs",
     "server": "node server/server.cjs",
-    "test:benchmark": "node tests/benchmark.cjs"
+    "test:benchmark": "node tests/benchmark.cjs",
+    "test:workspace": "node tests/browser-regression.cjs --workspace"
   },
   "devDependencies": {
     "clipper-lib": "6.4.2",

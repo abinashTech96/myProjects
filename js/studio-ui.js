@@ -150,7 +150,7 @@ const Selection = {
   },
 };
 const StudioUI = {
-  mode: "split",
+  mode: "2d",
   warnings: [],
   lastPlot: null,
   resize: null,
@@ -168,12 +168,12 @@ const StudioUI = {
     const shell = document.createElement("div");
     shell.id = "studio-shell";
     shell.innerHTML = `
-            <header class="studio-header"><div class="studio-brand">ArchCAD <span>PRO</span></div><button class="studio-button mobile-only" onclick="document.body.classList.toggle('catalog-open')" aria-label="Show asset catalog">Assets</button>
-            <div class="studio-file-actions">${this.button("Project", "StudioUI.projectDialog()")}${this.button("Save JSON", "exportJSON()", "primary")}${this.button("Open", "StudioUI.openFile()")}${this.button("Export", "StudioUI.exportDialog()")}${this.button("Versions", "StudioUI.versionsDialog()")}</div>
+            <header class="studio-header"><div class="studio-brand">ArchCAD <span>PRO</span></div>
+            <div class="studio-file-actions">${this.button("Project", "StudioUI.projectMenu()")}${this.button("Save", "exportJSON()", "primary")}<div class="studio-history">${this.button("Undo", "undoAction()")}${this.button("Redo", "redoAction()")}</div></div>
             <div class="studio-view-modes" role="group" aria-label="Workspace view">${["2d", "split", "3d"].map((v) => `<button class="studio-button" data-mode="${v}" onclick="setWorkspaceLayout('${v}')">${v === "split" ? "Split" : v.toUpperCase()}</button>`).join("")}</div>
-            <div id="studio-floor-tabs"></div><button class="studio-button" onclick="addManualFloor()" title="Add floor">+ Floor</button><button class="studio-button mobile-only" onclick="document.body.classList.toggle('inspector-open')">Properties</button></header>
-            <aside class="studio-catalog" aria-label="Asset catalog"><div class="studio-panel-heading"><strong>Asset catalog</strong><button class="mobile-only studio-button" onclick="document.body.classList.remove('catalog-open')" aria-label="Close asset catalog">✕</button></div><input id="studio-search" aria-label="Search assets" placeholder="Search rooms or furniture" oninput="StudioUI.filter=this.value;StudioUI.renderCatalog()"><select id="studio-asset-kind" aria-label="Asset category" onchange="StudioUI.assetKind=this.value;StudioUI.renderCatalog()"><option value="rooms">Rooms</option><option value="furniture">Furniture</option></select><div id="studio-assets"></div><p class="studio-hint">Drag onto the plan or click to place.<br>Ctrl / ⌘ + click to select several items.</p><div class="studio-tools">${this.button("Auto-builder", "toggleAutoBuilder()")}${this.button("AI assistant", "StudioUI.aiDialog()")}${this.button("Plot & units", "StudioUI.projectDialog()")}${this.button("Measure", "toggleMeasureMode()")}${this.button("Section cut", "toggleSectionCut()")}${this.button("3D tools", "StudioUI.viewToolsDialog()")}${this.button("Layout checks", "StudioUI.checksDialog()")}${this.button("Shortcuts", "StudioUI.shortcuts()")}</div></aside>
-            <aside id="studio-inspector" class="studio-inspector" aria-label="Properties"><div class="studio-panel-heading"><strong>Properties</strong><button class="mobile-only studio-button" onclick="document.body.classList.remove('inspector-open')" aria-label="Close properties">✕</button></div><div id="studio-properties"></div></aside>
+            <div class="studio-floor-controls"><div id="studio-floor-tabs"></div><button class="studio-button" onclick="StudioUI.floorMenu()" title="Manage floors" aria-label="Manage floors">Floors ▾</button></div></header>
+            <aside class="studio-catalog" aria-label="Asset catalog"><div class="studio-panel-heading"><strong>Build</strong><button class="studio-button" onclick="PlanningUI.collapse('catalog')" aria-label="Close Build panel">✕</button></div><input id="studio-search" aria-label="Search assets" placeholder="Search rooms or furniture" oninput="StudioUI.filter=this.value;StudioUI.renderCatalog()"><select id="studio-asset-kind" aria-label="Asset category" onchange="StudioUI.assetKind=this.value;StudioUI.renderCatalog()"><option value="rooms">Rooms</option><option value="furniture">Furniture</option><option value="openings">Doors & windows</option></select><div id="studio-assets"></div><p class="studio-hint">Drag onto the plan or click to place.<br>Ctrl / ⌘ + click to select several items.</p><div class="studio-tools">${this.button("Auto-builder", "toggleAutoBuilder()")}${this.button("AI assistant", "StudioUI.aiDialog()")}${this.button("Plot & units", "StudioUI.projectDialog()")}${this.button("Measure", "toggleMeasureMode()")}${this.button("Section cut", "toggleSectionCut()")}${this.button("3D tools", "StudioUI.viewToolsDialog()")}${this.button("Layout checks", "StudioUI.checksDialog()")}${this.button("Shortcuts", "StudioUI.shortcuts()")}</div></aside>
+            <aside id="studio-inspector" class="studio-inspector" aria-label="Properties"><div class="studio-panel-heading"><strong>Properties</strong><button class="studio-button" onclick="StudioUI.closeProperties()" aria-label="Close properties">✕</button></div><div id="studio-properties"></div></aside>
             <footer class="studio-status"><span id="studio-project-name"></span><span id="studio-save-status" role="status" aria-live="polite">Starting…</span><button class="studio-link" onclick="StudioUI.checksDialog()" id="studio-warning-count">Layout checks</button><span id="studio-coordinates">Inches</span><span id="studio-zoom">100%</span><button class="studio-button" id="studio-undo" onclick="undoAction()" title="Undo (Ctrl/⌘ Z)">Undo</button><button class="studio-button" id="studio-redo" onclick="redoAction()" title="Redo (Ctrl/⌘ Shift Z)">Redo</button></footer><div id="studio-toast" role="status" aria-live="polite"></div>`;
     document.body.appendChild(shell);
     const tabs = document.getElementById("top-floor-tabs");
@@ -220,9 +220,23 @@ const StudioUI = {
     };
     this.renderCatalog();
     this.renderInspector();
-    setWorkspaceLayout(ProjectState.meta.view.mode || "split");
+    setWorkspaceLayout(ProjectState.meta.view.mode || "2d");
     if (!ProjectState.meta.view.camera) this.fitPlan();
     this.updateStatus();
+  },
+  projectMenu() {
+    this.dialog("Project", `<div class="studio-action-grid">${this.button("Plot & units", "StudioUI.projectDialog()")}${this.button("Open project", "StudioUI.openFile()")}${this.button("Save JSON", "exportJSON()")}${this.button("Export drawings / model", "StudioUI.exportDialog()")}${this.button("Versions & recovery", "StudioUI.versionsDialog()")}${this.button("Project library", "PlanningUI.libraryDialog()")}</div>`);
+  },
+  floorMenu() {
+    this.dialog("Floors", `<p>Current floor: ${currentFloor === 0 ? "Ground" : currentFloor}</p><div class="studio-action-grid">${this.button("Add floor", "addManualFloor();StudioUI.floorMenu()")}${this.button("Clone current floor", "cloneEntireFloor();StudioUI.floorMenu()")}${this.button("Delete current floor", "deleteCurrentFloor();StudioUI.floorMenu()", "danger")}</div>`);
+  },
+  closeProperties() {
+    selectedElIndex = -1;
+    Selection.ids.clear();
+    document.body.classList.remove("inspector-open");
+    AppEvents.triggerSelectionChange();
+    updateCanvas(false);
+    this.renderInspector();
   },
   message(text, kind = "info") {
     const node = document.getElementById("studio-toast");
@@ -281,6 +295,11 @@ const StudioUI = {
       !ProjectState.history.stack.length;
     document.getElementById("studio-redo").disabled =
       !ProjectState.history.redoStack.length;
+    const historyButtons = document.querySelectorAll(".studio-history button");
+    if (historyButtons.length) {
+      historyButtons[0].disabled = !ProjectState.history.stack.length;
+      historyButtons[1].disabled = !ProjectState.history.redoStack.length;
+    }
     document.getElementById("studio-zoom").textContent =
       `${Math.round((CanvasState.zoomLvl || 1) * 100)}%`;
   },
@@ -288,6 +307,10 @@ const StudioUI = {
     const box = document.getElementById("studio-assets");
     if (!box) return;
     box.innerHTML = "";
+    if (this.assetKind === "openings") {
+      box.innerHTML = `<p class="studio-hint">Select a room, then add an opening.</p>${this.button("Add door", "addFixture('door')")}${this.button("Add window", "addFixture('window')")}${this.button("Edit openings", "PlanningUI.openingsDialog()")}`;
+      return;
+    }
     for (const item of ASSET_CATALOGS[this.assetKind].items.filter((i) =>
       i.label.toLowerCase().includes(this.filter.toLowerCase()),
     )) {
@@ -374,6 +397,10 @@ const StudioUI = {
       [...Selection.ids].filter((id) => elements.some((e) => e.id === id)),
     );
     const el = elements[selectedElIndex];
+    document.body.classList.toggle("has-selection", !!el);
+    if (el && this.inspectedId !== el.id && matchMedia("(max-width:850px)").matches)
+      document.body.classList.remove("catalog-open");
+    this.inspectedId = el?.id;
     if (!el) {
       Selection.ids.clear();
       panel.innerHTML = `<p class="studio-hint">Select a room or furniture item on the plan.</p><strong>Floor ${currentFloor === 0 ? "G" : currentFloor}</strong><div class="studio-room-list">${elements.map((e, i) => (e.floor === currentFloor ? `<button class="studio-list-item" onclick="StudioUI.select(${i})">${this.escape(e.customName || e.type)}${e.locked ? " · Locked" : ""}</button>` : "")).join("")}</div>${this.button("Clone floor", "cloneEntireFloor()")}${this.button("Delete floor", "deleteCurrentFloor()", "danger")}`;
@@ -854,6 +881,8 @@ const StudioUI = {
     );
   },
   viewToolsDialog() {
+    // These controls operate on a live scene, including night mode and camera tours.
+    setWorkspaceLayout("3d");
     this.dialog(
       "View tools",
       `<div class="studio-action-grid">${this.button("Advanced 3D", "document.getElementById('studio-dialog').close();setWorkspaceLayout('3d');Adv3D.toggleWorkspaceMode(true)")}${this.button("Walkthrough", "document.getElementById('studio-dialog').close();setWorkspaceLayout('3d');Widget3DEngine.startWalkthrough()")}${this.button("Capture camera", "captureWaypoint()")}${this.button("Play camera tour", "playCinematicTour()")}${this.button("Clear tour", "clearTour()")}${this.button("Night / day", "toggleNightMode();Engine3D.needsRender=true")}${this.button("Exploded view", "toggleExplodeView()")}${this.button("Performance mode", "Widget3DEngine.togglePerformanceMode()")}${this.button("Theme", "toggleTheme()")}${this.button("Frame plan", "resetCamera()")}</div><label>Sun position<input type="range" min="6" max="18" value="12" step="0.25" oninput="updateSunlight(Number(this.value));Engine3D.needsRender=true"></label><label>Roof / parapet<select onchange="StudioUI.parapetStyle(this.value)">${Array.from(
@@ -1211,7 +1240,9 @@ window.setWorkspaceLayout = function (mode) {
   if (StudioUI.ready && !ProjectState.applying) StorageEngine.markDirty();
   const pad = document.getElementById("nav-pad");
   if (pad) pad.style.display = mode === "2d" ? "none" : "flex";
-  if (Engine3D.scene) {
+  if (mode !== "2d" && !Engine3D.scene) Engine3D.init();
+  Engine3D.syncVisibility?.();
+  if (Engine3D.scene && mode !== "2d") {
     Engine3D.needsRender = true;
     request3DUpdate();
     const box = document.getElementById("three-container");

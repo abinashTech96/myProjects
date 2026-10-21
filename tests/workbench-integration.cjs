@@ -195,9 +195,9 @@ module.exports = async ({ page, context, assert }) => {
       () =>
         typeof StudioUI !== "undefined" &&
         StudioUI.ready &&
-        !StorageEngine.loading &&
-        !!Workbench3D.controls,
+        !StorageEngine.loading,
     );
+    assert.equal(await touch.evaluate(() => !!Engine3D.scene), false);
     await touch.evaluate(() => WorkbenchUI.menu());
     await touch
       .getByRole("button", { name: "Wall faces & assemblies", exact: true })

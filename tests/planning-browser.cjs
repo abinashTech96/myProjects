@@ -47,7 +47,8 @@ module.exports = async ({ page, context, assert, server }) => {
     await page.mouse.click(q.x, q.y);
   };
   await reset({ elements: [room("bed")] });
-  assert.equal(await page.locator("#planning-dock [data-widget]").count(), 4);
+  assert.equal(await page.locator("#planning-dock [data-widget]").count(), 0);
+  await page.locator(".planning-entry").getByRole("button", { name: "Tools", exact: true }).click();
   await page
     .getByRole("button", { name: "Widgets", exact: true })
     .first()
@@ -478,7 +479,7 @@ module.exports = async ({ page, context, assert, server }) => {
   await page.waitForTimeout(100);
   assert.ok(
     await page
-      .getByRole("button", { name: "Widgets", exact: true })
+      .getByRole("button", { name: "Tools", exact: true })
       .first()
       .isVisible(),
   );
@@ -494,11 +495,11 @@ module.exports = async ({ page, context, assert, server }) => {
     true,
   );
   await page
-    .getByRole("button", { name: "Show asset catalog", exact: true })
+    .locator(".planning-entry").getByRole("button", { name: "Build", exact: true })
     .first()
     .click();
   assert.ok(await page.locator(".studio-catalog").isVisible());
-  await page.locator('[aria-label="Close asset catalog"]').click();
+  await page.locator('[aria-label="Close Build panel"]').click();
   await page.screenshot({ path: "/tmp/archcad-planning-mobile.png" });
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.evaluate(() => {

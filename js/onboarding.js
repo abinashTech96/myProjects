@@ -162,7 +162,7 @@ const Onboarding = {
         { 
             icon: '✨', 
             title: 'Welcome to ArchCAD Pro', 
-            desc: "Let's take a quick 3-step tour to get you familiar with your new high-performance workspace."
+            desc: "Start with a clear canvas. Open Build to add rooms, furniture, doors and windows."
         },
         { 
             icon: '📐', 
@@ -171,8 +171,8 @@ const Onboarding = {
         },
         { 
             icon: '📋', 
-            title: 'The Room Explorer', 
-            desc: 'This is your Command Center. Use it to switch between floors and select individual rooms to edit their dimensions.'
+            title: 'Build & Properties',
+            desc: 'Open Build in the top bar to place items. Select an item to reveal Properties, and use Floors to manage levels.'
         },
         { 
             icon: '🧊', 

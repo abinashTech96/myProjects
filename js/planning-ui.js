@@ -59,30 +59,27 @@ const PlanningUI = {
       typeof this.preferences.widgets !== "object"
     )
       this.preferences.widgets = {
-        checks: true,
-        vastu: true,
-        area: true,
-        converter: true,
+        checks: false,
+        vastu: false,
+        area: false,
+        converter: false,
       };
     const header = document.querySelector(".studio-header"),
       entry = document.createElement("div");
     entry.className = "planning-entry";
     entry.innerHTML =
-      this.button("Widgets", "PlanningUI.widgetsDialog()") +
+      this.button("Build", "PlanningUI.collapse('catalog')") +
       this.button("Tools", "PlanningUI.toolsDialog()") +
-      this.button("Search ⌘/Ctrl K", "PlanningUI.commandDialog()");
+      this.button("Search", "PlanningUI.commandDialog()");
+    entry.lastElementChild.setAttribute("aria-label", "Search tools");
+    entry.lastElementChild.title = "Search tools (Ctrl/⌘ K)";
     header.querySelector(".studio-brand").after(entry);
     const catalog = document.querySelector(".studio-catalog"),
       tools = catalog.querySelector(".studio-tools");
     tools.innerHTML =
-      ["Build", "Inspect", "Utilities", "View"]
-        .map((c) => this.button(c, `PlanningUI.toolsDialog('${c}')`))
-        .join("") +
+      this.button("Draw walls", "PlanningUI.setTool('wall')") +
       this.button("Auto-builder", "PlanningUI.builderDialog()") +
-      this.button("AI assistant", "StudioUI.aiDialog()") +
-      this.button("Plot & units", "StudioUI.projectDialog()") +
-      this.button("Layout checks", "StudioUI.checksDialog()") +
-      this.button("Shortcuts", "StudioUI.shortcuts()");
+      this.button("Plot & units", "StudioUI.projectDialog()");
     tools.insertAdjacentHTML(
       "afterbegin",
       '<div id="planning-favourites"></div>',
@@ -111,12 +108,10 @@ const PlanningUI = {
     const nav = document.createElement("div");
     nav.id = "planning-navigation";
     nav.innerHTML =
-      this.button("Assets", 'PlanningUI.collapse("catalog")') +
       this.button("−", "PlanningUI.zoom(0.8)") +
       this.button("Fit plot", "StudioUI.fitPlan()") +
       this.button("Fit selection", "centerOnSelection()") +
-      this.button("+", "PlanningUI.zoom(1.25)") +
-      this.button("Properties", 'PlanningUI.collapse("inspector")');
+      this.button("+", "PlanningUI.zoom(1.25)");
     document.body.appendChild(nav);
     this.ready = true;
     this.applyPrefs();
@@ -208,22 +203,24 @@ const PlanningUI = {
     try {
       return {
         widgets: {
-          checks: true,
-          vastu: true,
-          area: true,
-          converter: true,
+          checks: false,
+          vastu: false,
+          area: false,
+          converter: false,
           measurements: false,
           selection: false,
           navigation: false,
           shortcuts: false,
         },
         favourites: [],
+        catalogCollapsed: true,
         ...JSON.parse(localStorage.getItem("ArchCAD_Workspace") || "{}"),
       };
     } catch {
       return {
-        widgets: { checks: true, vastu: true, area: true, converter: true },
+        widgets: { checks: false, vastu: false, area: false, converter: false },
         favourites: [],
+        catalogCollapsed: true,
       };
     }
   },
@@ -414,13 +411,14 @@ const PlanningUI = {
           action: "StudioUI.shortcuts()",
         },
       };
-    dock.innerHTML = Object.entries(widgets)
+    const html = Object.entries(widgets)
       .filter(([k]) => this.preferences.widgets?.[k])
       .map(
         ([k, w]) =>
           `<button class="planning-widget" data-widget="${k}" onclick="${w.action}"><strong>${w.title}</strong><span>${this.esc(w.text)}</span></button>`,
       )
       .join("");
+    if (dock.innerHTML !== html) dock.innerHTML = html;
   },
   widgetsDialog() {
     this.dialog(
@@ -484,8 +482,8 @@ const PlanningUI = {
   },
   toolsDialog(category = "Build") {
     this.dialog(
-      "Planning tools",
-      `<div class="planning-tabs">${["Build", "Inspect", "Utilities", "View"].map((c) => this.button(c, `PlanningUI.toolsDialog('${c}')`, c === category ? "active" : "")).join("")}</div><div class="planning-tool-list">${this.tools()
+      "Tools",
+      `<div class="studio-action-row">${this.button("Search all tools", "PlanningUI.commandDialog()")}${this.button("Widgets", "PlanningUI.widgetsDialog()")}</div><div class="planning-tabs">${["Build", "Inspect", "Utilities", "View"].map((c) => this.button(c, `PlanningUI.toolsDialog('${c}')`, c === category ? "active" : "")).join("")}</div><div class="planning-tool-list">${this.tools()
         .map((t, i) =>
           t[0] === category
             ? `<div>${this.button(t[1], `PlanningUI.launch(${i})`)}<button class="studio-button" aria-label="Favourite ${this.esc(t[1])}" onclick="PlanningUI.favourite(${i});PlanningUI.toolsDialog('${category}')">${this.preferences.favourites?.includes(t[1]) ? "★" : "☆"}</button></div>`
@@ -547,14 +545,16 @@ const PlanningUI = {
   },
   renderFavourites() {
     const el = document.getElementById("planning-favourites");
-    if (el)
-      el.innerHTML = this.tools()
+    if (el) {
+      const html = this.tools()
         .map((t, i) =>
           this.preferences.favourites?.includes(t[1])
             ? this.button("★ " + t[1], `PlanningUI.launch(${i})`)
             : "",
         )
         .join("");
+      if (el.innerHTML !== html) el.innerHTML = html;
+    }
   },
   commandDialog() {
     this.dialog(

@@ -1,0 +1,92 @@
+/* Canvas-first workspace. Loaded last to keep all editor modes consistent. */
+.studio-header {
+  height: 58px;
+  gap: 16px;
+  padding: 0 18px;
+  background: #101925;
+}
+.studio-brand { font-size: 18px; letter-spacing: -.5px; }
+.studio-header .studio-button { min-height: 32px; padding: 7px 11px; font-size: 12px; }
+.studio-file-actions { order: 1; flex-wrap: nowrap; gap: 8px; }
+.planning-entry { order: 2; gap: 6px; }
+.studio-view-modes { order: 3; margin-left: auto; }
+.studio-floor-controls { order: 4; display: flex; align-items: center; gap: 8px; min-width: 0; }
+.studio-history { display: flex; gap: 4px; padding-left: 10px; border-left: 1px solid #29364a; }
+.studio-shell .studio-catalog, .studio-shell .studio-inspector { top: 58px; background: #101925; }
+.studio-shell #main-workspace { top: 58px !important; right: 0 !important; }
+.studio-shell .studio-inspector { display: none; }
+.studio-shell.has-selection .studio-inspector { display: block; }
+.studio-shell.has-selection #main-workspace { right: var(--inspector-width) !important; }
+.studio-shell .studio-catalog { display: flex; }
+.studio-shell.catalog-collapsed .studio-catalog { display: none; }
+.studio-shell .studio-catalog .studio-tools { grid-template-columns: 1fr; max-height: 30%; margin-top: 8px; }
+.studio-shell .studio-panel-heading { margin-bottom: 12px; }
+.studio-panel-heading .studio-button { background: transparent; border-color: transparent; }
+#studio-assets > .studio-button { display: block; width: 100%; margin: 8px 0; text-align: left; }
+.studio-status { background: #101925; gap: 14px; }
+.studio-status #studio-undo, .studio-status #studio-redo, #design-health { display: none; }
+#planning-dock { top: 70px; right: 12px; max-width: none; }
+.has-selection #planning-dock { right: calc(var(--inspector-width) + 12px); }
+#planning-mode { top: auto; bottom: 84px; }
+#planning-mode:not(.drawing-active) { display: none; }
+#planning-navigation { bottom: 46px; background: #101925ed; padding: 5px; border: 1px solid #29364a; border-radius: 9px; }
+#planning-navigation .studio-button { background: transparent; border-color: transparent; min-height: 28px; font-size: 11px; }
+/* Selection actions are available in Properties and the context menu. */
+.studio-shell[data-workspace="2d"] #wb-context-toolbar,
+.studio-shell.has-selection #wb-context-toolbar { display: none !important; }
+.studio-shell .adv-btn-container { display: none; }
+.studio-dialog .planning-tabs { margin-top: 16px; }
+@media (max-width: 1050px) {
+  .studio-header { gap: 8px; padding: 0 10px; }
+  .studio-header .studio-button { padding: 6px 8px; }
+  .studio-history { display: none; }
+  .studio-status #studio-undo, .studio-status #studio-redo { display: inline-block; }
+}
+@media (max-width: 850px) {
+  .studio-header { display: flex; flex-wrap: wrap; height: 100px; gap: 6px 10px; align-content: center; }
+  .studio-header .studio-brand { flex: 1; margin: 0; }
+  .studio-header .studio-file-actions { order: 0; width: auto; overflow: visible; }
+  .planning-entry { order: 1; }
+  .studio-view-modes { order: 2; margin-left: auto; }
+  .studio-floor-controls { order: 3; }
+  .studio-history { display: none; }
+  .studio-shell #main-workspace { top: 100px !important; left: 0 !important; right: 0 !important; }
+  .studio-shell .studio-catalog, .studio-shell .studio-inspector { top: 100px; width: min(300px, 88vw); display: none; }
+  .studio-shell.catalog-open .studio-catalog { display: flex; }
+  .studio-shell.has-selection .studio-inspector { display: block; }
+  #planning-dock { top: 110px; left: 12px; right: 12px; }
+  .has-selection #planning-dock { right: 12px; }
+  #planning-navigation, .catalog-collapsed #planning-navigation { left: 12px; }
+  .studio-status #studio-warning-count { display: none; }
+}
+@media (max-width: 420px) {
+  .studio-header { gap: 6px; padding: 6px 8px; }
+  .studio-header .studio-button { padding: 6px 7px; font-size: 11px; }
+  .studio-header #top-floor-tabs { max-width: 40px; }
+  .studio-floor-controls { gap: 3px; }
+}
+/* Override the legacy responsive rules that hid file actions and squeezed the brand. */
+.studio-shell .studio-header .studio-file-actions > .studio-button,
+.studio-shell .studio-header .planning-entry > .studio-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+@media (max-width: 850px) {
+  .studio-shell .studio-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-rows: 36px 36px;
+    align-content: center;
+    gap: 6px;
+  }
+  .studio-shell .studio-header .studio-brand { grid-column: 1; grid-row: 1; font-size: 15px; white-space: nowrap; }
+  .studio-shell .studio-header .studio-brand span { display: none; }
+  .studio-shell .studio-header .studio-file-actions { grid-column: 2; grid-row: 1; display: flex; width: auto; }
+  .studio-shell .studio-header .studio-view-modes { grid-column: 3; grid-row: 1; margin: 0; }
+  .studio-shell .studio-header > .planning-entry { grid-column: 1 / 3; grid-row: 2; overflow: visible; }
+  .studio-shell .studio-header .studio-floor-controls { grid-column: 3; grid-row: 2; justify-content: flex-end; }
+  .studio-shell .studio-header #studio-floor-tabs { display: block; max-width: 40px; }
+  .studio-shell .studio-header .studio-button { font-size: 11px; padding: 6px 7px; }
+  #planning-navigation { bottom: 74px; }
+}

@@ -121,6 +121,7 @@ window.Engine3D = {
             this.loopRunning = false;
             return;
         }
+        if (this.modelDirty && typeof window.request3DUpdate === 'function') window.request3DUpdate();
         if (this.scene && !this.loopRunning) this.startAnimationLoop();
     },
 

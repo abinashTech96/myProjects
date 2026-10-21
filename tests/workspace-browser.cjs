@@ -136,12 +136,16 @@ module.exports = async ({ page, assert }) => {
   await page.evaluate(() => {
     Object.defineProperty(document, 'hidden', { configurable: true, value: true });
     document.dispatchEvent(new Event('visibilitychange'));
+    ProjectState.commit('Changed room while hidden',()=>{elements[0].customColor='#123456';});
   });
   assert.equal(await page.evaluate(() => Engine3D.loopRunning), false);
+  assert.equal(await page.evaluate(() => Engine3D.modelDirty), true);
   await page.evaluate(() => {
     delete document.hidden;
     document.dispatchEvent(new Event('visibilitychange'));
   });
+  await page.waitForFunction(() => !Engine3D.modelDirty && Engine3D.modelSignature.includes('#123456'));
+  await page.evaluate(() => ProjectState.undo());
   await page.waitForFunction(() => !Engine3D.loopRunning && Engine3D.renderFrames > 0);
   await page.locator('[data-mode="2d"]').click();
   await page.waitForTimeout(100);

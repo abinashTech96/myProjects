@@ -430,10 +430,15 @@ generate3DModel = function () {
 };
 let pendingModelUpdate;
 window.request3DUpdate = function () {
-  if (!Engine3D.scene || !window.is3DMode || document.hidden) return;
+  if (!Engine3D.scene) return;
+  Engine3D.modelDirty = true;
+  if (!window.is3DMode || document.hidden) return;
   if (pendingModelUpdate) return;
   pendingModelUpdate = setTimeout(() => {
     pendingModelUpdate = null;
-    if (window.is3DMode && !document.hidden) generate3DModel();
+    if (window.is3DMode && !document.hidden) {
+      generate3DModel();
+      Engine3D.modelDirty = false;
+    }
   }, 60);
 };

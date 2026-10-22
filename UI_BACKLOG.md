@@ -53,3 +53,22 @@ fixtures restore saved widget preferences after testing home navigation.
 
 Opening a tool collapses the temporary dock; a pinned dock reserves its width so
 Build assets and the drawing remain accessible.
+
+## Consistent tool panels and 4D reliability — implemented
+
+| ID | Change | Result |
+| --- | --- | --- |
+| UI-030 | Visible expanded labels | Expanded-label selectors override the legacy icon-only rules in all four themes. Hover expansion also moves open panels clear of the labels; pinning reserves the rail width. |
+| UI-031 | One dock-panel arrangement | Build, Objects, Tools, Widgets, Settings, Search, Studio+ and Properties share the left panel position and width. Utility forms retain their original fields and actions inside a nonmodal panel. |
+| UI-032 | Compact responsive forms | Default panel width is 296px, with compact headers, two-column actions, internal scrolling and sticky search. Small-screen navigation and form panels avoid squeezing each other. |
+| UI-033 | Reliable panel transitions | Adding/selecting a room opens its original Properties inspector; choosing an object again reopens its details. Build/Properties layout choices still restore per mode. Utility panels support pin, outside-click dismissal and Escape. |
+| 4D-001 | Independent scene compiler | `Scene4D` owns cloned geometry, materials and texture snapshots. Editor rebuilds cannot invalidate presentation buffers; updated source images propagate into owned textures. |
+| 4D-002 | Building-shaped slabs and roofs | Slabs use occupied floor unions and actual shaft/stair openings. Empty storeys produce no full-plot caps. Gable, hip and shed roofs use the building footprint and real pitched geometry. |
+| 4D-003 | Fault isolation and recovery | Invalid geometry is excluded with audit details. Render failures reveal the working 3D view; graphics-context restoration rebuilds 4D. Rendering & recovery provides a manual retry. |
+| 4D-004 | Bounded GPU use | Resolution is capped at 1.1 million pixels and 1.25 device scale; shadows use 1024px maps. Unchanged sizes skip allocations, inactive targets shrink, and owned resources are disposed on rebuild/recovery. |
+| 4D-005 | Adjustable glass cost | Balanced transparent glazing is the default; Lighting offers physical transmission for devices with more GPU capacity. Ambient-occlusion failures retry without that pass. |
+
+Verification includes actual rendered label visibility, common panel bounds at
+320–1440px, all built-in furniture geometry, editor/presentation ownership,
+injected render failure and real WebGL context loss/restoration. These protections
+reduce known failure paths; device-specific GPU limits still apply.

@@ -105,5 +105,8 @@
   "./js/workspace-layout.js",
   "./css/workspace-refinement.css",
   "./js/workspace-refinement.js",
-  "./js/landscape4d.js"
+  "./js/landscape4d.js",
+  "./js/workspace-panels.js",
+  "./css/workspace-panels.css",
+  "./js/scene4d.js"
 ]

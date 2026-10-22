@@ -654,6 +654,7 @@ const StudioUI = {
     document.addEventListener("pointerup", up, { once: true });
   },
   dialog(title, html) {
+    const docked=window.WorkspacePanels?.shouldDock(title) || false;
     document.querySelector("#studio-dialog")?.close();
     document.querySelector("#studio-dialog")?.remove();
     const dialog = document.createElement("dialog");
@@ -675,7 +676,8 @@ const StudioUI = {
       { once: true },
     );
     this.lastFocus = document.activeElement;
-    dialog.showModal();
+    dialog.dataset.docked=String(docked);
+    if(docked) dialog.show();else dialog.showModal();
     return dialog;
   },
   rename(value) {
@@ -1196,6 +1198,10 @@ const StudioUI = {
       return;
     }
     if (dialog) {
+      if (event.key === "Escape" && dialog.dataset.docked === "true") {
+        dialog.close();
+        event.preventDefault();
+      }
       event.stopImmediatePropagation();
       return;
     }

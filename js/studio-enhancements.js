@@ -199,11 +199,13 @@ window.StudioEnhancements = {
     };
     const oldRender = Engine4D.render;
     Engine4D.render = function (...args) {
-      StudioEnhancements.beforeRender();
-      const started = performance.now(),
-        result = oldRender.apply(this, args);
-      if (result) StudioEnhancements.afterRender(performance.now() - started);
-      return result;
+      if(!this.ready) return false;
+      try {
+        StudioEnhancements.beforeRender();
+        const started=performance.now(),result=oldRender.apply(this,args);
+        if(result)StudioEnhancements.afterRender(performance.now()-started);
+        return result;
+      } catch(error) {this.fail(error);return false;}
     };
     const oldMaterial = Engine4D.material;
     Engine4D.material = function (original, object) {
@@ -1118,7 +1120,7 @@ window.StudioEnhancements = {
     if (!Engine4D.ready) return;
     const fast = this.adaptive && this.navigating;
     Engine4D.dynamicScale = fast ? 0.65 : 1;
-    Engine4D.ao.enabled = Engine4D.supportsAO && !fast;
+    Engine4D.ao.enabled = Engine4D.supportsAO && !fast && !Engine4D.aoFault;
     Engine4D.beautyPass.enabled = !Engine4D.ao.enabled;
     Engine4D.resize();
   },
@@ -1498,7 +1500,7 @@ window.StudioEnhancements = {
       if (
         Number.isInteger(data.floor) &&
         (source.parent === Engine3D.buildingGroup ||
-          source.parent?.userData.workbench)
+          source.parent?.userData.workbench || data.presentationGenerated)
       )
         copy.position.y = source.position.y + data.floor * this.explosion * SCALE;
       if (focused) {

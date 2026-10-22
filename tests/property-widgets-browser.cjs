@@ -46,7 +46,10 @@ module.exports = async ({page,assert}) => {
   await page.evaluate(()=>ViewportUI.projection('perspective'));
   await page.waitForFunction(()=>Engine4D.camera?.isPerspectiveCamera);
   assert.equal(await page.evaluate(()=>[...Engine4D.materials].some(m=>m.isMeshPhysicalMaterial)),true,'The presentation model uses physical materials');
-  assert.equal(await page.evaluate(()=>[...Engine4D.materials].some(m=>m.transmission>.8)),true,'Window panes use physical glass transmission');
+  assert.equal(await page.evaluate(()=>[...Engine4D.materials].some(m=>m.transparent && m.opacity===.3 && !m.depthWrite)),true,'Balanced window glass avoids extra full-frame transmission targets');
+  await page.evaluate(()=>Engine4D.setGlass(true));
+  assert.equal(await page.evaluate(()=>[...Engine4D.materials].some(m=>m.transmission>.8)),true,'Physical glass remains available as an explicit quality option');
+  await page.evaluate(()=>Engine4D.setGlass(false));
   assert.equal(await page.evaluate(()=>Engine3D.elementObjects.get('legacy-bedroom').children[0].material.isMeshPhysicalMaterial || false),false,'4D never mutates the editable 3D materials');
   await page.locator('#advanced-view-panel summary').click();
   for(const preset of ['interior','studio','daylight']) {

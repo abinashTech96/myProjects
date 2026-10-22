@@ -39,6 +39,31 @@ Open **✦ Studio+** on the left rail to access the coordinated editing and pres
 - Pin Build or Properties to keep it visible. Unpinned panels dismiss on canvas interaction without clearing the selection; use their rail buttons to reopen them. Panel choices and split proportions are remembered independently for each workspace mode. Model framing allows for the open advanced panel.
 - Footer panels close on outside click or Escape, keep the model visible and restore opener focus when closed from inside. Narrow screens use bounded, internally scrolling panels above the footer.
 
+## Consistent dock panels and renderer recovery
+
+Dock tools now open beside the left rail in the same compact, scrollable panel
+arrangement as Build. Objects, Tools, Widgets, Settings, Search and Studio+ reuse
+their original controls; selecting or adding a room shows the original Properties
+inspector in that position. The selected tool is highlighted. Pin a utility panel
+to keep it open during canvas work; Escape or its close button dismisses it.
+Temporary dock expansion keeps icon labels clear of open panels. On small screens,
+choosing a tool compacts the dock so form controls remain usable.
+
+In **4D → Rendering & recovery**, inspect renderer state, geometry audit results
+and resource counts, or retry the engine. If a graphics context is lost, the
+editable 3D view remains available and 4D rebuilds when the context returns. A
+failed ambient-occlusion pass retries with standard PBR rendering. **Lighting →
+Physical glass** enables costlier transmission; balanced transparent glass is the
+default. These rendering preferences do not change room dimensions or openings.
+
+`js/scene4d.js` compiles the presentation scene independently from editor GPU
+buffers. It rebuilds slab footprints and pitched roofs from project geometry,
+retains stair/shaft slab holes, omits empty-storey slabs and owns its geometry,
+materials and texture snapshots. Malformed geometry is omitted and reported.
+Resolution is limited to 1.1 million pixels with device scale up to 1.25; adaptive
+navigation can reduce it further. Scene rebuilds and recovery dispose owned
+resources, and leaving 4D shrinks inactive render targets.
+
 ## Saving and view state
 
 Surface assignments, opening fractions, clearance settings, wall-snap preference, eye height, speed and interior light settings are saved with the project. They participate in native import/export and version history. Design alternatives capture those settings too. Preview changes require Apply before they are saved.
@@ -53,4 +78,4 @@ Clearance and door-swing checks are geometric review aids, not building-code cer
 
 ## Verification
 
-`npm test` runs project, planning, design, presentation, workbench and API checks. `npm run check` verifies script syntax and packaged/offline assets. `npm run test:browser` includes the original tool workflows and Studio+ interactions; `ENHANCEMENTS_ONLY=1` runs the focused Studio+ browser checks. `REFINEMENT_ONLY=1` verifies branding/home persistence, dock expansion, categorized search, floor management, responsive headers and 4D garden ownership/cleanup. CI runs the browser suite in Chromium, Firefox and WebKit.
+`npm test` runs project, planning, design, presentation, workbench, independent 4D scene and API checks. `npm run check` verifies script syntax and packaged/offline assets. `npm run test:browser` includes the original tool workflows and Studio+ interactions; `ENHANCEMENTS_ONLY=1` runs the focused Studio+ browser checks. `REFINEMENT_ONLY=1` verifies branding/home persistence, dock expansion, categorized search, floor management, responsive headers and 4D garden ownership/cleanup. `UNIFIED_ONLY=1` checks rendered labels in all themes, common panel bounds, built-in furniture geometry, resource ownership, render failure and real graphics-context restoration. CI runs the browser suite in Chromium, Firefox and WebKit.

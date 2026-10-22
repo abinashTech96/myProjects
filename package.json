@@ -4,7 +4,7 @@
   "version": "2.0.0",
   "description": "Static architectural planning workspace",
   "scripts": {
-    "test": "node --test tests/model.test.cjs tests/router.test.cjs tests/planning.test.cjs tests/design.test.cjs tests/server.test.cjs tests/workbench.test.cjs tests/workbench-server.test.cjs tests/presentation.test.cjs tests/landscape.test.cjs",
+    "test": "node --test tests/model.test.cjs tests/router.test.cjs tests/planning.test.cjs tests/design.test.cjs tests/server.test.cjs tests/workbench.test.cjs tests/workbench-server.test.cjs tests/presentation.test.cjs tests/landscape.test.cjs tests/scene4d.test.cjs",
     "test:browser": "node tests/browser-regression.cjs",
     "check": "node tests/check-scripts.cjs",
     "server": "node server/server.cjs",

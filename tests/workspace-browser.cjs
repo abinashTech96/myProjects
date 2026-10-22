@@ -60,11 +60,14 @@ module.exports = async ({ page, assert }) => {
   await page.waitForFunction(() => Workbench3D.enabled && Engine3D.buildingGroup);
   assert.equal(await page.evaluate(() => StudioUI.mode), '3d');
   await page.evaluate(() => { Workbench3D.disableEdit(); setWorkspaceLayout('2d'); });
+  await page.locator(".planning-entry").getByRole("button",{name:"Build",exact:true}).click();
   await page.locator('#studio-asset-kind').selectOption('openings');
   await page.getByRole('button', { name: 'Add door', exact: true }).click();
   assert.equal(await page.evaluate(() => fixtures.length), 1);
   await page.evaluate(() => { undoAction(); StudioUI.select(0); });
+  await page.locator(".planning-entry").getByRole("button",{name:"Build",exact:true}).click();
   await page.locator('#studio-asset-kind').selectOption('rooms');
+  await page.getByRole('button', { name: 'Properties', exact: true }).click();
   await page.getByRole("button", { name: "Close properties", exact: true }).click();
   assert.equal(await page.locator(".studio-inspector").isVisible(), false);
   await page.evaluate(() => { undoAction(); PlanningUI.collapse('catalog'); });
@@ -198,7 +201,7 @@ module.exports = async ({ page, assert }) => {
       await page.getByRole('button', { name: 'Close Build panel', exact: true }).click();
       assert.equal(await page.locator('.studio-inspector').isVisible(), true);
     } else {
-      await page.getByRole('button', { name: 'Close Build panel', exact: true }).click();
+      assert.equal(await page.locator('.studio-catalog').isVisible(), false, 'Selecting an asset replaces Build with Properties');
     }
     await page.getByRole('button', { name: 'Close properties', exact: true }).click();
     await page.evaluate(() => undoAction());

@@ -28,6 +28,10 @@ New workspaces start with widgets hidden; existing saved widget and panel choice
 - **Room Studio** edits the selected room's furniture in a sandbox. Save to Plan applies the changes as one undoable action; Discard leaves the plan unchanged. Its keyboard shortcuts are isolated from the background plan.
 - **Layout checks** lists boundary/overlap issues and the configured room rules. Click a geometry warning to select its element. Vastu guidance follows the selected compass orientation and active floor. The score averages applicable kitchen, puja, toilet and explicitly marked master-bedroom checks. Empty or unsupported floors show Not evaluated. Column markers are schematic symbols.
 
+## Upcoming UI arrangement
+
+The accepted next iteration is tracked in [UI arrangement backlog](UI_BACKLOG.md). It covers transparent mode controls, separate cross-shaped pan/orientation pads and a footer-attached Appearance panel. These items are pending implementation.
+
 ## Workspace themes and UI refinements
 
 Graphite, Pearl, Ocean and Sand now use distinct panel colors, drafting surfaces and contrasting 3D/4D backdrops. Compact button panels, theme preview cards and saved control spacing are joined by [37 further UI/usability improvements](UI_REFINEMENTS.md), including keyboard navigation, pointer/keyboard pane resizing, zoom feedback and more readable drawing labels.

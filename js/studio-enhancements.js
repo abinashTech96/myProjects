@@ -218,10 +218,12 @@ window.StudioEnhancements = {
     };
     const oldSync = Engine4D.syncModel;
     Engine4D.syncModel = function (...args) {
-      const version = this.modelVersion;
+      const previousModel = this.model;
       oldSync.apply(this, args);
-      if (this.model && version !== this.modelVersion)
+      if (this.model && previousModel !== this.model) {
         StudioEnhancements.prepareModel();
+        StudioEnhancements.applyPresentation();
+      }
     };
     const oldSun = DesignUI.sunApply;
     DesignUI.sunApply = function (...args) {
@@ -1494,12 +1496,11 @@ window.StudioEnhancements = {
           elements[data.roomIndex] ||
           elements.find((e) => e.id === data.elementId);
       if (
-        this.explosion &&
         Number.isInteger(data.floor) &&
         (source.parent === Engine3D.buildingGroup ||
           source.parent?.userData.workbench)
       )
-        copy.position.y += data.floor * this.explosion * SCALE;
+        copy.position.y = source.position.y + data.floor * this.explosion * SCALE;
       if (focused) {
         const owners = data.roomIndices || [data.roomIndex],
           belongs =

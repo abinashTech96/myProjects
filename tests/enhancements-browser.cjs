@@ -303,6 +303,15 @@ module.exports = async ({ page, assert }) => {
     return pair[1].position.y - pair[0].position.y;
   });
   assert.ok(offset > 60);
+  const rebuiltOffsets = await page.evaluate(() => {
+    const offset = () => {const pair=Engine4D.pairs.find(([source])=>source.userData.elementId==='upper-room' && source.parent===Engine3D.buildingGroup);return pair[1].position.y-pair[0].position.y;};
+    Engine4D.syncModel(true);
+    const afterRebuild=offset();
+    StudioEnhancements.applyPresentation();
+    return [afterRebuild,offset()];
+  });
+  assert.ok(rebuiltOffsets[0]>60,'Model rebuilds retain exploded floor placement before the next frame');
+  assert.equal(rebuiltOffsets[1],rebuiltOffsets[0],'Applying presentation twice cannot accumulate floor offsets');
   await page.evaluate(() => StudioEnhancements.setExplosion(0));
   await page.waitForTimeout(250);
   await page.evaluate(() => StudioEnhancements.sectionDialog());

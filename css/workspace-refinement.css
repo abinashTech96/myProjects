@@ -424,3 +424,8 @@ body[data-ui-theme] :is(.refined-menu, .refined-floors) [hidden] {
     animation: none;
   }
 }
+
+/* The pan pad remains operable when a pinned or focused dock overlays the canvas. */
+body.experience-shell[data-ui-theme] #planning-navigation {
+  z-index: 1301;
+}

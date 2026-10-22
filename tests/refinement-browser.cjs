@@ -1,5 +1,8 @@
 module.exports = async ({ page, assert }) => {
-  const original = await page.evaluate(() => ProjectState.capture());
+  const original = await page.evaluate(() => ({
+    project: ProjectState.capture(),
+    preferences: structuredClone(PlanningUI.preferences),
+  }));
   await page.evaluate(() => {
     const p = ProjectState.capture();
     ProjectState.apply(
@@ -46,6 +49,18 @@ module.exports = async ({ page, assert }) => {
   assert.equal(await toggle.getAttribute("aria-pressed"), "true");
   await page.mouse.move(700, 500);
   assert.equal(await toggle.getAttribute("aria-expanded"), "true");
+  assert.ok(
+    await page
+      .getByRole("button", { name: "Pan right", exact: true })
+      .evaluate((button) => {
+        const r = button.getBoundingClientRect();
+        return (
+          document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2) ===
+          button
+        );
+      }),
+    "An expanded dock cannot block the pan controls",
+  );
   await toggle.click();
   await page.evaluate(() => PlanningUI.toolsDialog());
   const allTools = await page.evaluate(() => PlanningUI.tools().length);
@@ -238,8 +253,10 @@ module.exports = async ({ page, assert }) => {
     "Home keeps the saved project",
   );
   await page.evaluate((original) => {
-    ProjectState.apply(original, { rebase: true });
-    PlanningUI.preferences.widgets = {};
+    ProjectState.apply(original.project, { rebase: true });
+    PlanningUI.preferences = original.preferences;
+    PlanningUI.savePrefs();
+    PlanningUI.applyPrefs();
     PlanningUI.refresh();
   }, original);
   console.log(

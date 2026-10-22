@@ -45,3 +45,8 @@ The garden is presentation-only and does not enter the editable model, selection
 undo history or construction exports. Instanced foliage limits draw calls; geometry,
 materials and maps are disposed when rebuilt or when leaving 4D. A constrained site
 may have lawn and shrubs without enough clearance for trees.
+
+Cross-browser follow-up: restored dialog focus does not expand the tool dock after
+pointer use, and pan controls stay reachable over an expanded dock. Rebuilding the
+4D scene retains exploded-floor placement without accumulating offsets. Browser
+fixtures restore saved widget preferences after testing home navigation.

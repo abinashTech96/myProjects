@@ -49,6 +49,22 @@ window.WorkspaceRefinement = {
     const plus = rail.querySelector(".studio-plus-entry span");
     if (plus) plus.textContent = "Studio+";
     let timer;
+    this.keyboardNavigation = false;
+    document.addEventListener(
+      "keydown",
+      (event) => {
+        if (["Tab", "ArrowUp", "ArrowDown"].includes(event.key))
+          this.keyboardNavigation = true;
+      },
+      true,
+    );
+    document.addEventListener(
+      "pointerdown",
+      () => {
+        this.keyboardNavigation = false;
+      },
+      true,
+    );
     rail.addEventListener("pointerenter", (e) => {
       if (e.pointerType === "mouse" && matchMedia("(hover:hover)").matches)
         timer = setTimeout(() => this.expand(true), 200);
@@ -58,8 +74,7 @@ window.WorkspaceRefinement = {
       if (!this.pinned) this.expand(false);
     });
     rail.addEventListener("focusin", (e) => {
-      if (e.target.matches(":focus-visible") && e.target !== toggle)
-        this.expand(true);
+      if (this.keyboardNavigation && e.target !== toggle) this.expand(true);
     });
     rail.addEventListener("focusout", () => {
       queueMicrotask(() => {

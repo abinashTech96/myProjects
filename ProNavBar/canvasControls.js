@@ -249,9 +249,10 @@ const CanvasControlsEngine = {
             
             // Relies on the createOrUpdateText helper from renderer2d
             if (typeof createOrUpdateText === 'function') {
-                createOrUpdateText(`txt-title-${i}`, gText, cx, cy - 8, labelText, '#ffffff', '12', true);
-                createOrUpdateText(`txt-dims-${i}`, gText, cx, cy + 6, dimsText, '#cbd5e1', '10', false);
-                createOrUpdateText(`txt-area-${i}`, gText, cx, cy + 20, areaText, '#94a3b8', '10', false);
+                const size = window.WorkspaceLayout?.appearancePrefs ? WorkspaceLayout.appearancePrefs.labelSize / 100 : 1;
+                createOrUpdateText(`txt-title-${i}`, gText, cx, cy - 8 * size, labelText, '#ffffff', 12 * size, true);
+                createOrUpdateText(`txt-dims-${i}`, gText, cx, cy + 6 * size, dimsText, '#cbd5e1', 10 * size, false);
+                createOrUpdateText(`txt-area-${i}`, gText, cx, cy + 20 * size, areaText, '#94a3b8', 10 * size, false);
             }
         }
     },

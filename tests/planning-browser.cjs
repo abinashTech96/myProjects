@@ -449,13 +449,16 @@ module.exports = async ({ page, context, assert, server }) => {
     "Builder alternatives, preservation, undo, stair designer, comparison, command search and drawing sets passed",
   );
   // Application scripts are local; cache/reload verifies a complete offline startup, not just a badge.
-  await page.waitForFunction(() => PlanningUI.offlineReady, { timeout: 15000 });
+  await page.waitForFunction(() => typeof PlanningUI !== "undefined" && PlanningUI.offlineReady, undefined, { timeout: 15000 });
   await page.evaluate(async () => {
     await navigator.serviceWorker.ready;
     await StorageEngine.saveToMemory();
   });
   await page.reload({ waitUntil: "networkidle" });
-  await page.waitForFunction(() => PlanningUI.ready);
+  await page.waitForFunction(() => typeof PlanningUI !== "undefined" && PlanningUI.ready).catch(async error => {
+    console.log('Reload boot diagnostics:', await page.evaluate(() => ({url:location.href,title:document.title,scripts:[...document.scripts].map(s=>s.src),text:document.body?.innerText.slice(0,300)})));
+    throw error;
+  });
   // Some browser protocols block offline navigation before the service worker runs.
   // Drop the origin connection instead so its worker's real network fallback is tested.
   const networkOutage = ["webkit", "firefox"].includes(
@@ -465,7 +468,7 @@ module.exports = async ({ page, context, assert, server }) => {
     if (networkOutage) server.archcadOffline = true;
     else await context.setOffline(true);
     await page.reload({ waitUntil: "domcontentloaded" });
-    await page.waitForFunction(() => PlanningUI.ready && Engine3D.scene);
+    await page.waitForFunction(() => typeof PlanningUI !== "undefined" && PlanningUI.ready && typeof Engine3D !== "undefined" && Engine3D.scene);
     assert.ok(await page.locator('[data-widget="converter"]').isVisible());
   } finally {
     server.archcadOffline = false;

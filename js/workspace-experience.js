@@ -112,7 +112,7 @@ const ViewportUI = {
       let panel = document.getElementById('advanced-view-panel');
       if (!panel) {
         panel = document.createElement('details');
-        panel.id = 'advanced-view-panel'; panel.open = !matchMedia('(max-width:600px)').matches;
+        panel.id = 'advanced-view-panel'; panel.open = false;
         panel.innerHTML = `<summary>4D · Advanced view</summary><p id="four-d-render-status" role="status">Loading presentation renderer…</p>
           <label>Rendering style<select id="four-d-engine-preset" onchange="Engine4D.setPreset(this.value)"><option value="daylight">Daylight</option><option value="interior">Warm interior</option><option value="studio">Studio</option></select></label>
           <div class="four-d-camera-tools" role="toolbar" aria-label="4D camera controls"><button class="studio-button" onclick="ViewportUI.orbit()">Orbit</button><button class="studio-button" onclick="ViewportUI.fit()">Fit</button><button class="studio-button" onclick="ViewportUI.viewsDialog()">Views</button><button class="studio-button" onclick="StudioUI.viewToolsDialog()">More</button></div>
@@ -212,11 +212,12 @@ const ViewportUI = {
     const camera = Engine3D.camera, aspect = Math.max(0.2,camera.aspect || 1), radius = Math.max(1,size.length()/2);
     // A bounding sphere keeps arbitrary rotated/irregular plans inside either projection.
     const halfFov = Math.atan(Math.tan((camera.fov || 60)*Math.PI/360)*Math.min(1,aspect));
-    const distance = radius/Math.sin(halfFov)*1.14;
+    let distance = radius/Math.sin(halfFov)*1.14;
     if (camera.isOrthographicCamera) {
       const half = radius*1.14/Math.min(1,aspect);
       camera.left=-half*aspect;camera.right=half*aspect;camera.top=half;camera.bottom=-half;camera.zoom=1;
     }
+    if (window.WorkspaceLayout?.ready) { const frame = WorkspaceLayout.frame(camera,center,direction,radius); distance=frame.distance;center.copy(frame.center); }
     camera.near=Math.max(0.1,radius/10000);camera.far=Math.max(10000,distance*10);camera.updateProjectionMatrix();
     const position=center.clone().addScaledVector(direction,distance);
     if (animated && !matchMedia('(prefers-reduced-motion: reduce)').matches) {

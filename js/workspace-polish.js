@@ -102,6 +102,7 @@ window.WorkspacePolish = {
         ),
       );
     this.grid();
+    if (window.WorkspaceLayout?.ready) WorkspaceLayout.applyAppearance();
   },
   grid() {
     if (!Engine3D.gridHelper) return;
@@ -122,6 +123,10 @@ window.WorkspacePolish = {
       StudioEnhancements.sectionHelper.material.color.set(
         style.getPropertyValue("--enh-accent").trim(),
       );
+    if (window.WorkspaceLayout?.ready) {
+      Engine3D.gridHelper.visible = WorkspaceLayout.appearancePrefs.grid3d;
+      for (const mat of [].concat(Engine3D.gridHelper.material)) mat.opacity = WorkspaceLayout.appearancePrefs.gridIntensity / 100;
+    }
     Engine3D.needsRender = true;
   },
   nav() {

@@ -16,6 +16,7 @@
     openings: {},
     clearance: 36,
     wallSnap: true,
+    sunlight: 100,
     eyeHeight: 64,
     walkSpeed: 1,
     lights: { enabled: true, intensity: 0.7, temperature: 3000 },
@@ -62,6 +63,7 @@
       if (!fixtures.has(id)) delete d.openings[id];
       else P.finite(fraction, "Opening position", 0, 1);
     }
+    P.finite(d.sunlight, "Sunlight strength", 0, 100);
     d.wallSnap = d.wallSnap !== false;
     P.finite(d.clearance, "Walking clearance", 6, 120);
     P.finite(d.eyeHeight, "Eye height", 36, 90);

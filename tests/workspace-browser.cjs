@@ -26,11 +26,9 @@ module.exports = async ({ page, assert }) => {
   assert.equal(await page.evaluate(() => !!Engine3D.scene), false);
   await page.getByRole('button', { name: 'Close dialog', exact: true }).click();
   await page.evaluate(() => { ProjectState.undo(); ProjectState.undo(); });
-  await page.getByRole('button', { name: 'Pan', exact: true }).click();
   const panX = await page.evaluate(() => CanvasState.panX);
-  await page.getByRole('button', { name: 'Right →', exact: true }).click();
+  await page.getByRole('button', { name: 'Pan right', exact: true }).click();
   assert.notEqual(await page.evaluate(() => CanvasState.panX), panX);
-  await page.getByRole('button', { name: 'Close dialog', exact: true }).click();
   await page.evaluate(() => StudioUI.fitPlan());
   await page.getByRole('button', { name: 'Objects', exact: true }).click();
   assert.equal(await page.locator('.workspace-object-list').count(), 1);
@@ -44,7 +42,7 @@ module.exports = async ({ page, assert }) => {
   assert.equal(await page.evaluate(() => Number(document.getElementById('b-floors').value)), 2);
   await page.getByRole('button', { name: 'Close dialog', exact: true }).click();
   await page.evaluate(() => undoAction());
-  await page.locator(".planning-entry button").getByText("Build", { exact: true }).click();
+  await page.locator(".planning-entry").getByRole("button",{name:"Build",exact:true}).click();
   assert.equal(await page.locator(".studio-catalog").isVisible(), true);
   await page.locator("#studio-assets .studio-asset").first().click();
   assert.equal(await page.locator(".studio-inspector").isVisible(), true);
@@ -70,7 +68,7 @@ module.exports = async ({ page, assert }) => {
   await page.getByRole("button", { name: "Close properties", exact: true }).click();
   assert.equal(await page.locator(".studio-inspector").isVisible(), false);
   await page.evaluate(() => { undoAction(); PlanningUI.collapse('catalog'); });
-  await page.locator(".planning-entry button").getByText("Tools", { exact: true }).click();
+  await page.locator(".planning-entry").getByRole("button",{name:"Tools",exact:true}).click();
   assert.ok(await page.locator(".planning-tool-list button").count() > 10);
   await page.locator('.workspace-tool-sections').getByRole('button', { name: 'Design', exact: true }).click();
   assert.equal(await page.locator('.design-tool-grid button').count(), 36);
@@ -179,14 +177,14 @@ module.exports = async ({ page, assert }) => {
       assert.ok(box.x >= 0 && box.x + box.width <= width + 1, 'Header button fits viewport');
       assert.ok(box.y + box.height <= header.y + header.height + 1, 'Header button fits header');
     }
-    await page.locator('.planning-entry button').getByText('Build', { exact: true }).click();
+    await page.locator('.planning-entry').getByRole('button',{name:'Build',exact:true}).click();
     assert.equal(await page.locator('.studio-catalog').isVisible(), true);
     await page.locator('#studio-assets .studio-asset').first().click();
     assert.equal(await page.locator('.studio-inspector').isVisible(), true);
     if (width <= 850) {
       if (width === 390) await page.screenshot({ path: '/tmp/archcad-restored-selected-mobile.png' });
       assert.equal(await page.locator('.studio-catalog').isVisible(), false);
-      await page.locator('.planning-entry button').getByText('Build', { exact: true }).click();
+      await page.locator('.planning-entry').getByRole('button',{name:'Build',exact:true}).click();
       assert.equal(await page.locator('.studio-catalog').isVisible(), true);
       assert.equal(await page.locator('.studio-inspector').isVisible(), false);
       const selected = await page.evaluate(() => selectedElIndex);
@@ -195,7 +193,7 @@ module.exports = async ({ page, assert }) => {
       assert.equal(await page.evaluate(() => selectedElIndex), selected);
       assert.equal(await page.evaluate(() => fixtures.length), 1);
       await page.evaluate(() => { undoAction(); StudioUI.select(0); });
-      await page.locator('.planning-entry button').getByText('Build', { exact: true }).click();
+      await page.locator('.planning-entry').getByRole('button',{name:'Build',exact:true}).click();
       await page.locator('#studio-asset-kind').selectOption('rooms');
       await page.getByRole('button', { name: 'Close Build panel', exact: true }).click();
       assert.equal(await page.locator('.studio-inspector').isVisible(), true);

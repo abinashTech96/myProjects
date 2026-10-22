@@ -145,6 +145,7 @@ window.Engine3D = {
 
             let controlsChanged = false;
             if (typeof ViewportUI !== 'undefined') ViewportUI.tick(time);
+            if (window.WorkspaceLayout?.ready) WorkspaceLayout.applySunlight('3d');
             if (this.isWalkthrough && this.fpsControls.isLocked && !(typeof StudioEnhancements!=="undefined" && StudioEnhancements.walking)) {
                 // Physics & Friction
                 velocity.x -= velocity.x * 10.0 * delta;

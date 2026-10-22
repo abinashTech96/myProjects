@@ -405,6 +405,9 @@ build3DFixtures = function (SCALE, I, WALL_HEIGHT, useReal3D) {
 const rebuildModel = generate3DModel;
 generate3DModel = function () {
   if (!Engine3D.scene) return;
+  // Sun strength changes light intensity only, so retain the existing meshes.
+  const { sunlight, ...presentationGeometry } = ProjectState.meta.design.presentation;
+  const renderDesign = { ...ProjectState.meta.design, presentation: presentationGeometry };
   const signature = JSON.stringify({
     elements,
     fixtures,
@@ -415,7 +418,7 @@ generate3DModel = function () {
       (k) => document.getElementById(k)?.value,
     ),
     planning: ProjectState.meta.planning,
-    design: ProjectState.meta.design,
+    design: renderDesign,
     walls: ProjectState.meta.wallSettings,
     overrides: ProjectState.meta.wallOverrides,
     texture: CanvasControlsEngine.isReal3D() || StudioUI.mode === "4d",

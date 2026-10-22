@@ -443,7 +443,12 @@ const PlanningUI = {
           `<button type="button" class="planning-widget" data-widget="${k}" onclick="PlanningUI.openWidget('${k}')" title="${this.esc(w.title)}" aria-label="${this.esc(w.title)}" aria-haspopup="dialog"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${icons[k]}</svg></button>`,
       )
       .join("");
-    if (dock.innerHTML !== html) dock.innerHTML = html;
+    // Compare the source string, since browsers normalize SVG innerHTML.
+    // Replacing identical icons on refresh would discard keyboard focus.
+    if (dock.widgetHTML !== html) {
+      dock.innerHTML = html;
+      dock.widgetHTML = html;
+    }
   },
   openWidget(key) {
     const widget = this.widgetActions?.[key];

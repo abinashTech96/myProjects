@@ -10,7 +10,8 @@ module.exports = async ({ page, assert }) => {
     .getByRole("button", { name: "Studio upgrades", exact: true })
     .click();
   assert.equal(await page.locator(".enhancement-hub button").count(), 18);
-  await page.getByRole("button", {name:"Theme & spacing",exact:true}).click();
+  await page.evaluate(() => StudioEnhancements.close());
+  await page.getByRole("button", {name:"Appearance",exact:true}).click();
   assert.equal(await page.locator("[data-theme-choice]").count(),4);
   const colors = new Set(), canvasColors = new Set();
   for (const theme of ["graphite", "pearl", "ocean", "sand"]) {
@@ -289,7 +290,10 @@ module.exports = async ({ page, assert }) => {
     StudioEnhancements.close();
     StudioEnhancements.setExplosion(60);
   });
-  await page.waitForTimeout(250);
+  await page.waitForFunction(() => {
+    const pair = Engine4D.pairs.find(([source]) => source.userData.elementId === 'upper-room' && source.parent === Engine3D.buildingGroup);
+    return pair && pair[1].position.y - pair[0].position.y > 60;
+  });
   const offset = await page.evaluate(() => {
     const pair = Engine4D.pairs.find(
       ([s]) =>

@@ -416,6 +416,10 @@ const Widget3DEngine = {
             if (Engine3D.scene.fog) Engine3D.scene.fog.color.copy(Engine3D.scene.background);
         }
         
+        if (window.WorkspaceLayout?.ready && Engine3D.sunLight) {
+            WorkspaceLayout.sunRecords.delete(Engine3D.sunLight);
+            WorkspaceLayout.applySunlight('3d');
+        }
         if (Engine3D.buildingGroup) {
             Engine3D.buildingGroup.traverse(child => {
                 if (child.isPointLight) child.intensity = this.isNightMode ? 1.0 : 0;

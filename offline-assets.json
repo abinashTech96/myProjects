@@ -100,5 +100,7 @@
   "./js/studio-enhancements.js",
   "./css/studio-enhancements.css",
   "./css/workspace-polish.css",
-  "./js/workspace-polish.js"
+  "./js/workspace-polish.js",
+  "./css/workspace-layout.css",
+  "./js/workspace-layout.js"
 ]

@@ -6,7 +6,7 @@ module.exports = async ({page,assert}) => {
     ProjectState.apply({...p,elements:[{id:'legacy-bedroom',type:'bedroom',customName:'Bedroom 1',x:width-50,y:0,w:120,h:147,floor:2},{id:'constraint-source-room',type:'bedroom',x:20,y:200,w:60,h:60,floor:2},{id:'constraint-target-room',type:'bedroom',x:100,y:200,w:60,h:60,floor:2}],fixtures:[{id:'legacy-door',type:'door',roomId:0,edge:'left',offset:36,size:30},{id:'legacy-window',type:'window',roomId:0,edge:'right',offset:50,size:36}],floorCount:3,currentFloor:2},{rebase:true});
     setWorkspaceLayout('2d');StudioUI.select(0);updateCanvas();
   });
-  await page.getByText('Appearance',{exact:true}).click();
+  await page.locator('#studio-properties').getByText('Appearance',{exact:true}).click();
   const panel=page.locator('#studio-properties');
   await panel.locator('input[type="color"]').fill('#d65a72');
   assert.equal(await page.evaluate(()=>elements[0].customColor),'#d65a72','Changing color must not validate pre-existing plot placement');
@@ -48,6 +48,7 @@ module.exports = async ({page,assert}) => {
   assert.equal(await page.evaluate(()=>[...Engine4D.materials].some(m=>m.isMeshPhysicalMaterial)),true,'The presentation model uses physical materials');
   assert.equal(await page.evaluate(()=>[...Engine4D.materials].some(m=>m.transmission>.8)),true,'Window panes use physical glass transmission');
   assert.equal(await page.evaluate(()=>Engine3D.elementObjects.get('legacy-bedroom').children[0].material.isMeshPhysicalMaterial || false),false,'4D never mutates the editable 3D materials');
+  await page.locator('#advanced-view-panel summary').click();
   for(const preset of ['interior','studio','daylight']) {
     await page.locator('#four-d-engine-preset').selectOption(preset);
     assert.equal(await page.evaluate(()=>Engine4D.preset),preset);
@@ -88,7 +89,7 @@ module.exports = async ({page,assert}) => {
   assert.equal(await page.locator('#advanced-view-panel').isVisible(),false);
   assert.equal(await page.evaluate(()=>Engine4D.active),false,'Leaving 4D stops its rendering pipeline');
   assert.equal(await page.locator('#four-d-canvas').isVisible(),false);
-  assert.equal(await page.locator('#planning-navigation').isVisible(),true,'Plan navigation is retained in other views');
+  assert.equal(await page.locator('#planning-navigation').isVisible(),false,'3D keeps plan-only navigation out of the viewport');
   assert.equal(shaderErrors.length,0,shaderErrors.join('\n'));
   page.off('pageerror',errorHandler);page.off('console',consoleHandler);
 
@@ -121,7 +122,10 @@ module.exports = async ({page,assert}) => {
     if(width===1440){
       await page.evaluate(()=>StudioUI.select(0));
       const originalX=await page.evaluate(()=>elements[0].x);
-      await buttons.first().focus();await buttons.first().press('ArrowDown');
+      await buttons.first().focus();
+      await page.evaluate(() => PlanningUI.refresh());
+      assert.equal(await buttons.first().evaluate(b => document.activeElement === b),true,'Refreshing unchanged widgets preserves focus');
+      await buttons.first().press('ArrowDown');
       assert.equal(await buttons.nth(1).evaluate(b=>document.activeElement===b),true,'Arrow keys navigate the widget rail');
       assert.equal(await page.evaluate(()=>elements[0].x),originalX);
       await page.evaluate(()=>StudioUI.closeProperties());

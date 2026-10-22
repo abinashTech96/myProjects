@@ -301,7 +301,7 @@ module.exports = async ({ page, assert }) => {
   ]) {
     await page.setViewportSize(size);
     await page.evaluate(() => StudioEnhancements.themeDialog());
-    const box = await page.locator("#studio-dialog").boundingBox();
+    const box = await page.locator("#workspace-appearance").boundingBox();
     assert.ok(
       box.x >= 0 &&
         box.y >= 0 &&
@@ -309,8 +309,8 @@ module.exports = async ({ page, assert }) => {
         box.y + box.height <= size.height + 1,
     );
     assert.equal(
-      await page.locator("#studio-dialog").getAttribute("aria-labelledby"),
-      "workspace-dialog-title",
+      await page.locator("#workspace-appearance").getAttribute("aria-labelledby"),
+      "footer-appearance-title",
     );
     await page.screenshot({
       animations: "disabled",

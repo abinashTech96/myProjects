@@ -116,3 +116,10 @@ test("sliding and open doors do not generate hinged swing warnings", () => {
     false,
   );
 });
+
+test("sunlight strength persists, defaults for older projects, and rejects invalid percentages", () => {
+  const p=project(); assert.equal(p.design.presentation.sunlight,100);
+  p.design.presentation.sunlight=37;
+  assert.equal(P.normalize(JSON.parse(JSON.stringify(p))).design.presentation.sunlight,37);
+  for(const invalid of [-1,101,NaN,"50"]) assert.throws(()=>M.validate({...M.defaults(),sunlight:invalid},p),/Sunlight/);
+});

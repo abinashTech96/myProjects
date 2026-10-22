@@ -43,7 +43,7 @@ body[data-ui-theme="sand"] {
   --enh-shine: #fff8;
 }
 body[data-ui-theme]
-  :is(
+  :where(
     .studio-header,
     .studio-status,
     .studio-catalog,

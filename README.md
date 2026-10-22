@@ -30,7 +30,7 @@ New workspaces start with widgets hidden; existing saved widget and panel choice
 
 ## Upcoming UI arrangement
 
-The accepted next iteration is tracked in [UI arrangement backlog](UI_BACKLOG.md). It covers transparent mode controls, separate cross-shaped pan/orientation pads and a footer-attached Appearance panel. These items are pending implementation.
+The consolidated navigation release implements the [23 accepted UI arrangement items](UI_BACKLOG.md): transparent mode buttons, separate cross-shaped pan/orientation pads, a slim tool/widget rail, one floor selector, pinned panels and per-mode layouts. See [footer controls and workspace layout](STUDIO_PLUS.md#footer-controls-and-workspace-layout) for usage.
 
 ## Workspace themes and UI refinements
 
@@ -38,7 +38,7 @@ Graphite, Pearl, Ocean and Sand now use distinct panel colors, drafting surfaces
 
 ## Studio+ upgrades
 
-**✦ Studio+** beside Search opens eighteen coordinated editing and presentation tools, plus Graphite, Pearl, Ocean and Sand themes. Room focus, separate floor/wall/ceiling finishes, precise placement, clearance checks, linked 2D/4D, animated openings, walkthrough, exploded floors, sun study, draggable sections and measurement overlays share the existing project and history. See [Studio+ guide](STUDIO_PLUS.md) for all eighteen tools, saved versus temporary settings, and practical limits.
+**✦ Studio+** on the left rail opens eighteen coordinated editing and presentation tools. Footer **Appearance** provides Graphite, Pearl, Ocean and Sand themes. Room focus, separate floor/wall/ceiling finishes, precise placement, clearance checks, linked 2D/4D, animated openings, walkthrough, exploded floors, sun study, draggable sections and measurement overlays share the existing project and history. See [Studio+ guide](STUDIO_PLUS.md) for all eighteen tools, saved versus temporary settings, and practical limits.
 
 ## Planning tools
 

@@ -105,7 +105,7 @@ window.StudioEnhancements = {
     if (entry)
       entry.insertAdjacentHTML(
         "beforeend",
-        '<button class="studio-button studio-plus-entry" title="Studio+ tools and themes" aria-label="Studio upgrades" onclick="StudioEnhancements.hub()">✦</button>',
+        '<button class="studio-button studio-plus-entry" title="Studio+ tools" aria-label="Studio upgrades" onclick="StudioEnhancements.hub()">✦</button>',
       );
     const oldLayout = window.setWorkspaceLayout;
     window.setWorkspaceLayout = function (mode) {
@@ -355,7 +355,7 @@ window.StudioEnhancements = {
     ];
     this.show(
       "Studio+ · Design and presentation",
-      `<p>Choose a tool or personalize your workspace.</p><div class="enhancement-quick">${this.b("Theme & spacing", "StudioEnhancements.themeDialog()")}</div><div class="enhancement-hub">${rows.map(([title, action]) => this.b(title, action)).join("")}</div>`,
+      `<p>Choose a tool or personalize your workspace.</p><div class="enhancement-hub">${rows.map(([title, action]) => this.b(title, action)).join("")}</div>`,
     );
   },
   theme(value, persist = true) {
@@ -388,12 +388,14 @@ window.StudioEnhancements = {
     if (window.Engine3D?.scene) Engine3D.needsRender = true;
   },
   themeDialog() {
+    if (window.WorkspaceLayout?.ready) return WorkspaceLayout.openFooter("appearance");
     this.show(
       "Workspace themes",
       `<p>Distinct panels, a readable drafting canvas and contrasting model backdrops. Choose a theme to preview it immediately.</p><div class="enhancement-theme-row">${window.WorkspacePolish ? WorkspacePolish.themePicker() : this.themes.map((t) => this.b(t, `StudioEnhancements.theme('${t}')`)).join("")}</div>${window.WorkspacePolish ? WorkspacePolish.densityControls() : ""}`,
     );
   },
   close() {
+    if (window.WorkspaceLayout?.ready) WorkspaceLayout.closeFooter(false);
     document.getElementById("studio-dialog")?.close();
   },
   async focusSelection() {
@@ -1615,6 +1617,7 @@ window.StudioEnhancements = {
       Engine4D.key.intensity = 3.2 * factor;
       Engine4D.fill.intensity = factor > 0 ? 1.15 : 0.12;
     }
+    if (window.WorkspaceLayout?.ready) WorkspaceLayout.applySunlight("4d");
   },
   afterRender(ms) {
     const now = performance.now(),

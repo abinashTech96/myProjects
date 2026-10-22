@@ -1,6 +1,6 @@
 # Studio+ tools and themes
 
-Open **✦ Studio+** beside Search to access the coordinated editing and presentation tools. The original Build, Tools, Design, Pro, Widgets and Properties workflows remain available. The 4D presentation panel and Properties also provide shortcuts to relevant Studio+ actions.
+Open **✦ Studio+** on the left rail to access the coordinated editing and presentation tools. The original Build, Tools, Design, Pro, Widgets and Properties workflows remain available. The 4D presentation panel and Properties also provide shortcuts to relevant Studio+ actions.
 
 | # | Improvement | How to use it |
 | --- | --- | --- |
@@ -25,13 +25,23 @@ Open **✦ Studio+** beside Search to access the coordinated editing and present
 
 ## Four themes
 
-**Graphite**, **Pearl**, **Ocean** and **Sand** are available in Studio+ and the theme menu. Theme choices persist on the current device and affect the workspace interface and the 2D / 3D / 4D canvas background independently of model materials and lighting. Rendering presets and sun study preserve the chosen canvas theme. Each theme now uses distinct 2D, 3D and 4D backdrops; the theme menu includes preview cards and saved control spacing. See [the UI refinement checklist](UI_REFINEMENTS.md).
+**Graphite**, **Pearl**, **Ocean** and **Sand** are available in footer **Appearance**. Theme choices persist on the current device and affect the workspace interface and the 2D / 3D / 4D canvas background independently of model materials and lighting. Rendering presets and sun study preserve the chosen canvas theme. Each theme now uses distinct 2D, 3D and 4D backdrops; Appearance includes preview cards and saved control spacing. See [the UI refinement checklist](UI_REFINEMENTS.md).
+
+## Footer controls and workspace layout
+
+- **Appearance** opens a panel attached above the footer: four themes, Compact / Comfortable spacing, canvas contrast, separate 2D / 3D / 4D backgrounds per theme, 2D/3D grid visibility and intensity, drawing-label visibility and room-label size. Reset theme backgrounds restores the active palette; Restore layout resets panels and split proportions. Workspace theme controls have moved here from Studio+ and View tools.
+- **Sunlight** opens 0 / 25 / 50 / 75 / 100% direct-sun brightness presets, a custom slider and number field. Scroll over either custom control for 1% steps; Shift-scroll uses 5%. At 0% direct sunlight is off while ambient/interior lighting remains. Percentage scales the current lighting preset; it does not represent time. Sun position & time opens the separate location/date/time study. Changes persist in project export/import and history and affect both rendering engines.
+- The small **cube + 4D** launcher opens the advanced presentation panel. Clicking it again, clicking the canvas, or pressing Escape closes it. Rendering presets and all advanced features remain available inside.
+- The header groups file/history actions, transparent workspace modes and one current-floor selector. The left rail retains Build, Tools, Widgets, Settings, Search and Studio+, with Objects and selected-element Properties access. Enabled widget icons occupy the lower rail; click one to see its data.
+- The pan pad has Up / Left / Fit / Right / Down. Click a step, hold to continue, or hold Shift for larger movements. It pans the plan; the separate camera cross selects Top / Left / ISO / Right / Front. Footer zoom applies to the plan in 2D and Split; Fit selection frames the active view.
+- Pin Build or Properties to keep it visible. Unpinned panels dismiss on canvas interaction without clearing the selection; use their rail buttons to reopen them. Panel choices and split proportions are remembered independently for each workspace mode. Model framing allows for the open advanced panel.
+- Footer panels close on outside click or Escape, keep the model visible and restore opener focus when closed from inside. Narrow screens use bounded, internally scrolling panels above the footer.
 
 ## Saving and view state
 
 Surface assignments, opening fractions, clearance settings, wall-snap preference, eye height, speed and interior light settings are saved with the project. They participate in native import/export and version history. Design alternatives capture those settings too. Preview changes require Apply before they are saved.
 
-Room focus, exploded spacing, section handles, linked canvas layout, walkthrough navigation and clean focus mode are temporary viewing tools. They do not move the architectural model. Theme and adaptive-quality preferences are stored on the device.
+Room focus, exploded spacing, section handles, linked canvas layout, walkthrough navigation and clean focus mode are temporary viewing tools. They do not move the architectural model. Theme, canvas appearance, panel pins, per-mode layouts and adaptive-quality preferences are stored on the device. Direct sunlight percentage is saved with the project and participates in undo/redo.
 
 ## Practical limits
 

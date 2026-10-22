@@ -83,6 +83,7 @@ if (!["chromium", "firefox", "webkit"].includes(browserEngine))
     }),
     page = await context.newPage(),
     errors = [];
+  page.setDefaultTimeout(Number(process.env.BROWSER_TIMEOUT_MS) || 30000);
   const assets = {
     "three.min.js": "build/three.min.js",
     "OrbitControls.js": "examples/js/controls/OrbitControls.js",
@@ -137,6 +138,11 @@ if (!["chromium", "firefox", "webkit"].includes(browserEngine))
       errors,
     );
     assert.equal(errors.length, 0, "Startup must have no uncaught errors");
+    if (process.env.LAYOUT_ONLY) {
+      await require('./layout-browser.cjs')({page,context,assert});
+      assert.equal(errors.length,0,errors.join('\n'));
+      return;
+    }
     if (process.env.POLISH_ONLY) {
       await require('./polish-browser.cjs')({page,context,assert});
       assert.equal(errors.length,0,errors.join('\n'));
@@ -193,11 +199,13 @@ if (!["chromium", "firefox", "webkit"].includes(browserEngine))
       assert.equal(errors.length, 0, errors.join("\n"));
       return;
     }
-    await require("./workspace-browser.cjs")({ page, context, assert });
-    await require("./inspector-browser.cjs")({page,assert});
-    await require("./property-widgets-browser.cjs")({page,assert});
-    await require('./enhancements-browser.cjs')({page,context,assert});
-    await require('./polish-browser.cjs')({page,context,assert});
+    // Each module owns its fixture; release its WebGL contexts before the next.
+    if (!process.env.CORE_ONLY) for (const suite of ["workspace", "inspector", "property-widgets", "enhancements", "polish", "layout"]) {
+      await require(`./${suite}-browser.cjs`)({page,context,assert});
+      assert.equal(errors.length,0,errors.join("\n"));
+      await page.reload({waitUntil:"networkidle"});
+      await page.waitForFunction(() => window.WorkspaceLayout?.ready && StudioUI.ready && !StorageEngine.loading);
+    }
     await page.evaluate(() => {
       ProjectState.apply(
         { elements: [], fixtures: [], floorCount: 1 },

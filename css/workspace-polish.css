@@ -194,7 +194,7 @@ body[data-ui-theme] textarea::placeholder {
   opacity: 1;
 }
 body[data-ui-theme]
-  :is(
+  :where(
     .studio-view-modes,
     #planning-navigation,
     #viewport-toolbar,
@@ -561,7 +561,8 @@ body[data-ui-theme] #studio-toast[data-kind="error"] {
   gap: 8px;
   margin: 10px 0;
 }
-body[data-ui-theme] .theme-card {
+body.experience-shell[data-ui-theme] .studio-button.theme-card {
+  transition: none;
   text-align: left;
   display: grid;
   gap: 5px;

@@ -1,6 +1,6 @@
 # Workspace contrast and UI refinement release
 
-This release addresses the supplied screenshots and adds **37 further UI/usability improvements**. Open ✦ → Theme & spacing for the four visual previews and the Compact / Comfortable spacing preference. All original planning workflows and the eighteen Studio+ tools remain available.
+This release addresses the supplied screenshots and adds **37 further UI/usability improvements**. Open footer Appearance for the four visual previews and the Compact / Comfortable spacing preference. All original planning workflows and the eighteen Studio+ tools remain available.
 
 ## Screenshot fixes
 
@@ -10,12 +10,12 @@ This release addresses the supplied screenshots and adds **37 further UI/usabili
 | Canvas separation | Every theme has a separate 2D drafting surface, 3D model stage and 4D presentation backdrop: twelve canvas palettes. Model materials remain project settings. |
 | Model visibility | Pearl and Sand use darker neutral model stages so pale walls are distinct from the background. 4D converts the backdrop to linear color before its gamma pass. |
 | Button shadows | Small controls use crisp borders instead of a shadow around every button. Containers retain a light raised edge. |
-| Mode switch | 2D / Split / 3D / 4D share one themed segmented control with a filled active state. The black surround is removed in light themes. |
-| Plan navigation | Zoom is grouped separately from object/pan and fit actions; the bar uses smaller gaps and no nested heavy shadows. |
+| Mode switch | 2D / Split / 3D / 4D use individual buttons with a filled active state inside a fully transparent container. |
+| Plan navigation | One plan zoom group sits in the footer; a separate transparent directional pan pad surrounds Fit. |
 | Viewport toolbar | Orbit, Walk, Fit, Views, Render and More use one compact surface with consistent control heights. |
-| Orientation controls | The large floating cross becomes a narrow orientation strip with a clear current view. |
-| 4D panel | A narrower panel, tighter fields and button grids, restrained shadow and bounded internal scrolling leave more model visible. |
-| Floor tabs and grid | Floor tabs follow the chosen theme and the 3D grid uses lower opacity and a theme-specific color. |
+| Orientation controls | Top sits above Left–ISO–Right, with Front below; individual buttons sit on a transparent cross container. |
+| 4D panel | A compact cube + 4D launcher opens a bounded panel with tighter fields and button grids. |
+| Floor tabs and grid | One current-floor selector replaces duplicate tabs; the grid uses theme-specific color and footer appearance controls. |
 
 ## Thirty-seven additional improvements
 
@@ -32,7 +32,7 @@ This release addresses the supplied screenshots and adds **37 further UI/usabili
 | 9 | Pointer pane resizing | Pointer capture supports mouse, pen and touch drags, including cancellation. |
 | 10 | Split reset | Double-click the divider to restore equal panes. |
 | 11 | Full-width view restoration | Leaving Split or linked view removes temporary pane sizing. |
-| 12 | Live zoom percentage | The navigation bar shows the current plan zoom. |
+| 12 | Live zoom percentage | The footer shows the current plan zoom in 2D and Split. |
 | 13 | One-click zoom reset | Click the zoom percentage to return to 100%. |
 | 14 | Zoom boundary feedback | Zoom-in/out disable at their supported limits. |
 | 15 | Selection-fit guidance | Fit selection disables when no element on the current floor is selected, with an explanatory tooltip. |
@@ -64,3 +64,9 @@ This release addresses the supplied screenshots and adds **37 further UI/usabili
 `POLISH_ONLY=1 npm run test:browser` exercises theme contrast, twelve canvas palettes, actual 3D/4D framebuffer colors, geometry preservation, density, keyboard modes, divider dragging/resizing, zoom limits/reset, catalog recovery/units, reduced motion and responsive dialogs. Screenshots cover all four themes in 2D, 3D and 4D plus narrow and short viewports. The normal browser suite runs these checks alongside the original tool workflows and Studio+ regression checks.
 
 `npm test` covers the portable models and APIs; `npm run check` verifies JavaScript, local assets, the offline manifest and bundled renderer integrity. CI additionally runs Chromium, Firefox and WebKit.
+
+The subsequent [23-item arrangement release](UI_BACKLOG.md) consolidates these controls. `LAYOUT_ONLY=1 npm run test:browser` covers footer placement, cross controls, custom sunlight/history, actual light intensities in both engines, compact 4D framing, per-mode panel memory and responsive layouts.
+
+`CORE_ONLY=1 npm run test:browser` runs the shared editing, export, planning, design and workbench scenarios alone. The default command combines these with the independent UI suites, reloading between those fixtures to release their WebGL contexts.
+
+For software-rendered browser runs, `BROWSER_TIMEOUT_MS=90000` permits slower graphics operations; the normal test timeout stays at 30 seconds.

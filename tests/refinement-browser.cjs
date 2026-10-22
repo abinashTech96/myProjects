@@ -61,7 +61,49 @@ module.exports = async ({ page, assert }) => {
       }),
     "An expanded dock cannot block the pan controls",
   );
+  await page.evaluate(() => WorkspacePolish.openBuild());
+  await page.waitForTimeout(300);
+  assert.ok(
+    await page
+      .locator("#studio-assets .studio-asset")
+      .first()
+      .evaluate((button) => {
+        const r = button.getBoundingClientRect();
+        return (
+          document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2) ===
+          button
+        );
+      }),
+    "A pinned dock cannot cover Build assets",
+  );
+  await page.evaluate(() => WorkspaceLayout.hideCatalog());
   await toggle.click();
+  const build = page
+    .locator(".planning-entry")
+    .getByRole("button", { name: "Build", exact: true });
+  await build.hover();
+  await page.waitForTimeout(480);
+  await build.click();
+  await page.waitForTimeout(300);
+  assert.equal(
+    await toggle.getAttribute("aria-expanded"),
+    "false",
+    "Opening a tool closes the temporary expansion",
+  );
+  assert.ok(
+    await page
+      .locator("#studio-assets .studio-asset")
+      .first()
+      .evaluate((button) => {
+        const r = button.getBoundingClientRect();
+        return (
+          document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2) ===
+          button
+        );
+      }),
+    "Build assets remain reachable after opening from the expanded dock",
+  );
+  await page.evaluate(() => WorkspaceLayout.hideCatalog());
   await page.evaluate(() => PlanningUI.toolsDialog());
   const allTools = await page.evaluate(() => PlanningUI.tools().length);
   await page.getByRole("button", { name: "All", exact: true }).click();

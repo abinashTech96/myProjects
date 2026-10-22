@@ -268,11 +268,12 @@ module.exports = async ({ page, assert }) => {
     ),
   );
   await page.evaluate(() => StudioEnhancements.close());
-  await page.evaluate(() => {
+  const movingQuality = await page.evaluate(() => {
     StudioEnhancements.navigation(true);
+    return {scale:Engine4D.dynamicScale,ao:Engine4D.ao.enabled};
   });
-  await page.waitForFunction(() => Engine4D.dynamicScale < 1);
-  assert.equal(await page.evaluate(() => Engine4D.ao.enabled), false);
+  assert.ok(movingQuality.scale < 1);
+  assert.equal(movingQuality.ao, false);
   await page.evaluate(() => StudioEnhancements.navigation(false));
   await page.waitForFunction(() => Engine4D.dynamicScale === 1);
   await page.evaluate(() => StudioEnhancements.interiorDialog());

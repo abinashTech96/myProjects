@@ -65,6 +65,10 @@ window.WorkspaceRefinement = {
       },
       true,
     );
+    main.addEventListener("click", () => {
+      clearTimeout(timer);
+      if (!this.pinned) this.expand(false);
+    });
     rail.addEventListener("pointerenter", (e) => {
       if (e.pointerType === "mouse" && matchMedia("(hover:hover)").matches)
         timer = setTimeout(() => this.expand(true), 200);
@@ -114,6 +118,7 @@ window.WorkspaceRefinement = {
   },
   expand(value) {
     document.body.classList.toggle("tool-dock-expanded", value);
+    document.body.classList.toggle("tool-dock-pinned", !!this.pinned);
     const toggle = document.getElementById("tool-dock-toggle");
     toggle.setAttribute("aria-expanded", String(value));
     toggle.setAttribute("aria-pressed", String(!!this.pinned));

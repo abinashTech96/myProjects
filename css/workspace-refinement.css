@@ -429,3 +429,8 @@ body[data-ui-theme] :is(.refined-menu, .refined-floors) [hidden] {
 body.experience-shell[data-ui-theme] #planning-navigation {
   z-index: 1301;
 }
+
+/* A deliberately pinned dock reserves its width, keeping Build assets exposed. */
+body.studio-shell[data-ui-theme].tool-dock-pinned {
+  --layout-rail: 182px;
+}

@@ -50,3 +50,6 @@ Cross-browser follow-up: restored dialog focus does not expand the tool dock aft
 pointer use, and pan controls stay reachable over an expanded dock. Rebuilding the
 4D scene retains exploded-floor placement without accumulating offsets. Browser
 fixtures restore saved widget preferences after testing home navigation.
+
+Opening a tool collapses the temporary dock; a pinned dock reserves its width so
+Build assets and the drawing remain accessible.

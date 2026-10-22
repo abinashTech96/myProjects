@@ -682,7 +682,7 @@ window.WorkspaceLayout = {
     const floor = document.querySelector('[aria-label="Manage floors"]');
     if (floor)
       floor.textContent =
-        (currentFloor === 0 ? "Ground" : "Floor " + currentFloor) + " ▾";
+        (PlanningUI.data.floorNames[currentFloor] || (currentFloor === 0 ? "Ground" : "Floor " + currentFloor)) + " ▾";
     const props = document.getElementById("rail-properties");
     if (props) props.hidden = !elements[selectedElIndex];
     if (["3d", "4d"].includes(StudioUI.mode) && WorkspacePolish.fitSelection)

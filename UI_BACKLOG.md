@@ -14,7 +14,7 @@ These changes were accepted for the backlog on 22 October 2026. All **23 items a
 | UI-008 | Mobile footer-attached appearance sheet | Keep the panel attached to the footer on narrow screens, bound its height and allow internal scrolling so all settings remain reachable. |
 | UI-009 | One Appearance workflow | Remove visible duplicate theme controls from other panels. Legacy callable aliases route to footer Appearance and use the same saved preferences. |
 | UI-010 | Compact header arrangement | Keep file/history actions left, transparent modes centered, and the current-floor selector right. |
-| UI-011 | Stable left tool rail | Place Build, Objects, Tools, Widgets and the remaining workspace tools on a slim rail. Enabled widget icons occupy its scrollable lower section. |
+| UI-011 | Stable left tool rail | Place Build, Objects, Tools, Widgets and the remaining workspace tools on a slim rail. The tool dock expands to show labels. Enabled widget icons occupy a separate vertical strip at the left edge of the workspace. |
 | UI-012 | Consolidated floor selector | Replace the visible G / floor-tab row plus Floors button with one current-floor selector, preserving floor-management actions. |
 | UI-013 | One footer zoom control | Keep minus, percentage/reset and plus together in the footer; remove duplicate zoom readouts. |
 | UI-014 | Pinned or temporary panels | Allow Build and Properties to be pinned. Temporary panels dismiss on canvas interaction without clearing the current selection. |
@@ -29,3 +29,19 @@ These changes were accepted for the backlog on 22 October 2026. All **23 items a
 | UI-023 | Theme cleanup | Keep all workspace theme controls in footer Appearance and remove duplicate visible theme controls from Studio+ and View tools. |
 
 All existing editing tools remain available. Workspace controls preserve model geometry; sunlight strength is an undoable project setting. Usage and persistence details are documented in [the Studio+ guide](STUDIO_PLUS.md#footer-controls-and-workspace-layout).
+
+## Header, dock and exterior refinement — implemented
+
+| ID | Change | Result |
+| --- | --- | --- |
+| UI-024 | Restore ArchCAD Pro branding | The original drafting-triangle mark from `backupB4Gpt` appears beside ArchCAD PRO. A vector fallback renders consistently when an emoji font is unavailable. Clicking the brand saves the current project and returns to the application home. |
+| UI-025 | Expanding left tool dock | Delayed mouse hover or keyboard focus reveals labels with a short transition. The dock toggle keeps it expanded for touch or mouse use. Escape collapses it; reduced-motion preferences are respected. |
+| UI-026 | Workspace-left widgets | Enabled widgets stack vertically inside the workspace, separately from the tool dock. Widget keyboard navigation remains available; 4D controls clear the strip. |
+| UI-027 | Searchable categorized menus | Tools, widgets, canvas settings, objects and Studio+ provide categories, search and empty-result feedback. All 102 tool actions and 18 Studio+ actions remain available. |
+| UI-028 | Compact floor management | One compact panel offers floor search/switching, Add/Clone/Delete, custom names, reorder actions, level controls and object access. The header displays the chosen floor name. |
+| UI-029 | 4D exterior garden | A separate 4D-owned scene adds textured lawn, small shrubs and trees around the buildable rectangle. Planting respects the actual site boundary, room/wall/site-object footprints, entrance approaches and available clearance. Lighting controls can disable the garden. |
+
+The garden is presentation-only and does not enter the editable model, selection,
+undo history or construction exports. Instanced foliage limits draw calls; geometry,
+materials and maps are disposed when rebuilt or when leaving 4D. A constrained site
+may have lawn and shrubs without enough clearance for trees.

@@ -24,9 +24,6 @@ body.studio-shell[data-ui-theme] .studio-header {
   gap: 8px;
   height: var(--workspace-header);
 }
-body[data-ui-theme] .studio-brand {
-  display: none;
-}
 body[data-ui-theme] .studio-header .studio-file-actions {
   grid-column: 1;
   grid-row: 1;

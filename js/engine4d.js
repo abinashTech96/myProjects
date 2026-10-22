@@ -119,9 +119,16 @@ window.Engine4D = {
     this.exposure=Math.max(.5,Math.min(1.8,Number(value)));
     this.renderer.toneMappingExposure=this.exposure;Engine3D.needsRender=true;
   },
+  toggleLandscape(value) {
+    this.landscapeEnabled=!!value;
+    try { localStorage.setItem("ArchCAD_4D_Landscape",String(this.landscapeEnabled)); } catch {}
+    if(this.ready) Landscape4D.build(this);
+    if(this.renderer) this.renderer.shadowMap.needsUpdate=true;
+    Engine3D.needsRender=true;
+  },
   lightingDialog() {
     if(!this.ready) return StudioUI.message('The 4D renderer is still loading.');
-    StudioUI.dialog('4D lighting',`<p>Dedicated presentation renderer · physical materials and ambient occlusion</p><label>Exposure<input aria-label="4D exposure" type="range" min="0.5" max="1.8" step="0.05" value="${this.exposure}" oninput="Engine4D.setExposure(this.value)"></label><label>Sun position<input aria-label="4D sun position" type="range" min="6" max="18" step="0.25" value="${Widget3DEngine.sunHour || 12}" oninput="updateSunlight(Number(this.value));Engine4D.renderer.shadowMap.needsUpdate=true;Engine3D.needsRender=true"></label><label><input type="checkbox" ${this.ao.output===THREE.SSAOPass.OUTPUT.Default?'checked':''} onchange="Engine4D.ao.output=this.checked?THREE.SSAOPass.OUTPUT.Default:THREE.SSAOPass.OUTPUT.Beauty;Engine3D.needsRender=true">Ambient occlusion</label><label><input type="checkbox" ${this.renderer.shadowMap.enabled?'checked':''} onchange="Engine4D.renderer.shadowMap.enabled=this.checked;Engine4D.renderer.shadowMap.needsUpdate=true;Engine3D.needsRender=true">Soft shadows</label><p>Interactive visualization; lighting is not a daylight compliance calculation.</p>`);
+    StudioUI.dialog('4D lighting',`<p>Dedicated presentation renderer · physical materials and ambient occlusion</p><label>Exposure<input aria-label="4D exposure" type="range" min="0.5" max="1.8" step="0.05" value="${this.exposure}" oninput="Engine4D.setExposure(this.value)"></label><label>Sun position<input aria-label="4D sun position" type="range" min="6" max="18" step="0.25" value="${Widget3DEngine.sunHour || 12}" oninput="updateSunlight(Number(this.value));Engine4D.renderer.shadowMap.needsUpdate=true;Engine3D.needsRender=true"></label><label><input type="checkbox" ${this.ao.output===THREE.SSAOPass.OUTPUT.Default?'checked':''} onchange="Engine4D.ao.output=this.checked?THREE.SSAOPass.OUTPUT.Default:THREE.SSAOPass.OUTPUT.Beauty;Engine3D.needsRender=true">Ambient occlusion</label><label><input type="checkbox" ${this.renderer.shadowMap.enabled?'checked':''} onchange="Engine4D.renderer.shadowMap.enabled=this.checked;Engine4D.renderer.shadowMap.needsUpdate=true;Engine3D.needsRender=true">Soft shadows</label><label><input type="checkbox" ${this.landscapeEnabled!==false?'checked':''} onchange="Engine4D.toggleLandscape(this.checked)">Exterior garden · 4D only</label><p>Interactive visualization; lighting is not a daylight compliance calculation.</p>`);
   },
   resize() {
     if (!this.renderer) return;
@@ -209,6 +216,7 @@ window.Engine4D = {
     this.materials.add(material);return material;
   },
   clearModel() {
+    Landscape4D.dispose(this);
     if(this.model) this.scene.remove(this.model);
     this.model=null; this.pairs=[]; this.modelVersion=null;
     for(const material of this.materials) {
@@ -273,6 +281,7 @@ window.Engine4D = {
       Object.assign(this.key.shadow.camera,{left:-radius,right:radius,top:radius,bottom:-radius,near:.1,far:Math.max(3000,radius*8)});
       this.key.shadow.camera.updateProjectionMatrix();
     }
+    Landscape4D.build(this);
     this.renderer.shadowMap.needsUpdate=true;
   },
   updateCamera(source) {
@@ -333,3 +342,5 @@ window.Engine4D = {
     const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='ArchCAD_4D_Render.png';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
   },
 };
+
+try { Engine4D.landscapeEnabled=localStorage.getItem("ArchCAD_4D_Landscape")!=="false"; } catch {}

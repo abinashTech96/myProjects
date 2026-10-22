@@ -138,6 +138,11 @@ if (!["chromium", "firefox", "webkit"].includes(browserEngine))
       errors,
     );
     assert.equal(errors.length, 0, "Startup must have no uncaught errors");
+    if (process.env.REFINEMENT_ONLY) {
+      await require('./refinement-browser.cjs')({page,context,assert});
+      assert.equal(errors.length,0,errors.join('\n'));
+      return;
+    }
     if (process.env.LAYOUT_ONLY) {
       await require('./layout-browser.cjs')({page,context,assert});
       assert.equal(errors.length,0,errors.join('\n'));
@@ -200,7 +205,7 @@ if (!["chromium", "firefox", "webkit"].includes(browserEngine))
       return;
     }
     // Each module owns its fixture; release its WebGL contexts before the next.
-    if (!process.env.CORE_ONLY) for (const suite of ["workspace", "inspector", "property-widgets", "enhancements", "polish", "layout"]) {
+    if (!process.env.CORE_ONLY) for (const suite of ["workspace", "inspector", "property-widgets", "enhancements", "polish", "layout", "refinement"]) {
       await require(`./${suite}-browser.cjs`)({page,context,assert});
       assert.equal(errors.length,0,errors.join("\n"));
       await page.reload({waitUntil:"networkidle"});

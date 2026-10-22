@@ -95,7 +95,6 @@ body.studio-shell.has-selection { --workspace-inspector-space: var(--inspector-w
   body.studio-shell, body.studio-shell.has-selection { --workspace-header: 132px; --workspace-status: 62px; --workspace-catalog-space: 0px; --workspace-inspector-space: 0px; }
   .studio-shell .studio-header { display: grid; grid-template-columns: minmax(0,1fr) auto auto; grid-template-rows: 36px 34px 30px; align-content: center; gap: 5px; padding: 6px 8px; }
   .studio-shell .studio-header .studio-brand { grid-column: 1; grid-row: 1; font-size: 15px; margin: 0; white-space: nowrap; }
-  .studio-shell .studio-header .studio-brand span { display: none; }
   .studio-shell .studio-header .studio-file-actions { grid-column: 2; grid-row: 1; display: flex; width: auto; overflow: visible; }
   .studio-shell .studio-header .studio-view-modes { grid-column: 3; grid-row: 1; margin: 0; }
   .studio-shell .studio-header > .planning-entry { grid-column: 1 / -1; grid-row: 2; display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); overflow: visible; gap: 4px; }

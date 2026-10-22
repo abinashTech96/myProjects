@@ -228,6 +228,7 @@ const StudioUI = {
     this.dialog("Project", `<div class="studio-action-grid">${this.button("Plot & units", "StudioUI.projectDialog()")}${this.button("Open project", "StudioUI.openFile()")}${this.button("Save JSON", "exportJSON()")}${this.button("Export drawings / model", "StudioUI.exportDialog()")}${this.button("Versions & recovery", "StudioUI.versionsDialog()")}${this.button("Project library", "PlanningUI.libraryDialog()")}</div>`);
   },
   floorMenu() {
+    if(window.WorkspaceRefinement) return WorkspaceRefinement.floors();
     this.dialog("Floors", `<p>Current floor: ${currentFloor === 0 ? "Ground" : currentFloor}</p><div class="studio-action-grid">${this.button("Add floor", "addManualFloor();StudioUI.floorMenu()")}${this.button("Clone current floor", "cloneEntireFloor();StudioUI.floorMenu()")}${this.button("Delete current floor", "deleteCurrentFloor();StudioUI.floorMenu()", "danger")}${this.button("Rooms & objects", "StudioUI.objectsDialog()")}</div>`);
   },
   closeProperties() {

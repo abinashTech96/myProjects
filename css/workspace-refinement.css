@@ -1,0 +1,426 @@
+/* The dock expands over the canvas; the drawing itself never jumps. */
+body[data-ui-theme] #workspace-header-start {
+  grid-column: 1;
+  grid-row: 1;
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  min-width: 0;
+  justify-self: start;
+}
+body[data-ui-theme] .studio-header .studio-brand {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--enh-text);
+  text-decoration: none;
+  white-space: nowrap;
+  font-size: 17px;
+  letter-spacing: -0.5px;
+  flex: none;
+}
+body[data-ui-theme] .studio-brand .archcad-logo {
+  font-size: 25px;
+  background: transparent;
+  padding: 0;
+}
+body[data-ui-theme]
+  .studio-header
+  .studio-brand
+  :is(.archcad-logo, .archcad-name) {
+  display: inline-flex;
+  align-items: center;
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  margin: 0;
+  font-size: inherit;
+  letter-spacing: inherit;
+  gap: 4px;
+}
+body[data-ui-theme] .studio-header .studio-brand .archcad-logo {
+  color: var(--enh-accent);
+}
+body[data-ui-theme] .studio-brand .archcad-original-logo {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+body[data-ui-theme] .studio-brand small {
+  font-size: 8px;
+  letter-spacing: 1px;
+  color: var(--enh-accent);
+  font-weight: 750;
+}
+body[data-ui-theme] .studio-brand:focus-visible {
+  outline: 2px solid var(--enh-accent);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+body[data-ui-theme] .studio-floor-controls {
+  min-width: 0;
+}
+body[data-ui-theme] [aria-label="Manage floors"] {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+body[data-ui-theme] #workspace-rail {
+  transition:
+    width 240ms cubic-bezier(0.2, 0.7, 0.2, 1),
+    box-shadow 240ms;
+  align-items: stretch;
+}
+body[data-ui-theme].tool-dock-expanded #workspace-rail {
+  width: 182px;
+  box-shadow: 6px 0 24px #0002;
+}
+body[data-ui-theme]
+  #workspace-rail
+  :is(
+    .planning-entry button,
+    #rail-objects,
+    #rail-properties,
+    #tool-dock-toggle
+  ) {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  width: 100%;
+  padding: 7px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+body[data-ui-theme] #workspace-rail button svg {
+  flex: 0 0 16px;
+}
+body[data-ui-theme]
+  #workspace-rail
+  :is(
+    .planning-entry button,
+    #rail-objects,
+    #rail-properties,
+    #tool-dock-toggle
+  )
+  > span {
+  position: static;
+  width: auto;
+  height: auto;
+  clip-path: none;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateX(-5px);
+  transition:
+    opacity 180ms,
+    transform 240ms;
+  font-size: 12px;
+}
+body[data-ui-theme].tool-dock-expanded #workspace-rail button > span {
+  opacity: 1;
+  transform: translateX(0);
+}
+body[data-ui-theme] #tool-dock-toggle {
+  min-height: 30px;
+  height: 30px;
+  border: 0;
+  border-bottom: 1px solid var(--enh-border);
+  margin: 0 0 4px;
+  background: transparent;
+  box-shadow: none;
+}
+body[data-ui-theme] #tool-dock-toggle[aria-pressed="true"] {
+  color: var(--enh-accent);
+}
+body[data-ui-theme] #tool-dock-toggle svg {
+  transform: rotate(-40deg);
+  transition: transform 240ms;
+}
+body[data-ui-theme].tool-dock-expanded #tool-dock-toggle svg {
+  transform: rotate(0);
+}
+body.experience-shell[data-ui-theme] #main-workspace > #planning-dock {
+  position: absolute;
+  left: 8px;
+  top: 46px;
+  bottom: auto;
+  width: 42px;
+  max-width: 42px;
+  max-height: calc(100% - 170px);
+  padding: 2px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  z-index: 360;
+  transition: left 240ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+body.experience-shell[data-ui-theme].tool-dock-expanded
+  #main-workspace
+  > #planning-dock {
+  left: calc(190px - var(--layout-rail));
+}
+body[data-ui-theme].workspace-has-widgets #advanced-view-panel {
+  left: 58px !important;
+}
+body[data-ui-theme] #advanced-view-panel:not([open]) {
+  width: 54px;
+  min-width: 0;
+}
+body[data-ui-theme].workspace-has-widgets #advanced-view-panel[open] {
+  max-width: calc(100% - 70px);
+}
+body[data-ui-theme].tool-dock-expanded #advanced-view-panel {
+  left: calc(194px - var(--layout-rail)) !important;
+  transition: left 240ms;
+}
+body[data-ui-theme].tool-dock-expanded.workspace-has-widgets
+  #advanced-view-panel {
+  left: calc(240px - var(--layout-rail)) !important;
+}
+body[data-ui-theme] .refined-menu {
+  width: min(390px, calc(100vw - 20px));
+}
+body[data-ui-theme] .refined-menu .studio-dialog-body {
+  padding: 10px;
+}
+body[data-ui-theme] .refine-search {
+  margin: 0 0 7px;
+  min-height: 32px;
+  width: 100%;
+}
+body[data-ui-theme] .refine-categories {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--enh-border);
+  margin-bottom: 8px;
+}
+body[data-ui-theme] .refine-categories .studio-button {
+  min-height: 26px;
+  padding: 3px 7px;
+  margin: 0;
+  font-size: 10px;
+  border-radius: 14px;
+  box-shadow: none;
+}
+body[data-ui-theme] .refine-categories [aria-pressed="true"] {
+  background: var(--enh-inset);
+  color: var(--enh-accent);
+  border-color: var(--enh-accent);
+}
+body[data-ui-theme] .refine-menu-section {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 9px;
+  animation: refine-reveal 180ms ease-out;
+}
+body[data-ui-theme] .refine-menu-section h3 {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--enh-muted);
+  margin: 3px 0;
+}
+body[data-ui-theme] .refine-menu-section .studio-button {
+  margin: 0;
+  min-height: 30px;
+  padding: 6px 8px;
+  text-align: left;
+}
+body[data-ui-theme] .refine-tool-row {
+  display: grid;
+  grid-template-columns: 1fr 30px;
+  gap: 4px;
+}
+body[data-ui-theme] .refine-menu-section label {
+  margin: 0;
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  background: var(--enh-inset);
+}
+body[data-ui-theme] .refine-menu-section .experience-widget-option {
+  display: flex;
+}
+body[data-ui-theme] .refine-menu-section small {
+  font-size: 10px;
+  color: var(--enh-muted);
+}
+body[data-ui-theme] .refined-menu .enhancement-hub {
+  display: block;
+}
+body[data-ui-theme] .refine-empty {
+  padding: 10px;
+  color: var(--enh-muted);
+}
+body[data-ui-theme] .refined-floors {
+  width: min(310px, calc(100vw - 20px)) !important;
+}
+body[data-ui-theme] .refined-floors .studio-dialog-body {
+  padding: 9px;
+}
+body[data-ui-theme] .floor-quick-actions {
+  display: flex;
+  gap: 5px;
+  margin: 0 0 8px;
+}
+body[data-ui-theme] .floor-quick-actions .studio-button {
+  flex: 1;
+  min-height: 29px;
+  margin: 0;
+  padding: 5px 8px;
+  font-size: 11px;
+}
+body[data-ui-theme] .refine-floor-list {
+  max-height: 220px;
+  overflow: auto;
+  display: grid;
+  gap: 4px;
+  margin: 6px 0;
+}
+body[data-ui-theme] .refine-floor {
+  display: grid;
+  grid-template-columns: 28px 1fr 16px;
+  align-items: center;
+  gap: 7px;
+  text-align: left;
+  margin: 0;
+  padding: 6px;
+  min-height: 40px;
+}
+body[data-ui-theme] .refine-floor[aria-current="true"] {
+  background: var(--enh-inset);
+  border-color: var(--enh-accent);
+}
+body[data-ui-theme] .refine-floor > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+body[data-ui-theme] .refine-floor small {
+  display: block;
+  color: var(--enh-muted);
+  font-size: 9px;
+}
+body[data-ui-theme] .floor-number {
+  font:
+    11px ui-monospace,
+    monospace;
+  color: var(--enh-accent);
+}
+body[data-ui-theme] .floor-more {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--enh-border);
+  font-size: 11px;
+}
+body[data-ui-theme] .floor-more summary {
+  cursor: pointer;
+  margin-bottom: 6px;
+}
+body[data-ui-theme] .floor-more > .studio-button {
+  margin: 3px 3px 0 0;
+  min-height: 28px;
+  font-size: 10px;
+}
+body[data-ui-theme] :is(.refined-menu, .refined-floors) [hidden] {
+  display: none !important;
+}
+@keyframes refine-reveal {
+  from {
+    opacity: 0.4;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (max-width: 1100px) {
+  body[data-ui-theme] #workspace-header-start {
+    gap: 8px;
+  }
+  body[data-ui-theme] .studio-brand {
+    font-size: 14px !important;
+  }
+  body[data-ui-theme] .studio-brand .archcad-logo {
+    font-size: 21px;
+  }
+  body[data-ui-theme] .studio-header .studio-history {
+    display: none;
+  }
+}
+@media (max-width: 850px) {
+  body[data-ui-theme] #workspace-header-start {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  body[data-ui-theme] .studio-header {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 4px 6px;
+    padding: 4px 6px;
+  }
+  body[data-ui-theme] .studio-header .studio-brand {
+    font-size: 12px !important;
+    gap: 3px;
+  }
+  body[data-ui-theme] .studio-brand .archcad-logo {
+    font-size: 19px;
+  }
+  body[data-ui-theme] .studio-brand small {
+    font-size: 7px;
+    letter-spacing: 0.3px;
+  }
+  body[data-ui-theme] .studio-file-actions {
+    gap: 3px;
+  }
+  body[data-ui-theme] .studio-file-actions > .studio-button {
+    padding: 4px 6px;
+    font-size: 10px;
+  }
+  body[data-ui-theme] [aria-label="Manage floors"] {
+    max-width: 92px;
+    padding: 4px 6px;
+    font-size: 10px;
+  }
+}
+@media (pointer: coarse) {
+  body[data-ui-theme]
+    #workspace-rail
+    :is(
+      .planning-entry button,
+      #rail-objects,
+      #rail-properties,
+      #tool-dock-toggle
+    ) {
+    min-height: 40px;
+  }
+  body[data-ui-theme] .refine-categories .studio-button {
+    min-height: 36px;
+  }
+  body[data-ui-theme] .refine-menu-section .studio-button {
+    min-height: 40px;
+  }
+  body[data-ui-theme] .floor-quick-actions .studio-button {
+    min-height: 38px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  body[data-ui-theme] #workspace-rail,
+  body[data-ui-theme] #workspace-rail button > span,
+  body[data-ui-theme] #tool-dock-toggle svg,
+  body[data-ui-theme] #main-workspace > #planning-dock,
+  body[data-ui-theme] #advanced-view-panel {
+    transition: none !important;
+  }
+  body[data-ui-theme] .refine-menu-section {
+    animation: none;
+  }
+}

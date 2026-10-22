@@ -102,5 +102,8 @@
   "./css/workspace-polish.css",
   "./js/workspace-polish.js",
   "./css/workspace-layout.css",
-  "./js/workspace-layout.js"
+  "./js/workspace-layout.js",
+  "./css/workspace-refinement.css",
+  "./js/workspace-refinement.js",
+  "./js/landscape4d.js"
 ]

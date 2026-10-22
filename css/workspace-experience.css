@@ -174,7 +174,6 @@ body[data-workspace="4d"] #viewport-toolbar {display:none!important;}
 #four-d-canvas[hidden] {display:none!important;}
 .presentation-input-surface {opacity:0;}
 body[data-workspace="4d"] #advanced-view-panel {top:46px;max-height:calc(100% - 70px);width:244px;padding:10px;}
-body[data-workspace="4d"]:has(#planning-dock .planning-widget) #advanced-view-panel {left:66px;width:min(244px,calc(100% - 80px));}
 #advanced-view-panel p {font-size:10px;margin:7px 0;color:#b5d9df;}
 #advanced-view-panel label {gap:5px;margin:9px 0;font-size:11px;}
 #advanced-view-panel select {width:100%;min-height:30px;padding:5px 7px;border:1px solid #40536a;border-radius:7px;background:#152132;color:#edf4ff;font:11px system-ui;}
@@ -186,7 +185,6 @@ body[data-workspace="4d"]:has(#planning-dock .planning-widget) #advanced-view-pa
 body[data-workspace="4d"] .viewport-bottomline {bottom:12px;}
 @media(max-width:600px) {
  body[data-workspace="4d"] #advanced-view-panel {top:40px;width:205px;max-height:calc(100% - 60px);}
- body[data-workspace="4d"]:has(#planning-dock .planning-widget) #advanced-view-panel {left:64px;width:min(205px,calc(100% - 76px));}
  body[data-workspace="4d"] .viewport-orientation {top:34px;}
 }
 @media(pointer:coarse) {#advanced-view-panel .studio-button {min-height:36px;}#advanced-view-panel select {min-height:36px;}}

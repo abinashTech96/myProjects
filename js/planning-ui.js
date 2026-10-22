@@ -533,6 +533,7 @@ const PlanningUI = {
     ];
   },
   toolsDialog(category = "Build") {
+    if(window.WorkspaceRefinement) return WorkspaceRefinement.tools(category);
     this.dialog(
       "Tools",
       `<div class="workspace-tool-sections" aria-label="Tool collections">${this.button("Design", "DesignUI.menu()")}${this.button("Pro", "WorkbenchUI.menu()")}${this.button("3D tools", "StudioUI.viewToolsDialog()")}${this.button("Search all tools", "PlanningUI.commandDialog()")}</div><div class="planning-tabs">${["Build", "Inspect", "Utilities", "View"].map((c) => this.button(c, `PlanningUI.toolsDialog('${c}')`, c === category ? "active" : "")).join("")}</div><div class="planning-tool-list">${this.tools()

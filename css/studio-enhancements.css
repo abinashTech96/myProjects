@@ -231,6 +231,25 @@ body[data-ui-theme] .enhancement-form input[type="checkbox"] {
 #focus-exit {
   display: none;
 }
+#four-d-full-view {
+  display: none;
+}
+body[data-workspace="4d"] #four-d-full-view {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 270;
+  min-height: 32px;
+  margin: 0;
+  padding: 6px 10px;
+  font-size: 11px;
+  white-space: nowrap;
+  touch-action: manipulation;
+}
 body.presentation-focus
   :is(
     .studio-header,

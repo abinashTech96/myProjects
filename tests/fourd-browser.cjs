@@ -62,6 +62,60 @@ module.exports = async ({ page, assert }) => {
     setWorkspaceLayout("4d");
   });
   await page.waitForFunction(() => Engine4D.ready && Engine4D.frames > 0);
+  // Room focus must have a visible exit even while advanced controls are closed.
+  const beforeFocus = await page.evaluate(() => ProjectState.capture());
+  await page.evaluate(async () => {
+    await StudioEnhancements.focusSelection();
+    Workbench3D.isolateSelection();
+    ViewportUI.inspectFloor("0");
+    document.getElementById("advanced-view-panel").open = false;
+  });
+  assert.equal(await page.locator("#four-d-full-view").isVisible(), true);
+  await page.locator("#four-d-full-view").click();
+  await page.waitForFunction(() => !Engine3D.cameraTween);
+  const fullView = await page.evaluate(() => {
+    Engine4D.render();
+    return {
+      focus: StudioEnhancements.focusRoom,
+      isolation: Workbench3D.isolation,
+      floor: ViewportUI.advancedFloor,
+      cut: ViewportUI.cutPercent,
+      clipping: Engine3D.renderer.clippingPlanes.length,
+      view: ViewportUI.view,
+      project: ProjectState.capture(),
+    };
+  });
+  assert.equal(fullView.focus, null);
+  assert.equal(fullView.isolation, null);
+  assert.equal(fullView.floor, null);
+  assert.equal(fullView.cut, 100);
+  assert.equal(fullView.clipping, 0);
+  assert.equal(fullView.view, "iso");
+  assert.deepEqual(fullView.project, beforeFocus);
+  // The existing panel action must exit the same room-focus state.
+  await page.evaluate(async () => {
+    await StudioEnhancements.focusSelection();
+    document.getElementById("advanced-view-panel").open = true;
+  });
+  await page.getByRole("button", { name: "Show building", exact: true }).click();
+  assert.equal(await page.evaluate(() => StudioEnhancements.focusRoom), null);
+  await page.setViewportSize({ width: 390, height: 844 });
+  assert.equal(await page.locator("#four-d-full-view").isVisible(), true);
+  await page.evaluate(async () => {
+    await StudioEnhancements.focusSelection();
+    StudioEnhancements.setFocus(true);
+  });
+  await page.locator("#four-d-full-view").click();
+  assert.equal(
+    await page.evaluate(() => StudioEnhancements.focusRoom === null &&
+      !document.body.classList.contains("presentation-focus")),
+    true,
+  );
+  await page.evaluate(() => setWorkspaceLayout("3d"));
+  assert.equal(await page.locator("#four-d-full-view").isVisible(), false);
+  await page.evaluate(() => setWorkspaceLayout("4d"));
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  console.log("4D full-view exit, view filters, mobile and clean-view recovery passed");
   await page.evaluate(() => FourDStudio.open());
   assert.equal(await page.locator(".fourd-tabs button").count(), 6);
   assert.equal(

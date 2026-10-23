@@ -314,9 +314,16 @@ window.StudioEnhancements = {
         '<div id="studio-plus-tools" class="enhancement-quick">' +
           this.b("Studio+", "StudioEnhancements.hub()") +
           this.b("Focus room", "StudioEnhancements.focusSelection()") +
+          this.b("Back to full view", "StudioEnhancements.fullView()") +
           this.b("Finishes", "StudioEnhancements.materials()") +
           this.b("Clean view", "StudioEnhancements.setFocus(true)") +
           "</div>",
+      );
+    const viewport = document.getElementById("right-canvas-wrapper");
+    if (viewport && !document.getElementById("four-d-full-view"))
+      viewport.insertAdjacentHTML(
+        "beforeend",
+        '<button id="four-d-full-view" class="studio-button" onclick="StudioEnhancements.fullView()" title="Show all rooms and floors, clear view filters, and fit the building"><span aria-hidden="true">↶</span> Back to full view</button>',
       );
     const box = document.getElementById("three-container");
     if (box && !document.getElementById("enhancement-labels"))
@@ -435,14 +442,21 @@ window.StudioEnhancements = {
   clearRoom() {
     this.focusRoom = null;
     this.invalidate();
+    this.updateFocusReadout();
+  },
+  fullView() {
+    this.cancelPreview();
+    this.stopWalk();
+    this.setFocus(false);
+    this.clearRoom();
+    Workbench3D.clearIsolation();
+    this.clearSection();
+    ViewportUI.inspectFloor("all");
+    ViewportUI.orient("iso");
   },
   updateFocusReadout() {
-    const panel = document.getElementById("studio-plus-tools");
-    if (panel && this.focusRoom && !panel.querySelector("[data-clear-room]"))
-      panel.insertAdjacentHTML(
-        "beforeend",
-        '<button class="studio-button" data-clear-room onclick="StudioEnhancements.clearRoom();this.remove()">Show all rooms</button>',
-      );
+    const button = document.getElementById("four-d-full-view");
+    if (button) button.dataset.roomFocused = String(!!this.focusRoom);
   },
   async toggleLinked() {
     await this.enter();

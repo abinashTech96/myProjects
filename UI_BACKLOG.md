@@ -101,3 +101,56 @@ reduce known failure paths; device-specific GPU limits still apply.
 | 4D-015 | Clean selection | Bounded edge overlays preserve underlying surface and emissive appearance. |
 
 All controls share one six-tab 4D Studio dock. Practical rendering, comparison and stage-sequence limits are documented in [4D Studio](FOURD_STUDIO.md).
+
+## 4D workspace, performance and visual quality — pending
+
+Added on 23 October 2026 following the overlapping-label screenshot and reports
+of freezing on entry and when moving between building and element views. These
+items are backlog requirements, not a claim that the fixes are implemented.
+Preserve the original plot, element dimensions, positions, floors and saved
+project content throughout this work.
+
+### Entry and device performance — first priority
+
+| ID | Requirement | Acceptance criteria |
+| --- | --- | --- |
+| 4D-016 | Lightweight 4D workspace shell | Opening the 4D workspace displays a responsive shell and a Render 4D button. It does not initialize either a hidden prerequisite 3D renderer or the 4D renderer, compile project geometry, generate environments, or start render loops. |
+| 4D-017 | Explicit Render 4D action | Load rendering-only dependencies and initialize graphics only after Render 4D is clicked. Selection, panels, restored workspace state and resize handlers cannot bypass this gate. Repeated clicks share one startup operation. |
+| 4D-018 | Responsive, cancellable startup | Show preparation stages while loading dependencies, building geometry and preparing materials. Yield between bounded work batches, support cancellation and discard stale results when leaving or restarting. Use percentages only when progress can actually be measured. |
+| 4D-019 | Only relevant 4D controls | Hide drafting/build tools, unrelated widgets, general element-editing controls and their popups in the 4D workspace. Keep branding/home, mode navigation and necessary project/status access compact. Restore previous tools and widget preferences when returning to their workspace. |
+| 4D-020 | Suspend hidden work | Suspend unrelated widget subscriptions, timers, observers, expensive calculations and redundant rendering while in 4D. Hiding their DOM alone is insufficient. Reattach correctly on return without duplicate listeners. |
+| 4D-021 | Reuse prepared scene for view changes | Building/element focus, camera motion, annotation changes and returning to full view must not recompile unchanged building geometry or regenerate materials, environments and planting. Separate model, material and view invalidation. |
+| 4D-022 | Incremental model updates | Rebuild only affected objects/materials after actual project edits. Apply a completed scene update atomically; cancel obsolete work during rapid changes. Keep a versioned, bounded cache of reusable results. |
+| 4D-023 | Adaptive quality and motion | Offer Eco, Balanced and High profiles with explicit cost indications. Begin conservatively; adjust resolution, shadows and optional effects using measured frame times. Lower costly effects during navigation, restore them after settling, and respect reduced motion. |
+| 4D-024 | Render only when needed | Stop scheduling GPU frames when the scene is unchanged or the tab/workspace is hidden. Resume for input, requested animation, progressive still capture or a real scene change; avoid a concurrent hidden 3D render loop. |
+| 4D-025 | Pause, stop and release | Provide Pause/Resume and Stop rendering. Stop cancels startup, captures and animations and releases owned GPU resources. Leaving 4D stops its work and releases expensive resources under a bounded reuse policy; reentry remains gated by Render 4D. |
+| 4D-026 | Performance evidence | Profile cold startup, first usable frame, focus/full-view switching, orbit, tab visibility and repeated entry/exit using the supplied building and a larger fixture. Record main-thread long tasks, frame times, draw calls and resource counts; verify no accumulating resources. Set device-specific budgets from these measurements rather than promise universal FPS. |
+
+### Selection, annotations and layout — pending screenshot fixes
+
+| ID | Requirement | Acceptance criteria |
+| --- | --- | --- |
+| 4D-027 | Clean initial and full view | Start with temporary labels, dimensions, editing handles and selection highlights hidden. Back to full view restores the complete building and clears temporary annotations as well as view filters without rebuilding unchanged geometry. |
+| 4D-028 | Deliberate element focus | Single click selects/highlights and opens compact 4D inspection details without moving the camera. Focus is an explicit action; double-click may provide a desktop shortcut. Keep an obvious return action and a touch-accessible Focus button. |
+| 4D-029 | Compact inspection details | Show full element information in one consistent bounded inspector. In-canvas text is limited to a short selected-element label; full configurations must not cover the building. Reuse relevant material actions without exposing unrelated drafting tools. |
+| 4D-030 | Annotation visibility control | Offer Off / Selected / All, with dimensions controlled explicitly. Preserve a user's chosen inspection preference while allowing clean full-view and export actions to hide temporary overlays. |
+| 4D-031 | Collision-aware annotations | Prevent labels from overlapping each other, navigation, open panels and viewport edges. Prioritize selected/nearby elements, group dense labels, and suppress labels for hidden or occluded objects using bounded visibility checks. |
+| 4D-032 | Frame the usable canvas | Fit the complete building within the space left by panels and navigation. Preserve camera continuity between selection and full view; do not let decorative transitions wait for expensive rendering work. |
+| 4D-033 | Clean image export | Exclude UI, selection outlines and annotations by default; allow deliberate annotation inclusion. Restore interactive state after success, cancellation or failure. |
+
+### Advanced architectural presentation — pending investigation and refinement
+
+| ID | Requirement | Acceptance criteria |
+| --- | --- | --- |
+| 4D-034 | Roof and upper-wall audit | Trace the projecting surface visible above the screenshot's roof to its source object. Check roof joins, parapets, end faces, duplicate caps, normals and floor datums. Correct rendering errors without altering entered geometry or hiding valid design features. |
+| 4D-035 | Glass and surface audit | Trace the large cyan surface to its saved material and owner. Check tint, transparency ordering, reflections, thickness and depth behavior. Preserve intentional material choices and expose realistic glazing presets with bounded cost. |
+| 4D-036 | Architectural junctions | Inspect shared walls, floor connections, corners, stair/shaft openings, door/window cuts, frames, reveals and railings from exterior and interior views. Detect duplicated or coplanar faces and visible gaps; retain accurate dimensions. |
+| 4D-037 | Lighting and finish depth | Refine exposure, sun/ambient balance, contact shadows, texture scale and roughness. Offer affordable preview settings and explicitly requested higher-quality stills. Keep material colour consistent across quality profiles. |
+| 4D-038 | Site-object audit | Identify the screenshot's coloured ground objects and verify their saved type, dimensions and render representation. Preserve intentional test objects; fix invalid proxies and use credible, bounded-cost landscape assets. |
+| 4D-039 | Advanced view workflows | Organize Exterior, Interior, Floor inspection, Section and Photo views in one compact 4D-only panel. Build on existing camera, lighting, material, comparison and stage tools; do not introduce duplicate settings. Advanced effects initialize only when requested after rendering starts. |
+| 4D-040 | Review before release | Compare before/after screenshots for full building, each floor, focused elements and all exterior angles. Verify import/export, unchanged plot/element geometry, cancellation, rapid mode switching, mobile layout, reduced motion and graphics-context recovery. Report measured performance and remaining limitations before marking these items implemented. |
+
+Delivery order: explicit startup gate and workspace isolation; profiling and view
+reuse; clean selection/annotations; architectural rendering corrections; advanced
+presentation polish. The implementation must retain existing features through
+their relevant workspaces rather than delete them to improve performance.

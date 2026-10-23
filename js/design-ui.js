@@ -98,17 +98,6 @@ const DesignUI = {
     document.querySelector(".studio-status").append(status);
     this.refresh();
     AppEvents.onStateChange(() => this.refresh());
-    document.getElementById("blueprint").addEventListener(
-      "contextmenu",
-      (e) => {
-        if (RoomStudio.activeRoom) return;
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        document.getElementById("context-menu")?.classList.remove("visible");
-        this.contextDialog();
-      },
-      true,
-    );
     document
       .getElementById("blueprint")
       .addEventListener("pointerdown", (e) => {
@@ -116,7 +105,10 @@ const DesignUI = {
         const x = e.clientX,
           y = e.clientY;
         clearTimeout(this.longPress);
-        this.longPress = setTimeout(() => this.contextDialog(), 650);
+        this.longPress = setTimeout(() => {
+          window.endDrag?.();
+          PlanContextMenu.open({ clientX: x, clientY: y, target: e.target });
+        }, 650);
         const cancel = () => {
           clearTimeout(this.longPress);
           document.removeEventListener("pointermove", move);

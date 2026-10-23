@@ -108,5 +108,7 @@
   "./js/landscape4d.js",
   "./js/workspace-panels.js",
   "./css/workspace-panels.css",
-  "./js/scene4d.js"
+  "./js/scene4d.js",
+  "./css/workspace-controls.css",
+  "./js/workspace-motion.js"
 ]

@@ -235,13 +235,13 @@ body.workspace-panels-ready.tool-dock-expanded:not(
     .tool-dock-pinned
   )[data-ui-theme]
   :is(.studio-catalog, dialog.workspace-docked-dialog) {
-  left: 182px !important;
-  max-width: calc(100vw - 182px) !important;
+  left: 130px !important;
+  max-width: calc(100vw - 130px) !important;
 }
 body.workspace-panels-ready.tool-dock-expanded:not(
     .tool-dock-pinned
   ).workspace-properties-panel:not(.layout-properties-hidden)[data-ui-theme]
   .studio-inspector {
-  left: 182px;
-  max-width: calc(100vw - 182px);
+  left: 130px;
+  max-width: calc(100vw - 130px);
 }

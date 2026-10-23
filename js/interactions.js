@@ -13,7 +13,7 @@ let isMeasuringMode = false, measureStart = null, tempMeasureLine = null, measur
 // DRAGGING LOGIC
 // -----------------------------------------
 function startDrag(evt, index) {
-    if (UI.isSpacePanMode || evt.button === 1) return;
+    if (UI.isSpacePanMode || (evt.button !== undefined && evt.button !== 0)) return;
     if (typeof Selection !== 'undefined') {
         if(evt.ctrlKey||evt.metaKey){Selection.toggle(index);return;}
         Selection.pick(index);
@@ -38,6 +38,7 @@ function startDrag(evt, index) {
 }
 
 function startDragFixture(evt, index) {
+    if (evt.button !== undefined && evt.button !== 0) return;
     isDraggingFixture = true; dragFixtureIndex = index; hasDragged = false;
 }
 

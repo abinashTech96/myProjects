@@ -75,7 +75,7 @@ body[data-ui-theme] #workspace-rail {
   align-items: stretch;
 }
 body[data-ui-theme].tool-dock-expanded #workspace-rail {
-  width: 182px;
+  width: 130px;
   box-shadow: 6px 0 24px #0002;
 }
 body[data-ui-theme]
@@ -432,5 +432,5 @@ body.experience-shell[data-ui-theme] #planning-navigation {
 
 /* A deliberately pinned dock reserves its width, keeping Build assets exposed. */
 body.studio-shell[data-ui-theme].tool-dock-pinned {
-  --layout-rail: 182px;
+  --layout-rail: 130px;
 }

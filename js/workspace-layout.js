@@ -36,9 +36,17 @@ window.WorkspaceLayout = {
       objects:
         '<rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 3v18M8 9h13M8 15h13"/>',
       pin: '<path d="m9 3 6 0-1 6 4 4H6l4-4zM12 13v9"/>',
+      undo: '<path d="M9 5 4 10l5 5M4 10h10a6 6 0 0 1 0 12"/>',
+      redo: '<path d="m15 5 5 5-5 5M20 10H10a6 6 0 0 0 0 12"/>',
+      copy: '<rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V3H3v13h5"/>',
+      trash: '<path d="M3 6h18M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7m4-7v7"/>',
+      rotate: '<path d="M4 9a8 8 0 1 1 0 6M4 3v6h6"/>',
+      pan: '<path d="M12 2v20M2 12h20M8 6l4-4 4 4M8 18l4 4 4-4M6 8l-4 4 4 4M18 8l4 4-4 4"/>',
+      fit: '<path d="M3 9V3h6M15 3h6v6M21 15v6h-6M9 21H3v-6"/>',
+      properties: '<path d="M4 6h16M4 12h16M4 18h16"/><circle cx="8" cy="6" r="2"/><circle cx="16" cy="12" r="2"/>',
       restore: '<path d="M4 9a8 8 0 1 1 0 6M4 3v6h6"/>',
     };
-    return `<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${paths[name] || paths.objects}</svg>`;
+    return `<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${paths[String(name).toLowerCase()] || paths.objects}</svg>`;
   },
   makeButton(label, icon, action) {
     const b = document.createElement("button");

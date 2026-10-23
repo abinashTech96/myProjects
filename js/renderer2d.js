@@ -306,63 +306,23 @@ function renderFixtures(geom) {
 // TEXT & STATS RENDERING
 // -----------------------------------------
 function applyRoomTooltips(r, el) {
-    r.onmouseover = function(e) {
-        const tooltip = document.getElementById('room-tooltip');
-        tooltip.style.display = 'block';
-        tooltip.style.background = 'rgba(15, 23, 42, 0.85)';
-        tooltip.style.backdropFilter = 'blur(10px)';
-        tooltip.style.border = '1px solid rgba(56, 189, 248, 0.5)';
-        tooltip.style.boxShadow = '0 10px 25px rgba(0,0,0,0.5), inset 0 0 15px rgba(56, 189, 248, 0.1)';
-        tooltip.style.borderRadius = '8px';
-        tooltip.style.padding = '6px 8px';
-        tooltip.style.minWidth = '160px';
-        const area = ((el.w * el.h)/144).toFixed(1);
-        const floorName = el.floor === 0 ? 'Ground' : (el.floor === 1 ? '1st' : el.floor + 'th');
-        let icon = '🚪'; 
-        if (el.isFurniture) icon = '🛋️';
-        else if (el.type === 'staircase') icon = '🪜';
-        else if (el.type === 'kitchen') icon = '🍳';
-        else if (el.type === 'toilet') icon = '🚿';
-        else if (el.type === 'bedroom') icon = '🛏️';
-        else if (el.type === 'balcony') icon = '🌿';
-        else if (el.type === 'puja') icon = '🕉️';
-        tooltip.innerHTML = `
-            <div style="display: flex; flex-direction: column; gap: 6px;">
-                <div style="display: flex; align-items: center; gap: 2px; border-bottom: 1px solid rgba(56, 189, 248, 0.3); padding-bottom: 6px;">
-                    <div style="background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.4); border-radius: 6px; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">
-                        ${icon}
-                    </div>
-                    <span style="font-weight: 800; color: #38bdf8; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; text-shadow: 0 1px 2px rgba(0,0,0,0.8);">
-                        ${ProjectModel.escapeHTML(el.customName || el.type)}
-                    </span>
-                </div>
-                <div style="display: flex; flex-direction: column; gap: 4px; font-size: 0.7rem; color: #e2e8f0;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3); padding: 4px 6px; border-radius: 4px;">
-                        <span style="color: #94a3b8;">🏢 Level</span>
-                        <span style="font-weight: 600; color: #f1f5f9;">${floorName}</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3); padding: 4px 6px; border-radius: 4px;">
-                        <span style="color: #94a3b8;">📐 Size</span>
-                        <span style="font-weight: 600; font-family: monospace; color: #f1f5f9;">${formatLength(el.w)} × ${formatLength(el.h)}</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); padding: 4px 6px; border-radius: 4px; margin-top: 2px;">
-                        <span style="color: #10b981; font-weight: 600;">📏 Area</span>
-                        <span style="font-weight: 700; color: #10b981; font-family: monospace;">${area} sq.ft</span>
-                    </div>
-                </div>
-            </div>
-        `;
+    const position = (event) => {
+        const tip = document.getElementById('room-tooltip');
+        const bounds = tip.getBoundingClientRect();
+        tip.style.left = Math.max(8, Math.min(event.clientX + 14, innerWidth - bounds.width - 8)) + 'px';
+        tip.style.top = Math.max(8, Math.min(event.clientY + 14, innerHeight - bounds.height - 8)) + 'px';
     };
-    //room details popup
-    r.onmousemove = function(e) {
-        const tooltip = document.getElementById('room-tooltip');
-        tooltip.style.left = (e.clientX + 300) + 'px';
-        tooltip.style.top = (e.clientY + 0) + 'px';
+    r.onmouseover = function(event) {
+        if (document.getElementById('context-menu')?.style.display === 'block') return;
+        const tip = document.getElementById('room-tooltip'), escape = ProjectModel.escapeHTML;
+        const floorName = PlanningUI.data.floorNames[el.floor] || (el.floor === 0 ? 'Ground' : 'Floor ' + el.floor);
+        const area = PlanningModel.area(PlanningModel.points(el)) / 144;
+        tip.innerHTML = `<strong>${escape(el.customName || el.type)}</strong><dl><dt>Floor</dt><dd>${escape(floorName)}</dd><dt>Size</dt><dd>${escape(formatLength(el.w))} × ${escape(formatLength(el.h))}</dd><dt>Area</dt><dd>${area.toFixed(1)} sq.ft</dd></dl>`;
+        tip.style.display = 'block';
+        position(event);
     };
-    r.onmouseout = function() { 
-        const tooltip = document.getElementById('room-tooltip');
-        tooltip.style.display = 'none';
-    };
+    r.onmousemove = position;
+    r.onmouseout = () => { document.getElementById('room-tooltip').style.display = 'none'; };
 }
 
 function renderRoomText(i, el, rx, ry, w, h, IX, IY) {

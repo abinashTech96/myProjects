@@ -40,7 +40,7 @@ module.exports = async ({ page, assert }) => {
   const collapsed = await rail.boundingBox();
   await rail.hover();
   await page.waitForTimeout(480);
-  assert.ok((await rail.boundingBox()).width > collapsed.width + 100);
+  assert.equal((await rail.boundingBox()).width, 130);
   assert.equal(await toggle.getAttribute("aria-expanded"), "true");
   await page.mouse.move(700, 500);
   await page.waitForTimeout(300);

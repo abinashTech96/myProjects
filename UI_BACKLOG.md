@@ -72,3 +72,14 @@ Verification includes actual rendered label visibility, common panel bounds at
 320–1440px, all built-in furniture geometry, editor/presentation ownership,
 injected render failure and real WebGL context loss/restoration. These protections
 reduce known failure paths; device-specific GPU limits still apply.
+
+## Compact controls, motion and 2D context actions — implemented
+
+| ID | Change | Result |
+| --- | --- | --- |
+| UI-034 | 130px expanded dock | Hover and pinned expansion use exactly 130px, with compact readable labels. Open panels follow the same rail offset. |
+| UI-035 | Shared control styling | Buttons, panel actions, fields, popups and footer sheets share spacing, rounded corners, focus feedback and restrained shadows across all four themes. Dense fields retain usable number controls and labels. |
+| UI-036 | Stable workspace switcher | 2D, Split, 3D and 4D use equal-width buttons inside a fixed 156px transparent container. The indicator glides to the selected mode. |
+| UI-037 | Lightweight view transitions | Visible canvases enter with a short opacity/translation animation after layout changes. Rapid switching cancels previous motion, and reduced-motion preferences disable it. Rendering and input never wait for animation. |
+| UI-038 | Pointer-aware 2D menu | Right-click detects rooms, rotated furniture, polygon footprints, doors/windows, empty plot and outside space after pan/zoom. Contextual actions preserve selection groups, respect locks and use existing undoable commands. |
+| UI-039 | Accessible context interaction | The menu stays inside viewport edges, supports keyboard navigation, Escape and touch long-press, and dismisses on outside interaction or mode changes. Right-click cannot start object/opening dragging. |

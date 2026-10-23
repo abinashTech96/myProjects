@@ -79,3 +79,24 @@ Clearance and door-swing checks are geometric review aids, not building-code cer
 ## Verification
 
 `npm test` runs project, planning, design, presentation, workbench, independent 4D scene and API checks. `npm run check` verifies script syntax and packaged/offline assets. `npm run test:browser` includes the original tool workflows and Studio+ interactions; `ENHANCEMENTS_ONLY=1` runs the focused Studio+ browser checks. `REFINEMENT_ONLY=1` verifies branding/home persistence, dock expansion, categorized search, floor management, responsive headers and 4D garden ownership/cleanup. `UNIFIED_ONLY=1` checks rendered labels in all themes, common panel bounds, built-in furniture geometry, resource ownership, render failure and real graphics-context restoration. CI runs the browser suite in Chromium, Firefox and WebKit.
+
+## Compact controls and 2D right-click
+
+The expanded tool dock is 130px wide. All four view buttons occupy equal widths
+inside a stable compact switcher. View changes animate visible canvases for 220ms
+without delaying the renderer; rapid changes cancel old animations. System
+reduced-motion settings disable these transitions.
+
+Right-click the 2D plan (also available in Split) to open actions for the object
+under the pointer. Rooms and furniture offer Properties, Move/mirror, Duplicate,
+Rotate, Lock, More actions and Delete. Doors/windows offer their precise opening
+editor and removal; locked items disable editing actions. Empty plot space offers
+Build, floor-wide selection, history, Fit, floors, plot settings and Appearance.
+Clicking outside the plot offers workspace actions without targeting a previously
+selected room. Polygon cutouts and hidden layers are excluded from object picking.
+
+Arrow keys navigate the menu without moving plan objects; Enter activates an
+item and Escape closes it. Shift+F10 or the context-menu key opens it from the
+focused plan. Touch users can hold without dragging. Menus reposition at viewport
+edges and share the selected theme. `CONTROLS_ONLY=1 npm run test:browser` checks
+these workflows, dock width, all themes and reduced-motion behavior.

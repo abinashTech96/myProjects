@@ -44,7 +44,7 @@ window.WorkspaceRefinement = {
     });
     toggle.id = "tool-dock-toggle";
     toggle.setAttribute("aria-controls", main.id);
-    toggle.querySelector("span").textContent = "Keep dock expanded";
+    toggle.querySelector("span").textContent = "Keep expanded";
     rail.prepend(toggle);
     const plus = rail.querySelector(".studio-plus-entry span");
     if (plus) plus.textContent = "Studio+";

@@ -631,6 +631,7 @@ window.FourDStudio = {
     scene.userData.lights = { key, fill, rim };
     key.castShadow = false;
     this.comparison = { ...stage, scene, name: option.name };
+    this.comparisonOrbitDistance=Math.max(1,Engine3D.camera.position.distanceTo(Engine3D.controls.target));
     this.invalidate();
     this.compareLabels();
     const status = document.getElementById("fourd-compare-status");
@@ -706,7 +707,19 @@ window.FourDStudio = {
     }
     this.comparisonCamera = renderCamera;
     renderCamera.updateProjectionMatrix();
-    FourDRender.camera(renderCamera, this.settings);
+    // Fit both designs to a half-width viewport. Reusing the full-width pose can
+    // put the current model beyond the read-only boundary when a long lens is set.
+    const bounds=e.modelBounds.clone().union(new THREE.Box3().setFromObject(this.comparison.model)),center=bounds.getCenter(new THREE.Vector3()),radius=Math.max(10,bounds.getSize(new THREE.Vector3()).length()/2),direction=camera.position.clone().sub(Engine3D.controls.target).normalize();
+    if(renderCamera.isPerspectiveCamera&&this.settings.lens)renderCamera.setFocalLength(this.settings.lens);
+    const canvas=r.domElement.getBoundingClientRect(),panel=document.querySelector('#studio-dialog[open].workspace-docked-dialog'),halfWidth=w/2;
+    let left=panel?Math.max(12,panel.getBoundingClientRect().right-canvas.left+12):12;if(left>halfWidth*.6)left=12;
+    const fraction=Math.max(.35,(halfWidth-left-12)/halfWidth),tan=Math.tan((renderCamera.fov||60)*Math.PI/360),base=radius/Math.sin(Math.min(Math.atan(tan*.9),Math.atan(tan*(halfWidth/h)*fraction)))*1.14;
+    const zoom=Math.max(.15,camera.position.distanceTo(Engine3D.controls.target)/(this.comparisonOrbitDistance||1)),distance=base*zoom,screenHalf=distance*tan;
+    const rightAxis=new THREE.Vector3().crossVectors(renderCamera.up,direction).normalize(),target=center.clone().addScaledVector(rightAxis,-(left-12)/halfWidth*screenHalf*(halfWidth/h));
+    renderCamera.position.copy(target).addScaledVector(direction,distance);renderCamera.lookAt(target);
+    if(renderCamera.isOrthographicCamera){const half=radius*1.14/fraction;renderCamera.left=-half*(halfWidth/h);renderCamera.right=half*(halfWidth/h);renderCamera.top=half;renderCamera.bottom=-half;}
+    renderCamera.near=Math.max(.2,distance-radius*1.5);renderCamera.far=Math.max(renderCamera.near+100,distance+radius*3);renderCamera.updateProjectionMatrix();
+    FourDRender.camera(renderCamera, this.settings,target);
     try {
       r.outputEncoding = THREE.sRGBEncoding;
       r.setRenderTarget(null);

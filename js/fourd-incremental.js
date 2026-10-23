@@ -3,41 +3,9 @@
 window.FourDIncremental = {
   revision: 0,
   reset() { this.revision++; this.snapshot = null; },
-  describe(p) {
-    const { presentation, roof, roomProperties, workbench, site, ...design } = p.design;
-    const w=WorkbenchModel.data(p);
-    const { walls, ...planning } = p.planning;
-    const global = JSON.stringify({plot:p.plot,unit:p.unit,scale:p.scale,floors:p.floorCount,
-      wallSettings:p.wallSettings,planning,design,levels:w.levels,facade:w.facade,site:w.site,parapet:p.view.parapetConfig,
-      assets:[...Workbench3D.templates].map(([id,t])=>[id,t.uuid])});
-    const rows = ProjectModel.walls(p), records = new Map();
-    for (const e of p.elements) {
-      const {material,customColor,...geometry}=e;
-      records.set('room:'+e.id,JSON.stringify([geometry,roomProperties?.[e.id],WorkbenchModel.roomBase(p,e),
-        w.stairs[e.id],w.voids.filter(v=>e.floor>v.from&&e.floor<=v.to),w.shafts.filter(v=>e.floor>=v.from&&e.floor<=v.to)]));
-    }
-    for (const w of rows) records.set('wall:'+w.id,JSON.stringify(w));
-    for (const f of p.fixtures) {
-      const owner=p.elements[f.roomId];
-      records.set('opening:'+f.id,JSON.stringify([f,owner,WorkbenchModel.roomBase(p,owner)]));
-    }
-    for(const kind of ['structure','ramps','shafts','outdoors','services3d']) for(const object of w[kind])
-      records.set('professional:'+object.id,JSON.stringify([kind,object]));
-    for(const layout of w.interiors) for(const item of layout.items) {
-      const owner=p.elements.find(e=>e.id===layout.room);
-      records.set('professional:'+item.id,JSON.stringify([item,owner?.floor,owner&&WorkbenchModel.roomBase(p,owner)]));
-    }
-    records.set('professional:terrain',JSON.stringify(w.terrain));
-    records.set('professional:solar',JSON.stringify([w.solar,w.solar.enabled?[roof,p.elements.filter(e=>!e.isFurniture)]:null]));
-    records.set('professional:rain',JSON.stringify([w.rain,roof]));
-    const floors=new Map();
-    for(let f=0;f<p.floorCount;f++) floors.set(f,JSON.stringify([
-      p.elements.filter(e=>e.floor===f&&!e.isFurniture).map(({material,customColor,...e})=>e),
-      WorkbenchModel.slabGeometry(p,f),WorkbenchModel.floorBase(p,f),WorkbenchModel.floorHeight(p,f)]));
-    const top=Math.max(-1,...p.elements.filter(e=>!e.isFurniture&&e.type!=='staircase').map(e=>e.floor));
-    return {project:p,global,records,rows,floors,roof:JSON.stringify([roof,top,floors.get(top)])};
-  },
-  remember(p) { this.snapshot=this.describe(p); },
+  describe(p) { return FourDGeometry.describe(p,[...Workbench3D.templates].map(([id,t])=>[id,t.uuid])); },
+  async prepare(p,valid=()=>true) { return FourDJobs.run({kind:'describe',project:p,assets:[...Workbench3D.templates].map(([id,t])=>[id,t.uuid])},valid); },
+  async remember(p,valid=()=>true) { this.snapshot=await this.prepare(p,valid); },
   sourceKey(node) {
     const d=node.userData;
     return d.fourdReplacement ? 'replacement:'+d.elementId : d.objectId ? 'professional:'+d.objectId : d.isTerrain ? 'professional:terrain' :
@@ -55,7 +23,8 @@ window.FourDIncremental = {
     return staging;
   },
   async update(p, valid) {
-    const began=performance.now(), revision=++this.revision, next=this.describe(p), before=this.snapshot;
+    const began=performance.now(), revision=++this.revision, before=this.snapshot;
+    const next=await this.prepare(p,()=>revision===this.revision&&valid());
     const check=async()=>{await new Promise(r=>setTimeout(r,0));if(revision!==this.revision||!valid())throw new DOMException('Superseded update','AbortError');};
     await check();
     // These changes alter shared coordinates or advanced builder dependencies.

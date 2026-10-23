@@ -61,6 +61,7 @@
   };
   const defaults = () => ({
     version: 1,
+    detailing: true, fixtures: [], bookmarks: [],
     guidedStops: [],
     tourSpeed: 1,
     environment: "studio",
@@ -193,6 +194,7 @@
       ])
         P.finite(m[k], "Mirror " + k, min, max);
     }
+    (root.FourDReviewModel || require("./fourd-review-model.js")).validate(d,p);
     return d;
   }
   function stageFor(data, p, settings) {

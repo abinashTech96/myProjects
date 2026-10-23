@@ -634,7 +634,11 @@ window.WorkspaceLayout = {
       top=Math.max(top,64);
       for (const selector of ["#fourd-inspection:not([hidden])", "#studio-dialog[open].workspace-docked-dialog"]) {
         const panel=document.querySelector(selector);
-        if (panel?.getClientRects().length) left=Math.max(left,panel.getBoundingClientRect().right-canvas.left+16);
+        if (panel?.getClientRects().length) {
+          const r=panel.getBoundingClientRect();
+          if(panel.classList.contains('fourd-review-panel')&&innerWidth<=700)bottom=Math.max(bottom,canvas.bottom-r.top+12);
+          else left=Math.max(left,r.right-canvas.left+16);
+        }
       }
       const crumbs=document.getElementById("fourd-breadcrumbs");
       if(crumbs?.getClientRects().length)top=Math.max(top,crumbs.getBoundingClientRect().bottom-canvas.top+14);
@@ -653,7 +657,9 @@ window.WorkspaceLayout = {
         bottom = Math.max(bottom, canvas.bottom - r.top + 12);
     }
     if (canvas.width - left - right < canvas.width * 0.35) left = 12;
-    if (canvas.height - top - bottom < canvas.height * 0.35) bottom = 44;
+    const reviewSheet=StudioUI.mode==='4d'&&innerWidth<=700&&document.querySelector('#studio-dialog[open].fourd-review-panel');
+    const minHeight=reviewSheet?120:canvas.height*.35;
+    if (canvas.height - top - bottom < minHeight) bottom=Math.max(44,canvas.height-top-minHeight);
     return {
       left,
       top,

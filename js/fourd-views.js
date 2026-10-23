@@ -37,6 +37,7 @@ window.FourDViews = {
   },
   remember() {this.history.push(this.pose());if(this.history.length>24)this.history.shift();},
   cancel(reason='navigation') {
+    if(window.FourDReview?.queueActive&&!FourDReview.queueMoving&&['input','suspend','model-update','navigation','pause','stop'].includes(reason))FourDReview.cancelQueue();
     Engine3D.cameraTween=null;this.transition=null;this.transitionPlanes=null;
     clearTimeout(this.tourTimer);this.tourTimer=null;
     if(reason!=='tour')this.tourPlaying=false;
@@ -51,9 +52,22 @@ window.FourDViews = {
   fit(box,direction=new THREE.Vector3(1,.85,1)) {
     const camera=Engine3D.camera, center=box.getCenter(new THREE.Vector3()), radius=Math.max(4,box.getSize(new THREE.Vector3()).length()/2);
     direction.normalize();
-    const frame=WorkspaceLayout.frame(camera,center,direction,radius);
+    const framing=camera.isPerspectiveCamera&&FourDStudio.settings.lens?camera.clone():camera;
+    if(framing!==camera)framing.setFocalLength(FourDStudio.settings.lens);
+    const frame=WorkspaceLayout.frame(framing,center,direction,radius);
     camera.near=Math.max(.1,radius/10000);camera.far=Math.max(10000,frame.distance*10);camera.updateProjectionMatrix();
     return {position:frame.center.clone().addScaledVector(direction,frame.distance),target:frame.center};
+  },
+  reframe() {
+    if(!FourDWorkspace.running||FourDWorkspace.paused||document.hidden||StudioEnhancements.walking||this.materialMode||FourDReview.queueActive)return;
+    let box=this.modelBox(this.kind==='floor'?this.floorIndex:null);const p=StudioEnhancements.modelProject||ProjectState.capture(),{SCALE:S,I}=get3DEnvironmentParams();
+    if(['element','material'].includes(this.kind)) {
+      const el=p.elements.find(e=>e.id===this.elementId);if(!el)return;
+      const b=PresentationModel.bounds(el),base=WorkbenchModel.roomBase(p,el),h=el.isFurniture?(el.customHeight||36):WorkbenchModel.floorHeight(p,el.floor)*.7;
+      box=new THREE.Box3(new THREE.Vector3(I.x+b.x*S,base*S,I.z+b.y*S),new THREE.Vector3(I.x+(b.x+b.w)*S,(base+h)*S,I.z+(b.y+b.h)*S));
+    } else if(this.kind==='plot') {for(const q of WorkbenchModel.boundary(p))box.expandByPoint(new THREE.Vector3(I.x+q.x*S,0,I.z+q.y*S));if(Engine4D.landscape)box.expandByObject(Engine4D.landscape);}
+    const direction=Engine3D.camera.position.clone().sub(Engine3D.controls.target).normalize(),pose=this.fit(box,direction);
+    this.move(pose.position,pose.target,{duration:250,layout:true});
   },
   modelBox(floor) {
     const p=StudioEnhancements.modelProject||ProjectState.capture(),box=new THREE.Box3(),{SCALE:S,I}=get3DEnvironmentParams();
@@ -86,9 +100,10 @@ window.FourDViews = {
     return [planes.find(p=>p.normal.y<-.99)?.constant??defaultTop,
       -(planes.find(p=>p.normal.y>.99)?.constant??-defaultBottom)];
   },
-  move(position,target,{fromPlanes,complete,duration,tour=false}={}) {
+  move(position,target,{fromPlanes,complete,duration,tour=false,layout=false}={}) {
     if(!FourDWorkspace.running||FourDWorkspace.paused)return;
     this.cancel(tour?'tour':'navigation');
+    if(!layout&&document.querySelector('[data-review-tab="context"]'))FourDReview.panel('context');
     const camera=Engine3D.camera, controls=Engine3D.controls;
     const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches||this.motion==='off';
     const ms=duration??(this.motion==='gentle'?850:520);
@@ -130,6 +145,7 @@ window.FourDViews = {
     Engine3D.needsRender=true;
   },
   clearFilters() {
+    window.FourDReview?.showNote('');
     StudioEnhancements.cancelPreview();StudioEnhancements.stopWalk();StudioEnhancements.setFocus(false);
     StudioEnhancements.focusRoom=null;StudioEnhancements.explosion=0;StudioEnhancements.explodedBounds=null;Workbench3D.clearIsolation();
     StudioEnhancements.clearSection(false);ViewportUI.inspectFloor('all');

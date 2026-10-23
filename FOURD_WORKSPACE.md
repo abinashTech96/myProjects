@@ -31,7 +31,7 @@ Undo/redo preserves the active workspace instead of restoring a historical mode 
 
 Local structural updates now compare stable room, wall, opening, floor/roof and professional-object dependency records. Changed source objects and owned presentation buffers are prepared off-scene, yielding between jobs, and published together after checking the current session/project revision. Unaffected meshes and GPU resources remain in place. Rapid input is coalesced; obsolete jobs dispose their staged resources. Room deletion updates ID/index metadata and ceiling ownership. The displayed scene reads its matching project snapshot until the next scene commits, so a partially edited project cannot invalidate the visible scene's old room indices.
 
-Global coordinate and builder changes—plot, scale/unit, floor count, level datums and other shared settings—retain an explicit full-source rebuild fallback, followed by asynchronous owned presentation staging. Source-only legacy roof data is regenerated on return to the editor. The bounded cache retains the current source, current presented snapshot and in-flight patch; replaced GPU resources are disposed rather than accumulating historical scene versions. Individual polygon/geometry operations and driver shader compilation remain synchronous and cannot be interrupted mid-call. This release does not promise that all large-project main-thread stalls have been eliminated.
+Global coordinate and builder changes—plot, scale/unit, floor count, level datums and other shared settings—retain an explicit full-source rebuild fallback, followed by asynchronous owned presentation staging. Source-only legacy roof data is regenerated on return to the editor. The bounded cache retains the current source, current presented snapshot and in-flight patch; replaced GPU resources are disposed rather than accumulating historical scene versions. Some source-builder geometry operations and driver shader compilation remain synchronous and cannot be interrupted mid-call; worker-delivered calculations are described below. This release does not promise that all large-project main-thread stalls have been eliminated.
 
 Labels default to Off. Selected shows a short name for the selected room; All shows up to 16 prioritized, visible room labels. Bounded ray checks respect geometry visibility and clipping. Labels avoid the toolbar, inspector, dialogs, orientation controls, edges and previously placed labels; a crowded-label summary replaces labels that cannot fit. Full configurations stay in the inspector. Dimensions have their own explicit toggle in Views; legacy editor measurement captions are hidden otherwise. Text labels are HTML overlays and are not part of the PNG canvas.
 
@@ -68,3 +68,85 @@ The existing occupied-footprint slabs, roof profiles, shafts, openings and datum
 - `npm run test:browser` checks existing workspace, form, theme, panel, garden and editor workflows alongside 4D. CI runs lifecycle and full 4D checks in fresh pages for Chromium, Firefox and WebKit.
 
 For the supplied three-storey building, compare all exterior orientations, each inspected floor, focused rooms and materials. Check diagnostics while alternating Full view and Focus: the scene-build count must stay unchanged. Stop must remove the 4D renderer and leave the Render 4D card. Repeat entry/exit and confirm the original plot and all 23 original room coordinates/dimensions remain unchanged.
+
+## Architectural review release (4D-057–070)
+
+Open **4D → Render 4D → Review**. This is one dock with Tools, Lights, Align,
+Views, Changes, Inspect and Device tabs. The mobile dock is a bottom sheet; usable-area framing updates on resize and respects the selected presentation lens. Tools follows the active element, floor,
+plot or building view. Existing Present, Studio and inspector controls remain.
+
+- **Architectural detail:** presentation-only skirting omits floor-level door spans;
+  thin opening architraves and window sills follow actual position, direction,
+  sill and wall thickness. Pitched roofs gain a two-inch underside and edge faces.
+  Procedural furniture gets bounded bevels while retaining its exact bounding box;
+  imported authored geometry is preserved. Trim is bounded to 300/900/1600 strips in the three profiles; omitted detail is reported. Plant crown variation is deterministic,
+  with fewer leaf instances in Eco and additional detail in High. These refinements
+  do not repair arbitrary imported geometry or certify all roof/wall junctions.
+- **Solid sections:** CPU workers intersect visible solid meshes with the settled
+  cutting planes, assemble closed contours and triangulate nested holes. Caps have
+  their own owned buffers and restore/dispose on changes. Open or non-manifold
+  contours are reported rather than filled speculatively. One preparation is
+  bounded to 350,000 input vertices across intersecting planes; over-budget meshes
+  are counted in Device diagnostics. Caps wait until camera motion settles.
+- **Lights:** add ceiling, spot or wall fixtures with room-relative position,
+  height in inches, beam direction/spread, intensity and 2000–6500 K temperature.
+  Expand a fixture to edit it. Save/import and undo/redo preserve settings. The
+  nearest 1/4/8 eligible fixtures are active in Eco/Balanced/High. Extra shadow maps
+  are disabled. Explicit fixtures replace automatic room fill when active.
+- **Worker preparation:** workers start only after Render 4D. Wall/dependency
+  descriptions, footprint unions, slab triangulation/extrusion, roof shells,
+  furniture bevels and section contour triangulation run off the UI thread.
+  Project snapshots and typed buffers cross the boundary; workers own no DOM,
+  renderer or scene. Revision checks reject stale results. Pause/Stop/exit terminate
+  pending worker jobs. If workers are unavailable, the verified synchronous kernel
+  is used. Source builders, imported-model parsing and shader compilation can still
+  pause the main thread; global edits retain the full-rebuild fallback.
+- **Texture budgets:** owned image textures start at up to 256 px, refine in
+  two-texture batches after navigation and are capped at 512/1024/2048 px in the
+  three profiles. Scene-owned image residency has conservative 32/64/128 MiB
+  budgets; lower quality downsizes existing residents. Disposal removes pending
+  work. These estimates cover these owned image textures, not total process/GPU
+  memory, render targets, project-embedded data or editor-owned originals. Existing
+  template caching remains capped at eight imported templates.
+- **Linked plan review:** Tools → Linked plan review enters Split with shared
+  selection, a visible model outline and Locate in plan/model controls. Clicking
+  the model selects the same source ID as the plan. This uses the Split modelling
+  surface; returning to the isolated 4D portal still requires Render 4D.
+- **Revision review:** Changes compares the current design with a saved workbench
+  alternative by stable element/opening ID and surface assignment. Added, moved,
+  resized, removed and other changed objects have coloured extents; dashed extents
+  show the prior state. Highlights are capped at 200 changes, with 100 review rows per page. Expand a row for exact saved/current values. No model
+  geometry is edited. A new project edit clears obsolete comparison overlays.
+- **Material continuity:** Ctrl/⌘ select target rooms, choose the reference room,
+  then Align → Floor/Ceiling. A common plan-space origin, physical repeat and
+  rotation align texture joints through adjoining surfaces. Assignments are
+  undoable and saved in JSON. Locked targets are rejected. This does not unwrap
+  differently oriented wall surfaces or change construction tile quantities.
+- **Section bookmarks:** Views saves up to 24 camera poses, clipping planes,
+  section-box bounds, floor context and annotations in portable model inches.
+  Visit restores that context. Bookmarks and light fixtures are validated on import.
+- **Render queue:** Views → Render saved views captures bookmarks sequentially into
+  one PNG ZIP, avoiding concurrent renderers. Progress and Cancel remain available;
+  navigation, project edits, hiding the tab, Pause, Stop and exit cancel work. The
+  completed queue restores the previous view. Output is bounded to 128 MiB before
+  ZIP packaging. PNG export itself remains available through Photo.
+- **Visual inspection:** Inspect checks finite positions, missing texture images,
+  missing UVs, exact coincident meshes and nearby disconnected wall endpoints.
+  Findings have source-selection/focus actions and temporary highlight boxes.
+  Possible gaps/layering require human review; this is not exhaustive mesh repair.
+- **Ambient occlusion:** higher-precision depth, tighter focused-view bounds, independent deterministic tangent vectors, physical thresholds and bounded contrast address the depth-quantization bands found on plain walls during visual review.
+- **Device:** shows startup, p95 sampled render cost, latest edit time, resource
+  counts, estimated owned texture residency, worker jobs and cap diagnostics.
+  Save device baseline records the current browser/viewport/quality combination.
+  It is not an FPS meter or a universal device performance guarantee.
+
+`npm test` adds kernel tests for section holes, non-manifold inputs, roof shells,
+exact furniture bounds, revision changes and portable fixture/bookmark/origin data.
+`FOURD_REVIEW_ONLY=1 npm run test:browser` covers the new workflows, real PNG/ZIP
+output, repeated edit/resource stability, worker lifecycle and narrow layouts.
+The full browser suite includes this test for every configured engine. CI publishes
+`/tmp/archcad-performance-<engine>.json` as a separate artifact on successful or
+failed runs. The fixed four-element/two-floor review fixture flags software-browser
+startup over 30 s, individual structural edits over 8 s, sampled p95 render cost over
+2.5 s and Eco-owned image textures above 32 MiB. These are broad CI failure limits;
+real-device baselines in Device must guide interactive performance tuning.

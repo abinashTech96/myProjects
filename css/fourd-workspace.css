@@ -57,3 +57,30 @@ body.studio-shell.workspace-panels-ready[data-ui-theme][data-workspace="4d"] #st
   border:1px solid var(--enh-border) !important;border-radius:12px !important;box-shadow:4px 6px 18px #0003 !important;
 }
 body[data-workspace="4d"] #studio-dialog.workspace-docked-dialog .studio-dialog-body {min-height:0;overflow-y:auto;}
+
+/* Review uses the same compact panel and field rhythm as the rest of 4D. */
+[data-review-tab] {font-size:12px;line-height:1.5;}
+[data-review-tab] details {padding:5px 0;border-bottom:1px solid var(--enh-border);}
+[data-review-tab] summary {cursor:pointer;overflow-wrap:anywhere;}
+[data-review-tab] table {width:100%;font-size:11px;border-collapse:collapse;}
+[data-review-tab] td,[data-review-tab] th {padding:4px;text-align:left;border-bottom:1px solid var(--enh-border);}
+[data-review-tab] small {display:block;font-size:10px;opacity:.8;}
+.review-finding {display:block;width:100%;text-align:left;white-space:normal;margin:4px 0;}
+#review-view-note {position:absolute;right:12px;bottom:42px;max-width:min(300px,45%);padding:7px 10px;background:var(--enh-panel);color:var(--enh-text);border:1px solid var(--enh-border);border-radius:8px;font:12px system-ui;white-space:pre-wrap;}
+#review-linked-tools {display:none;}
+body[data-workspace="split"][data-review-linked="true"] #review-linked-tools {display:flex;position:absolute;bottom:40px;left:10px;right:10px;align-items:center;gap:4px;flex-wrap:wrap;z-index:310;padding:5px;background:var(--enh-panel);border:1px solid var(--enh-border);border-radius:8px;font:11px system-ui;}
+#review-linked-tools span {margin-right:auto;}
+#review-linked-tools button {font-size:10px;padding:4px 6px;min-height:30px;}
+@media(max-width:700px){#review-view-note{bottom:70px;max-width:calc(100% - 44px);font-size:11px;}}
+.fourd-review-panel .fourd-tabs {display:flex;gap:3px;overflow-x:auto;scrollbar-width:thin;}
+.fourd-review-panel .fourd-tabs button {flex:0 0 auto;min-width:50px;padding:5px 7px;}
+.fourd-review-panel .fourd-tabs [aria-pressed="true"] {background:var(--enh-inset);color:var(--enh-accent);border-color:var(--enh-accent);}
+body[data-workspace="4d"] .fourd-review-panel {background:var(--enh-panel);color:var(--enh-text);}
+@media(max-width:700px){
+ body.studio-shell.workspace-panels-ready[data-ui-theme][data-workspace="4d"] #studio-dialog.fourd-review-panel.workspace-docked-dialog {
+  top:auto !important;bottom:32px !important;left:12px !important;width:calc(100vw - 24px) !important;max-height:45vh !important;
+ }
+ .fourd-review-panel .fourd-form textarea {height:55px;}
+}
+/* Closing a dock must also override older theme rules that set dialog display. */
+body[data-workspace="4d"] #studio-dialog.workspace-docked-dialog:not([open]) {display:none !important;}

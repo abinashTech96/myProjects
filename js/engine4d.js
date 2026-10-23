@@ -218,7 +218,18 @@ window.Engine4D = {
     this.scene.add(this.key, this.key.target, this.fill, this.rim);
     this.composer = new THREE.EffectComposer(this.renderer);
     this.ao = new THREE.SSAOPass(this.scene, Engine3D.camera, 1, 1);
-    this.ao.kernelRadius = 12;
+    // Sixteen-bit depth quantizes large architectural ranges into visible AO bands.
+    this.ao.normalRenderTarget.depthTexture.type=this.renderer.capabilities.isWebGL2?THREE.FloatType:THREE.UnsignedIntType;
+    this.ao.normalRenderTarget.depthTexture.needsUpdate=true;
+    // Independent kernel directions avoid the bundled scalar-noise tangent bands.
+    const noise=new Float32Array(64);
+    for(let i=0;i<16;i++){const a=i*2.3999632297;noise.set([Math.cos(a),Math.sin(a),0,1],i*4);}
+    this.ao.noiseTexture.dispose();
+    this.ao.noiseTexture=new THREE.DataTexture(noise,4,4,THREE.RGBAFormat,THREE.FloatType);
+    this.ao.noiseTexture.wrapS=this.ao.noiseTexture.wrapT=THREE.RepeatWrapping;
+    this.ao.ssaoMaterial.uniforms.tNoise.value=this.ao.noiseTexture;
+    for(let i=0;i<this.ao.kernel.length;i++){const z=(i+.5)/this.ao.kernel.length,a=i*2.3999632297,r=Math.sqrt(1-z*z),scale=.1+.9*(i/this.ao.kernel.length)**2;this.ao.kernel[i].set(Math.cos(a)*r,Math.sin(a)*r,z).multiplyScalar(scale);}
+    this.ao.kernelRadius = 6;
     this.ao.minDistance = 0.0001;
     this.ao.maxDistance = 0.025;
     this.ao.ssaoMaterial.fragmentShader =
@@ -226,6 +237,10 @@ window.Engine4D = {
         "float depth = getDepth( vUv );",
         "float depth = getDepth( vUv ); if (texture2D(tDepth,vUv).x >= 0.999999) { gl_FragColor=vec4(1.0); return; }",
       );
+    this.ao.ssaoMaterial.fragmentShader=this.ao.ssaoMaterial.fragmentShader
+      .replace('vec3 viewNormal = getViewNormal( vUv );','vec3 viewNormal = normalize( getViewNormal( vUv ) );')
+      .replace('occlusion += 1.0;', 'occlusion += smoothstep(0.0,1.0,kernelRadius / max(0.01,abs(viewPosition.z-getViewZ(getDepth(samplePointUv)))));')
+      .replace('gl_FragColor = vec4( vec3( 1.0 - occlusion ), 1.0 );','gl_FragColor = vec4( vec3( 1.0 - occlusion * 0.55 ), 1.0 );');
     this.ao.normalMaterial.clipping = true;
     this.gamma = new THREE.ShaderPass(THREE.GammaCorrectionShader);
     this.fxaa = new THREE.ShaderPass(THREE.FXAAShader);
@@ -747,13 +762,17 @@ window.Engine4D = {
       (typeof StudioEnhancements !== "undefined" &&
         StudioEnhancements.explodedBounds) ||
       this.modelBounds;
-    if (box && !box.isEmpty()) {
+    let depthBox=box;
+    const focus=elements.find(e=>e.id===StudioEnhancements.focusRoom),{SCALE:S,I}=get3DEnvironmentParams();
+    if(focus){const b=PresentationModel.bounds(focus),base=WorkbenchModel.roomBase(StudioEnhancements.modelProject||ProjectState.capture(),focus),height=focus.isFurniture?(focus.customHeight||36):WorkbenchModel.floorHeight(StudioEnhancements.modelProject||ProjectState.capture(),focus.floor);depthBox=new THREE.Box3(new THREE.Vector3(I.x+b.x*S,base*S,I.z+b.y*S),new THREE.Vector3(I.x+(b.x+b.w)*S,(base+height)*S,I.z+(b.y+b.h)*S));}
+    else if(FourDViews.kind==='floor')depthBox=FourDViews.modelBox(FourDViews.floorIndex);
+    if (depthBox && !depthBox.isEmpty()) {
       const distance = source.position.distanceTo(
-        box.getCenter(new THREE.Vector3()),
+        depthBox.getCenter(new THREE.Vector3()),
       );
       const radius = Math.max(
         10,
-        box.getSize(new THREE.Vector3()).length() / 2,
+        depthBox.getSize(new THREE.Vector3()).length() / 2,
       );
       this.camera.near = Math.max(0.2, distance - radius * 1.4);
       this.camera.far = Math.max(
@@ -803,6 +822,9 @@ window.Engine4D = {
     }
     FourDStudio.frame(camera);
     window.FourDViews?.effects(camera);
+    window.FourDDetails?.frame();
+    window.FourDReview?.applyAlignment();
+    if (!StudioEnhancements.navigating && FourDAssets.pending.size && !FourDAssets.timer) FourDAssets.refine();
     if (FourDStudio.renderComparison(camera)) {
       this.frames = (this.frames || 0) + 1;
       this.status("4D alternatives · synchronized cameras");
@@ -811,6 +833,8 @@ window.Engine4D = {
     const ao = this.ao,
       perspective = camera.isPerspectiveCamera ? 1 : 0;
     ao.camera = camera;
+    const worldScale=get3DEnvironmentParams().SCALE,depthSpan=Math.max(1,camera.far-camera.near);
+    ao.kernelRadius=6*worldScale;ao.minDistance=.35*worldScale/depthSpan;ao.maxDistance=12*worldScale/depthSpan;
     if (ao.ssaoMaterial.defines.PERSPECTIVE_CAMERA !== perspective) {
       ao.ssaoMaterial.defines.PERSPECTIVE_CAMERA = perspective;
       ao.ssaoMaterial.needsUpdate = true;
@@ -865,7 +889,7 @@ window.Engine4D = {
     );
     return true;
   },
-  async capture() {
+  async capture(options = {}) {
     if (!this.ready || window.FourDWorkspace?.paused)
       return StudioUI.message("The 4D renderer is still loading.");
     const stamp=this.generation;
@@ -888,10 +912,11 @@ window.Engine4D = {
     if (stamp !== this.generation) return;
     if (!blob)
       return StudioUI.message("The render could not be captured.", "error");
+    if(options.download===false)return blob;
     const url = URL.createObjectURL(blob),
       link = document.createElement("a");
     link.href = url;
-    link.download = "ArchCAD_4D_Render.png";
+    link.download = options.name || "ArchCAD_4D_Render.png";
     link.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   },

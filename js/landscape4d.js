@@ -329,10 +329,10 @@
             rz: (rand() - 0.5) * 0.8,
           });
       }
-      const count = plant.kind === "tree" ? 220 : 60;
+      const count = plant.kind === "tree" ? 275 : 75;
       for (let i = 0; i < count; i++) {
         const angle = rand() * Math.PI * 2,
-          rad = Math.sqrt(rand()) * r * 0.65,
+          rad = Math.sqrt(rand()) * r * (plant.kind === "tree" ? .55 + (Math.floor(plant.x) % 3) * .08 : .65),
           dy = rand() * 2 - 1;
         leaves.push({
           x: x + Math.cos(angle) * rad * Math.sqrt(1 - dy * dy),
@@ -376,6 +376,7 @@
         }),
         leaves.length,
       );
+      leaves.sort((a,b)=>Math.sin(a.x*12.9898+a.y*78.233+a.z*2.321)-Math.sin(b.x*12.9898+b.y*78.233+b.z*2.321));
       leaves.forEach((l, i) => {
         dummy.position.set(l.x, l.y, l.z);
         dummy.rotation.set(l.rx, l.ry, l.rz);
@@ -392,12 +393,15 @@
         );
       });
       mesh.castShadow = mesh.receiveShadow = true;
+      mesh.userData.foliageCapacity=leaves.length;
       group.add(mesh);
     }
+    quality(engine);
     group.traverse((o) => {
       if (o.isInstancedMesh) o.frustumCulled = false;
     });
   }
-  root.Landscape4D = { plan, build, dispose };
+  function quality(engine){const q=root.FourDWorkspace?.quality||'balanced',ratio=q==='eco'?.36:q==='high'?1:.8;engine.landscape?.traverse(n=>{if(n.userData.foliageCapacity)n.count=Math.max(1,Math.floor(n.userData.foliageCapacity*ratio));});}
+  root.Landscape4D = { plan, build, dispose, quality };
   if (typeof module === "object") module.exports = root.Landscape4D;
 })(globalThis);

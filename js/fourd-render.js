@@ -206,14 +206,14 @@ window.FourDRender = {
     this.environmentKey = key;
     this.probeDirty = true;
   },
-  camera(camera, settings) {
+  camera(camera, settings, targetOverride) {
     if (!camera.isPerspectiveCamera) return;
     if (settings.lens) {
       camera.filmGauge = 36;
       camera.setFocalLength(settings.lens);
     }
     if (settings.verticals) {
-      const target = Engine3D.controls.target.clone(),
+      const target = (targetOverride || Engine3D.controls.target).clone(),
         flat = target.clone();
       flat.y = camera.position.y;
       if (flat.distanceToSquared(camera.position) > 0.001) {

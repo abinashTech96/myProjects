@@ -236,11 +236,11 @@ add path tracing or certify physical daylight performance.
 
 See [the 4D workspace guide](FOURD_WORKSPACE.md) for controls and verification.
 
-## Accepted next 4D improvements — pending
+## Next 4D improvements — delivered with bounded detail and worker fallback
 
-Added on 23 October 2026. Items 4D-057–064 are accepted backlog work; they are
-not part of the implemented release above. They refine the existing engine,
-assets, controls and diagnostics while preserving saved plot and element dimensions.
+Added on 23 October 2026 and delivered in the architectural review release.
+Items 4D-057–064 refine the existing engine, assets, controls and diagnostics
+while preserving saved plot and element dimensions. Scope and limits follow.
 
 | ID | Requirement | Acceptance criteria |
 | --- | --- | --- |
@@ -256,4 +256,52 @@ assets, controls and diagnostics while preserving saved plot and element dimensi
 Suggested delivery order: record a baseline under 4D-064 first, implement
 4D-061–062 for responsiveness and memory, then 4D-057–060 for visual quality,
 and 4D-063 for contextual controls. Run the expanded regression checks throughout.
-No universal frame-rate or memory guarantee is implied by these pending items.
+No universal frame-rate or total-process memory guarantee is implied by these items.
+
+
+### Additional accepted review features — delivered
+
+The six follow-up suggestions were accepted in the same implementation batch.
+
+| ID | Feature | Delivered behavior |
+| --- | --- | --- |
+| 4D-065 | Linked plan/model selection | Split review shares stable-ID selection, a model outline, click selection in the model and Locate in plan/model actions. Leaving the isolated 4D portal releases its engine and worker. |
+| 4D-066 | Revision highlighting | Compare saved alternatives with current element/opening records and surface finishes. Coloured extents show added, moved, resized, removed and other changes; dashed boxes show old extents. Page through 100 rows at a time for exact values and select current source elements; highlight at most 200 changes. Clear overlays after edits. |
+| 4D-067 | Material continuity | Apply a shared plan origin, physical repeat and rotation to selected floor/ceiling finishes. Locked targets are rejected; assignments support undo/redo and portable save. Imported furniture UVs and wall unwraps retain their own layouts. |
+| 4D-068 | Section bookmarks | Save up to 24 named poses, cutting planes, section boxes, floor context and annotations in portable inches. Visit restores filters and camera; removed room/floor targets fall back safely. |
+| 4D-069 | Sequential render queue | Capture saved views one at a time to a single PNG ZIP with progress, cancellation and a view manifest. Restore the previous view after completion. Pause, exit, tab hiding, navigation and edits cancel pending work; output is bounded to 128 MiB. |
+| 4D-070 | Visual defect inspector | Check malformed buffers, missing texture images/UVs, exact coincident meshes and suspicious wall endpoint gaps. Findings highlight extents and link to source selection/focus. These are bounded review aids, not exhaustive repair or certification. |
+
+### Delivery scope for 4D-057–070
+
+- Architectural detail adds door-aware skirting, opening architraves/window sills,
+  solid roof undersides/edges and bounded bevels on procedural furniture. Detail strips are limited to 300/900/1600 in the three quality profiles, with omitted strips reported. Existing
+  authored assets and source dimensions stay intact. Foliage uses deterministic
+  variation and profile-controlled instance counts. Artistic refinement can still
+  continue as specific junction defects are reproduced.
+- Section caps triangulate closed mesh/plane contours, retaining nested holes.
+  Open contours and meshes beyond the 350,000-input-vertex budget are counted in
+  Device diagnostics rather than filled speculatively. Superseded cap buffers are
+  disposed; navigation defers cap preparation until settling.
+- Lazy CPU workers prepare wall/dependency descriptions, footprints, slab buffers,
+  roof shells, furniture bevels and section contours. Stale descriptions are
+  coalesced. Workers never own scene/DOM/GPU state; Pause/Stop/exit terminate jobs.
+  The shared CPU kernel supports a worker-unavailable fallback. Some source
+  builders, imported-model parsing and shader compilation still use the main thread.
+- Owned image textures load progressively and use conservative 32/64/128 MiB
+  residency budgets with 512/1024/2048 px caps in Eco/Balanced/High. These estimates
+  exclude render targets, project data, editor originals and total process memory.
+  Existing imported-template caching remains bounded at eight.
+- Review follows one compact themed dock, with contextual Element/Floor/Plot tools
+  and a mobile bottom sheet. Usable-area framing accounts for the bottom sheet,
+  responsive viewport changes and the active presentation lens. AO uses independent
+  deterministic tangent vectors, physical depth thresholds and bounded contrast
+  with higher-precision depth and tighter focused-view bounds to avoid bands on smooth walls.
+- Kernel/model tests cover exact bounds, cap holes, shells and portable data.
+  Browser checks cover actual PNG/ZIP output, repeated edits, stable resource counts,
+  worker restrictions/lifecycle and mobile layout. CI publishes per-engine timing
+  artifacts and flags explicit software-browser budgets; Device saves per-browser,
+  viewport and quality baselines for real-device comparisons.
+
+See [4D workspace delivery and validation](FOURD_WORKSPACE.md) for controls,
+performance thresholds and remaining rendering limits.

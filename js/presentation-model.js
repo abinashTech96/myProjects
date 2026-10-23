@@ -58,6 +58,7 @@
           !/^#[a-f0-9]{6}$/i.test(s.color)
         )
           throw Error("Invalid surface finish");
+        if(s.origin){if(!Array.isArray(s.origin)||s.origin.length!==2)throw Error("Invalid texture origin");s.origin.forEach(n=>P.finite(n,"Texture origin",-100000,100000));}
         P.finite(s.scale, "Texture scale", 0.1, 10);
         P.finite(s.rotation, "Texture rotation", 0, 360);
         P.finite(s.roughness, "Surface roughness", 0.02, 1);

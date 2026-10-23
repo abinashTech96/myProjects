@@ -25,6 +25,7 @@ window.FourDWorkspace = {
         <button class="studio-button" onclick="StudioEnhancements.fullView()">Full view</button>
         <button class="studio-button" onclick="FourDWorkspace.viewPanel()">Views</button>
         <button class="studio-button" onclick="FourDViews.panel()">Present</button>
+        <button class="studio-button" onclick="FourDReview.panel()">Review</button>
         <button class="studio-button" onclick="FourDWorkspace.inspect(true)">Inspect</button>
         <button class="studio-button" onclick="FourDWorkspace.studio()">4D Studio</button>
         <select aria-label="4D annotations" onchange="FourDWorkspace.setAnnotations(this.value)"><option value="off">Labels off</option><option value="selected">Selected label</option><option value="all">All visible labels</option></select>
@@ -92,7 +93,7 @@ window.FourDWorkspace = {
         ViewportUI.inspectFloor("all");
         this.setQuality(this.quality);
         this.modelKey = this.geometryKey(ProjectState.capture());
-        FourDIncremental.remember(ProjectState.capture());
+        await FourDIncremental.remember(ProjectState.capture(),()=>token===this.token&&StudioUI.mode==='4d'&&!document.hidden);
         FourDViews.reset();
         this.materialKeys = new Map();
         this.updateMaterials();
@@ -123,7 +124,7 @@ window.FourDWorkspace = {
   pause(value = !this.paused) {
     if (!this.running) return;
     this.paused = value;
-    if (value) FourDViews.suspend();
+    if (value) {FourDViews.suspend();FourDReview.cancelQueue();FourDJobs.stop();clearTimeout(FourDAssets.timer);FourDDetails.capRevision++;clearTimeout(FourDDetails.capTimer);this.pendingUpdate=true;}
     if (value) {
       FourDStudio.playing = false;
       cancelAnimationFrame(FourDStudio.stageRAF);
@@ -147,6 +148,10 @@ window.FourDWorkspace = {
   },
   stop(update = true) {
     ++this.token;
+    window.FourDReview?.stop();
+    window.FourDDetails?.stop();
+    FourDJobs.stop();
+    FourDAssets.stop();
     FourDIncremental.reset();
     FourDViews.stop();
     this.starting = this.running = this.paused = false;
@@ -218,6 +223,8 @@ window.FourDWorkspace = {
   },
   setQuality(value) {
     this.quality = this.profiles[value] ? value : "balanced";
+    window.FourDAssets?.enforce();
+    if(Engine4D.ready)Landscape4D.quality(Engine4D);
     this.resolutionScale = 1;
     this.metrics.samples = [];
     try { localStorage.setItem("ArchCAD_4D_Quality", this.quality); } catch {}
@@ -269,7 +276,7 @@ window.FourDWorkspace = {
             Engine4D.syncModel(true,stage);
             this.sourceInvalid=false;
             Scene4D.reconcile(Engine4D);
-            FourDIncremental.remember(p);
+            await FourDIncremental.remember(p,valid);
             this.metrics.fallbacks=(this.metrics.fallbacks||0)+1;
           }
           this.modelKey=key;

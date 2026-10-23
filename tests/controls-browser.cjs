@@ -292,7 +292,7 @@ module.exports = async ({ page, assert }) => {
       WorkspaceRefinement.pinned = true;
       WorkspaceRefinement.expand(true);
     }, theme);
-    await page.waitForTimeout(300);
+    await page.waitForFunction(()=>document.getElementById('workspace-rail').getBoundingClientRect().width===130);
     assert.equal(
       (await page.locator("#workspace-rail").boundingBox()).width,
       130,

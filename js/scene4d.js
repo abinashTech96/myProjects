@@ -26,6 +26,7 @@
     const ownedTexture = (texture) => {
       if (!textures.has(texture)) {
         const clone = texture.clone();
+        root.FourDAssets?.prepareTexture(clone, texture);
         clone.needsUpdate = true;
         textures.set(texture, clone);
       }
@@ -40,6 +41,7 @@
       for (const slot of textureSlots)
         if (copy[slot] && copy[slot] === original[slot])
           copy[slot] = ownedTexture(copy[slot]);
+      for (const slot of textureSlots) if(copy[slot] && !root.FourDAssets?.entries.has(copy[slot])) root.FourDAssets?.prepareTexture(copy[slot],copy[slot]);
       return copy;
     };
     const cloneNode = (node, inDesign = false) => {
@@ -108,8 +110,8 @@
       for (let f = 0; f < project.floorCount; f++) {
         if (options.floors && !options.floors.has(f)) continue;
         // Empty storeys do not create a slab over the entire plot.
-        if (!root.DesignModel.floorUnion(project, f).length) continue;
-        const footprint = root.WorkbenchModel.slabGeometry(project, f),
+        if (!(options.prepared?.[f]?.union || root.DesignModel.floorUnion(project, f)).length) continue;
+        const footprint = options.prepared?.[f]?.slab || root.WorkbenchModel.slabGeometry(project, f),
           group = new T.Group();
         group.userData = {
           isSlab: true,
@@ -127,12 +129,11 @@
             points.map(([x, y]) => new T.Vector2(x * SCALE, -y * SCALE));
           const shape = new T.Shape(ring(polygon[0]));
           shape.holes = polygon.slice(1).map((hole) => new T.Path(ring(hole)));
-          const geometry = new T.ExtrudeGeometry(shape, {
-            depth: 6 * SCALE,
-            bevelEnabled: false,
-            steps: 1,
+          const packed = options.slabBuffers?.[f]?.[footprint.indexOf(polygon)];
+          const geometry = packed ? root.FourDJobs.unpack(packed) : new T.ExtrudeGeometry(shape, {
+            depth: 6 * SCALE, bevelEnabled: false, steps: 1,
           });
-          geometry.rotateX(-Math.PI / 2);
+          if (!packed) geometry.rotateX(-Math.PI / 2);
           geometries.set(geometry, geometry);
           const mat = new T.MeshStandardMaterial({
             color: 0xc6c6bd,
@@ -160,13 +161,13 @@
         roof = project.design.roof;
       if (
         options.roof !== false && roof.type !== "flat" &&
-        root.DesignModel.floorUnion(project, top).length
+        (options.prepared?.[top]?.union || root.DesignModel.floorUnion(project, top)).length
       ) {
         const clipping = root.polygonClipping,
           base =
             root.WorkbenchModel.floorBase(project, top) +
             root.WorkbenchModel.floorHeight(project, top);
-        const footprint = root.DesignModel.floorUnion(project, top),
+        const footprint = options.prepared?.[top]?.union || root.DesignModel.floorUnion(project, top),
           expanded = [];
         for (const polygon of footprint) {
           const outlines = root.DesignModel.offsetPath(
@@ -305,6 +306,7 @@
               3) *
             (node.isInstancedMesh ? node.count : 1);
       });
+      root.FourDAssets?.enforce();
       complete = true;
       return {
         model,
@@ -338,13 +340,45 @@
     do { result = iterator.next(); } while (!result.done);
     return result.value;
   }
-  async function stageAsync(engine,source,project,checkpoint,options) {
+  async function stageAsync(engine,source,project,checkpoint,options = {}) {
+    if (root.FourDJobs) {
+      const prepared = await root.FourDJobs.run({kind:'footprints',project});
+      await checkpoint();
+      const slabBuffers = {}, {SCALE:scale}=get3DEnvironmentParams();
+      for(let f=0;f<project.floorCount;f++) if(!options.floors||options.floors.has(f)) {
+        slabBuffers[f]=await root.FourDJobs.run({kind:'extrude',polygons:prepared[f].slab,depth:6,scale});
+        await checkpoint();
+      }
+      options={...options,prepared,slabBuffers};
+    }
     const iterator = stages(engine,source,project,options);
     let began = performance.now();
     try {
       for (;;) {
         const result = iterator.next();
-        if (result.done) return result.value;
+        if (result.done) {
+          const stage=result.value;
+          try {
+            if(root.FourDJobs) {
+              const candidates=new Map(),budget=root.FourDWorkspace?.quality==='eco'?80:256;
+              stage.model.traverse(n=>{const element=project.elements.find(e=>e.id===n.userData.elementId);if(n.isMesh&&n.geometry.type==='BoxGeometry'&&element?.isFurniture&&!element.assetId&&candidates.size<budget)candidates.set(n.geometry,n.geometry.parameters);});
+              if(candidates.size){
+                const rows=[...candidates],boxes=rows.map(([,p])=>({w:p.width,h:p.height,d:p.depth,r:Math.min(p.width,p.height,p.depth)*.1}));
+                const rounded=await root.FourDJobs.run({kind:'rounded',boxes});await checkpoint();
+                const replacements=new Map(rows.map(([g],i)=>[g,root.FourDJobs.unpack(rounded[i])]));
+                stage.model.traverse(n=>{if(replacements.has(n.geometry))n.geometry=replacements.get(n.geometry);});
+                for(const [old,replacement]of replacements){stage.resources.geometries.delete(old);old.dispose();stage.resources.geometries.add(replacement);}
+              }
+              const meshes=[];stage.model.traverse(n=>{if(n.isMesh&&n.userData.isRoof&&n.geometry.type==='ShapeGeometry')meshes.push(n);});
+              for(const n of meshes){
+                const original=n.geometry, packed=root.FourDGeometry.pack(original.clone());
+                const solid=await root.FourDJobs.run({kind:'shell',geometry:packed,depth:2*get3DEnvironmentParams().SCALE});
+                await checkpoint();n.geometry=root.FourDJobs.unpack(solid);stage.resources.geometries.delete(original);original.dispose();stage.resources.geometries.add(n.geometry);
+              }
+            }
+            stage.triangles=triangles(stage.model);return stage;
+          } catch(error){dispose({model:stage.model,materials:stage.materials,sceneResources:stage.resources});throw error;}
+        }
         if (performance.now()-began > 8) {
           await checkpoint();
           began = performance.now();
@@ -377,6 +411,8 @@
     for (const [source, copy] of r.textureLinks)
       if (r.textureVersions.get(source) !== source.version) {
         copy.image = source.image;
+        root.FourDAssets?.resized.delete(source.image);
+        root.FourDAssets?.prepareTexture(copy,source);
         copy.needsUpdate = true;
         r.textureVersions.set(source, source.version);
       }
@@ -392,6 +428,8 @@
       if(n.geometry) geometries.add(n.geometry);
       for(const m of [].concat(n.material||[])) {materials.add(m);for(const slot of textureSlots) if(m[slot]) textures.add(m[slot]);}
     });
+    for(const t of textures) if(!root.FourDAssets?.entries.has(t)) root.FourDAssets?.prepareTexture(t,t);
+    root.FourDAssets?.enforce();
     const old=engine.sceneResources||{};
     for(const g of new Set([...(old.geometries||[]),...(added.geometries||[])])) if(!geometries.has(g))g.dispose();
     for(const m of engine.materials||[]) if(!materials.has(m))m.dispose();

@@ -124,5 +124,12 @@
   "css/workspace-simple.css",
   "js/workspace-experience.js",
   "./js/fourd-incremental.js",
-  "./js/fourd-views.js"
+  "./js/fourd-views.js",
+  "js/fourd-review-model.js",
+  "js/fourd-geometry.js",
+  "js/fourd-jobs.js",
+  "js/fourd-worker.js",
+  "js/fourd-assets.js",
+  "js/fourd-details.js",
+  "js/fourd-review.js"
 ]

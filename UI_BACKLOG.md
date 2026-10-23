@@ -235,3 +235,25 @@ and intentional saved finishes. This remains raster visualization; it does not
 add path tracing or certify physical daylight performance.
 
 See [the 4D workspace guide](FOURD_WORKSPACE.md) for controls and verification.
+
+## Accepted next 4D improvements — pending
+
+Added on 23 October 2026. Items 4D-057–064 are accepted backlog work; they are
+not part of the implemented release above. They refine the existing engine,
+assets, controls and diagnostics while preserving saved plot and element dimensions.
+
+| ID | Requirement | Acceptance criteria |
+| --- | --- | --- |
+| 4D-057 | Detailed architectural junctions | Extend the junction audit under 4D-036 with clean wall corners, roof joins, window reveals, door frames and skirting. Check interior and exterior close-ups for gaps, overlapping faces and inconsistent thickness. Preserve entered room dimensions and opening positions. |
+| 4D-058 | Solid section cuts | Cap exposed wall and slab cut surfaces in section views, including openings and holes. Keep caps aligned through clipping transitions, use appropriate section finishes and avoid changing editable geometry. Bound preparation cost and release superseded cap buffers. |
+| 4D-059 | Better furniture and vegetation | Refine proportions, texture scale, material response and plant variation in the existing asset pipeline. Retain lightweight distant versions and profile-bounded instance counts; preserve saved placement and dimensions. Compare room, floor and plot views. |
+| 4D-060 | Lighting by fixture | Give ceiling lights, spotlights and wall lights suitable direction, spread, intensity and colour-temperature controls. Persist validated fixture settings through import/export and undo/redo. Keep active lights and shadow casters within quality-profile budgets and preserve daylight settings. |
+| 4D-061 | Background geometry preparation | Move suitable remaining synchronous topology and buffer calculations into workers using serializable snapshots and transferable data. Keep renderer and scene ownership on the main thread. Cancel stale revisions, commit dependency groups coherently and retain the previous valid scene on failure. Compare results with the existing builder and measure main-thread edit pauses. |
+| 4D-062 | Texture and asset budgets | Extend existing resource reuse with progressive detail loading, explicit texture-resolution and asset-memory budgets, bounded caches and unused-resource eviction. Adapt to quality profiles without repeatedly downloading or decoding unchanged assets. Verify repeated entry, navigation and edits return resource counts to a stable range. |
+| 4D-063 | View-aware controls | Adapt the existing compact panel to Element, Floor and Plot context: room finishes, floor controls and landscaping respectively. Keep selection and Back navigation clear, preserve access to relevant tools and use one consistent panel pattern without increasing workspace obstruction. Support keyboard navigation and reduced motion. |
+| 4D-064 | Performance regression checks | Extend current diagnostics, benchmarks and CI with repeatable measurements for cold/warm startup, view transitions, edit latency and memory/resource growth. Establish fixture- and environment-specific baselines, report meaningful regressions before deployment and distinguish software-rendered CI results from device measurements. Include worker, asset-budget and lifecycle checks. |
+
+Suggested delivery order: record a baseline under 4D-064 first, implement
+4D-061–062 for responsiveness and memory, then 4D-057–060 for visual quality,
+and 4D-063 for contextual controls. Run the expanded regression checks throughout.
+No universal frame-rate or memory guarantee is implied by these pending items.

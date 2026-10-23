@@ -97,6 +97,8 @@ module.exports = async ({ page, context, assert }) => {
       sessionStorage.removeItem("ArchCAD_ProjectToken");
       sessionStorage.removeItem("ArchCAD_ProjectServer");
     });
+    // Browser keep-alive sockets must not hold this disposable test service open.
+    service.server.closeAllConnections();
     await service.close();
     fs.rmSync(dataDir, { recursive: true, force: true });
   }

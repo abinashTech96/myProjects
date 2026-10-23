@@ -1,0 +1,188 @@
+/* Reuse the dock's sizing, focus and theme system; only the studio's contents differ. */
+.fourd-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--enh-border);
+  position: sticky;
+  top: 0;
+  background: var(--enh-panel);
+  z-index: 1;
+}
+.fourd-tabs .studio-button {
+  min-width: 0;
+  margin: 0;
+  padding: 6px 3px;
+  font-size: 10px;
+  min-height: 30px;
+}
+.fourd-tabs .active {
+  color: var(--enh-accent) !important;
+  border-color: var(--enh-accent) !important;
+  box-shadow: inset 1px 2px 4px var(--enh-shadow) !important;
+}
+.fourd-form {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  font-size: 12px;
+}
+.fourd-form > label,
+.fourd-form .studio-field-grid label {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  margin: 0;
+}
+.fourd-form :is(select, input:not([type="checkbox"]), textarea) {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+.fourd-form :is(select, input[type="number"]) {
+  min-height: 30px;
+  padding: 5px 6px;
+}
+.fourd-form input[type="file"] {
+  font-size: 10px;
+}
+.fourd-form input[type="range"] {
+  padding: 0;
+}
+.fourd-form textarea {
+  height: 100px;
+  resize: vertical;
+}
+.fourd-form label.fourd-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+.fourd-form .fourd-check input {
+  width: 16px;
+  height: 16px;
+  min-height: 16px;
+  flex: none;
+  accent-color: var(--enh-accent);
+}
+.fourd-form h4,
+.fourd-form p {
+  margin: 0;
+  line-height: 1.5;
+}
+.fourd-form hr {
+  width: 100%;
+  border: 0;
+  border-top: 1px solid var(--enh-border);
+  margin: 4px 0;
+}
+.fourd-form .studio-hint {
+  font-size: 10px;
+  color: var(--enh-muted);
+}
+.fourd-form .studio-field-grid,
+.fourd-form .studio-action-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+.fourd-form .studio-button {
+  margin: 0;
+  min-width: 0;
+  white-space: normal;
+  min-height: 30px;
+  padding: 6px;
+  font-size: 11px;
+}
+.fourd-material-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+.fourd-material-grid .fourd-material {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  text-align: left;
+}
+.fourd-material span {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  border-radius: 5px;
+  border: 1px solid var(--enh-border);
+  box-shadow: inset 1px 1px 3px #0003;
+}
+.fourd-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+}
+.fourd-row span {
+  overflow-wrap: anywhere;
+  font-size: 11px;
+}
+.fourd-findings {
+  display: grid;
+  gap: 4px;
+}
+.fourd-findings button {
+  text-align: left;
+}
+#fourd-comparison-labels {
+  position: absolute;
+  inset: 48px 12px auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  pointer-events: none;
+  z-index: 225;
+}
+#fourd-comparison-labels[hidden] {
+  display: none;
+}
+#fourd-comparison-labels span {
+  justify-self: center;
+  max-width: 90%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 5px 10px;
+  background: var(--enh-panel);
+  color: var(--enh-text);
+  border: 1px solid var(--enh-border);
+  border-radius: 8px;
+  font-size: 11px;
+}
+#advanced-view-panel [data-fourd-studio] {
+  width: 100%;
+  margin-top: 6px;
+  color: var(--enh-accent);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .fourd-form {
+    animation: fourd-reveal 0.16s ease-out;
+  }
+  @keyframes fourd-reveal {
+    from {
+      opacity: 0;
+      transform: translateY(3px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+@media (pointer: coarse) {
+  .fourd-tabs .studio-button,
+  .fourd-form .studio-button,
+  .fourd-form :is(select, input[type="number"]) {
+    min-height: 38px;
+  }
+}

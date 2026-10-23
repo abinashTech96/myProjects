@@ -83,3 +83,21 @@ reduce known failure paths; device-specific GPU limits still apply.
 | UI-037 | Lightweight view transitions | Visible canvases enter with a short opacity/translation animation after layout changes. Rapid switching cancels previous motion, and reduced-motion preferences disable it. Rendering and input never wait for animation. |
 | UI-038 | Pointer-aware 2D menu | Right-click detects rooms, rotated furniture, polygon footprints, doors/windows, empty plot and outside space after pan/zoom. Contextual actions preserve selection groups, respect locks and use existing undoable commands. |
 | UI-039 | Accessible context interaction | The menu stays inside viewport edges, supports keyboard navigation, Escape and touch long-press, and dismisses on outside interaction or mode changes. Right-click cannot start object/opening dragging. |
+
+
+## 4D Studio feature release — implemented
+
+| ID | Feature | Implementation |
+| --- | --- | --- |
+| 4D-006 | HDR environments | Four generated floating-point presets, embedded Radiance import, rotation/intensity and optional sky. |
+| 4D-007 | Reflections | Prefiltered room probes and up to four planar wall mirrors. |
+| 4D-008 | PBR finishes | Eight saved surface finishes with appropriate color, normal and roughness data. |
+| 4D-009 | Progressive stills | Bounded raster sample accumulation, cancellation and refined PNG capture. Path tracing is not included. |
+| 4D-010 | Architectural camera | Lens selection, vertical correction, height, focus, aperture and still-photo depth of field. |
+| 4D-011 | Alternative comparison | Saved snapshot compiler and synchronized read-only side-by-side views. |
+| 4D-012 | Clearance overlays | Visible collision, passage and door-swing findings using the existing geometric checks. |
+| 4D-013 | Construction sequence | Saved names/element assignments, temporary progress scrubbing and playback. |
+| 4D-014 | Distance detail | Projected-size thresholds with hysteresis for dense distant furniture, full-detail override. |
+| 4D-015 | Clean selection | Bounded edge overlays preserve underlying surface and emissive appearance. |
+
+All controls share one six-tab 4D Studio dock. Practical rendering, comparison and stage-sequence limits are documented in [4D Studio](FOURD_STUDIO.md).

@@ -24,6 +24,10 @@ window.Engine4D = {
           "ShaderPass",
           "EffectComposer",
           "SSAOPass",
+          "RGBELoader",
+          "Reflector",
+          "BokehShader",
+          "BokehPass",
         ]) {
           if (THREE[name]) continue;
           await new Promise((resolve, reject) => {
@@ -79,6 +83,8 @@ window.Engine4D = {
     }
   },
   disable() {
+    FourDStudio.leave();
+    FourDRender.resize();
     this.active = false;
     this.ready = false;
     this.state = "idle";
@@ -98,6 +104,8 @@ window.Engine4D = {
     Engine3D.needsRender = true;
   },
   fail(error) {
+    FourDStudio.leave();
+    FourDRender.cancelPhoto();
     this.ready = false;
     this.state = "fallback";
     this.lastError = String(error?.message || error);
@@ -110,7 +118,10 @@ window.Engine4D = {
     Engine3D.needsRender = true;
   },
   releaseRenderer() {
+    FourDStudio.leave();
     this.clearModel();
+    FourDRender.dispose();
+    FourDTextures.dispose();
     this.observer?.disconnect();
     const canvas = this.renderer?.domElement;
     if (canvas) {
@@ -230,6 +241,7 @@ window.Engine4D = {
     this.composer.addPass(this.ao);
     this.composer.addPass(this.gamma);
     this.composer.addPass(this.fxaa);
+    FourDRender.init(this);
     this.observer = new ResizeObserver(() => {
       if (this.active) this.resize();
     });
@@ -376,6 +388,7 @@ window.Engine4D = {
       1 / (box.clientWidth * ratio),
       1 / (box.clientHeight * ratio),
     );
+    FourDRender.resize();
     Engine3D.needsRender = true;
   },
   finish(type) {
@@ -554,6 +567,7 @@ window.Engine4D = {
     return material;
   },
   clearModel() {
+    FourDStudio.clearScene();
     Landscape4D.dispose(this);
     if (this.model) this.scene.remove(this.model);
     Scene4D.dispose(this);
@@ -726,6 +740,7 @@ window.Engine4D = {
       );
       this.camera.updateProjectionMatrix();
     }
+    FourDRender.camera(this.camera, FourDStudio.settings);
     return this.camera;
   },
   render(camera = Engine3D.camera) {
@@ -744,6 +759,7 @@ window.Engine4D = {
     this.syncOverlay();
     Scene4D.updateTextures(this);
     camera = this.updateCamera(camera);
+    FourDStudio.restoreFilters();
     for (const [source, copy] of this.pairs) {
       copy.position.copy(source.position);
       copy.quaternion.copy(source.quaternion);
@@ -762,6 +778,12 @@ window.Engine4D = {
     if (!this.lastSun || !this.lastSun.equals(this.key.position)) {
       this.renderer.shadowMap.needsUpdate = true;
       this.lastSun = this.key.position.clone();
+    }
+    FourDStudio.frame(camera);
+    if (FourDStudio.renderComparison(camera)) {
+      this.frames = (this.frames || 0) + 1;
+      this.status("4D alternatives · synchronized cameras");
+      return true;
     }
     const ao = this.ao,
       perspective = camera.isPerspectiveCamera ? 1 : 0;
@@ -813,6 +835,7 @@ window.Engine4D = {
       ao.renderPass = originalRenderPass;
       this.renderer.clippingPlanes = planes;
     }
+    FourDRender.after(camera, FourDStudio.settings);
     this.frames = (this.frames || 0) + 1;
     this.status(
       `${this.preset[0].toUpperCase() + this.preset.slice(1)} · ${this.supportsAO && this.ao.enabled && this.ao.output === THREE.SSAOPass.OUTPUT.Default ? "PBR + AO" : "PBR"}`,
@@ -822,7 +845,7 @@ window.Engine4D = {
   async capture() {
     if (!this.ready)
       return StudioUI.message("The 4D renderer is still loading.");
-    if (!this.render())
+    if (!FourDRender.presentPhoto() && !this.render())
       return StudioUI.message(
         "Recover the 4D renderer before exporting.",
         "error",

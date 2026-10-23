@@ -614,7 +614,8 @@ generate3DModel = function () {
   const before = Engine3D.modelSignature;
   designOldGenerate();
   if (!Engine3D.buildingGroup) return;
-  const signature = JSON.stringify(ProjectState.meta.design);
+  const {studio, sunlight, ...presentation} = ProjectState.meta.design.presentation;
+  const signature = JSON.stringify({...ProjectState.meta.design, presentation});
   if (
     Engine3D.designSignature !== signature ||
     before !== Engine3D.modelSignature

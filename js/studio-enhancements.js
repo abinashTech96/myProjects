@@ -749,7 +749,7 @@ window.StudioEnhancements = {
       "Click a floor, wall, ceiling or furniture finish to sample it.",
     );
   },
-  hit(event) {
+  hit(event, camera = Engine4D.camera || Engine3D.camera) {
     if (!Engine4D.ready || !Engine4D.model) return null;
     const box = Engine3D.renderer.domElement.getBoundingClientRect(),
       ray = new THREE.Raycaster();
@@ -758,7 +758,7 @@ window.StudioEnhancements = {
         ((event.clientX - box.left) / box.width) * 2 - 1,
         (-(event.clientY - box.top) / box.height) * 2 + 1,
       ),
-      Engine4D.camera || Engine3D.camera,
+      camera,
     );
     return (
       ray.intersectObject(Engine4D.model, true).find((hit) => {
@@ -1288,7 +1288,7 @@ window.StudioEnhancements = {
       };
     point[key[0]] = s[key] + delta;
     const v = Workbench3D.coordinates(point).project(
-        Engine4D.camera || Engine3D.camera,
+        camera,
       ),
       box = Engine3D.renderer.domElement.getBoundingClientRect();
     return { x: ((v.x + 1) * box.width) / 2, y: ((1 - v.y) * box.height) / 2 };
@@ -1441,6 +1441,7 @@ window.StudioEnhancements = {
         presentationSurface: "ceiling",
       };
       this.decorate(material, { userData: data });
+      FourDStudio.materialDecorate(material, { userData: data, geometry });
       const mesh = new THREE.Mesh(geometry, material);
       mesh.userData = data;
       mesh.position.set(
@@ -1531,8 +1532,11 @@ window.StudioEnhancements = {
         if (material.emissive) {
           const selected =
             selection.has(data.elementId) || selection.has(room?.id);
-          material.emissive.setHex(selected ? 0x07313e : 0x000000);
-          material.emissiveIntensity = selected ? 0.35 : 1;
+          material.userData.originalEmissive ??= material.emissive.getHex();
+          material.userData.originalEmissiveIntensity ??= material.emissiveIntensity;
+          const tint = selected && !this.data.studio.cleanSelection;
+          material.emissive.setHex(tint ? 0x07313e : material.userData.originalEmissive);
+          material.emissiveIntensity = tint ? 0.35 : material.userData.originalEmissiveIntensity;
         }
       }
     }

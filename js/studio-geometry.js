@@ -406,7 +406,7 @@ const rebuildModel = generate3DModel;
 generate3DModel = function () {
   if (!Engine3D.scene) return;
   // Sun strength changes light intensity only, so retain the existing meshes.
-  const { sunlight, ...presentationGeometry } = ProjectState.meta.design.presentation;
+  const { sunlight, studio, ...presentationGeometry } = ProjectState.meta.design.presentation;
   const renderDesign = { ...ProjectState.meta.design, presentation: presentationGeometry };
   const signature = JSON.stringify({
     elements,

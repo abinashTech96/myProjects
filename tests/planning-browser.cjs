@@ -31,19 +31,36 @@ module.exports = async ({ page, context, assert, server }) => {
     floor: 0,
   });
   const click = async (x, y) => {
-    const q = await page.evaluate(
-      ({ x, y }) => {
-        const { I, SCALE } = Utils.getMetrics(),
-          pt = UI.blueprint.createSVGPoint();
-        pt.x = I.x + x * SCALE;
-        pt.y = I.y + y * SCALE;
-        const screen = pt.matrixTransform(
-          document.getElementById("viewport").getScreenCTM(),
-        );
-        return { x: screen.x, y: screen.y };
-      },
-      { x, y },
-    );
+    const position = () =>
+      page.evaluate(
+        ({ x, y }) => {
+          const { I, SCALE } = Utils.getMetrics(),
+            pt = UI.blueprint.createSVGPoint();
+          pt.x = I.x + x * SCALE;
+          pt.y = I.y + y * SCALE;
+          const screen = pt.matrixTransform(
+            document.getElementById("viewport").getScreenCTM(),
+          );
+          return { x: screen.x, y: screen.y };
+        },
+        { x, y },
+      );
+    // Hover can collapse the temporary dock and resize the drawing; settle that
+    // layout before mapping the architectural point to a screen coordinate.
+    const hover = await position();
+    await page.mouse.move(hover.x, hover.y);
+    await page.evaluate(async () => {
+      await Promise.all(
+        document
+          .getAnimations()
+          .filter((a) => a.effect?.getTiming().iterations !== Infinity)
+          .map((a) => a.finished.catch(() => {})),
+      );
+      await new Promise((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(resolve)),
+      );
+    });
+    const q = await position();
     await page.mouse.click(q.x, q.y);
   };
   await reset({ elements: [room("bed")] });
@@ -449,16 +466,32 @@ module.exports = async ({ page, context, assert, server }) => {
     "Builder alternatives, preservation, undo, stair designer, comparison, command search and drawing sets passed",
   );
   // Application scripts are local; cache/reload verifies a complete offline startup, not just a badge.
-  await page.waitForFunction(() => typeof PlanningUI !== "undefined" && PlanningUI.offlineReady, undefined, { timeout: 15000 });
+  await page.waitForFunction(
+    () => typeof PlanningUI !== "undefined" && PlanningUI.offlineReady,
+    undefined,
+    { timeout: 15000 },
+  );
   await page.evaluate(async () => {
     await navigator.serviceWorker.ready;
     await StorageEngine.saveToMemory();
   });
   await page.reload({ waitUntil: "networkidle" });
-  await page.waitForFunction(() => typeof PlanningUI !== "undefined" && PlanningUI.ready).catch(async error => {
-    console.log('Reload boot diagnostics:', await page.evaluate(() => ({url:location.href,title:document.title,scripts:[...document.scripts].map(s=>s.src),text:document.body?.innerText.slice(0,300)})));
-    throw error;
-  });
+  await page
+    .waitForFunction(
+      () => typeof PlanningUI !== "undefined" && PlanningUI.ready,
+    )
+    .catch(async (error) => {
+      console.log(
+        "Reload boot diagnostics:",
+        await page.evaluate(() => ({
+          url: location.href,
+          title: document.title,
+          scripts: [...document.scripts].map((s) => s.src),
+          text: document.body?.innerText.slice(0, 300),
+        })),
+      );
+      throw error;
+    });
   // Some browser protocols block offline navigation before the service worker runs.
   // Drop the origin connection instead so its worker's real network fallback is tested.
   const networkOutage = ["webkit", "firefox"].includes(
@@ -468,7 +501,13 @@ module.exports = async ({ page, context, assert, server }) => {
     if (networkOutage) server.archcadOffline = true;
     else await context.setOffline(true);
     await page.reload({ waitUntil: "domcontentloaded" });
-    await page.waitForFunction(() => typeof PlanningUI !== "undefined" && PlanningUI.ready && typeof Engine3D !== "undefined" && Engine3D.scene);
+    await page.waitForFunction(
+      () =>
+        typeof PlanningUI !== "undefined" &&
+        PlanningUI.ready &&
+        typeof Engine3D !== "undefined" &&
+        Engine3D.scene,
+    );
     assert.ok(await page.locator('[data-widget="converter"]').isVisible());
   } finally {
     server.archcadOffline = false;
@@ -498,7 +537,8 @@ module.exports = async ({ page, context, assert, server }) => {
     true,
   );
   await page
-    .locator(".planning-entry").getByRole("button", { name: "Build", exact: true })
+    .locator(".planning-entry")
+    .getByRole("button", { name: "Build", exact: true })
     .first()
     .click();
   assert.ok(await page.locator(".studio-catalog").isVisible());

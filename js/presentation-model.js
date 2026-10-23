@@ -1,6 +1,9 @@
 /* Portable presentation settings and geometric placement/clearance checks. */
 (function (root) {
   const P = root.ProjectModel || require("./project-model.js");
+  const FourD =
+    root.FourDModel ||
+    (typeof require === "function" ? require("./fourd-model.js") : null);
   const types = [
     "auto",
     "paint",
@@ -10,8 +13,16 @@
     "grass",
     "concrete",
     "shingle",
+    "brick",
+    "stone",
+    "timber",
+    "fabric",
+    "glass",
+    "metal",
+    "mirror",
   ];
   const defaults = () => ({
+    studio: FourD.defaults(),
     surfaces: {},
     openings: {},
     clearance: 36,
@@ -30,6 +41,7 @@
       Object.keys(d.surfaces).length > 3000
     )
       throw Error("Invalid surface assignments");
+    d.studio = FourD.validate(d.studio, p);
     const ids = new Set(p.elements.map((e) => e.id));
     for (const [id, channels] of Object.entries(d.surfaces)) {
       if (!ids.has(id)) {

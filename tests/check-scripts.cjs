@@ -61,6 +61,10 @@ for (const [name, original] of Object.entries({
   "ShaderPass.js": "examples/js/postprocessing/ShaderPass.js",
   "EffectComposer.js": "examples/js/postprocessing/EffectComposer.js",
   "SSAOPass.js": "examples/js/postprocessing/SSAOPass.js",
+  "RGBELoader.js": "examples/js/loaders/RGBELoader.js",
+  "Reflector.js": "examples/js/objects/Reflector.js",
+  "BokehShader.js": "examples/js/shaders/BokehShader.js",
+  "BokehPass.js": "examples/js/postprocessing/BokehPass.js",
   "SimplexNoise.js": "examples/js/math/SimplexNoise.js",
 
 })) {

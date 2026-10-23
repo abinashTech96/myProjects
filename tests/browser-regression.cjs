@@ -138,6 +138,10 @@ if (!["chromium", "firefox", "webkit"].includes(browserEngine))
       errors,
     );
     assert.equal(errors.length, 0, "Startup must have no uncaught errors");
+    if (process.env.FOURD_ONLY) {
+      await require("./fourd-browser.cjs")({page,context,assert});
+      assert.equal(errors.length,0,errors.join("\n"));return;
+    }
     if (process.env.CONTROLS_ONLY) {
       await require("./controls-browser.cjs")({page,context,assert});
       assert.equal(errors.length,0,errors.join("\n"));return;
@@ -213,7 +217,7 @@ if (!["chromium", "firefox", "webkit"].includes(browserEngine))
       return;
     }
     // Each module owns its fixture; release its WebGL contexts before the next.
-    if (!process.env.CORE_ONLY) for (const suite of ["workspace", "inspector", "property-widgets", "enhancements", "polish", "layout", "refinement", "unified", "controls"]) {
+    if (!process.env.CORE_ONLY) for (const suite of ["workspace", "inspector", "property-widgets", "enhancements", "polish", "layout", "refinement", "unified", "controls", "fourd"]) {
       await require(`./${suite}-browser.cjs`)({page,context,assert});
       assert.equal(errors.length,0,errors.join("\n"));
       await page.reload({waitUntil:"networkidle"});

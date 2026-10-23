@@ -48,7 +48,6 @@ window.WorkspaceRefinement = {
     rail.prepend(toggle);
     const plus = rail.querySelector(".studio-plus-entry span");
     if (plus) plus.textContent = "Studio+";
-    let timer;
     this.keyboardNavigation = false;
     document.addEventListener(
       "keydown",
@@ -65,16 +64,27 @@ window.WorkspaceRefinement = {
       },
       true,
     );
-    main.addEventListener("click", () => {
-      clearTimeout(timer);
-      if (!this.pinned) this.expand(false);
-    });
+    main.addEventListener(
+      "click",
+      () => {
+        clearTimeout(this.hoverTimer);
+        if (!this.pinned) this.expand(false);
+      },
+      true,
+    );
     rail.addEventListener("pointerenter", (e) => {
-      if (e.pointerType === "mouse" && matchMedia("(hover:hover)").matches)
-        timer = setTimeout(() => this.expand(true), 200);
+      if (
+        !this.suppressHover &&
+        e.pointerType === "mouse" &&
+        matchMedia("(hover:hover)").matches
+      )
+        this.hoverTimer = setTimeout(() => {
+          if (!this.suppressHover) this.expand(true);
+        }, 200);
     });
     rail.addEventListener("pointerleave", () => {
-      clearTimeout(timer);
+      this.suppressHover = false;
+      clearTimeout(this.hoverTimer);
       if (!this.pinned) this.expand(false);
     });
     rail.addEventListener("focusin", (e) => {
@@ -97,7 +107,7 @@ window.WorkspaceRefinement = {
       "pointerdown",
       (e) => {
         if (!rail.contains(e.target) && !this.pinned) {
-          clearTimeout(timer);
+          clearTimeout(this.hoverTimer);
           this.expand(false);
         }
       },
@@ -115,6 +125,12 @@ window.WorkspaceRefinement = {
     new MutationObserver(sync).observe(dock, { childList: true });
     sync();
     this.expand(false);
+  },
+  compact() {
+    clearTimeout(this.hoverTimer);
+    this.keyboardNavigation = false;
+    this.suppressHover = true;
+    this.expand(!!this.pinned);
   },
   expand(value) {
     document.body.classList.toggle("tool-dock-expanded", value);

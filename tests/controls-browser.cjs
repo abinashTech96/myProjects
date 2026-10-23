@@ -231,6 +231,23 @@ module.exports = async ({ page, assert }) => {
   );
   await page.keyboard.press("Escape");
   await page.evaluate(() => WorkspacePanels.close());
+  await page.evaluate(() => {
+    WorkspaceRefinement.pinned = false;
+    WorkspaceRefinement.suppressHover = false;
+    document
+      .getElementById("workspace-rail")
+      .dispatchEvent(
+        new PointerEvent("pointerenter", { pointerType: "mouse" }),
+      );
+    WorkspacePanels.build();
+  });
+  await page.waitForTimeout(300);
+  assert.equal(
+    await page.locator("#tool-dock-toggle").getAttribute("aria-expanded"),
+    "false",
+    "A pending hover timer cannot reopen the dock after selecting a tool",
+  );
+  await page.evaluate(() => WorkspacePanels.close());
   const planBox = await page.locator("#blueprint").boundingBox();
   await page.mouse.click(planBox.x + 12, planBox.y + 12, { button: "right" });
   assert.equal(await menu.getAttribute("data-context"), "outside");

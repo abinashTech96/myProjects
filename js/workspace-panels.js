@@ -18,7 +18,7 @@ window.WorkspacePanels = {
   compactDock() {
     if (innerWidth < 620 && WorkspaceRefinement.pinned)
       WorkspaceRefinement.pinned = false;
-    WorkspaceRefinement.expand(!!WorkspaceRefinement.pinned);
+    WorkspaceRefinement.compact();
   },
   closeDialog() {
     const d = this.dialog;

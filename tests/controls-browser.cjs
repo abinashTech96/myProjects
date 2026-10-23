@@ -140,6 +140,19 @@ module.exports = async ({ page, assert }) => {
   );
   await page.keyboard.press("Escape");
   assert.equal(await menu.isVisible(), false);
+  await page.evaluate(() => StudioUI.select(0));
+  const corner = await at(40, 40);
+  const dimensions = await page.evaluate(() => JSON.stringify(elements));
+  await page.mouse.move(corner.x, corner.y);
+  await page.mouse.down({ button: "right" });
+  await page.mouse.move(corner.x + 20, corner.y + 20);
+  await page.mouse.up({ button: "right" });
+  assert.equal(
+    await page.evaluate(() => JSON.stringify(elements)),
+    dimensions,
+    "Right-clicking a resize handle cannot resize the plan",
+  );
+  await page.keyboard.press("Escape");
   await open(420, 120);
   assert.equal(await menu.getAttribute("data-context"), "opening");
   assert.equal(

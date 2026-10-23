@@ -317,6 +317,23 @@ window.PlanContextMenu = {
       menu = document.getElementById("context-menu");
     document.body.append(menu, document.getElementById("room-tooltip")); // Fixed-position menu must not inherit a canvas transform.
     blueprint.setAttribute("tabindex", "0");
+    // Resize handles, section tools and legacy measurement listeners must never
+    // consume the secondary button before the context-menu event arrives.
+    for (const type of ["pointerdown", "mousedown"]) {
+      window.addEventListener(
+        type,
+        (event) => {
+          if (
+            event.button === 2 &&
+            event.target.closest?.("#blueprint") &&
+            !RoomStudio.activeRoom
+          ) {
+            event.stopImmediatePropagation();
+          }
+        },
+        true,
+      );
+    }
     menu.addEventListener("contextmenu", (e) => e.preventDefault());
     blueprint.addEventListener(
       "contextmenu",

@@ -177,3 +177,28 @@ are reproduced; valid architectural content will not be removed to mask them.
 
 See [4D workspace lifecycle and validation](FOURD_WORKSPACE.md) for implemented
 behavior, profile budgets, architectural audit findings and verification commands.
+
+## Next 4D performance, realism and view transitions — accepted, pending
+
+Added on 23 October 2026. These are backlog requirements, not a delivered release.
+Items 4D-041–045 break down the remaining structural-update work under 4D-022
+and its verification under 4D-026. Items 4D-046–050 extend the existing visual
+quality and view workflows rather than introduce competing settings or engines.
+
+| ID | Requirement | Acceptance criteria |
+| --- | --- | --- |
+| 4D-041 | Update affected structural geometry | Track dependencies between rooms, shared walls, openings, slabs, ceilings and roofs. A door edit updates its opening and affected wall; a room resize updates connected geometry. Keep unrelated source and presentation meshes unchanged. Retain an explicit full-rebuild fallback for global changes or invalid dependencies. |
+| 4D-042 | Reuse unchanged rendering resources | Keep unaffected meshes, materials and textures through structural edits. Define ownership and bounded cache eviction; dispose replaced resources without invalidating shared assets. Repeated edits must not accumulate GPU resources or retain removed elements. |
+| 4D-043 | Prepare edits in responsive batches | Prepare geometry in cancellable batches, keep navigation responsive and publish each completed dependency group coherently so walls and openings cannot display mismatched versions. Preserve the prior valid view on cancellation or failure. Measure remaining synchronous work on large fixtures. |
+| 4D-044 | Coalesce rapid edits | Combine repeated input changes, cancel obsolete preparation and commit only the latest project version. Undo/redo, deletion, stopping rendering and leaving 4D invalidate pending updates correctly; delayed results cannot resurrect old objects. |
+| 4D-045 | Verify the incremental pipeline | Compare incremental output with a full rebuild for door/window changes, room resize/move, shared walls, floors, roofs, undo/redo and deletion. Profile the supplied plan and a larger fixture for edit latency, view-switch frame times, resource counts and repeated entry/exit. Keep original plot dimensions and unedited geometry exact. |
+| 4D-046 | More realistic architectural presentation | Extend 4D-035–038 with consistent physical texture scale, believable roughness, glazing, contact shadows and balanced exterior/interior exposure. Compare element, floor and full-plot captures. Preserve saved finishes and geometry; higher-cost effects remain explicit and profile-bounded. Do not claim path tracing or add a second set of quality controls. |
+| 4D-047 | Smooth element-view transitions | Explicit Focus animates camera position and target together from the current pose to the selected element within the usable viewport. Keep a clear return action and avoid wall penetration or clipping where a valid route is available. New input cancels motion immediately; reuse prepared geometry and respect reduced motion. |
+| 4D-048 | Smooth floor-view transitions | Frame the requested floor with a continuous camera transition and coherent visibility/cutaway changes. Preserve the previous building view for return; include stair/shaft boundaries and selected-floor context without changing saved geometry. Rapid floor changes cancel outdated transitions and never leave stale visibility filters. |
+| 4D-049 | Smooth plot-view transitions | Provide a named Plot view that frames the complete saved site boundary, building and relevant landscape without overlapping controls. Distinguish it from Full building view. Animate from the current camera, retain a return pose and reuse existing geometry, environments and planting. |
+| 4D-050 | One interruptible view-transition controller | Coordinate element, floor, building and plot navigation through one controller with consistent easing, bounded duration and adjustable/reduced motion. Cancel obsolete animation on user navigation, new targets, pause, stop, tab hiding or mode exit. No timers or GPU frames persist after motion settles; assess frame times rather than promise universal FPS. |
+
+Suggested delivery order: 4D-041–045 first; shared transition controller and
+element/floor/plot views next; visual refinement with before/after comparisons
+last. Keep single-click selection separate from deliberate camera focus.
+Further ideas discussed after this update remain proposals until accepted.

@@ -305,3 +305,46 @@ The six follow-up suggestions were accepted in the same implementation batch.
 
 See [4D workspace delivery and validation](FOURD_WORKSPACE.md) for controls,
 performance thresholds and remaining rendering limits.
+
+## Parapet design collection and controls — accepted, pending
+
+Added on 24 October 2026. The user accepted a mixture of modern and
+Indian-inspired designs: the first six proposals plus ten additional proposals.
+These are 16 new options alongside the existing styles, not replacements. This
+section records requirements only; the designs and controls are not implemented.
+
+| ID | Proposed design | Acceptance criteria |
+| --- | --- | --- |
+| PAR-001 | Floating coping | Projecting cap above a recessed shadow line, with closed end faces, continuous corners and believable wall/cap thickness. |
+| PAR-002 | Geometric jaali | Square, diamond and hexagonal perforated-panel variants with bounded repeat counts and actual openings in close views. |
+| PAR-003 | Stepped Art Deco | Layered horizontal bands and raised corner sections, with coherent coping and no overlapping faces. |
+| PAR-004 | Planter parapet | Integrated planter pockets and optional restrained greenery; keep planter dimensions explicit and vegetation profile-bounded. |
+| PAR-005 | Fluted concrete / stone | Shallow grooves, restrained surface variation and simple coping. Retain a lightweight distant representation. |
+| PAR-006 | Solid + slim pickets | Masonry base with slender vertical metal rails, consistent spacing, defined connections and finished endpoints. |
+| PAR-007 | Scalloped arch panels | Recessed arches framed by solid masonry, retaining continuous backing thickness and clean corners. |
+| PAR-008 | Lotus crown | Restrained petal-shaped top detailing with closed surfaces, finite normals and a profile-bounded segment count. |
+| PAR-009 | Traditional pilasters | Capped posts with recessed panels between them, with consistent post/panel junctions. |
+| PAR-010 | Terracotta tube screen | Rounded clay tubes with adjustable spacing and bounded instancing; show their depth and rounded cross-section in close views. |
+| PAR-011 | Brick heritage | Projecting brick courses, recessed panels and stone coping; match physical texture scale to the model units. |
+| PAR-012 | Folded metal panels | Angular folded sections with crisp edges, visible sheet depth and closed edge returns. |
+| PAR-013 | Board-formed concrete | Horizontal timber impressions and recessed joints with a coherent cap; surface detail must not resize the structural wall. |
+| PAR-014 | Gabion accents | Stone-filled sections between solid supports, with readable enclosure edges and cheaper distant detail. Bound individual stone geometry. |
+| PAR-015 | Standing-seam metal | Raised seams, finished corner returns and a continuous cap. Keep seam spacing and material controls independent. |
+| PAR-016 | Offset ribbon bands | Staggered horizontal bands joined by solid supports, with defined connections and no floating or duplicated surfaces. |
+
+| ID | Shared requirement | Acceptance criteria |
+| --- | --- | --- |
+| PAR-017 | Direct compact 4D controls | Add a discoverable parapet action in the 4D Views workflow and compact thumbnail previews using the existing themed dock. Preserve access through the current 3D tools. |
+| PAR-018 | Apply by edge | Support front, rear, left, right and complete-perimeter application with a clear orientation preview. Polygonal footprints need stable segment selection rather than ambiguous cardinal labels. |
+| PAR-019 | Mixed edge designs | Allow a decorative frontage and simpler side/rear designs with coherent joins and stable edge assignments after save/import. |
+| PAR-020 | Separate geometry and finishes | Choose concrete, stone, brick or metal independently of the design. Expose applicable height, thickness and detail parameters with validated limits and explicit units; changing a finish must not change geometry. |
+| PAR-021 | Architectural junctions | Finish corners, caps, ends and material transitions with appropriate thickness. Inspect external/internal corners and roof intersections without changing saved plot or room footprints. |
+| PAR-022 | Preview, Apply, Cancel and Undo | Keep previews temporary; Apply creates an undoable edit, Cancel restores the saved state and Undo/Redo restore complete per-edge assignments and parameters. Handle invalid values without losing input focus or leaving stale geometry. |
+| PAR-023 | Saved custom presets | Save named parameter/finish combinations through the existing project workflow with stable style IDs and portable validation. Retain the existing ten styles and legacy parapet configuration. |
+| PAR-024 | Optional accent lighting | Offer controlled accent lighting where the design supports it, disabled independently and constrained by existing quality/light budgets. Avoid a separate always-running lighting loop. |
+| PAR-025 | Device-friendly detail and verification | Share repeated geometry/materials, instance appropriate parts and simplify distant details. Respect the Render 4D gate and release owned resources on Stop/exit. Test all 16 additions and existing styles in 3D/4D, all themes, mobile, save/import and undo/redo; preserve the supplied plot and original room dimensions. |
+
+Suggested order: establish the shared edge/configuration model and validation,
+then preview/undo/persistence and the compact panel, then deliver the 16 designs
+in one user-facing release with visual and performance checks. Design labels are
+stylistic descriptions, not claims of historical authenticity or construction approval.

@@ -61,6 +61,8 @@ window.FourDStudio = {
         ["overcast", "Overcast sky"],
         ["sunset", "Sunset"],
         ["night", "Night"],
+        ["golden-hour", "Golden hour · warm realism"],
+        ["courtyard", "Courtyard · soft daylight"],
         ["custom", "Imported HDR"],
       ]
         .map(
@@ -424,6 +426,7 @@ window.FourDStudio = {
     for (const item of this.lods || []) this.disposeGroup(item.proxy);
     this.lods = [];
     this.lodVersion = Engine4D.modelVersion;
+    this.parapetDetails = Engine4D.pairs.filter(([,copy])=>copy.isMesh&&copy.userData.parapetDetail&&!copy.isInstancedMesh).map(([,copy])=>copy);
     for (const [source, copy] of Engine4D.pairs) {
       const room =
         elements[source.userData.roomIndex] ||
@@ -509,6 +512,12 @@ window.FourDStudio = {
         this.hide(item.copy);
         simplified++;
       }
+    }
+    if(this.settings.lod!=="full")for(const detail of this.parapetDetails||[]) {
+      if(!detail.geometry.boundingSphere)detail.geometry.computeBoundingSphere();
+      const center=detail.getWorldPosition(new THREE.Vector3()),size=detail.getWorldScale(new THREE.Vector3());
+      const pixels=camera.isPerspectiveCamera?FourDModel.projectedPixels(detail.geometry.boundingSphere.radius*Math.max(size.x,size.y,size.z),camera.position.distanceTo(center),h,camera.fov):Infinity;
+      if(pixels<(this.settings.lod==="economy"?12:6)){this.hide(detail);simplified++;}
     }
     this.lodCount = simplified;
     const status = document.getElementById("fourd-lod-status");

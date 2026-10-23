@@ -1,5 +1,5 @@
 /* Lazy worker: serializable snapshots/buffers only. Renderer remains on main thread. */
-importScripts('../vendor/three/three.min.js','../vendor/geometry/polygon-clipping.js','../vendor/geometry/clipper.js','project-model.js','planning-model.js','fourd-review-model.js','fourd-model.js','presentation-model.js','design-model.js','workbench-model.js','workbench-building.js','fourd-geometry.js');
+importScripts('../vendor/three/three.min.js','../vendor/geometry/polygon-clipping.js','../vendor/geometry/clipper.js','parapet-model.js','project-model.js','planning-model.js','fourd-review-model.js','fourd-model.js','presentation-model.js','design-model.js','workbench-model.js','workbench-building.js','fourd-geometry.js');
 let queue=[],scheduled=false;
 onmessage=({data})=>{if(data.task.kind==='describe')queue=queue.filter(job=>job.task.kind!=='describe');queue.push(data);if(!scheduled){scheduled=true;setTimeout(drain,0);}};
 function drain(){

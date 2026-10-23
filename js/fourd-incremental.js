@@ -8,7 +8,7 @@ window.FourDIncremental = {
   async remember(p,valid=()=>true) { this.snapshot=await this.prepare(p,valid); },
   sourceKey(node) {
     const d=node.userData;
-    return d.fourdReplacement ? 'replacement:'+d.elementId : d.objectId ? 'professional:'+d.objectId : d.isTerrain ? 'professional:terrain' :
+    return d.parapetCollection ? 'parapet' : d.fourdReplacement ? 'replacement:'+d.elementId : d.objectId ? 'professional:'+d.objectId : d.isTerrain ? 'professional:terrain' :
       d.isSlab ? 'slab:'+d.floor : d.isSolar ? 'professional:solar' : d.isGutter||d.isDownpipe ? 'professional:rain' :
       d.isWall ? 'wall:'+d.wallId : d.openingId ? 'opening:'+d.openingId :
       d.elementId&&!d.workbench ? 'room:'+d.elementId : null;
@@ -76,6 +76,11 @@ window.FourDIncremental = {
         const part=this.collect(()=>build3DSlabs(SCALE,I,WALL_HEIGHT,real,{floors}));
         for(const child of [...part.children])source.add(child);
         await check();
+      }
+      if(roof || changed.has('parapet')) {
+        changed.add('parapet');
+        const part=this.collect(()=>build3DParapet(real));
+        for(const child of [...part.children])source.add(child);
       }
       stage=await Scene4D.stageAsync(Engine4D,source,p,check,{floors,roof});
       await check();

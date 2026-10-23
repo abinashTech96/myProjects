@@ -57,9 +57,10 @@
     const w=WorkbenchModel.data(p);
     const { walls, ...planning } = p.planning;
     const global = JSON.stringify({plot:p.plot,unit:p.unit,scale:p.scale,floors:p.floorCount,
-      wallSettings:p.wallSettings,planning,design,levels:w.levels,facade:w.facade,site:w.site,parapet:p.view.parapetConfig,
+      wallSettings:p.wallSettings,planning,design,levels:w.levels,facade:w.facade,site:w.site,
       assets});
     const rows = ProjectModel.walls(p), records = new Map();
+    records.set('parapet',JSON.stringify([p.view.parapet,p.view.parapetConfig]));
     for (const e of p.elements) {
       const {material,customColor,...geometry}=e;
       records.set('room:'+e.id,JSON.stringify([geometry,roomProperties?.[e.id],WorkbenchModel.roomBase(p,e),

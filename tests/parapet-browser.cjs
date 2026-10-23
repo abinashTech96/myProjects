@@ -1,0 +1,67 @@
+module.exports=async({page,assert})=>{
+ const original=await page.evaluate(()=>ProjectState.capture()),quality=await page.evaluate(()=>FourDWorkspace.quality),theme=await page.evaluate(()=>document.body.dataset.uiTheme),preset=await page.evaluate(()=>Engine4D.preset);
+ await page.evaluate(()=>{const p=ProjectState.capture();p.elements=[{id:'parapet-room',type:'bedroom',x:20,y:20,w:240,h:180,floor:0}];p.fixtures=[];p.plot={...p.plot,inW:'600',inH:'480'};p.floorCount=1;p.currentFloor=0;p.view.parapet='standard';delete p.view.parapetConfig;ProjectState.apply(p,{rebase:true});setWorkspaceLayout('4d');FourDWorkspace.setQuality('eco');ParapetStudio.open();});
+ const dimensions=await page.evaluate(()=>JSON.stringify({elements:ProjectState.capture().elements,plot:ProjectState.capture().plot}));
+ assert.equal(await page.evaluate(()=>!!Engine4D.renderer||!!FourDJobs.worker),false,'Opening parapets in the portal must not load engine or worker');
+ assert.equal(await page.locator('[data-parapet-style]').count(),26);
+ await page.locator('#parapet-search').fill('lotus');assert.equal(await page.locator('[data-parapet-style]:visible').count(),1);
+ await page.locator('[data-parapet-style="lotus-crown"]').click();
+ await page.locator('#parapet-search').fill('');
+ const height=page.getByRole('spinbutton',{name:'Parapet Height (in)',exact:true});await height.fill('40');await height.press('ArrowDown');assert.equal(await height.inputValue(),'39');
+ await page.getByRole('button',{name:'Preview',exact:true}).click();
+ assert.equal(await page.evaluate(()=>ParapetModule.config.version),undefined,'Preview must not enter saved state');
+ assert.equal(await page.evaluate(()=>!!Engine4D.renderer),false,'Preview before Render must not load the GPU engine');
+ await page.evaluate(()=>ParapetStudio.apply());
+ assert.equal(await page.evaluate(()=>ProjectState.capture().view.parapetConfig.defaults.height),39);
+ await page.evaluate(()=>ProjectState.undo());assert.equal(await page.evaluate(()=>ParapetModule.config.version),undefined,'Undo restores legacy state without leaking version/edges');
+ await page.evaluate(()=>ProjectState.redo());assert.equal(await page.evaluate(()=>ParapetModule.config.defaults.style),'lotus-crown');
+ await page.locator('#fourd-start').click();await page.waitForFunction(()=>FourDWorkspace.running||document.body.dataset.fourdState==='error');assert.equal(await page.evaluate(()=>FourDWorkspace.running),true,await page.locator('#fourd-start-message').textContent());
+ await page.waitForFunction(()=>FourDIncremental.snapshot);
+ assert.ok(await page.evaluate(()=>{let count=0;Engine4D.model.traverse(n=>{if(n.userData.isParapet&&n.isMesh)count++;});return count;})>0);
+ await page.evaluate(()=>{ParapetStudio.open();ParapetStudio.open();});await page.waitForTimeout(50);assert.equal(await page.evaluate(()=>ParapetStudio.active),true,'Reopening the studio keeps the current editing session active');
+ await page.evaluate(()=>{window.parapetUnrelatedWall=Engine4D.model.children.find(n=>n.userData.isWall);ParapetStudio.open();});
+ await page.getByRole('spinbutton',{name:'Parapet Height (in)',exact:true}).fill('55');
+ await page.getByRole('button',{name:'Preview',exact:true}).click();
+ await page.waitForFunction(()=>FourDIncremental.snapshot?.project.view.parapetConfig?.defaults.height===55&&!FourDWorkspace.structuralPending);
+ assert.equal(await page.evaluate(()=>ParapetModule.config.defaults.height),39);
+ await page.evaluate(()=>ParapetStudio.close());await page.waitForFunction(()=>FourDIncremental.snapshot?.project.view.parapetConfig?.defaults.height===39&&!FourDWorkspace.structuralPending);
+ assert.equal(await page.evaluate(()=>Engine4D.model.children.includes(parapetUnrelatedWall)),true,'Parapet preview and cancel preserve unrelated wall objects');
+ assert.equal(await page.evaluate(()=>ParapetModule.config.defaults.height),39,'Cancel restores committed state');
+ await page.evaluate(()=>ParapetStudio.open());
+ await page.locator('#parapet-target').selectOption('Front');
+ await page.locator('[data-parapet-style="geometric-jaali"]').click();
+ await page.getByRole('combobox',{name:'Jaali pattern',exact:true}).selectOption('hexagon');
+ await page.getByRole('combobox',{name:'Parapet finish',exact:true}).selectOption('stone');
+ await page.evaluate(()=>{ParapetStudio.addDrain();ParapetStudio.gate(true);});
+ // Gate and scupper initially share a centre. Validation keeps the earlier valid edit.
+ assert.ok((await page.locator('#parapet-error').textContent()).includes('overlap'));
+ await page.evaluate(()=>{ParapetStudio.current.drains[0].offset=12;ParapetStudio.stage();ParapetStudio.gate(true);});
+ await page.locator('summary').filter({hasText:'Scuppers & terrace gate'}).click();
+ await page.getByRole('spinbutton',{name:'Gate offset',exact:true}).fill('9999');
+ assert.equal(await page.getByRole('spinbutton',{name:'Gate offset',exact:true}).getAttribute('aria-invalid'),'true');
+ await page.evaluate(()=>ParapetStudio.apply());assert.equal(await page.locator('#studio-dialog').isVisible(),true,'Invalid edit must not close panel or apply');
+ await page.getByRole('spinbutton',{name:'Gate offset',exact:true}).fill('80');
+ await page.locator('summary').filter({hasText:'Custom presets'}).click();
+ await page.locator('#parapet-preset-name').fill('Street frontage');await page.evaluate(()=>ParapetStudio.savePreset());
+ await page.evaluate(()=>{ParapetStudio.rate('finish',10);ParapetStudio.rate('coping',2);});
+ const svg=await page.evaluate(()=>ParapetStudio.elevationSVG());assert.ok(svg.includes('height 39'));assert.ok(svg.includes('Geometric jaali'));assert.ok(svg.includes('thickness 6'));
+ await page.evaluate(()=>ParapetStudio.apply());await page.waitForFunction(()=>!FourDWorkspace.structuralPending&&!FourDWorkspace.sourceInvalid);
+ const stored=await page.evaluate(()=>ProjectModel.normalize(JSON.parse(JSON.stringify(ProjectState.capture()))).view.parapetConfig);assert.equal(stored.presets[0].name,'Street frontage');assert.equal(Object.values(stored.edges)[0].gate.offset,80);
+ for(const theme of ['limestone','courtyard']){
+  await page.evaluate(theme=>StudioEnhancements.theme(theme),theme);
+  assert.equal(await page.evaluate(()=>document.body.dataset.uiTheme),theme);
+  assert.equal(await page.evaluate(()=>FourDStudio.settings.environment),theme==='limestone'?'golden-hour':'courtyard');
+  await page.evaluate(()=>Engine4D.render());
+  assert.ok(await page.evaluate(()=>Engine4D.ready));
+ }
+ const background=await page.evaluate(()=>getComputedStyle(document.body).getPropertyValue('--canvas-2d').trim());assert.equal(background,'#1d2824');
+ // Every addition is compiled by both 3D and 4D resource ownership paths.
+ await page.evaluate(()=>{for(const style of ParapetModel.designs){const p=ProjectState.capture(),c=ParapetModel.config({},style.id),source=ParapetRenderer.build(p,c,{quality:'eco'}),stage=Scene4D.stage(Engine4D,source,p);Scene4D.dispose({model:stage.model,materials:stage.materials,sceneResources:stage.resources});Workbench3D.disposeObject(source);}});
+ assert.equal(await page.evaluate(()=>JSON.stringify({elements:ProjectState.capture().elements,plot:ProjectState.capture().plot})),dimensions,'All parapet actions preserve exact plot and room data');
+ await page.evaluate(()=>ParapetStudio.open());await page.setViewportSize({width:390,height:844});await page.waitForTimeout(400);const box=await page.locator('#studio-dialog').boundingBox();assert.ok(box.x>=0&&box.x+box.width<=391);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.screenshot({path:'/tmp/archcad-parapet-mobile.png'});
+ await page.emulateMedia({reducedMotion:'reduce'});await page.evaluate(()=>{WorkspaceMotion.reveal(document.getElementById('studio-dialog'));});assert.equal(await page.evaluate(()=>WorkspaceMotion.active.size),0);
+ await page.evaluate(()=>{ParapetStudio.close();FourDWorkspace.stop();});assert.equal(await page.evaluate(()=>!!FourDJobs.worker||FourDAssets.pending.size>0),false);
+ await page.setViewportSize({width:1440,height:1000});await page.evaluate(()=>{setWorkspaceLayout('3d');ParapetStudio.open();ViewportUI.fit();});await page.waitForTimeout(300);await page.screenshot({path:'/tmp/archcad-parapet-desktop.png'});
+ await page.evaluate(()=>ParapetStudio.close());await page.evaluate(p=>{setWorkspaceLayout('2d');ProjectState.apply(p,{rebase:true});},original);await page.evaluate(({quality,theme,preset})=>{FourDWorkspace.setQuality(quality);StudioEnhancements.theme(theme,false);Engine4D.setPreset(preset);},{quality,theme,preset});await page.emulateMedia({reducedMotion:'no-preference'});
+ console.log('Parapets: 26 styles, numeric arrows, 4D preview/cancel, per-edge openings, history, saved presets, estimates, exports, two themes, mobile and engine cleanup passed');
+};

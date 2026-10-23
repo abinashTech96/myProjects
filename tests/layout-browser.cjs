@@ -107,7 +107,7 @@ module.exports = async ({ page, assert }) => {
     Math.abs(box.y + box.height - footer.y) <= 2,
     "Appearance attaches to footer",
   );
-  assert.equal(await page.locator("[data-theme-choice]").count(), 4);
+  assert.equal(await page.locator("[data-theme-choice]").count(), 6);
   for (const theme of ["pearl", "ocean", "sand", "graphite"]) {
     await page.locator(`[data-theme-choice="${theme}"]`).click();
     assert.equal(

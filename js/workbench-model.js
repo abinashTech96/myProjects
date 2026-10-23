@@ -482,6 +482,8 @@
     );
     p.wallSettings.height = defaultHeight;
     p.design.workbench = validate(p.design.workbench, p);
+    if(p.view.parapetConfig?.version===2 && root.ParapetModel)
+      for(const edge of root.ParapetModel.edges(p)) root.ParapetModel.resolve(p.view.parapetConfig,edge);
     for (const f of p.fixtures) {
       if (f.sill + f.height > floorHeight(p, p.elements[f.roomId].floor))
         throw Error("Opening exceeds its floor height");

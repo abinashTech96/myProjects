@@ -92,8 +92,8 @@ window.FourDWorkspace = {
         StudioEnhancements.clearSection();
         ViewportUI.inspectFloor("all");
         this.setQuality(this.quality);
-        this.modelKey = this.geometryKey(ProjectState.capture());
-        await FourDIncremental.remember(ProjectState.capture(),()=>token===this.token&&StudioUI.mode==='4d'&&!document.hidden);
+        this.modelKey = this.geometryKey(this.renderProject());
+        await FourDIncremental.remember(this.renderProject(),()=>token===this.token&&StudioUI.mode==='4d'&&!document.hidden);
         FourDViews.reset();
         this.materialKeys = new Map();
         this.updateMaterials();
@@ -242,11 +242,16 @@ window.FourDWorkspace = {
     Engine3D.needsRender = true;
     this.status();
   },
+  renderProject() {
+    const p=ProjectState.capture();
+    if(window.ParapetStudio?.previewConfig){p.view.parapetConfig=structuredClone(ParapetStudio.previewConfig);p.view.parapet=p.view.parapetConfig.defaults.style;}
+    return p;
+  },
   geometryKey(p) {
     const {presentation, ...design} = p.design;
     return JSON.stringify({elements:p.elements.map(({material,customColor,...e})=>e),fixtures:p.fixtures,
       plot:p.plot,unit:p.unit,scale:p.scale,floors:p.floorCount,walls:p.wallSettings,overrides:p.wallOverrides,
-      planning:p.planning,design,parapet:p.view.parapetConfig,
+      planning:p.planning,design,parapet:[p.view.parapet,p.view.parapetConfig],
       assets:[...Workbench3D.templates].map(([id,template])=>[id,template.uuid])});
   },
   scheduleUpdate() {
@@ -258,7 +263,7 @@ window.FourDWorkspace = {
     this.updateTimer = setTimeout(async () => {
       if (!this.running || StudioUI.mode !== "4d") return;
       if (this.paused || document.hidden) {this.pendingUpdate=true;return;}
-      const p=ProjectState.capture(), key=this.geometryKey(p), token=this.token;
+      const p=this.renderProject(), key=this.geometryKey(p), token=this.token;
       const valid=()=>this.running&&!this.paused&&!document.hidden&&token===this.token&&revision===this.updateRevision;
       try {
         if(key!==this.modelKey || this.sourceInvalid) {
@@ -405,7 +410,7 @@ window.FourDWorkspace = {
     if (!this.running || this.paused) return;
     WorkspacePanels.intent = "4D";
     const b = (label, action) => StudioUI.button(label, action);
-    StudioUI.dialog("4D views", `<div class="studio-action-grid">${b("Exterior", "StudioEnhancements.fullView()")}${b("Plot", "FourDViews.plot()")}${b("Presentation", "FourDViews.panel()")}${b("Daylight preview", "FourDViews.daylightPanel()")}${b("Finish close-up", "FourDViews.materialPanel()")}${b("Guided tour", "FourDViews.tourPanel()")}${b("Interior", "StudioEnhancements.run(()=>StudioEnhancements.walkDialog())")}${b("Floor plan", "ViewportUI.orient('top')")}${b("Section", "StudioEnhancements.run(()=>StudioEnhancements.sectionDialog())")}${b("Photo", "FourDStudio.open('camera')")}${b("Lighting", "Engine4D.lightingDialog()")}${b("Room lights", "StudioEnhancements.run(()=>StudioEnhancements.interiorDialog())")}${b("Sun & location", "DesignUI.sunDialog()")}${b("Camera views", "ViewportUI.viewsDialog()")}${b("Clean view", "StudioEnhancements.setFocus(true)")}${b("Appearance", "FourDWorkspace.appearance()")}${b("Openings", "StudioEnhancements.run(()=>StudioEnhancements.openingsDialog())")}${b("Exploded floors", "StudioEnhancements.run(()=>StudioEnhancements.explodeDialog())")}${b("Measure", "FourDWorkspace.showDimensions(true);StudioEnhancements.measureDialog()")}${b("Rendering diagnostics", "FourDWorkspace.diagnostics()")}</div><label>Inspect floor<select aria-label="4D floor" onchange="FourDViews.floor(this.value)"><option value="all">Whole building</option>${Array.from({length:ProjectState.capture().floorCount},(_,i)=>`<option value="${i}">${i===0?"Ground":"Floor "+i}</option>`).join("")}</select></label><label>Cutaway height<input aria-label="4D cutaway" type="range" min="5" max="100" value="${ViewportUI.cutPercent || 100}" oninput="ViewportUI.cutaway(this.value)"></label><label><input type="checkbox" ${this.dimensions ? "checked" : ""} onchange="FourDWorkspace.showDimensions(this.checked)">Show saved dimensions</label><label>Sunlight strength<select aria-label="4D sunlight" onchange="WorkspaceLayout.setSun(Number(this.value))">${[0,25,50,75,100].map(n=>`<option value="${n}" ${WorkspaceLayout.sunValue()===n ? "selected" : ""}>${n}%</option>`).join("")}</select></label><p>Single click selects. Focus element moves closer. Full view clears temporary inspection overlays.</p>`);
+    StudioUI.dialog("4D views", `<div class="studio-action-grid">${b("Parapet studio", "ParapetStudio.open()")}${b("Exterior", "StudioEnhancements.fullView()")}${b("Plot", "FourDViews.plot()")}${b("Presentation", "FourDViews.panel()")}${b("Daylight preview", "FourDViews.daylightPanel()")}${b("Finish close-up", "FourDViews.materialPanel()")}${b("Guided tour", "FourDViews.tourPanel()")}${b("Interior", "StudioEnhancements.run(()=>StudioEnhancements.walkDialog())")}${b("Floor plan", "ViewportUI.orient('top')")}${b("Section", "StudioEnhancements.run(()=>StudioEnhancements.sectionDialog())")}${b("Photo", "FourDStudio.open('camera')")}${b("Lighting", "Engine4D.lightingDialog()")}${b("Room lights", "StudioEnhancements.run(()=>StudioEnhancements.interiorDialog())")}${b("Sun & location", "DesignUI.sunDialog()")}${b("Camera views", "ViewportUI.viewsDialog()")}${b("Clean view", "StudioEnhancements.setFocus(true)")}${b("Appearance", "FourDWorkspace.appearance()")}${b("Openings", "StudioEnhancements.run(()=>StudioEnhancements.openingsDialog())")}${b("Exploded floors", "StudioEnhancements.run(()=>StudioEnhancements.explodeDialog())")}${b("Measure", "FourDWorkspace.showDimensions(true);StudioEnhancements.measureDialog()")}${b("Rendering diagnostics", "FourDWorkspace.diagnostics()")}</div><label>Inspect floor<select aria-label="4D floor" onchange="FourDViews.floor(this.value)"><option value="all">Whole building</option>${Array.from({length:ProjectState.capture().floorCount},(_,i)=>`<option value="${i}">${i===0?"Ground":"Floor "+i}</option>`).join("")}</select></label><label>Cutaway height<input aria-label="4D cutaway" type="range" min="5" max="100" value="${ViewportUI.cutPercent || 100}" oninput="ViewportUI.cutaway(this.value)"></label><label><input type="checkbox" ${this.dimensions ? "checked" : ""} onchange="FourDWorkspace.showDimensions(this.checked)">Show saved dimensions</label><label>Sunlight strength<select aria-label="4D sunlight" onchange="WorkspaceLayout.setSun(Number(this.value))">${[0,25,50,75,100].map(n=>`<option value="${n}" ${WorkspaceLayout.sunValue()===n ? "selected" : ""}>${n}%</option>`).join("")}</select></label><p>Single click selects. Focus element moves closer. Full view clears temporary inspection overlays.</p>`);
   },
   showDimensions(value) {
     this.dimensions = !!value;

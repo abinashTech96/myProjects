@@ -111,9 +111,17 @@ const ProjectState = {
         ARCH3D_CONFIG.DEFAULTS.WALL_HEIGHT = project.wallSettings.height;
       if (typeof Selection !== "undefined")
         Selection.ids = new Set(selection ? selection.ids.filter(id => project.elements.some(el => el.id === id)) : []);
-      if (project.view.parapet) set("parapetStyleSelect", project.view.parapet);
-      if (typeof ParapetModule !== "undefined" && project.view.parapetConfig)
-        Object.assign(ParapetModule.config, project.view.parapetConfig);
+      if (project.view.parapet) {
+        set("parapetStyleSelect", project.view.parapet);
+        const select=document.getElementById("parapetStyleSelect");
+        if(select)select.dataset.committedValue=project.view.parapet;
+      }
+      if (typeof ParapetModule !== "undefined") {
+        window.ParapetStudio?.cancel();
+        const dialog=document.getElementById("studio-dialog");
+        if(dialog?.dataset?.parapet==="true" && dialog.open)dialog.close();
+        ParapetModule.config = this._clone(project.view.parapetConfig || ParapetModule.legacyDefaults);
+      }
       if (typeof tourWaypoints !== "undefined" && project.view.tour)
         window.tourWaypoints = this._clone(project.view.tour);
       if (document.body && project.view.theme)

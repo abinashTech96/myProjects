@@ -230,7 +230,7 @@ const StudioUI = {
   },
   floorMenu() {
     if(window.WorkspaceRefinement) return WorkspaceRefinement.floors();
-    this.dialog("Floors", `<p>Current floor: ${currentFloor === 0 ? "Ground" : currentFloor}</p><div class="studio-action-grid">${this.button("Add floor", "addManualFloor();StudioUI.floorMenu()")}${this.button("Clone current floor", "cloneEntireFloor();StudioUI.floorMenu()")}${this.button("Delete current floor", "deleteCurrentFloor();StudioUI.floorMenu()", "danger")}${this.button("Rooms & objects", "StudioUI.objectsDialog()")}</div>`);
+    this.dialog("Floors", `${this.button("Parapet studio", "ParapetStudio.open()")}<p>Current floor: ${currentFloor === 0 ? "Ground" : currentFloor}</p><div class="studio-action-grid">${this.button("Add floor", "addManualFloor();StudioUI.floorMenu()")}${this.button("Clone current floor", "cloneEntireFloor();StudioUI.floorMenu()")}${this.button("Delete current floor", "deleteCurrentFloor();StudioUI.floorMenu()", "danger")}${this.button("Rooms & objects", "StudioUI.objectsDialog()")}</div>`);
   },
   closeProperties() {
     selectedElIndex = -1;
@@ -928,7 +928,7 @@ const StudioUI = {
     setWorkspaceLayout(StudioUI.mode === "4d" ? "4d" : "3d");
     this.dialog(
       "View tools",
-      `<div class="studio-action-grid">${this.button("Section & inspect", "WorkbenchUI.viewDialog()")}${this.button("Advanced 3D", "document.getElementById('studio-dialog').close();setWorkspaceLayout('3d');Adv3D.toggleWorkspaceMode(true)")}${this.button("Walkthrough", "document.getElementById('studio-dialog').close();setWorkspaceLayout('3d');Widget3DEngine.startWalkthrough()")}${this.button("3D selection", "Widget3DEngine.toggleRaycaster()")}${this.button("Presentation mode", "document.getElementById('studio-dialog').close();Widget3DEngine.toggleShowcaseMode()")}${this.button("Capture camera", "captureWaypoint()")}${this.button("Play camera tour", "playCinematicTour()")}${this.button("Clear tour", "clearTour()")}${this.button("Night / day", "toggleNightMode();Engine3D.needsRender=true")}${this.button("Exploded view", "toggleExplodeView()")}${this.button("Performance mode", "Widget3DEngine.togglePerformanceMode()")}${this.button("Frame plan", "resetCamera()")}${this.button("Canvas settings", "StudioUI.canvasSettingsDialog()")}</div><label>Sun position<input type="range" min="6" max="18" value="12" step="0.25" oninput="updateSunlight(Number(this.value));Engine3D.needsRender=true"></label><label>Roof / parapet<select onchange="StudioUI.parapetStyle(this.value)">${Array.from(
+      `<div class="studio-action-grid">${this.button("Parapet studio", "ParapetStudio.open()")}${this.button("Section & inspect", "WorkbenchUI.viewDialog()")}${this.button("Advanced 3D", "document.getElementById('studio-dialog').close();setWorkspaceLayout('3d');Adv3D.toggleWorkspaceMode(true)")}${this.button("Walkthrough", "document.getElementById('studio-dialog').close();setWorkspaceLayout('3d');Widget3DEngine.startWalkthrough()")}${this.button("3D selection", "Widget3DEngine.toggleRaycaster()")}${this.button("Presentation mode", "document.getElementById('studio-dialog').close();Widget3DEngine.toggleShowcaseMode()")}${this.button("Capture camera", "captureWaypoint()")}${this.button("Play camera tour", "playCinematicTour()")}${this.button("Clear tour", "clearTour()")}${this.button("Night / day", "toggleNightMode();Engine3D.needsRender=true")}${this.button("Exploded view", "toggleExplodeView()")}${this.button("Performance mode", "Widget3DEngine.togglePerformanceMode()")}${this.button("Frame plan", "resetCamera()")}${this.button("Canvas settings", "StudioUI.canvasSettingsDialog()")}</div><label>Sun position<input type="range" min="6" max="18" value="12" step="0.25" oninput="updateSunlight(Number(this.value));Engine3D.needsRender=true"></label><label>Roof / parapet<select onchange="StudioUI.parapetStyle(this.value)">${Array.from(
         document.getElementById("parapetStyleSelect").options,
       )
         .map(
@@ -941,10 +941,9 @@ const StudioUI = {
     );
   },
   parapetStyle(value) {
-    ProjectState.commit(
-      "Changed facade style",
-      () => (document.getElementById("parapetStyleSelect").value = value),
-    );
+    const select=document.getElementById("parapetStyleSelect");
+    select.value=value;
+    select.dispatchEvent(new Event("change"));
   },
   toggleView(id, checked) {
     const input = document.getElementById(id);

@@ -329,6 +329,8 @@ window.FourDScene = {
       );
       proxies++;
     }
+    if (p.view.parapetConfig?.version === 2 || ParapetModel.designs.some(s => s.id === p.view.parapet))
+      source.add(ParapetRenderer.build(p, p.view.parapetConfig || {}, {scale:S,origin:I,quality:FourDWorkspace.quality}));
     const compiler = {
       materials: new Set(),
       material(m) {

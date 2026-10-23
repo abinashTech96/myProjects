@@ -250,6 +250,11 @@
         throw new Error("Invalid distance constraint.");
       finite(rule.distance, "Constraint distance", -100000, 100000);
     }
+    if (project.view.parapetConfig?.version !== undefined) {
+      const model = root.ParapetModel || (typeof require === "function" ? require("./parapet-model.js") : null);
+      if (!model) throw Error("Parapet validation module is unavailable");
+      project.view.parapetConfig = model.config(project.view.parapetConfig, project.view.parapet);
+    }
     if (project.view.parapetConfig) {
       const c = project.view.parapetConfig;
       for (const [k, min, max] of [

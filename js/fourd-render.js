@@ -100,6 +100,8 @@ window.FourDRender = {
         h = 128,
         data = new Float32Array(w * h * 4),
         palettes = {
+          "golden-hour": [[.3,.42,.65],[1.8,1.3,.72],[.26,.21,.14]],
+          courtyard: [[.65,.85,1.1],[1.1,1.2,1.15],[.2,.28,.18]],
           studio: [
             [0.38, 0.48, 0.68],
             [1.2, 1.2, 1.15],
@@ -135,7 +137,7 @@ window.FourDRender = {
             sun = Math.exp(
               -(
                 (angle * angle) / 0.002 +
-                (v - (settings.environment === "sunset" ? 0.47 : 0.28)) ** 2 /
+                (v - (["sunset","golden-hour"].includes(settings.environment) ? 0.47 : 0.28)) ** 2 /
                   0.0006
               ),
             );

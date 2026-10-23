@@ -306,12 +306,12 @@ The six follow-up suggestions were accepted in the same implementation batch.
 See [4D workspace delivery and validation](FOURD_WORKSPACE.md) for controls,
 performance thresholds and remaining rendering limits.
 
-## Parapet design collection and controls — accepted, pending
+## Parapet design collection and controls — implemented
 
-Added on 24 October 2026. The user accepted a mixture of modern and
+Accepted and implemented on 23 October 2026. The user accepted a mixture of modern and
 Indian-inspired designs: the first six proposals plus ten additional proposals.
 These are 16 new options alongside the existing styles, not replacements. This
-section records requirements only; the designs and controls are not implemented.
+section records the accepted requirements. Delivery details and practical limits follow below.
 
 | ID | Proposed design | Acceptance criteria |
 | --- | --- | --- |
@@ -344,7 +344,51 @@ section records requirements only; the designs and controls are not implemented.
 | PAR-024 | Optional accent lighting | Offer controlled accent lighting where the design supports it, disabled independently and constrained by existing quality/light budgets. Avoid a separate always-running lighting loop. |
 | PAR-025 | Device-friendly detail and verification | Share repeated geometry/materials, instance appropriate parts and simplify distant details. Respect the Render 4D gate and release owned resources on Stop/exit. Test all 16 additions and existing styles in 3D/4D, all themes, mobile, save/import and undo/redo; preserve the supplied plot and original room dimensions. |
 
-Suggested order: establish the shared edge/configuration model and validation,
-then preview/undo/persistence and the compact panel, then deliver the 16 designs
-in one user-facing release with visual and performance checks. Design labels are
+Delivery order: shared edge/configuration validation, preview/undo/persistence
+and the compact panel, followed by the 16 designs in one release with visual
+and performance checks. Design labels are
 stylistic descriptions, not claims of historical authenticity or construction approval.
+
+### Additional accepted parapet features — delivered
+
+| ID | Feature | Delivered behaviour |
+| --- | --- | --- |
+| PAR-026 | Automatic module spacing | Symmetrical fitted modules with explicit actual spacing; repeated patterns are bounded for large outlines. |
+| PAR-027 | Drainage openings | Per-edge scupper width, height, sill and offset; actual through-openings with fit/overlap validation. Existing rainwater tools remain available separately. |
+| PAR-028 | Terrace access gates | A matching gate on a selected segment with validated width/offset, independent of room geometry. |
+| PAR-029 | Quantities and cost | Per-segment length, coping, finish area, module/post estimates and user-entered unit rates; CSV export. |
+| PAR-030 | Dimensioned elevations | SVG sheets identify each edge, design, finish, length, height, thickness, module spacing and openings. Drawings use schematic pattern marks, not fabrication profiles. |
+| PAR-031 | Privacy preview | Approximate open/screened percentage plus street-level camera with eye-height and distance controls; Full view returns to the building. |
+| PAR-032 | Coordinated motion | Short compositor panel/disclosure/widget transitions, consistent button feedback and smoother view timing. Reduced motion and hidden tabs cancel animation. |
+| PAR-033 | Two realism themes | Limestone with Golden hour lighting and Courtyard with soft daylight, including distinct workspace/2D/3D/4D palettes and saved HDR environment settings. |
+
+Delivery notes:
+- The original ten style choices remain alongside sixteen additions. Existing
+  legacy projects retain their original global style builders. Opening the new
+  studio and applying upgrades the parapet configuration to version 2; original
+  styles in this edge-based workflow use compatible modular profiles.
+- The compact searchable studio opens from Floors / 3D tools or 4D Views and uses
+  the shared dock; mobile 4D uses a bottom sheet with the model visible above.
+- Numbered perimeter/courtyard segments follow the top occupied floor union,
+  including irregular and disconnected footprints. Endpoint-based assignments
+  survive element reordering and save/import. Editing a boundary to new endpoints
+  produces a new edge that inherits the default, rather than guessing an assignment.
+- Designs, thickness, finishes, colors and mixed edge assignments are portable.
+  Preview never enters autosave or history. Apply is one undoable edit; Cancel,
+  closing the panel, or importing a project releases temporary preview state.
+- Parapet-only edits and previews replace the parapet collection in 4D, preserving
+  unrelated wall objects. Changes to the top-floor footprint also refresh it.
+  Repeated parts share geometry/materials and are instanced where appropriate;
+  profile-bounded detail and distant-detail hiding limit rendering work. Accent
+  strips are emissive surfaces and do not add shadow-casting lights; Eco omits them.
+- Render 4D remains explicit. Opening the portal/studio or preparing a preview
+  does not allocate a renderer or launch a worker. Stop/exit release owned resources.
+- Quantities, opening ratios and elevations are conceptual estimates, not
+  structural/drainage compliance calculations or fabrication drawings. Rates
+  use the currency chosen by the user and default to zero until entered.
+
+Validation: model tests cover all 26 style IDs, finite geometry, real scupper
+openings, unchanged finish geometry, L-shaped edge identity, portable validation,
+quantities and two added environments. Browser tests cover keyboard numeric
+arrows, preview/cancel, incremental wall preservation, undo/redo, mixed edge
+openings, presets, SVG export, themes, mobile layout and renderer cleanup.

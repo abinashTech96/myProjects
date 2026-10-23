@@ -150,3 +150,26 @@ failed runs. The fixed four-element/two-floor review fixture flags software-brow
 startup over 30 s, individual structural edits over 8 s, sampled p95 render cost over
 2.5 s and Eco-owned image textures above 32 MiB. These are broad CI failure limits;
 real-device baselines in Device must guide interactive performance tuning.
+
+
+### Parapet studio and realism themes
+
+Open **Views → Parapet studio** in 4D, or **Floors → Parapet studio** in the
+editor. The original Roof / parapet selector is retained. Search 26 choices,
+select an edge on the numbered outline, and edit dimensions in inches. Front
+means the bottom of the plan, independent of the current orbit camera.
+
+Use Preview, then Apply or Cancel. Apply is undoable; presets and unit rates are
+saved with project JSON. Scuppers and terrace gates validate against the selected
+edge and each other. Custom openings work best on individual numbered segments.
+Quantities export as CSV and dimensioned concept elevations as SVG. The privacy
+section offers estimated screening and a street camera; **Full view** returns.
+
+Choose **Limestone** or **Courtyard** under Appearance for the two new workspace
+palettes and associated lighting. The lighting moods are also independently
+available as **Golden hour** and **Courtyard daylight** under 4D presentation;
+the environment selector offers both. Materials and plan dimensions are preserved.
+
+Run `npm test`, `npm run check`, and `npm run test:parapet` to validate this
+workflow. The focused browser suite is also included in the normal regression
+suite. A local browser can be selected with `BROWSER_EXECUTABLE`.

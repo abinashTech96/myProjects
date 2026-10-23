@@ -131,9 +131,9 @@ window.FourDViews = {
     const raw=Math.min(1,(now-t.start)/t.duration),ease=x=>x*x*x*(x*(x*6-15)+10),v=ease(raw),camera=Engine3D.camera;
     camera.position.lerpVectors(t.from,t.to,v);
     if(t.route!=null) {
-      if(raw<.25) {camera.position.copy(t.from);camera.position.y=THREE.MathUtils.lerp(t.from.y,t.route,ease(raw*4));}
-      else if(raw<.75) {camera.position.lerpVectors(t.from,t.to,ease((raw-.25)*2));camera.position.y=t.route;}
-      else {camera.position.copy(t.to);camera.position.y=THREE.MathUtils.lerp(t.route,t.to.y,ease((raw-.75)*4));}
+      if(raw<.22) {camera.position.copy(t.from);camera.position.y=THREE.MathUtils.lerp(t.from.y,t.route,ease(raw/.22));}
+      else if(raw<.78) {camera.position.lerpVectors(t.from,t.to,ease((raw-.22)/.56));camera.position.y=t.route;}
+      else {camera.position.copy(t.to);camera.position.y=THREE.MathUtils.lerp(t.route,t.to.y,ease((raw-.78)/.22));}
     }
     Engine3D.controls.target.lerpVectors(t.fromTarget,t.toTarget,v);camera.lookAt(Engine3D.controls.target);
     this.transitionPlanes=[new THREE.Plane(new THREE.Vector3(0,-1,0),THREE.MathUtils.lerp(t.startClip[0],t.endClip[0],v)),
@@ -213,14 +213,14 @@ window.FourDViews = {
   panel() {
     const b=(l,a)=>StudioUI.button(l,a),s=FourDStudio.settings;
     WorkspacePanels.intent='4D';
-    StudioUI.dialog('4D presentation',`<div class="studio-action-grid">${b('Plot view','FourDViews.plot()')}${b('Full building','StudioEnhancements.fullView()')}${b('Focus element','FourDViews.focus()')}${b('Back','FourDViews.back()')}</div><label>Inspect floor<select aria-label="Presentation floor" onchange="FourDViews.floor(this.value)"><option value="all">Whole building</option>${Array.from({length:ProjectState.capture().floorCount},(_,i)=>`<option value="${i}" ${this.floorIndex===i?'selected':''}>${i===0?'Ground':'Floor '+i}</option>`).join('')}</select></label><label>View transition<select aria-label="4D motion" onchange="FourDViews.setMotion(this.value)">${['normal','gentle','off'].map(v=>`<option ${this.motion===v?'selected':''}>${v}</option>`).join('')}</select></label><label><input type="checkbox" ${this.reveal?'checked':''} onchange="FourDViews.reveal=this.checked;Engine3D.needsRender=true">Reveal focused interiors through nearby walls</label><div class="studio-action-grid">${b('Daylight preview','FourDViews.daylightPanel()')}${b('Finish close-up','FourDViews.materialPanel()')}${b('Guided tour','FourDViews.tourPanel()')}${b('Lighting & garden','Engine4D.lightingDialog()')}</div><fieldset><legend>Lighting mood</legend><div class="studio-action-grid">${b('Daylight',"FourDViews.realism('daylight')")}${b('Warm interior',"FourDViews.realism('interior')")}${b('Soft overcast',"FourDViews.realism('studio')")}</div></fieldset><label><input type="checkbox" ${s.progressive?'checked':''} onchange="FourDStudio.change('progressive',this.checked)">Refine stills after navigation</label><p>Navigation reduces costly effects. Shadows, reflections and optional still refinement return after settling. Higher quality stills use the existing Photo controls.</p>`);
+    StudioUI.dialog('4D presentation',`<div class="studio-action-grid">${b('Plot view','FourDViews.plot()')}${b('Full building','StudioEnhancements.fullView()')}${b('Focus element','FourDViews.focus()')}${b('Back','FourDViews.back()')}</div><label>Inspect floor<select aria-label="Presentation floor" onchange="FourDViews.floor(this.value)"><option value="all">Whole building</option>${Array.from({length:ProjectState.capture().floorCount},(_,i)=>`<option value="${i}" ${this.floorIndex===i?'selected':''}>${i===0?'Ground':'Floor '+i}</option>`).join('')}</select></label><label>View transition<select aria-label="4D motion" onchange="FourDViews.setMotion(this.value)">${['normal','gentle','off'].map(v=>`<option ${this.motion===v?'selected':''}>${v}</option>`).join('')}</select></label><label><input type="checkbox" ${this.reveal?'checked':''} onchange="FourDViews.reveal=this.checked;Engine3D.needsRender=true">Reveal focused interiors through nearby walls</label><div class="studio-action-grid">${b('Daylight preview','FourDViews.daylightPanel()')}${b('Finish close-up','FourDViews.materialPanel()')}${b('Guided tour','FourDViews.tourPanel()')}${b('Lighting & garden','Engine4D.lightingDialog()')}</div><fieldset><legend>Lighting mood</legend><div class="studio-action-grid">${b('Daylight',"FourDViews.realism('daylight')")}${b('Warm interior',"FourDViews.realism('interior')")}${b('Soft overcast',"FourDViews.realism('studio')")}${b('Golden hour',"FourDViews.realism('golden-hour')")}${b('Courtyard daylight',"FourDViews.realism('courtyard')")}</div></fieldset><label><input type="checkbox" ${s.progressive?'checked':''} onchange="FourDStudio.change('progressive',this.checked)">Refine stills after navigation</label><p>Navigation reduces costly effects. Shadows, reflections and optional still refinement return after settling. Higher quality stills use the existing Photo controls.</p>`);
   },
   realism(value) {
-    if(!FourDWorkspace.running||FourDWorkspace.paused||!['daylight','interior','studio'].includes(value))return;
+    if(!FourDWorkspace.running||FourDWorkspace.paused||!['daylight','interior','studio','golden-hour','courtyard'].includes(value))return;
     this.resetDaylight();this.materialMode=false;this.restoreLight();
     Engine4D.setPreset(value);
     ProjectState.commit('Changed architectural lighting mood',()=>{
-      FourDStudio.settings.environment=value==='studio'?'overcast':value==='interior'?'sunset':'studio';
+      FourDStudio.settings.environment=value==='golden-hour'||value==='courtyard'?value:value==='studio'?'overcast':value==='interior'?'sunset':'studio';
       ProjectState.meta.design.presentation.lights.enabled=true;
     });
     Engine3D.needsRender=true;

@@ -423,7 +423,7 @@ generate3DModel = function () {
     walls: ProjectState.meta.wallSettings,
     overrides: ProjectState.meta.wallOverrides,
     texture: CanvasControlsEngine.isReal3D() || StudioUI.mode === "4d",
-    facade: ParapetModule.config,
+    facade: window.ParapetStudio?.previewConfig || ParapetModule.config,
     style: document.getElementById("parapetStyleSelect")?.value,
     performance: window.isPerformanceMode,
   });

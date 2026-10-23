@@ -1,6 +1,8 @@
 /* Presentation-only refinements. Geometry and the original tool catalogue stay in their owning modules. */
 window.WorkspacePolish = {
   themeInfo: {
+    limestone: {name:"Limestone",note:"Warm stone · golden-hour realism",panel:"#f3ede3",plan:"#e4ddcf",model:"#7b746b",render:"#62594d",accent:"#81582c"},
+    courtyard: {name:"Courtyard",note:"Forest charcoal · soft daylight realism",panel:"#26342d",plan:"#1d2824",model:"#526258",render:"#3e5045",accent:"#bfd29a"},
     graphite: {
       name: "Graphite",
       note: "Cool charcoal · blue accents",

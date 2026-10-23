@@ -1,7 +1,7 @@
 /* Coordinated editing and presentation tools. Project edits use normal history;
  * focus, clipping and navigation remain reversible view state. */
 window.StudioEnhancements = {
-  themes: ["graphite", "pearl", "ocean", "sand"],
+  themes: ["graphite", "pearl", "ocean", "sand", "limestone", "courtyard"],
   focusRoom: null,
   linked: false,
   explosion: 0,
@@ -370,6 +370,14 @@ window.StudioEnhancements = {
       getComputedStyle(document.body).getPropertyValue("--enh-bg").trim() || "#0f172a";
     const style = getComputedStyle(document.body);
     this.canvasPalette = Object.fromEntries(["2d", "3d", "4d"].map(mode => [mode, style.getPropertyValue("--canvas-" + mode).trim() || this.canvasBackground]));
+    if (persist && ["limestone", "courtyard"].includes(value)) {
+      const warm = value === "limestone";
+      Engine4D.setPreset(warm ? "golden-hour" : "courtyard");
+      ProjectState.commit("Changed realism lighting theme", () => {
+        ProjectState.meta.design.presentation.studio.environment = warm ? "golden-hour" : "courtyard";
+        ProjectState.meta.design.presentation.studio.environmentIntensity = warm ? .85 : 1.1;
+      });
+    }
     this.applyViewportTheme();
     if (window.WorkspacePolish) WorkspacePolish.themeChanged();
     if (persist)

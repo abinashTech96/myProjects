@@ -99,6 +99,7 @@ const Workbench3D = {
       if (
         !e &&
         !data.designObject &&
+        (!data.parapetCollection || data.legacyParapet) &&
         child.children?.some((c) => c.userData.isParapet)
       )
         child.position.y +=

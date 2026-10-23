@@ -17,8 +17,8 @@ module.exports = async ({ page, assert }) => {
   };
   const backgrounds = new Set();
   await page.evaluate(() => StudioEnhancements.themeDialog());
-  assert.equal(await page.locator("[data-theme-choice]").count(), 4);
-  for (const theme of ["graphite", "pearl", "ocean", "sand"]) {
+  assert.equal(await page.locator("[data-theme-choice]").count(), 6);
+  for (const theme of ["graphite", "pearl", "ocean", "sand", "limestone", "courtyard"]) {
     await page.locator(`[data-theme-choice="${theme}"]`).click();
     await page.waitForTimeout(150);
     assert.equal(
@@ -57,7 +57,7 @@ module.exports = async ({ page, assert }) => {
   }
   assert.equal(
     backgrounds.size,
-    12,
+    18,
     "Each theme and each drawing/rendering mode has a distinct canvas",
   );
   await page.getByRole("button", { name: "Comfortable", exact: true }).click();
@@ -216,7 +216,7 @@ module.exports = async ({ page, assert }) => {
   const geometry = await page.evaluate(() =>
     JSON.stringify(ProjectState.capture().elements),
   );
-  for (const theme of ["graphite", "pearl", "ocean", "sand"]) {
+  for (const theme of ["graphite", "pearl", "ocean", "sand", "limestone", "courtyard"]) {
     await page.evaluate((t) => {
       StudioEnhancements.theme(t);
       setWorkspaceLayout("2d");
@@ -334,6 +334,6 @@ module.exports = async ({ page, assert }) => {
     setWorkspaceLayout("2d");
   }, original);
   console.log(
-    "Workspace polish: twelve canvas palettes and actual render pixels, contrast, theme previews, density, keyboard modes, pointer/keyboard splitter, zoom controls, catalog recovery/units, reduced motion and responsive dialogs passed",
+    "Workspace polish: eighteen canvas palettes and actual render pixels, contrast, theme previews, density, keyboard modes, pointer/keyboard splitter, zoom controls, catalog recovery/units, reduced motion and responsive dialogs passed",
   );
 };

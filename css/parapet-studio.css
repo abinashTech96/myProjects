@@ -1,0 +1,40 @@
+#parapet-studio { display:grid; gap:8px; font-size:12px; }
+#parapet-studio label { display:grid; gap:4px; min-width:0; }
+#parapet-studio label:has(input[type=checkbox]) { display:flex; align-items:center; }
+#parapet-studio input[type=color] { width:100%; height:30px; padding:2px; background:var(--enh-inset); border:1px solid var(--enh-border); border-radius:6px; }
+.parapet-context { display:grid; gap:4px; }
+.parapet-context small { font-size:10px; }
+.parapet-designs { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:5px; max-height:220px; overflow:auto; overscroll-behavior:contain; }
+.parapet-designs .parapet-design { display:grid; text-align:left; gap:2px; padding:6px; min-width:0; white-space:normal; }
+.parapet-design[hidden] { display:none!important; }
+.parapet-design svg { width:100%; height:36px; stroke:currentColor; stroke-width:2; fill:none; }
+.parapet-design span { font-size:11px; line-height:1.25; }
+.parapet-design small { font-size:9px; }
+#parapet-outline svg { width:100%; height:100px; background:var(--enh-inset); border-radius:8px; }
+#parapet-outline path { stroke:var(--enh-muted); stroke-width:4; fill:none; }
+#parapet-outline circle,#parapet-outline text { fill:var(--enh-muted); }
+#parapet-outline g { cursor:pointer; }
+#parapet-outline g:is(.selected,:focus) path { stroke:var(--enh-accent); stroke-width:6; }
+#parapet-outline .selected text { fill:var(--enh-text); }
+#parapet-error { color:var(--enh-danger)!important; margin:0; }
+#parapet-error:empty { display:none; }
+#parapet-studio [aria-invalid=true] { outline:2px solid var(--enh-danger); }
+#parapet-studio p { margin:3px 0; }
+#parapet-studio details { border-top:1px solid var(--enh-border); padding-top:7px; }
+#parapet-studio summary { cursor:pointer; padding:3px 0; }
+.parapet-actions { display:flex; gap:5px; position:sticky; bottom:-1px; background:var(--enh-panel); padding:8px 0; border-top:1px solid var(--enh-border); z-index:2; }
+.parapet-actions button { flex:1; }
+.parapet-opening { border:1px solid var(--enh-border); border-radius:7px; padding:6px; margin:5px 0; }
+.parapet-preset { display:flex; gap:4px; margin-top:4px; }
+.parapet-preset button:first-child { flex:1; text-align:left; }
+
+/* Override the common fixed-height icon button for labelled design cards. */
+body[data-ui-theme] #parapet-studio .parapet-design {
+ display:grid!important;grid-template-rows:30px auto 12px;align-content:center;
+ height:auto!important;min-height:76px!important;overflow:hidden;padding:6px!important;
+}
+#parapet-studio .parapet-design :is(span,small) {display:block!important;opacity:1!important;white-space:normal;}
+#parapet-studio .parapet-design svg {height:30px;max-height:30px;}
+body[data-ui-theme] #parapet-studio .parapet-design[hidden] {display:none!important;}
+
+@media(max-width:700px){#parapet-outline svg{height:64px}.parapet-designs{max-height:165px}.parapet-context small{font-size:9px}}

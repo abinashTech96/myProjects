@@ -131,5 +131,10 @@
   "js/fourd-worker.js",
   "js/fourd-assets.js",
   "js/fourd-details.js",
-  "js/fourd-review.js"
+  "js/fourd-review.js",
+  "js/parapet-model.js",
+  "js/parapet-renderer.js",
+  "js/parapet-studio.js",
+  "css/parapet-studio.css",
+  "css/realism-themes.css"
 ]

@@ -129,7 +129,7 @@ function stateHarness() {
   const document = {
     getElementById(id) {
       if (!nodes.has(id))
-        nodes.set(id, { value: defaults[id] ?? "0", checked: false });
+        nodes.set(id, { value: defaults[id] ?? "0", checked: false, dataset: {} });
       return nodes.get(id);
     },
     addEventListener() {},

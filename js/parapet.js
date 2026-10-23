@@ -184,7 +184,16 @@ const ParapetModule = {
 
     // 2. MAIN ROUTER
     build(useReal3D) {
-        const { SCALE, inW, inH, CX, CY, WALL_HEIGHT } = get3DEnvironmentParams();
+        const env = get3DEnvironmentParams();
+        const { SCALE, inW, inH, CX, CY, WALL_HEIGHT } = env;
+        const selectedStyle = document.getElementById('parapetStyleSelect')?.value;
+        const preview = window.ParapetStudio?.previewConfig;
+        if (preview || this.config.version === 2 || window.ParapetModel?.designs.some(s => s.id === selectedStyle)) {
+            const p = ProjectState.capture();
+            const cfg = preview || ParapetModel.config(this.config, selectedStyle);
+            Engine3D.buildingGroup.add(ParapetRenderer.build(p, cfg, {scale:SCALE, origin:env.I, quality:window.StudioUI?.mode === '4d' ? FourDWorkspace.quality : 'balanced'}));
+            return;
+        }
         const styleDropdown = document.getElementById('parapetStyleSelect');
         const currentStyle = styleDropdown ? styleDropdown.value : 'premium-canopy';
 
@@ -725,5 +734,12 @@ const ParapetModule = {
 };
 
 window.build3DParapet = function(useReal3D) {
-    ParapetModule.build(useReal3D);
+    const live=Engine3D.buildingGroup, group=new THREE.Group();
+    const advanced=window.ParapetStudio?.previewConfig || ParapetModule.config.version===2 || ParapetModel.designs.some(s=>s.id===document.getElementById('parapetStyleSelect')?.value);
+    group.userData={isParapet:true,parapetCollection:true,legacyParapet:!advanced,floor:Math.max(0,...elements.filter(e=>!e.isFurniture&&e.type!=="staircase").map(e=>e.floor))};
+    Engine3D.buildingGroup=group;
+    try {ParapetModule.build(useReal3D);live.add(group);}
+    catch(error){window.Workbench3D?.disposeObject(group);throw error;}
+    finally {Engine3D.buildingGroup=live;}
 };
+ParapetModule.legacyDefaults = structuredClone(ParapetModule.config);

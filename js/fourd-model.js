@@ -102,7 +102,7 @@
     const d = { ...defaults(), ...structuredClone(raw || {}) };
     if (d.version !== 1) throw Error("Unsupported 4D settings version");
     for (const [k, allowed] of Object.entries({
-      environment: ["studio", "overcast", "sunset", "night", "custom"],
+      environment: ["studio", "overcast", "sunset", "night", "custom", "golden-hour", "courtyard"],
       lod: ["full", "auto", "economy"],
       reflections: ["environment", "local"],
     }))
@@ -209,7 +209,7 @@
         ? 4
         : data.isOpening || data.openingId
           ? 2
-          : data.isRoof || data.isSlab
+          : data.isRoof || data.isSlab || data.isParapet
             ? 1
             : data.presentationSurface === "ceiling"
               ? 3

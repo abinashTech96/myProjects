@@ -1,0 +1,32 @@
+/* Realism palettes retain contrast between the model and workspace chrome. */
+body.experience-shell[data-ui-theme="limestone"] {
+ --enh-bg:#e4ddcf; --enh-panel:#f3ede3; --enh-inset:#e7dfd1; --enh-text:#35332d;
+ --enh-muted:#686252; --enh-border:#b8ad98; --enh-accent:#81582c;
+ --canvas-2d:#e4ddcf; --canvas-3d:#7b746b; --canvas-4d:#62594d;
+ --plan-ink:#393830; --plan-grid:#d0c7b6; --plan-grid-major:#b8ac96;
+ --plan-fill:#e3d6bf; --plot-fill:#d9ccb5; --plan-selection:#814816;
+ --plan-edge:#7d6c4c; --grid-3d:#d3c6ad; --enh-active:#81582c; --enh-on-active:#fff;
+ --enh-danger:#9b2535; --enh-danger-bg:#fce8e8; --enh-shadow:#62553b20; --enh-shine:#ffffffc0;
+ color-scheme:light;
+}
+body.experience-shell[data-ui-theme="courtyard"] {
+ --enh-bg:#18231e; --enh-panel:#26342d; --enh-inset:#1d2824; --enh-text:#eef1e6;
+ --enh-muted:#bfcabc; --enh-border:#5a6d5d; --enh-accent:#bfd29a;
+ --canvas-2d:#1d2824; --canvas-3d:#526258; --canvas-4d:#3e5045;
+ --plan-ink:#dde5d2; --plan-grid:#35463b; --plan-grid-major:#4d6252;
+ --plan-fill:#293d30; --plot-fill:#24372a; --plan-selection:#d3e6a4;
+ --plan-edge:#9baa8a; --grid-3d:#aebca3; --enh-active:#4d6542; --enh-on-active:#f2f9e7;
+ --enh-danger:#ffb9b5; --enh-danger-bg:#49332d; --enh-shadow:#07120c40; --enh-shine:#ffffff0d;
+ color-scheme:dark;
+}
+/* Short compositor transitions only; no perpetual shadows, blur or layout animation. */
+body.experience-shell :is(.studio-button,.parapet-design,.workspace-object-list button) {
+ transition:background-color 140ms ease,border-color 140ms ease,color 140ms ease,transform 140ms cubic-bezier(.2,.8,.2,1);
+}
+@media (hover:hover) {
+ body.experience-shell :is(.studio-button,.parapet-design):hover { transform:translateY(-1px); }
+}
+body.experience-shell .studio-button:active { transform:translateY(0) scale(.98); }
+@media (prefers-reduced-motion:reduce) {
+ body.experience-shell *,body.experience-shell *::before,body.experience-shell *::after { animation-duration:.01ms!important; animation-iteration-count:1!important; transition-duration:.01ms!important; scroll-behavior:auto!important; }
+}

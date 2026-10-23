@@ -1288,7 +1288,7 @@ window.StudioEnhancements = {
       };
     point[key[0]] = s[key] + delta;
     const v = Workbench3D.coordinates(point).project(
-        camera,
+        Engine4D.camera || Engine3D.camera,
       ),
       box = Engine3D.renderer.domElement.getBoundingClientRect();
     return { x: ((v.x + 1) * box.width) / 2, y: ((1 - v.y) * box.height) / 2 };

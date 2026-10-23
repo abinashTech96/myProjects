@@ -202,6 +202,7 @@ const ViewportUI = {
   fit(selectionOnly = false, animated = true) { this.ensure(); this.orient(this.view || 'iso', animated, selectionOnly); },
   orient(view, animated = true, selectionOnly = false) {
     if (!this.ensure()) return;
+    if(StudioUI.mode==='4d' && window.FourDViews?.transition)FourDViews.cancel('input');
     const box = this.bounds(selectionOnly);
     if (box.isEmpty()) return;
     this.orbit(); this.view = view;
@@ -225,7 +226,9 @@ const ViewportUI = {
     Engine3D.needsRender=true;this.updateInfo();
   },
   tick(now) {
+    if (window.FourDViews?.transition) {FourDViews.tick(now);return;}
     const tween=Engine3D.cameraTween;
+    if(tween?.managed4d){Engine3D.cameraTween=null;return;}
     if (!tween) return;
     const t=Math.min(1,(now-tween.start)/tween.duration), ease=1-Math.pow(1-t,3);
     Engine3D.camera.position.lerpVectors(tween.from,tween.to,ease);

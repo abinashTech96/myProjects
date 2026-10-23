@@ -166,7 +166,7 @@ transforms, and exterior room-light/shader costs are reduced. The screenshot's
 roof projection was traced to saved parapet geometry; intentional test materials
 and site objects remain intact.
 
-**4D-022 is partially implemented:** finishes update only affected owners without
+**Status at the earlier workspace release (superseded by 4D-041–056 below):** finishes updated only affected owners without
 rebuilding geometry. Structural geometry edits still rebuild the editor source
 and replace its presentation scene atomically. Fully incremental structural
 geometry remains pending. Geometry-specific operations and driver shader
@@ -178,9 +178,9 @@ are reproduced; valid architectural content will not be removed to mask them.
 See [4D workspace lifecycle and validation](FOURD_WORKSPACE.md) for implemented
 behavior, profile budgets, architectural audit findings and verification commands.
 
-## Next 4D performance, realism and view transitions — accepted, pending
+## Next 4D performance, realism and view transitions — implemented with global fallback
 
-Added on 23 October 2026. These are backlog requirements, not a delivered release.
+Added on 23 October 2026. Delivery details and limits follow the requirement table.
 Items 4D-041–045 break down the remaining structural-update work under 4D-022
 and its verification under 4D-026. Items 4D-046–050 extend the existing visual
 quality and view workflows rather than introduce competing settings or engines.
@@ -201,4 +201,37 @@ quality and view workflows rather than introduce competing settings or engines.
 Suggested delivery order: 4D-041–045 first; shared transition controller and
 element/floor/plot views next; visual refinement with before/after comparisons
 last. Keep single-click selection separate from deliberate camera focus.
-Further ideas discussed after this update remain proposals until accepted.
+The six presentation proposals were accepted for implementation in the same release:
+
+| ID | Feature | Delivered behavior |
+| --- | --- | --- |
+| 4D-051 | Interior reveal | Focused-room wall intersections fade temporarily, restore their original opacity/depth/shadow settings on return, and respect reduced motion. No editable walls are removed. |
+| 4D-052 | View breadcrumbs | Plot / Building / Floor / Element navigation and a bounded 24-entry Back history restore camera and inspection filters. |
+| 4D-053 | Daylight preview | Scrub local hour or play a bounded morning/evening preview using saved site/date/UTC settings. Reset discards the preview; Apply saves the hour through undo/redo. |
+| 4D-054 | Finish close-up | Inspect the actual floor, wall or ceiling in temporary neutral lighting, retaining saved texture scale. Return restores the previous view and lighting. |
+| 4D-055 | Guided walkthrough | Save, reorder, remove and visit up to 24 camera stops. Play, Pause, Stop and speed controls use cancellable camera travel. Stops persist in validated project JSON and undo/redo. |
+| 4D-056 | Refine after settling | Navigation lowers pixel density/AO cost, and settled views restore quality, refresh requested reflections and optionally accumulate refined raster stills through the existing Photo settings. |
+
+### Delivery scope and remaining limits
+
+Local room, shared-wall, opening, generated slab/roof and professional-object
+updates use stable dependency records, cancellable preparation and one checked
+scene commit. Unaffected meshes retain identity; repeated edits dispose replaced
+buffers. The displayed scene reads its matching project snapshot while edits
+are staged, so room deletion/reindexing cannot invalidate its ceiling lookup.
+
+Global plot/scale/unit, floor-count/level and other global builder settings use
+the established source rebuild plus asynchronous presentation staging. A single
+polygon/geometry operation and GPU shader compilation remain synchronous. This
+is an explicit fallback, not a promise that every architectural change updates
+one mesh or that all large-project stalls are eliminated.
+
+The shared view controller supports Normal / Gentle / Off, reduced motion,
+clipping interpolation, obstruction-aware raised camera routes and immediate
+input cancellation. Daylight playback and tours stop on Pause, Stop, hidden tabs
+and mode exit. Texture projection, timber detail, roughness variation, shadow
+bias and lighting moods improve presentation while preserving entered geometry
+and intentional saved finishes. This remains raster visualization; it does not
+add path tracing or certify physical daylight performance.
+
+See [the 4D workspace guide](FOURD_WORKSPACE.md) for controls and verification.

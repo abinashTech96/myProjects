@@ -9,6 +9,7 @@ window.FourDWorkspace = {
   annotationPreference: "off",
   dimensions: false,
   resolutionScale: 1,
+  updateRevision: 0,
   metrics: { samples: [], longTasks: 0, builds: 0 },
   profiles: {
     eco: { pixels: 650000, ratio: 1, shadow: 512, ao: false },
@@ -23,6 +24,7 @@ window.FourDWorkspace = {
       <div id="fourd-toolbar" role="toolbar" aria-label="4D workspace controls">
         <button class="studio-button" onclick="StudioEnhancements.fullView()">Full view</button>
         <button class="studio-button" onclick="FourDWorkspace.viewPanel()">Views</button>
+        <button class="studio-button" onclick="FourDViews.panel()">Present</button>
         <button class="studio-button" onclick="FourDWorkspace.inspect(true)">Inspect</button>
         <button class="studio-button" onclick="FourDWorkspace.studio()">4D Studio</button>
         <select aria-label="4D annotations" onchange="FourDWorkspace.setAnnotations(this.value)"><option value="off">Labels off</option><option value="selected">Selected label</option><option value="all">All visible labels</option></select>
@@ -69,7 +71,9 @@ window.FourDWorkspace = {
         // Keep both render loops asleep until there is a complete 4D scene.
         window.is3DMode = false;
         Engine3D.syncVisibility();
+        if(this.sourceInvalid)Engine3D.modelSignature=null;
         generate3DModel();
+        this.sourceInvalid=false;
         await this.checkpoint("Preparing physical materials and geometry…", token);
         await Engine4D.enable(token);
         if (token !== this.token || StudioUI.mode !== "4d") throw new DOMException("Cancelled", "AbortError");
@@ -88,8 +92,11 @@ window.FourDWorkspace = {
         ViewportUI.inspectFloor("all");
         this.setQuality(this.quality);
         this.modelKey = this.geometryKey(ProjectState.capture());
+        FourDIncremental.remember(ProjectState.capture());
+        FourDViews.reset();
         this.materialKeys = new Map();
         this.updateMaterials();
+        Scene4D.reconcile(Engine4D);
         window.is3DMode = true;
         StudioEnhancements.bindCanvas();
         ViewportUI.orient("iso", false);
@@ -116,6 +123,7 @@ window.FourDWorkspace = {
   pause(value = !this.paused) {
     if (!this.running) return;
     this.paused = value;
+    if (value) FourDViews.suspend();
     if (value) {
       FourDStudio.playing = false;
       cancelAnimationFrame(FourDStudio.stageRAF);
@@ -139,7 +147,10 @@ window.FourDWorkspace = {
   },
   stop(update = true) {
     ++this.token;
+    FourDIncremental.reset();
+    FourDViews.stop();
     this.starting = this.running = this.paused = false;
+    this.structuralPending=false;
     this.startPromise = null;
     clearTimeout(this.adaptTimer);
     clearTimeout(this.updateTimer);
@@ -175,12 +186,16 @@ window.FourDWorkspace = {
     cancelAnimationFrame(window.tourAnimationId);
     cancelAnimationFrame(Widget3DEngine._explodeAnimation);
     Workbench3D.disableEdit?.();
+    Engine3D.isWalkthrough=false;
+    Engine3D.fpsControls?.unlock();
+    if(Engine3D.controls) {Engine3D.controls.autoRotate=false;Engine3D.controls.enabled=true;}
     Workbench3D.measurePoints = null;
     StudioEnhancements.labels = "none";
     Engine3D.syncVisibility();
   },
   leave() {
     this.stop();
+    Engine3D.modelSignature=null;
     if (this.previousIsolation) {Workbench3D.isolation=this.previousIsolation;Workbench3D.applyIsolation();}
     document.getElementById("studio-dialog")?.close();
     requestAnimationFrame(() => {
@@ -192,6 +207,7 @@ window.FourDWorkspace = {
     });
   },
   failed(reason) {
+    FourDViews.suspend();
     this.running = false;
     window.is3DMode = false;
     Engine3D.syncVisibility();
@@ -228,24 +244,52 @@ window.FourDWorkspace = {
   },
   scheduleUpdate() {
     if (!this.running || this.starting) return;
+    const revision=++this.updateRevision;
+    FourDIncremental.revision++;
     if (this.paused || document.hidden) {this.pendingUpdate=true;return;}
     clearTimeout(this.updateTimer);
-    this.updateTimer = setTimeout(() => {
+    this.updateTimer = setTimeout(async () => {
       if (!this.running || StudioUI.mode !== "4d") return;
       if (this.paused || document.hidden) {this.pendingUpdate=true;return;}
-      const key = this.geometryKey(ProjectState.capture());
-      if (key !== this.modelKey) {
-        generate3DModel();
-        this.modelKey = key;
-        this.materialKeys = new Map();
+      const p=ProjectState.capture(), key=this.geometryKey(p), token=this.token;
+      const valid=()=>this.running&&!this.paused&&!document.hidden&&token===this.token&&revision===this.updateRevision;
+      try {
+        if(key!==this.modelKey || this.sourceInvalid) {
+          this.structuralPending=true;
+          const result=await FourDIncremental.update(p,valid);
+          if(!valid()) return;
+          if(result.fallback) {
+            // Global dependencies retain the proven full builder.
+            this.sourceInvalid=true;
+            generate3DModel();
+            const stage=await Scene4D.stageAsync(Engine4D,Engine3D.buildingGroup,p,async()=>{
+              await new Promise(r=>setTimeout(r,0));if(!valid())throw new DOMException('Superseded rebuild','AbortError');
+            });
+            if(!valid()) {Scene4D.dispose({model:stage.model,materials:stage.materials,sceneResources:stage.resources});return;}
+            Engine4D.syncModel(true,stage);
+            this.sourceInvalid=false;
+            Scene4D.reconcile(Engine4D);
+            FourDIncremental.remember(p);
+            this.metrics.fallbacks=(this.metrics.fallbacks||0)+1;
+          }
+          this.modelKey=key;
+          this.structuralPending=false;
+        }
+        this.structuralPending=false;
+        this.updateMaterials();
+        Engine3D.needsRender=true;
+      } catch(error) {
+        if(error.name==='AbortError')return;
+        console.warn('4D incremental preparation',error);
+        if(valid()) StudioUI.message('The model update could not be prepared. Previous view retained; stop and render again to retry.','error');
       }
-      this.updateMaterials();
-      Engine3D.needsRender = true;
-    }, 50);
+    }, 65);
   },
   updateMaterials() {
     if (!Engine4D.ready) return;
     const p = ProjectState.capture(), changed = new Set(), e = Engine4D;
+    const liveIds=new Set(p.elements.map(element=>element.id));
+    for(const id of this.materialKeys.keys())if(!liveIds.has(id))this.materialKeys.delete(id);
     for (const element of p.elements) {
       const preview = StudioEnhancements.preview?.id === element.id ? StudioEnhancements.preview : null,
         key=JSON.stringify([element.material,element.customColor,p.design.presentation.surfaces[element.id],preview]);
@@ -254,6 +298,7 @@ window.FourDWorkspace = {
         this.materialKeys.set(element.id,key);
       }
     }
+    if(changed.size)FourDViews.restoreReveal();
     StudioEnhancements.modelProject = p;
     const replace = (node,make) => {
       const old=[].concat(node.material || []);
@@ -290,6 +335,7 @@ window.FourDWorkspace = {
     for (const leaf of StudioEnhancements.leaves || [])
       if (leaf.fixed) leaf.fixed.material=leaf.copy.material;
     if (changed.size) {
+      Scene4D.reconcile(e);
       e.renderer.shadowMap.needsUpdate=true;
       FourDRender.probeDirty=true;
       FourDStudio.outlineKey=null;
@@ -352,7 +398,7 @@ window.FourDWorkspace = {
     if (!this.running || this.paused) return;
     WorkspacePanels.intent = "4D";
     const b = (label, action) => StudioUI.button(label, action);
-    StudioUI.dialog("4D views", `<div class="studio-action-grid">${b("Exterior", "StudioEnhancements.fullView()")}${b("Interior", "StudioEnhancements.run(()=>StudioEnhancements.walkDialog())")}${b("Floor plan", "ViewportUI.orient('top')")}${b("Section", "StudioEnhancements.run(()=>StudioEnhancements.sectionDialog())")}${b("Photo", "FourDStudio.open('camera')")}${b("Lighting", "Engine4D.lightingDialog()")}${b("Room lights", "StudioEnhancements.run(()=>StudioEnhancements.interiorDialog())")}${b("Sun & location", "DesignUI.sunDialog()")}${b("Camera views", "ViewportUI.viewsDialog()")}${b("Clean view", "StudioEnhancements.setFocus(true)")}${b("Appearance", "FourDWorkspace.appearance()")}${b("Openings", "StudioEnhancements.run(()=>StudioEnhancements.openingsDialog())")}${b("Exploded floors", "StudioEnhancements.run(()=>StudioEnhancements.explodeDialog())")}${b("Measure", "FourDWorkspace.showDimensions(true);StudioEnhancements.measureDialog()")}${b("Rendering diagnostics", "FourDWorkspace.diagnostics()")}</div><label>Inspect floor<select aria-label="4D floor" onchange="ViewportUI.inspectFloor(this.value)"><option value="all">Whole building</option>${Array.from({length:ProjectState.capture().floorCount},(_,i)=>`<option value="${i}">${i===0?"Ground":"Floor "+i}</option>`).join("")}</select></label><label>Cutaway height<input aria-label="4D cutaway" type="range" min="5" max="100" value="${ViewportUI.cutPercent || 100}" oninput="ViewportUI.cutaway(this.value)"></label><label><input type="checkbox" ${this.dimensions ? "checked" : ""} onchange="FourDWorkspace.showDimensions(this.checked)">Show saved dimensions</label><label>Sunlight strength<select aria-label="4D sunlight" onchange="WorkspaceLayout.setSun(Number(this.value))">${[0,25,50,75,100].map(n=>`<option value="${n}" ${WorkspaceLayout.sunValue()===n ? "selected" : ""}>${n}%</option>`).join("")}</select></label><p>Single click selects. Focus element moves closer. Full view clears temporary inspection overlays.</p>`);
+    StudioUI.dialog("4D views", `<div class="studio-action-grid">${b("Exterior", "StudioEnhancements.fullView()")}${b("Plot", "FourDViews.plot()")}${b("Presentation", "FourDViews.panel()")}${b("Daylight preview", "FourDViews.daylightPanel()")}${b("Finish close-up", "FourDViews.materialPanel()")}${b("Guided tour", "FourDViews.tourPanel()")}${b("Interior", "StudioEnhancements.run(()=>StudioEnhancements.walkDialog())")}${b("Floor plan", "ViewportUI.orient('top')")}${b("Section", "StudioEnhancements.run(()=>StudioEnhancements.sectionDialog())")}${b("Photo", "FourDStudio.open('camera')")}${b("Lighting", "Engine4D.lightingDialog()")}${b("Room lights", "StudioEnhancements.run(()=>StudioEnhancements.interiorDialog())")}${b("Sun & location", "DesignUI.sunDialog()")}${b("Camera views", "ViewportUI.viewsDialog()")}${b("Clean view", "StudioEnhancements.setFocus(true)")}${b("Appearance", "FourDWorkspace.appearance()")}${b("Openings", "StudioEnhancements.run(()=>StudioEnhancements.openingsDialog())")}${b("Exploded floors", "StudioEnhancements.run(()=>StudioEnhancements.explodeDialog())")}${b("Measure", "FourDWorkspace.showDimensions(true);StudioEnhancements.measureDialog()")}${b("Rendering diagnostics", "FourDWorkspace.diagnostics()")}</div><label>Inspect floor<select aria-label="4D floor" onchange="FourDViews.floor(this.value)"><option value="all">Whole building</option>${Array.from({length:ProjectState.capture().floorCount},(_,i)=>`<option value="${i}">${i===0?"Ground":"Floor "+i}</option>`).join("")}</select></label><label>Cutaway height<input aria-label="4D cutaway" type="range" min="5" max="100" value="${ViewportUI.cutPercent || 100}" oninput="ViewportUI.cutaway(this.value)"></label><label><input type="checkbox" ${this.dimensions ? "checked" : ""} onchange="FourDWorkspace.showDimensions(this.checked)">Show saved dimensions</label><label>Sunlight strength<select aria-label="4D sunlight" onchange="WorkspaceLayout.setSun(Number(this.value))">${[0,25,50,75,100].map(n=>`<option value="${n}" ${WorkspaceLayout.sunValue()===n ? "selected" : ""}>${n}%</option>`).join("")}</select></label><p>Single click selects. Focus element moves closer. Full view clears temporary inspection overlays.</p>`);
   },
   showDimensions(value) {
     this.dimensions = !!value;
@@ -367,7 +413,7 @@ window.FourDWorkspace = {
   diagnostics() {
     const m = this.metrics, e = Engine4D, esc = ProjectModel.escapeHTML;
     const issues = e.geometryIssues || [];
-    StudioUI.dialog("4D rendering diagnostics", `<p>First usable view: ${Math.round(m.firstFrameMs || 0)} ms · scene builds: ${m.builds} · long tasks observed: ${m.longTasks}</p><p>Draw calls: ${e.renderer?.info.render.calls || 0} · owned geometries: ${e.sceneResources?.geometries.size || 0} · renderer textures: ${e.renderer?.info.memory.textures || 0}</p><p>${issues.length ? issues.map(i=>esc(i.element+": "+i.reason)).join("<br>") : "No invalid geometry detected."}</p><p>Timings depend on model complexity, graphics drivers and quality. A render duration is not a screen FPS measurement.</p>`);
+    StudioUI.dialog("4D rendering diagnostics", `<p>First usable view: ${Math.round(m.firstFrameMs || 0)} ms · full scene builds: ${m.builds} · incremental updates: ${m.incremental||0} · fallbacks: ${m.fallbacks||0} · last local update: ${Math.round(m.lastUpdate?.ms||0)} ms · long tasks observed: ${m.longTasks}</p><p>Draw calls: ${e.renderer?.info.render.calls || 0} · owned geometries: ${e.sceneResources?.geometries.size || 0} · renderer textures: ${e.renderer?.info.memory.textures || 0}</p><p>${issues.length ? issues.map(i=>esc(i.element+": "+i.reason)).join("<br>") : "No invalid geometry detected."}</p><p>Timings depend on model complexity, graphics drivers and quality. A render duration is not a screen FPS measurement.</p>`);
   },
   init() {
     this.mount();
@@ -396,9 +442,17 @@ window.FourDWorkspace = {
       if (mode === "4d" && previous !== "4d") this.enter();
       return result;
     };
-    AppEvents.onSelectionChange(() => { if (StudioUI.mode === "4d") this.inspect(); });
+    AppEvents.onSelectionChange(() => { if (StudioUI.mode === "4d") {this.inspect();FourDViews.breadcrumbs();} });
+    document.addEventListener('keydown',event=>{
+      if(StudioUI.mode==='4d' && event.key==='Escape' && (FourDViews.transition||FourDViews.tourPlaying)) {
+        FourDViews.cancel('input');event.preventDefault();event.stopImmediatePropagation();
+      }
+    },true);
     document.addEventListener("visibilitychange", () => {
       if (document.hidden && StudioUI.mode === "4d") {
+        FourDViews.suspend();
+        FourDIncremental.revision++;
+        this.pendingUpdate=true;
         FourDRender.cancelPhoto();
         FourDStudio.playing = false;
         cancelAnimationFrame(FourDStudio.stageRAF);

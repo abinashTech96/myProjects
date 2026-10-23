@@ -454,9 +454,9 @@ const PlanningDrawing = {
       );
     }
   },
-  wall3D(SCALE, I, WALL_HEIGHT) {
+  wall3D(SCALE, I, WALL_HEIGHT, rows = WallEngine.getWalls()) {
     const height = ProjectState.meta.wallSettings.height;
-    WallEngine.getWalls().forEach((w) => {
+    rows.forEach((w) => {
       const primary = w.owners.find((o) => o.index !== undefined)?.index,
         el = elements[primary];
       const group = new THREE.Group();
@@ -862,10 +862,10 @@ updateCanvas = function (force = true) {
 };
 // Polygon room floor meshes replace the rectangular floors while retaining object IDs.
 const planningBuildRooms = build3DRooms;
-build3DRooms = function (SCALE, I, WALL_HEIGHT, real) {
-  planningBuildRooms(SCALE, I, WALL_HEIGHT, real);
+build3DRooms = function (SCALE, I, WALL_HEIGHT, real, options = {}) {
+  planningBuildRooms(SCALE, I, WALL_HEIGHT, real, options);
   elements
-    .filter((e) => e.points)
+    .filter((e) => e.points && (!options.ids || options.ids.has(e.id)))
     .forEach((e) => {
       const group = Engine3D.elementObjects.get(e.id);
       if (!group) return;
@@ -936,9 +936,9 @@ generate3DModel = function () {
   }
 };
 // Stable model-based opening meshes work on angled edges, too.
-build3DFixtures = function (SCALE, I, WALL_HEIGHT, real) {
+build3DFixtures = function (SCALE, I, WALL_HEIGHT, real, options = {}) {
   const p = ProjectState.capture();
-  p.fixtures.forEach((f) => {
+  p.fixtures.filter(f => !options.ids || options.ids.has(f.id)).forEach((f) => {
     const s = PlanningModel.openingSegment(p, f),
       g = new THREE.Group(),
       width = f.size * SCALE,

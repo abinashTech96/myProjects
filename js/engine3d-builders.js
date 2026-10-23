@@ -329,7 +329,7 @@ function buildStandardRoom(el, center, WALL_HEIGHT, useReal3D, isColliding, SCAL
     return mesh;
 }
 
-function build3DSlabs(SCALE, I, WALL_HEIGHT, useReal3D) {
+function build3DSlabs(SCALE, I, WALL_HEIGHT, useReal3D, options = {}) {
     const floors = [...elements.map(e => e.floor), Number(document.getElementById('b-floors')?.value || 1)-1];
     const maxFloor = floors.length > 0 ? Math.max(...floors) : 0;
     
@@ -337,6 +337,7 @@ function build3DSlabs(SCALE, I, WALL_HEIGHT, useReal3D) {
     const { inW, inH, CX, CY } = get3DEnvironmentParams();
 
     for (let f = 0; f <= maxFloor; f++) {
+        if(options.floors && !options.floors.has(f)) continue;
         const slabY = ((f + 1) * WALL_HEIGHT);
         
         // 🌟 FIX 5: STAIRCASE SLAB CUTOUTS 🌟

@@ -158,9 +158,10 @@ const WallEngine = {
   },
 };
 // Keep room objects separate so selection, materials, and drag updates retain identity.
-build3DRooms = function (SCALE, I, WALL_HEIGHT, useReal3D) {
-  Engine3D.elementObjects = new Map();
+build3DRooms = function (SCALE, I, WALL_HEIGHT, useReal3D, options = {}) {
+  if (!options.partial) Engine3D.elementObjects = new Map();
   elements.forEach((el, index) => {
+    if (options.ids && !options.ids.has(el.id)) return;
     const center = getRoomCenter(el, SCALE, I);
     let group;
     if (el.isFurniture) {
@@ -234,7 +235,7 @@ build3DRooms = function (SCALE, I, WALL_HEIGHT, useReal3D) {
     Engine3D.elementObjects.set(el.id, group);
     Engine3D.buildingGroup.add(group);
   });
-  WallEngine.build3D(SCALE, I, WALL_HEIGHT);
+  if (!options.noWalls) WallEngine.build3D(SCALE, I, WALL_HEIGHT);
 };
 const originalFurniture3D = createFurniture3D;
 createFurniture3D = function (type, w, d, color = null) {

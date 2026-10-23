@@ -146,3 +146,20 @@ test("HDR imports validate resolution before allocating pixel buffers", () => {
     ).toString("base64");
   assert.throws(() => P.normalize(p), /HDR/);
 });
+
+test('guided camera tours preserve model-space stops and validate portable input',()=>{
+ const p=project(),d=M.defaults();
+ assert.deepEqual(d.guidedStops,[]);
+ d.guidedStops.push({name:'Bedroom',position:{x:120,y:120,z:64},target:{x:100,y:80,z:40},kind:'element',floor:0,element:'room',projection:'perspective'});
+ d.tourSpeed=1.5;
+ p.design.presentation.studio=d;
+ const next=P.normalize(JSON.parse(JSON.stringify(p)));
+ assert.deepEqual(next.design.presentation.studio.guidedStops.map(({zoom,materialChannel,...stop})=>stop),d.guidedStops);
+ assert.equal(next.design.presentation.studio.tourSpeed,1.5);
+ const invalid=structuredClone(d);invalid.guidedStops[0].position.x=Infinity;
+ assert.throws(()=>M.validate(invalid,p),/coordinate/);
+ const many=structuredClone(d);many.guidedStops=Array(25).fill(d.guidedStops[0]);
+ assert.throws(()=>M.validate(many,p),/24/);
+ const removed=structuredClone(d);removed.guidedStops[0].element='deleted-room';
+ assert.equal(M.validate(removed,p).guidedStops[0].kind,'building');
+});

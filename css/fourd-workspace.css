@@ -39,3 +39,21 @@ body[data-workspace="4d"].presentation-focus #main-workspace { top: 0 !important
   body.studio-shell[data-workspace="split"] #right-canvas-wrapper { display: block !important; width: 100% !important; min-height: 0; }
   body.studio-shell[data-workspace="split"] #split-resizer { display: block !important; width: 100%; height: 8px; flex: 0 0 8px; cursor: row-resize; }
 }
+
+#fourd-breadcrumbs { display:none; position:absolute; top:62px; left:12px; max-width:calc(100% - 110px); gap:3px; padding:3px; border-radius:10px; pointer-events:auto; background:var(--enh-panel); border:1px solid var(--enh-border); overflow-x:auto; white-space:nowrap; align-items:center; box-shadow:2px 3px 9px #0002; }
+body[data-workspace="4d"]:is([data-fourd-state="ready"],[data-fourd-state="paused"]) #fourd-breadcrumbs {display:flex;}
+#fourd-breadcrumbs [aria-current] {background:var(--enh-accent);color:var(--enh-bg);}
+#fourd-breadcrumbs button:disabled {opacity:.4;}
+body[data-workspace="4d"] #fourd-inspection {top:110px;max-height:calc(100% - 155px);}
+body[data-workspace="4d"] .workspace-docked-dialog {top:162px !important;max-height:calc(100vh - 205px) !important;}
+#fourd-workspace .studio-button:focus-visible {outline:2px solid var(--enh-accent);outline-offset:2px;}
+@media(prefers-reduced-motion:no-preference) { #fourd-inspection:not([hidden]) {animation:fourd-inspect-in 150ms ease-out;} @keyframes fourd-inspect-in {from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}} }
+
+/* Override the generic rail-sized full-height dock in the isolated 4D portal. */
+body.studio-shell.workspace-panels-ready[data-ui-theme][data-workspace="4d"] #studio-dialog.workspace-docked-dialog {
+  top:calc(var(--workspace-header) + 112px) !important;left:12px !important;bottom:auto !important;
+  width:min(296px,calc(100vw - 24px)) !important;max-width:calc(100vw - 24px) !important;
+  height:fit-content !important;max-height:calc(100vh - var(--workspace-header) - 128px) !important;
+  border:1px solid var(--enh-border) !important;border-radius:12px !important;box-shadow:4px 6px 18px #0003 !important;
+}
+body[data-workspace="4d"] #studio-dialog.workspace-docked-dialog .studio-dialog-body {min-height:0;overflow-y:auto;}

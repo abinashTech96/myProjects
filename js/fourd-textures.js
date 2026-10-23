@@ -42,9 +42,10 @@ window.FourDTextures = {
             0.5 + Math.sin(x * 0.06 + Math.sin(y * 0.04) * 3) * 0.1 + q * 0.12;
           tint = (h - 0.5) * 0.5;
         } else if (type === "timber") {
-          h =
-            0.5 + Math.sin(y * 0.65 + Math.sin(x * 0.025) * 3) * 0.1 + q * 0.04;
-          tint = (h - 0.5) * 0.8;
+          const seam=x%64<1 || (y+(Math.floor(x/64)%2)*128)%256<1;
+          const grain=Math.sin(y*Math.PI/8+Math.sin(x*Math.PI/128)*3);
+          h=seam?.18:.5+grain*.06+q*.02;
+          tint=seam?-.18:grain*.06+(noise(Math.floor(x/64),0)-.5)*.09;
         } else if (type === "fabric") {
           h = 0.4 + (x % 4 < 2 === y % 4 < 2 ? 0.2 : 0) + q * 0.05;
           tint = (h - 0.5) * 0.3;
@@ -60,7 +61,7 @@ window.FourDTextures = {
           );
           rough.data[i * 4 + k] = Math.max(
             0,
-            Math.min(255, (0.97 + (q - 0.5) * 0.06) * 255),
+            Math.min(255, (type === "brick" ? (h<.2 ? 1 : .86+q*.1) : type === "timber" ? .87+q*.08 : .97+(q-.5)*.06) * 255),
           );
         }
         image.data[i * 4 + 3] = rough.data[i * 4 + 3] = 255;

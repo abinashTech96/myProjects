@@ -406,6 +406,7 @@ window.StudioEnhancements = {
   },
   async focusSelection() {
     await this.enter();
+    if (window.FourDViews && FourDWorkspace.running) return FourDViews.focus();
     const e = this.selected();
     this.focusRoom = e.id;
     this.close();
@@ -440,11 +441,16 @@ window.StudioEnhancements = {
   },
   clearRoom() {
     this.focusRoom = null;
+    if(window.FourDViews && ['element','material'].includes(FourDViews.kind)) {
+      FourDViews.kind='building';FourDViews.elementId=null;FourDViews.floorIndex=null;FourDViews.materialMode=false;
+      FourDViews.restoreLight();FourDViews.restoreReveal();FourDViews.breadcrumbs();
+    }
     Engine3D.needsRender = true;
     this.updateFocusReadout();
   },
   fullView() {
     if (!Engine4D.ready) return;
+    if (window.FourDViews && FourDWorkspace.running) return FourDViews.building();
     this.cancelPreview();
     this.stopWalk();
     this.setFocus(false);
@@ -757,8 +763,14 @@ window.StudioEnhancements = {
   },
   async startEyedropper() {
     await this.enter();
+    const floor=ViewportUI.advancedFloor ?? elements[selectedElIndex]?.floor ?? currentFloor;
+    if(window.FourDViews) {
+      FourDViews.remember();FourDViews.cancel('input');FourDViews.kind='floor';FourDViews.floorIndex=floor;FourDViews.elementId=null;FourDViews.materialMode=false;
+      FourDViews.restoreLight();FourDViews.restoreReveal();FourDViews.breadcrumbs();
+    }
     this.focusRoom = null;
-    ViewportUI.fit(false, false);
+    ViewportUI.inspectFloor(floor);
+    ViewportUI.orient('top', false);
     this.pickMode = "source";
     this.sample = null;
     this.close();
@@ -1223,13 +1235,13 @@ window.StudioEnhancements = {
     this.renderSectionHandles();
     Engine3D.needsRender = true;
   },
-  clearSection() {
+  clearSection(close = true) {
     this.section = null;
     this.sectionDragging = false;
     Workbench3D.clearSection();
     if (this.sectionHelper) this.sectionHelper.visible = false;
     document.getElementById("section-handles")?.replaceChildren();
-    this.close();
+    if(close)this.close();
   },
   renderSectionHandles() {
     const layer = document.getElementById("section-handles");
@@ -1382,12 +1394,15 @@ window.StudioEnhancements = {
     this.ceilings = [];
     this.leaves = [];
   },
-  prepareModel() {
+  patchOwned(removed, roomIds) {
+    this.leaves=(this.leaves||[]).filter(l=>{if(!removed.has(l.source))return true;l.fixed?.parent?.remove(l.fixed);return false;});
+    this.ceilings=(this.ceilings||[]).filter(c=>{if(!roomIds.has(c.userData.elementId))return true;c.parent?.remove(c);return false;});
+    this.ownedGeometries=this.ceilings.map(c=>c.geometry);
+  },
+  prepareModel(options = {}) {
     this.modelProject = this.p();
-    this.ownedGeometries = [];
-    this.ceilings = [];
-    this.leaves = [];
-    for (const [source, copy] of Engine4D.pairs) {
+    if (!options.partial) {this.ownedGeometries = [];this.ceilings = [];this.leaves = [];}
+    for (const [source, copy] of options.pairs || Engine4D.pairs) {
       const mat = Array.isArray(copy.material)
         ? copy.material[0]
         : copy.material;
@@ -1427,7 +1442,7 @@ window.StudioEnhancements = {
     const { I, SCALE } = get3DEnvironmentParams(),
       p = this.modelProject;
     for (const room of elements.filter(
-      (e) => !e.isFurniture && !["staircase", "balcony"].includes(e.type),
+      (e) => !e.isFurniture && !["staircase", "balcony"].includes(e.type) && (!options.roomIds || options.roomIds.has(e.id)),
     )) {
       let geometry;
       if (room.points) {
@@ -1472,16 +1487,20 @@ window.StudioEnhancements = {
       Engine4D.model.add(mesh);
       this.ceilings.push(mesh);
     }
-    this.lightGroup = new THREE.Group();
-    for (let i = 0; i < 16; i++)
-      this.lightGroup.add(new THREE.PointLight(0xffdfbd, 2000, 300, 2));
-    Engine4D.scene.add(this.lightGroup);
+    if (!this.lightGroup) {
+      this.lightGroup = new THREE.Group();
+      for (let i = 0; i < 16; i++) this.lightGroup.add(new THREE.PointLight(0xffdfbd, 2000, 300, 2));
+      Engine4D.scene.add(this.lightGroup);
+    }
     this.buildWallBoxes();
   },
   clipping(base) {
-    if (!this.focusRoom || !this.modelProject) return base;
+    const bounds=window.FourDViews?.boundsPlanes()||[];
+    if (window.FourDViews?.transitionPlanes) return [...FourDViews.transitionPlanes,...bounds];
+    if (window.FourDViews?.materialMode) return bounds;
+    if (!this.focusRoom || !this.modelProject) return [...base,...bounds];
     const room = elements.find((e) => e.id === this.focusRoom);
-    if (!room || room.isFurniture) return base;
+    if (!room || room.isFurniture) return [...base,...bounds];
     const { SCALE } = get3DEnvironmentParams(),
       low = WorkbenchModel.roomBase(this.modelProject, room) * SCALE,
       height =
@@ -1492,6 +1511,7 @@ window.StudioEnhancements = {
       ...(ceilingPreview
         ? []
         : [new THREE.Plane(new THREE.Vector3(0, -1, 0), low + height * 0.58)]),
+      ...bounds,
     ];
   },
   beforeRender() {
@@ -1499,20 +1519,21 @@ window.StudioEnhancements = {
     this.mount();
   },
   applyPresentation() {
-    const focused = elements.find((e) => e.id === this.focusRoom),
+    const p=this.modelProject;
+    if(!p)return;
+    const sceneElements=p.elements;
+    const focused = sceneElements.find((e) => e.id === this.focusRoom),
       selection = Selection.ids.size
         ? Selection.ids
         : new Set(
             elements[selectedElIndex] ? [elements[selectedElIndex].id] : [],
           ),
-      { SCALE } = get3DEnvironmentParams(),
-      p = this.modelProject;
-    if (!p) return;
+      { SCALE } = get3DEnvironmentParams();
     for (const [source, copy] of Engine4D.pairs) {
       const data = source.userData || {},
         room =
-          elements[data.roomIndex] ||
-          elements.find((e) => e.id === data.elementId);
+          sceneElements[data.roomIndex] ||
+          sceneElements.find((e) => e.id === data.elementId);
       if (
         Number.isInteger(data.floor) &&
         (source.parent === Engine3D.buildingGroup ||
@@ -1523,7 +1544,7 @@ window.StudioEnhancements = {
         const owners = data.roomIndices || [data.roomIndex],
           belongs =
             room?.id === focused.id ||
-            owners.some((i) => elements[i]?.id === focused.id) ||
+            owners.some((i) => sceneElements[i]?.id === focused.id) ||
             (room?.isFurniture &&
               room.floor === focused.floor &&
               PresentationModel.overlap(
@@ -1531,7 +1552,7 @@ window.StudioEnhancements = {
                 PresentationModel.bounds(focused),
               ));
         if (
-          copy.isMesh &&
+          (copy.isMesh || copy.isLine || copy.isPoints) &&
           (data.isSlab ||
             data.isRoof ||
             data.isCeiling ||
@@ -1579,10 +1600,12 @@ window.StudioEnhancements = {
       }
     }
     for (const mesh of this.ceilings || []) {
-      const room = elements[mesh.userData.roomIndex];
+      const room = sceneElements.find(e=>e.id===mesh.userData.elementId);
+      if(!room){mesh.visible=false;continue;}
       mesh.visible = !!(
         this.walking ||
-        (this.preview?.channel === "ceiling" && this.preview.id === room.id)
+        (this.preview?.channel === "ceiling" && this.preview.id === room.id) ||
+        (window.FourDViews?.materialMode === "ceiling" && FourDViews.elementId === room.id)
       );
       mesh.position.y =
         (WorkbenchModel.roomBase(p, room) +
@@ -1591,7 +1614,7 @@ window.StudioEnhancements = {
           room.floor * this.explosion) *
         SCALE;
     }
-    const active = elements
+    const active = sceneElements
         .filter(
           (e) => !e.isFurniture && e.floor === (focused?.floor ?? currentFloor),
         )

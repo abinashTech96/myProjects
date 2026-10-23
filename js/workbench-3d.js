@@ -55,20 +55,24 @@ const Workbench3D = {
     parent.add(g);
     return g;
   },
-  rebuild() {
+  rebuild(options = {}) {
+    for (const step of this.buildSteps(options)) {}
+  },
+  *buildSteps(options = {}) {
     const building = Engine3D.buildingGroup;
     if (!building) return;
     const p = ProjectState.capture(),
       w = WorkbenchModel.data(p),
       signature = Engine3D.modelSignature + "|" + JSON.stringify(w),
       existing = building.children.find((c) => c.userData.workbench);
-    if (existing && this.signature === signature) {
+    if (!options.partial && existing && this.signature === signature) {
       this.applyIsolation();
       return;
     }
-    this.signature = signature;
-    const generation = ++this.generation;
-    if (existing) {
+    if (!options.partial) this.signature = signature;
+    const generation = options.partial ? this.generation : ++this.generation;
+    const wanted = o => !options.partial || options.ids?.has(o.id);
+    if (existing && !options.partial) {
       building.remove(existing);
       this.disposeObject(existing);
     }
@@ -76,10 +80,10 @@ const Workbench3D = {
     group.name = "Professional building objects";
     group.userData.workbench = true;
     building.add(group);
-    this.group = group;
+    if (!options.partial) this.group = group;
     const { SCALE, WALL_HEIGHT } = get3DEnvironmentParams(),
       W = WorkbenchModel;
-    for (const child of building.children) {
+    for (const child of options.partial ? [] : building.children) {
       const data = child.userData || {},
         e = p.elements.find((e) => e.id === data.elementId),
         f = p.fixtures.find((f) => f.id === data.openingId);
@@ -123,7 +127,7 @@ const Workbench3D = {
         }
     }
     for (const e of p.elements.filter(
-      (e) => !e.isFurniture && !["staircase", "balcony"].includes(e.type),
+      (e) => !e.isFurniture && !["staircase", "balcony"].includes(e.type) && (!options.partial || options.rooms?.has(e.id)),
     )) {
       const holes = [
         ...w.voids
@@ -155,9 +159,11 @@ const Workbench3D = {
           for (const [key, v] of Object.entries(mesh.material))
             if (v?.isTexture) mesh.material[key] = v.clone();
         }
+      replacement.userData.fourdReplacement=true;
       group.add(replacement);
+      yield;
     }
-    for (const member of w.structure)
+    for (const member of w.structure.filter(wanted)) {
       this.addMesh(
         group,
         member.points || PlanningModel.points(member),
@@ -166,7 +172,9 @@ const Workbench3D = {
         0x94a3b8,
         { floor: member.floor, objectId: member.id, kind: "structure" },
       );
-    for (const r of w.ramps) {
+      yield;
+    }
+    for (const r of w.ramps.filter(wanted)) {
       const g = W.ramp(r),
         base = W.floorBase(p, r.floor);
       for (const flight of g.flights) {
@@ -218,7 +226,7 @@ const Workbench3D = {
           { floor: r.floor, objectId: r.id },
         );
     }
-    for (const shaft of w.shafts) {
+    for (const shaft of w.shafts.filter(wanted)) {
       const ps = shaft.points || PlanningModel.points(shaft),
         bottom = W.floorBase(p, shaft.from),
         upper =
@@ -283,7 +291,7 @@ const Workbench3D = {
     }
     for (const l of w.interiors) {
       const room = p.elements.find((e) => e.id === l.room);
-      for (const item of l.items) {
+      for (const item of l.items.filter(wanted)) {
         const base = W.roomBase(p, room) + (item.base || 0),
           color =
             {
@@ -325,7 +333,7 @@ const Workbench3D = {
         }
       }
     }
-    for (const o of w.outdoors)
+    for (const o of w.outdoors.filter(wanted))
       this.addMesh(
         group,
         o.points,
@@ -340,7 +348,7 @@ const Workbench3D = {
         }[o.kind] || 0x9ca3af,
         { floor: 0, objectId: o.id, kind: o.kind },
       );
-    for (const route of w.services3d) {
+    for (const route of w.services3d.filter(wanted)) {
       const points = route.points.map((q) => this.coordinates(q));
       for (let i = 1; i < points.length; i++) {
         const a = points[i - 1],
@@ -377,7 +385,7 @@ const Workbench3D = {
         group.add(mesh);
       }
     }
-    if (w.terrain.points.length) {
+    if (w.terrain.points.length && (!options.partial || options.ids?.has("terrain"))) {
       const boundary = W.boundary(p),
         xmin = Math.min(...boundary.map((q) => q.x)),
         xmax = Math.max(...boundary.map((q) => q.x)),
@@ -418,7 +426,7 @@ const Workbench3D = {
       mesh.userData = { floor: 0, isTerrain: true };
       group.add(mesh);
     }
-    if (w.solar.enabled) {
+    if (w.solar.enabled && (!options.partial || options.ids?.has("solar"))) {
       for (const panel of W.solarLayout(p).panels) {
         const top = W.roofElevation(p, panel.points[0]) + 2,
           m = this.addMesh(
@@ -454,7 +462,7 @@ const Workbench3D = {
         }
       }
     }
-    if (w.rain.enabled) {
+    if (w.rain.enabled && (!options.partial || options.ids?.has("rain"))) {
       const result = W.rainwater(p),
         ps = W.boundary(p),
         top =
@@ -493,7 +501,7 @@ const Workbench3D = {
         group.add(mesh);
       }
     }
-    for (const e of p.elements.filter((e) => e.assetId)) {
+    for (const e of p.elements.filter((e) => e.assetId && !options.partial)) {
       const a = w.assets.find((a) => a.id === e.assetId);
       if (a) this.placeAsset(a, e, generation);
     }
@@ -501,14 +509,13 @@ const Workbench3D = {
       const record = W.findObject(p, child.userData.objectId)?.record;
       if (record?.hidden) child.visible = false;
     }
-    this.drawMeasurements();
-    this.applyIsolation();
-    this.applySection();
+    if (!options.partial) {this.drawMeasurements();this.applyIsolation();this.applySection();}
     Engine3D.needsRender = true;
   },
-  async placeAsset(asset, e, generation) {
+  async placeAsset(asset, e, generation, parent = this.group, objectMap = Engine3D.elementObjects, invalidate = true) {
     try {
       let template = this.templates.get(asset.id);
+      const wasCached=!!template;
       if (!template) {
         template = await WorkbenchFiles.assetScene(asset);
         this.templates.set(asset.id, template);
@@ -518,7 +525,11 @@ const Workbench3D = {
           this.disposeObject(value);
         }
       }
-      if (generation !== this.generation) return;
+      if (generation !== this.generation) {
+        if(window.FourDWorkspace?.running)FourDWorkspace.scheduleUpdate();
+        else request3DUpdate();
+        return;
+      }
       const model = template.clone(true);
       model.traverse((c) => {
         if (c.geometry) c.geometry = c.geometry.clone();
@@ -563,10 +574,13 @@ const Workbench3D = {
       holder.traverse((c) => {
         if (c.isMesh) c.userData = { ...holder.userData };
       });
-      const old = Engine3D.elementObjects.get(e.id);
+      const old = objectMap.get(e.id);
       if (old) old.visible = false;
-      this.group.add(holder);
-      if(typeof Engine4D !== "undefined" && Engine4D.active) Engine4D.modelVersion=null;
+      parent.add(holder);
+      if(invalidate && typeof Engine4D !== "undefined" && Engine4D.active) {
+        Engine4D.modelVersion=null;
+        if(window.FourDWorkspace?.running && !wasCached)FourDWorkspace.scheduleUpdate();
+      }
       Engine3D.needsRender = true;
     } catch (error) {
       StudioUI.message("Model " + asset.name + ": " + error.message, "error");
@@ -1368,14 +1382,14 @@ build3DRooms = function (...args) {
   wbRooms(...args);
 };
 const wbWall3D = PlanningDrawing.wall3D;
-PlanningDrawing.wall3D = function (SCALE, I, WALL_HEIGHT) {
+PlanningDrawing.wall3D = function (SCALE, I, WALL_HEIGHT, rows = ProjectModel.walls(ProjectState.capture())) {
   const p = ProjectState.capture();
   if (
     !WorkbenchUI.data.levels.length &&
     !Object.values(p.design.roomProperties).some((r) => r.level)
   )
-    return wbWall3D.call(this, SCALE, I, WALL_HEIGHT);
-  for (const w of ProjectModel.walls(p)) {
+    return wbWall3D.call(this, SCALE, I, WALL_HEIGHT, rows);
+  for (const w of rows) {
     const group = new THREE.Group();
     group.userData = {
       isWall: true,
@@ -1434,6 +1448,7 @@ build3DSlabs = function (...args) {
   if (!w.levels.length && !w.voids.length && !w.shafts.length)
     return wbSlabs(...args);
   for (let f = 0; f < p.floorCount; f++) {
+    if(args[4]?.floors && !args[4].floors.has(f))continue;
     const g = Workbench3D.extrude(
       WorkbenchModel.slabGeometry(p, f),
       WorkbenchModel.floorBase(p, f) + WorkbenchModel.floorHeight(p, f) - 6,

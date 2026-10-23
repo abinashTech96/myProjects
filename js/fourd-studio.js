@@ -383,7 +383,7 @@ window.FourDStudio = {
     const box = object.geometry?.boundingBox;
     const { SCALE: S } = get3DEnvironmentParams();
     const w = box
-        ? Math.max(box.max.x - box.min.x, box.max.z - box.min.z) / S
+        ? (channel === "wall" ? Math.hypot(box.max.x-box.min.x,box.max.z-box.min.z) : Math.max(box.max.x-box.min.x,box.max.z-box.min.z)) / S
         : room.w,
       h =
         channel === "wall"
@@ -746,6 +746,10 @@ window.FourDStudio = {
       JSON.stringify(StudioEnhancements.openingPreview),
       StudioEnhancements.sunStudy,
       StudioEnhancements.sunKey,
+      window.FourDViews?.dayHour,
+      window.FourDViews?.reveal,
+      window.FourDViews?.materialMode,
+      window.FourDViews?.kind,
       JSON.stringify(
         Engine3D.renderer?.clippingPlanes.map((p) => [
           ...p.normal.toArray(),

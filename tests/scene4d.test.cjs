@@ -188,3 +188,21 @@ test("rendered slabs preserve shaft openings and entered floor elevations", () =
   assert.ok(ray(30, 40).length > 0, "Solid floor remains around the shaft");
   assert.equal(new T.Box3().setFromObject(stage.model).max.y, 0);
 });
+
+test('partial staging generates requested floor caps and skips unrelated roofs',()=>{
+ const p=project({floorCount:2,elements:[room,{...room,id:'upper',floor:1}],design:{roof:{type:'gable',rise:36,overhang:12}}});
+ const staged=S.stage(engine(),new T.Group(),p,{floors:new Set([1]),roof:false});
+ assert.deepEqual(staged.model.children.filter(n=>n.userData.isSlab).map(n=>n.userData.floor),[1]);
+ assert.equal(staged.model.children.some(n=>n.userData.isRoof),false);
+ S.dispose({model:staged.model,materials:staged.materials,sceneResources:staged.resources});
+});
+test('resource reconciliation retains live resources and disposes replaced buffers',()=>{
+ const model=new T.Group(),keep=new T.Mesh(new T.BoxGeometry(1,1,1),new T.MeshStandardMaterial()),removed=new T.Mesh(new T.BoxGeometry(2,2,2),new T.MeshStandardMaterial());
+ model.add(keep);let disposed=0,kept=0;
+ removed.geometry.addEventListener('dispose',()=>disposed++);keep.geometry.addEventListener('dispose',()=>kept++);
+ const e={model,materials:new Set([keep.material,removed.material]),sceneResources:{geometries:new Set([keep.geometry,removed.geometry]),textures:new Set()}};
+ S.reconcile(e);
+ assert.equal(disposed,1);assert.equal(kept,0);assert.equal(e.sceneResources.geometries.size,1);
+ S.dispose(e);
+ assert.equal(kept,1);
+});

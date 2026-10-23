@@ -224,7 +224,7 @@ module.exports = async ({ page, assert }) => {
   );
   assert.equal(
     await page.evaluate(() => StudioEnhancements.clipping([]).length),
-    2,
+    6,
   );
   await page.evaluate(() => {
     StudioEnhancements.clearRoom();
@@ -378,6 +378,7 @@ module.exports = async ({ page, assert }) => {
     ViewportUI.inspectFloor("0");
     StudioEnhancements.startEyedropper();
   });
+  await page.waitForFunction(()=>!Engine3D.cameraTween && !FourDWorkspace.structuralPending);
   await page.waitForTimeout(250);
   const pickPixel = async (roomIndex) =>
     page.evaluate((index) => {

@@ -61,6 +61,8 @@
   };
   const defaults = () => ({
     version: 1,
+    guidedStops: [],
+    tourSpeed: 1,
     environment: "studio",
     environmentIntensity: 1,
     environmentRotation: 0,
@@ -160,6 +162,19 @@
       }
       if (!Number.isInteger(phase) || phase < 0 || phase >= d.phases.length)
         throw Error("Invalid construction stage");
+    }
+    if (!Array.isArray(d.guidedStops) || d.guidedStops.length > 24) throw Error("Use at most 24 guided camera stops");
+    if (![0.5,1,1.5,2,3].includes(d.tourSpeed)) throw Error("Invalid guided tour speed");
+    for (const stop of d.guidedStops) {
+      if (!stop || typeof stop.name !== "string" || !stop.name.trim() || stop.name.length>60) throw Error("Invalid guided stop name");
+      for (const key of ["position","target"]) for (const axis of ["x","y","z"]) P.finite(stop[key]?.[axis],"Guided camera coordinate",-1000000,1000000);
+      if (!["plot","building","floor","element","material"].includes(stop.kind) || !["perspective","orthographic"].includes(stop.projection)) throw Error("Invalid guided camera view");
+      if (stop.zoom===undefined)stop.zoom=1;
+      P.finite(stop.zoom,"Guided camera zoom",0.01,1000);
+      stop.materialChannel=stop.materialChannel||"floor";
+      if(!["floor","wall","ceiling"].includes(stop.materialChannel))throw Error("Invalid guided material view");
+      if (stop.floor!=null && (!Number.isInteger(stop.floor)||stop.floor<0||stop.floor>=p.floorCount)) {stop.floor=null;stop.kind="building";stop.element=null;}
+      if (stop.element!=null && !ids.has(stop.element)) {stop.element=null;stop.kind="building";}
     }
     if (!Array.isArray(d.mirrors) || d.mirrors.length > 4)
       throw Error("Use at most four presentation mirrors");

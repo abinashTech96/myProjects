@@ -29,11 +29,26 @@ Camera/focus, selection, annotation, sunlight and environment changes reuse prep
 
 Undo/redo preserves the active workspace instead of restoring a historical mode and restarting graphics. The 4D inspector blocks drafting shortcuts such as Delete, duplicate, rotate and arrow-key nudging; normal form input, saving and undo/redo remain available. Narrow-screen plan/model review uses the vertical Split workspace rather than placing a drafting canvas inside 4D. Views retains room lighting, sun/location, camera views, opening animations, exploded floors, measurements and clean-view controls alongside the six-tab Studio.
 
-Architectural geometry edits still use the existing complete editor-source rebuild and an atomic owned 4D scene replacement. Initial presentation compilation yields between bounded batches; cancellation disposes partially prepared resources. Individual source-building operations, polygon operations and driver shader compilation are synchronous and cannot be interrupted mid-call. Fully incremental structural geometry preparation remains a follow-up; this release does not claim all large-project main-thread stalls have been eliminated.
+Local structural updates now compare stable room, wall, opening, floor/roof and professional-object dependency records. Changed source objects and owned presentation buffers are prepared off-scene, yielding between jobs, and published together after checking the current session/project revision. Unaffected meshes and GPU resources remain in place. Rapid input is coalesced; obsolete jobs dispose their staged resources. Room deletion updates ID/index metadata and ceiling ownership. The displayed scene reads its matching project snapshot until the next scene commits, so a partially edited project cannot invalidate the visible scene's old room indices.
+
+Global coordinate and builder changes—plot, scale/unit, floor count, level datums and other shared settings—retain an explicit full-source rebuild fallback, followed by asynchronous owned presentation staging. Source-only legacy roof data is regenerated on return to the editor. The bounded cache retains the current source, current presented snapshot and in-flight patch; replaced GPU resources are disposed rather than accumulating historical scene versions. Individual polygon/geometry operations and driver shader compilation remain synchronous and cannot be interrupted mid-call. This release does not promise that all large-project main-thread stalls have been eliminated.
 
 Labels default to Off. Selected shows a short name for the selected room; All shows up to 16 prioritized, visible room labels. Bounded ray checks respect geometry visibility and clipping. Labels avoid the toolbar, inspector, dialogs, orientation controls, edges and previously placed labels; a crowded-label summary replaces labels that cannot fit. Full configurations stay in the inspector. Dimensions have their own explicit toggle in Views; legacy editor measurement captions are hidden otherwise. Text labels are HTML overlays and are not part of the PNG canvas.
 
 PNG capture excludes selection, clearance and measurement overlays by default. Photo provides an explicit Include inspection overlays in PNG option for canvas-based overlays. Capture restores interactive state, and leaving/stopping during capture invalidates the pending result.
+
+## Presentation navigation and realism
+
+The toolbar's **Present** button opens one compact presentation panel. **Views** also links these tools.
+
+- **Plot**, **Building**, **Floor** and **Focus element** use the same camera controller. Breadcrumbs show the current context; **Back** restores a previous camera/filter state (up to 24 entries). Single click still selects without moving the camera.
+- Normal and Gentle transitions interpolate camera position/target and cutaway planes. A direct camera route crossing a wall uses raised travel where possible. Off/reduced motion switches immediately. Manual input, a newer target, model commit, Pause, Stop, tab hiding and mode exit cancel obsolete motion. Navigation never waits for a geometry rebuild.
+- **Reveal focused interiors** temporarily fades intersecting wall surfaces. It restores original material opacity, transparency, depth writing and shadow flags; the project geometry remains intact.
+- **Daylight preview** uses saved latitude, longitude, date and UTC offset. Scrub the local hour or Play/Pause. Reset discards the preview; Apply hour creates a normal undoable project edit. Playback is throttled to 10 solar samples/second and stops when inactive.
+- **Finish close-up** uses the selected element's real floor/wall/ceiling surface and temporary neutral lighting. Back restores the earlier view. Editing the finish opens the established material workflow; no second material store is introduced.
+- **Guided tour** saves up to 24 named stops in model inches. Reorder/remove/visit stops or use Play/Resume, Pause, Stop and 0.5–3× speed. Project validation bounds coordinates, names and counts and handles removed targets. Stops survive JSON import/export and undo/redo. Travel uses the shared interruptible controller; this does not replace the existing collision-aware manual walk mode.
+- Existing lighting presets are exposed as Daylight / Warm interior / Soft overcast moods. Architectural polygon/extrusion UVs use normalized projections, PBR timber includes plank joints/grain and roughness variation, and the shadow camera uses bounded bias/softness. Imported mesh UVs and saved material colours are preserved.
+- Navigation uses lower-cost preview rendering; shadows/reflections and optionally refined raster stills settle through the existing quality/Photo settings. Refinement is optional and cancellable, not continuous GPU work while idle.
 
 ## Architectural audit of the supplied test building
 
@@ -48,6 +63,7 @@ The existing occupied-footprint slabs, roof profiles, shafts, openings and datum
 - `npm test` includes synchronous/asynchronous scene ownership, cancellation/disposal, floor/roof geometry and portable model/API tests.
 - `npm run check` validates syntax, entry points, offline assets and vendored renderer integrity.
 - `FOURD_LIFECYCLE_ONLY=1 npm run test:browser` tests cold-entry gating, cancellation, selection/focus reuse, incremental finishes, transformed window placement, pause/resume, Eco, failure/retry, graphics-context recovery, mobile, stop/reentry and unchanged architectural coordinates.
+- `FOURD_PRESENTATION_ONLY=1 npm run test:browser` checks local updates, shared-wall/opening edits, professional objects/voids, deletion, rapid changes, history, stale-work cancellation, stable resource counts, roof/global-floor updates, camera navigation/Back, tour persistence, daylight, close-ups, reduced motion and mobile controls.
 - `FOURD_ONLY=1 npm run test:browser` tests the existing HDR/PBR/reflection/photo/comparison/staging workflows through the explicit gate.
 - `npm run test:browser` checks existing workspace, form, theme, panel, garden and editor workflows alongside 4D. CI runs lifecycle and full 4D checks in fresh pages for Chromium, Firefox and WebKit.
 

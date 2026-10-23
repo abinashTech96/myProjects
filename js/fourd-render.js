@@ -295,6 +295,8 @@ window.FourDRender = {
       };
       const draw = mesh.onBeforeRender;
       mesh.onBeforeRender = (renderer, scene, camera, ...args) => {
+        const now=performance.now(),interval=window.FourDWorkspace?.quality==='eco'?250:120;
+        if(StudioEnhancements.navigating && now-(mesh.userData.reflectedAt||-Infinity)<interval)return;
         if (
           this.reflectionDrawing ||
           scene.overrideMaterial ||
@@ -312,6 +314,7 @@ window.FourDRender = {
         hidden.forEach(([m]) => (m.visible = false));
         try {
           draw.call(mesh, renderer, scene, camera, ...args);
+          mesh.userData.reflectedAt=now;
         } finally {
           hidden.forEach(([m, v]) => (m.visible = v));
           mesh.visible = true;

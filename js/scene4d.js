@@ -16,7 +16,7 @@
     "clearcoatNormalMap",
     "clearcoatRoughnessMap",
   ];
-  function* stages(engine, source, project) {
+  function* stages(engine, source, project, options = {}) {
     const T = root.THREE,
       geometries = new Map(),
       textures = new Map(),
@@ -59,7 +59,23 @@
       const copy = valid ? node.clone(false) : new T.Group().copy(node, false);
       if (valid && node.geometry) {
         if (!geometries.has(node.geometry))
-          geometries.set(node.geometry, node.geometry.clone());
+          {
+            const geometry=node.geometry.clone(), data=node.userData||{};
+            // Extruded/polygon architectural meshes use physical planar UVs.
+            // Imported models and authored furniture retain their own UV layout.
+            if ((data.isWall || (data.isRoom&&!data.isOpening&&!project.elements[data.roomIndex]?.isFurniture)) && /^(Extrude|Shape)Geometry$/.test(geometry.type)) {
+              geometry.computeBoundingBox();const b=geometry.boundingBox,pos=geometry.attributes.position,norm=geometry.attributes.normal,uv=[];
+              const sx=Math.max(.01,b.max.x-b.min.x),sy=Math.max(.01,b.max.y-b.min.y),sz=Math.max(.01,b.max.z-b.min.z),length=Math.max(.01,Math.hypot(sx,sz));
+              for(let i=0;i<pos.count;i++) {
+                if(data.isWall&&Math.abs(norm?.getY(i)||0)<.5) {
+                  const nx=norm?.getX(i)||0,nz=norm?.getZ(i)||1;
+                  uv.push((pos.getX(i)*nz-pos.getZ(i)*nx)/length,(pos.getY(i)-b.min.y)/sy);
+                } else uv.push((pos.getX(i)-b.min.x)/sx,(pos.getZ(i)-b.min.z)/sz);
+              }
+              geometry.setAttribute('uv',new T.Float32BufferAttribute(uv,2));
+            }
+            geometries.set(node.geometry,geometry);
+          }
         copy.geometry = geometries.get(node.geometry);
       }
       if (valid && node.material)
@@ -90,6 +106,7 @@
       }
       const { SCALE, I } = get3DEnvironmentParams();
       for (let f = 0; f < project.floorCount; f++) {
+        if (options.floors && !options.floors.has(f)) continue;
         // Empty storeys do not create a slab over the entire plot.
         if (!root.DesignModel.floorUnion(project, f).length) continue;
         const footprint = root.WorkbenchModel.slabGeometry(project, f),
@@ -142,7 +159,7 @@
         ),
         roof = project.design.roof;
       if (
-        roof.type !== "flat" &&
+        options.roof !== false && roof.type !== "flat" &&
         root.DesignModel.floorUnion(project, top).length
       ) {
         const clipping = root.polygonClipping,
@@ -315,14 +332,14 @@
       });
     }
   }
-  function stage(engine, source, project) {
-    const iterator = stages(engine,source,project);
+  function stage(engine, source, project, options) {
+    const iterator = stages(engine,source,project,options);
     let result;
     do { result = iterator.next(); } while (!result.done);
     return result.value;
   }
-  async function stageAsync(engine,source,project,checkpoint) {
-    const iterator = stages(engine,source,project);
+  async function stageAsync(engine,source,project,checkpoint,options) {
+    const iterator = stages(engine,source,project,options);
     let began = performance.now();
     try {
       for (;;) {
@@ -364,6 +381,25 @@
         r.textureVersions.set(source, source.version);
       }
   }
-  root.Scene4D = { stage, stageAsync, dispose, textureSlots, updateTextures };
+  function triangles(model) {
+    let count=0;
+    model.traverse(n=>{if(n.isMesh&&n.geometry) count+=(n.geometry.index?.count||n.geometry.attributes.position?.count||0)/3*(n.isInstancedMesh?n.count:1);});
+    return count;
+  }
+  function reconcile(engine, added = {}) {
+    const geometries=new Set(), materials=new Set(), textures=new Set();
+    engine.model.traverse(n=>{
+      if(n.geometry) geometries.add(n.geometry);
+      for(const m of [].concat(n.material||[])) {materials.add(m);for(const slot of textureSlots) if(m[slot]) textures.add(m[slot]);}
+    });
+    const old=engine.sceneResources||{};
+    for(const g of new Set([...(old.geometries||[]),...(added.geometries||[])])) if(!geometries.has(g))g.dispose();
+    for(const m of engine.materials||[]) if(!materials.has(m))m.dispose();
+    for(const t of new Set([...(old.textures||[]),...(added.textures||[])])) if(!textures.has(t))t.dispose();
+    const textureLinks=new Map([...(old.textureLinks||[])].filter(([,t])=>textures.has(t)));
+    engine.materials=materials;
+    engine.sceneResources={geometries,textures,textureLinks,textureVersions:new Map([...textureLinks.keys()].map(t=>[t,t.version]))};
+  }
+  root.Scene4D = { stage, stageAsync, dispose, textureSlots, updateTextures, reconcile, triangles };
   if (typeof module === "object") module.exports = root.Scene4D;
 })(globalThis);

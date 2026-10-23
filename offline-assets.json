@@ -122,5 +122,7 @@
   "./vendor/three/three.min.js",
   "css/workspace-experience.css",
   "css/workspace-simple.css",
-  "js/workspace-experience.js"
+  "js/workspace-experience.js",
+  "./js/fourd-incremental.js",
+  "./js/fourd-views.js"
 ]

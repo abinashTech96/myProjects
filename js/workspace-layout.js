@@ -636,6 +636,8 @@ window.WorkspaceLayout = {
         const panel=document.querySelector(selector);
         if (panel?.getClientRects().length) left=Math.max(left,panel.getBoundingClientRect().right-canvas.left+16);
       }
+      const crumbs=document.getElementById("fourd-breadcrumbs");
+      if(crumbs?.getClientRects().length)top=Math.max(top,crumbs.getBoundingClientRect().bottom-canvas.top+14);
       const toolbar=document.getElementById("fourd-toolbar");
       if (toolbar?.getClientRects().length) top=Math.max(top,toolbar.getBoundingClientRect().bottom-canvas.top+14);
     }

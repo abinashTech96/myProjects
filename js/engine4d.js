@@ -575,6 +575,7 @@ window.Engine4D = {
     return material;
   },
   clearModel() {
+    window.FourDViews?.restoreReveal();
     FourDStudio.clearScene();
     Landscape4D.dispose(this);
     if (this.model) this.scene.remove(this.model);
@@ -685,7 +686,7 @@ window.Engine4D = {
     const source = Engine3D.buildingGroup;
     if (!this.ready || !source) return;
     const version = Engine3D.modelSignature + "|" + Workbench3D.generation;
-    if (!force && this.modelVersion === version) return;
+    if (!force && (window.FourDWorkspace?.structuralPending || this.modelVersion === version)) return;
     let stage;
     try {
       stage = prepared || Scene4D.stage(this, source, ProjectState.capture());
@@ -703,6 +704,16 @@ window.Engine4D = {
     this.modelTriangles = stage.triangles;
     if (window.FourDWorkspace) FourDWorkspace.metrics.builds++;
     this.scene.add(this.model);
+    this.frameLighting();
+    try {
+      Landscape4D.build(this);
+    } catch (error) {
+      Landscape4D.dispose(this);
+      this.geometryIssues.push({ element: "Garden", reason: error.message });
+    }
+    this.renderer.shadowMap.needsUpdate = true;
+  },
+  frameLighting() {
     const box = new THREE.Box3().setFromObject(this.model);
     this.modelBounds = box;
     if (!box.isEmpty()) {
@@ -721,14 +732,10 @@ window.Engine4D = {
         far: Math.max(3000, radius * 8),
       });
       this.key.shadow.camera.updateProjectionMatrix();
+      this.key.shadow.bias=-0.00015;
+      this.key.shadow.normalBias=0.25;
+      this.key.shadow.radius=2;
     }
-    try {
-      Landscape4D.build(this);
-    } catch (error) {
-      Landscape4D.dispose(this);
-      this.geometryIssues.push({ element: "Garden", reason: error.message });
-    }
-    this.renderer.shadowMap.needsUpdate = true;
   },
   updateCamera(source) {
     if (!this.camera || this.camera.type !== source.type)
@@ -795,6 +802,7 @@ window.Engine4D = {
       this.lastSun = this.key.position.clone();
     }
     FourDStudio.frame(camera);
+    window.FourDViews?.effects(camera);
     if (FourDStudio.renderComparison(camera)) {
       this.frames = (this.frames || 0) + 1;
       this.status("4D alternatives · synchronized cameras");

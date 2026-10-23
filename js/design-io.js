@@ -657,9 +657,9 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 });
 const designArchFixtures = build3DFixtures;
-build3DFixtures = function (SCALE, I, WALL_HEIGHT, real) {
-  designArchFixtures(SCALE, I, WALL_HEIGHT, real);
-  for (const f of fixtures.filter((f) => f.arch > 0)) {
+build3DFixtures = function (SCALE, I, WALL_HEIGHT, real, options = {}) {
+  designArchFixtures(SCALE, I, WALL_HEIGHT, real, options);
+  for (const f of fixtures.filter((f) => f.arch > 0 && (!options.ids || options.ids.has(f.id)))) {
     const group = Engine3D.buildingGroup.children.find(
       (g) => g.userData.openingId === f.id,
     );

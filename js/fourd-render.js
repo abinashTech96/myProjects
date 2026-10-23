@@ -52,8 +52,11 @@ window.FourDRender = {
     if (
       this.environmentKey &&
       key.every((v, i) => v === this.environmentKey[i])
-    )
+    ) {
+      // Lighting presets and theme changes can replace the background independently.
+      if (settings.showSky) this.engine.scene.background = this.sky;
       return;
+    }
     const e = this.engine;
     let source;
     if (settings.environment === "custom" && settings.hdr) {

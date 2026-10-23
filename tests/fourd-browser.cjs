@@ -94,6 +94,22 @@ module.exports = async ({ page, assert }) => {
   await page
     .getByRole("combobox", { name: "4D environment", exact: true })
     .selectOption("studio");
+  assert.equal(
+    await page.evaluate(() => {
+      FourDStudio.change("showSky", true);
+      Engine4D.render();
+      Engine4D.setPreset("interior");
+      Engine4D.render();
+      Engine4D.render();
+      const retained = Engine4D.scene.background === FourDRender.sky;
+      FourDStudio.change("showSky", false);
+      Engine4D.setPreset("daylight");
+      Engine4D.render();
+      return retained && Engine4D.scene.background.isColor;
+    }),
+    true,
+    "Sky choice must survive lighting preset changes",
+  );
   // Import a genuine (small flat RGBE) Radiance image through the file field.
   const hdr = Buffer.concat([
     Buffer.from("#?RADIANCE\nFORMAT=32-bit_rle_rgbe\n\n-Y 2 +X 2\n"),

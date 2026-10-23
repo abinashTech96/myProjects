@@ -30,7 +30,7 @@ window.PlanContextMenu = {
       if (
         !room ||
         room.floor !== currentFloor ||
-        p.planning.layers?.openings?.visible === false
+        p.planning.layers?.walls?.visible === false
       )
         continue;
       const line = PlanningModel.openingSegment(p, f);

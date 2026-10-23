@@ -194,6 +194,19 @@ module.exports = async ({ page, assert }) => {
   );
   await menu.getByRole("menuitem", { name: "Undo", exact: false }).click();
   assert.equal(await page.evaluate(() => elements[1].locked), false);
+  await page.evaluate(() =>
+    ProjectState.commit(
+      "Hide walls",
+      () => (PlanningUI.data.layers.walls.visible = false),
+    ),
+  );
+  await open(420, 120);
+  assert.notEqual(
+    await menu.getAttribute("data-context"),
+    "opening",
+    "Hidden openings must not intercept room or plot actions",
+  );
+  await page.evaluate(() => ProjectState.undo());
   await open(80, 300);
   assert.equal(
     await menu.getAttribute("data-context"),

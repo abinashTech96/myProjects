@@ -137,6 +137,7 @@ const DesignUI = {
     return this.tools()[i][2]();
   },
   refresh() {
+    if (StudioUI.mode === "4d") return;
     if (!PlanningUI.ready) return;
     const p = this.p(),
       key = JSON.stringify({

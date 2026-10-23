@@ -361,6 +361,7 @@ const PlanningUI = {
     StorageEngine.markDirty();
   },
   refresh() {
+    if (StudioUI.mode === "4d") return;
     if (!this.ready) return;
     const p = this.p(),
       fingerprint = JSON.stringify({
@@ -413,6 +414,7 @@ const PlanningUI = {
         : "Offline";
   },
   renderWidgets() {
+    if (StudioUI.mode === "4d") return;
     const dock = document.getElementById("planning-dock");
     if (!dock) return;
     const widgets = {

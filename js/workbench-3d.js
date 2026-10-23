@@ -970,6 +970,7 @@ const Workbench3D = {
   renderLabels() {
     if (!this.labels) return;
     this.labels.replaceChildren();
+    if (StudioUI.mode === "4d" && !window.FourDWorkspace?.dimensions) return;
     if (!window.is3DMode && !this.labelsEnabled) return;
     const canvas = Engine3D.renderer.domElement,
       rect = canvas.getBoundingClientRect(),

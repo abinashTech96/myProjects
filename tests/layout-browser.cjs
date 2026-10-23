@@ -265,42 +265,12 @@ module.exports = async ({ page, assert }) => {
     .getByRole("button", { name: "Close sunlight", exact: true })
     .click();
   await page.locator('[data-mode="4d"]').click();
+  await page.locator("#fourd-start").click();
   await page.waitForFunction(() => Engine4D.ready && Engine4D.frames > 0);
-  const launcher = page.getByRole("button", {
-    name: "4D advanced view",
-    exact: true,
-  });
-  const launchBox = await launcher.boundingBox();
-  assert.ok(launchBox.width < 100 && launchBox.height < 45);
-  assert.equal(await page.locator("#four-d-engine-preset").isVisible(), false);
-  await launcher.click();
-  await page.waitForFunction(
-    () => document.getElementById("advanced-view-panel").open,
-  );
-  assert.equal(await page.locator("#four-d-engine-preset").isVisible(), true);
-  await page.evaluate(() => ViewportUI.fit(false, false));
-  const framed = await page.evaluate(() => {
-    const box = ViewportUI.bounds(),
-      center = box.getCenter(new THREE.Vector3()).project(Engine3D.camera),
-      canvas = Engine3D.renderer.domElement.getBoundingClientRect(),
-      panel = document
-        .getElementById("advanced-view-panel")
-        .getBoundingClientRect();
-    return ((center.x + 1) * canvas.width) / 2 + canvas.left > panel.right;
-  });
-  assert.equal(framed, true, "Frame model in the unobstructed canvas");
-  await page.getByRole("button", { name: "Sunlight", exact: true }).click();
-  assert.equal(
-    await page.evaluate(
-      () => document.getElementById("advanced-view-panel").open,
-    ),
-    false,
-  );
-  await page.getByRole("button", { name: "50%", exact: true }).click();
-  await page.waitForFunction(
-    () =>
-      Math.abs(Engine4D.key.intensity - Engine4D.baseSunIntensity * 0.5) < 1e-6,
-  );
+  assert.equal(await page.locator('#fourd-toolbar').isVisible(),true);
+  assert.equal(await page.locator('#advanced-view-panel').isVisible(),false);
+  await page.evaluate(()=>{ViewportUI.fit(false,false);WorkspaceLayout.setSun(50);});
+  await page.waitForFunction(()=>Math.abs(Engine4D.key.intensity-Engine4D.baseSunIntensity*.5)<1e-6);
   const study = await page.evaluate(() => {
     StudioEnhancements.sunStudy = true;
     StudioEnhancements.sunKey = null;
@@ -322,11 +292,8 @@ module.exports = async ({ page, assert }) => {
     Math.abs(study.actual - study.expected) < 1e-8,
     "Sun study direction/daylight and custom strength compose correctly",
   );
-  await page.getByRole("button", { name: "0%", exact: true }).click();
-  await page.waitForFunction(() => Engine4D.key.intensity === 0);
-  await page
-    .getByRole("button", { name: "Close sunlight", exact: true })
-    .click();
+  await page.evaluate(()=>WorkspaceLayout.setSun(0));
+  await page.waitForFunction(()=>Engine4D.key.intensity===0);
   await page.evaluate(() => {
     setWorkspaceLayout("2d");
     WorkspaceLayout.layout.pins.catalog = true;
@@ -360,8 +327,7 @@ module.exports = async ({ page, assert }) => {
     { width: 600, height: 360 },
   ]) {
     await page.setViewportSize(size);
-    await page.evaluate(() => setWorkspaceLayout("4d"));
-    await page.waitForFunction(() => Engine4D.ready);
+    await page.evaluate(() => setWorkspaceLayout("3d"));
     await page.getByRole("button", { name: "Appearance", exact: true }).click();
     const r = await appearance.boundingBox(),
       f = await page.locator(".studio-status").boundingBox();

@@ -16,15 +16,13 @@
     "clearcoatNormalMap",
     "clearcoatRoughnessMap",
   ];
-  function stage(engine, source, project) {
+  function* stages(engine, source, project) {
     const T = root.THREE,
       geometries = new Map(),
       textures = new Map(),
       materials = new Set(),
       pairs = [],
       issues = [];
-    const previous = engine.materials;
-    engine.materials = materials;
     const ownedTexture = (texture) => {
       if (!textures.has(texture)) {
         const clone = texture.clone();
@@ -34,7 +32,11 @@
       return textures.get(texture);
     };
     const material = (original, node) => {
-      const copy = engine.material(original, node);
+      const previous = engine.materials;
+      let copy;
+      engine.materials = materials;
+      try { copy = engine.material(original, node); }
+      finally { engine.materials = previous; }
       for (const slot of textureSlots)
         if (copy[slot] && copy[slot] === original[slot])
           copy[slot] = ownedTexture(copy[slot]);
@@ -77,9 +79,15 @@
       }
       return copy;
     };
-    let model;
+    let model, complete = false;
     try {
-      model = cloneNode(source);
+      model = source.clone(false);
+      pairs.push([source,model]);
+      for (const child of source.children) {
+        const copy = cloneNode(child);
+        if (copy) model.add(copy);
+        yield;
+      }
       const { SCALE, I } = get3DEnvironmentParams();
       for (let f = 0; f < project.floorCount; f++) {
         // Empty storeys do not create a slab over the entire plot.
@@ -124,6 +132,7 @@
         anchor.userData = { ...group.userData };
         pairs.push([anchor, group]);
         model.add(group);
+        yield;
       }
       const top = Math.max(
           -1,
@@ -279,6 +288,7 @@
               3) *
             (node.isInstancedMesh ? node.count : 1);
       });
+      complete = true;
       return {
         model,
         pairs,
@@ -294,8 +304,8 @@
         issues,
         triangles,
       };
-    } catch (error) {
-      dispose({
+    } finally {
+      if (!complete) dispose({
         model,
         materials,
         sceneResources: {
@@ -303,10 +313,27 @@
           textures: new Set(textures.values()),
         },
       });
-      throw error;
-    } finally {
-      engine.materials = previous;
     }
+  }
+  function stage(engine, source, project) {
+    const iterator = stages(engine,source,project);
+    let result;
+    do { result = iterator.next(); } while (!result.done);
+    return result.value;
+  }
+  async function stageAsync(engine,source,project,checkpoint) {
+    const iterator = stages(engine,source,project);
+    let began = performance.now();
+    try {
+      for (;;) {
+        const result = iterator.next();
+        if (result.done) return result.value;
+        if (performance.now()-began > 8) {
+          await checkpoint();
+          began = performance.now();
+        }
+      }
+    } catch (error) { iterator.return(); throw error; }
   }
   function dispose(engine) {
     const resources = engine.sceneResources || {},
@@ -337,6 +364,6 @@
         r.textureVersions.set(source, source.version);
       }
   }
-  root.Scene4D = { stage, dispose, textureSlots, updateTextures };
+  root.Scene4D = { stage, stageAsync, dispose, textureSlots, updateTextures };
   if (typeof module === "object") module.exports = root.Scene4D;
 })(globalThis);

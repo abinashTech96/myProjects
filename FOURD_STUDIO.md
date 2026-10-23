@@ -1,6 +1,6 @@
 # 4D Studio
 
-Choose **4D**, open its compact **4D** launcher, then choose **4D Studio**. Six tabs share the existing searchable workspace dock's compact forms, themes, scrolling and keyboard focus. Architectural edits, Properties, widgets and Studio+ remain available.
+Choose **4D**, choose a device quality, then click **Render 4D**. Opening the workspace alone does not create a WebGL scene or start its renderer. Once prepared, the compact toolbar provides **Full view**, **Views**, **Inspect**, **4D Studio**, annotation/quality settings, **Pause/Resume** and **Stop**. Six Studio tabs share the existing compact form styling and theme preferences. Drafting tools, widgets and the general Properties editor remain in their 2D/Split/3D workspaces. See [the lifecycle and performance guide](FOURD_WORKSPACE.md).
 
 | Tab | Available controls |
 | --- | --- |

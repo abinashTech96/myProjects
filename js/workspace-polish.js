@@ -273,7 +273,7 @@ window.WorkspacePolish = {
     );
   },
   verticalSplit() {
-    return StudioEnhancements.linked && matchMedia("(max-width:700px)").matches;
+    return (StudioUI.mode === "split" || StudioEnhancements.linked) && matchMedia("(max-width:700px)").matches;
   },
   setSplit(percent, resize = true) {
     const value = Math.max(20, Math.min(80, percent)),

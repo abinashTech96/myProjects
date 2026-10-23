@@ -230,6 +230,7 @@ module.exports = async ({ page, assert }) => {
     );
     for (const mode of ["3d", "4d"]) {
       await page.evaluate((m) => setWorkspaceLayout(m), mode);
+      if (mode === "4d") await page.locator("#fourd-start").click();
       await page.waitForFunction(
         (mode) =>
           mode === "3d"
@@ -287,12 +288,12 @@ module.exports = async ({ page, assert }) => {
   );
   await page.emulateMedia({ reducedMotion: "no-preference" });
   await page.setViewportSize({width:390,height:740});
-  await page.evaluate(() => { if (!StudioEnhancements.linked) StudioEnhancements.toggleLinked(); });
+  await page.evaluate(() => setWorkspaceLayout("split"));
   await separator.focus(); await page.keyboard.press('ArrowDown');
   const verticalRatio = await page.evaluate(() => document.getElementById('canvas-wrapper').getBoundingClientRect().height / document.getElementById('main-workspace').getBoundingClientRect().height);
   assert.ok(Math.abs(verticalRatio - Number(await separator.getAttribute('aria-valuenow')) / 100) < .03,'Linked mobile panes must respect the resized vertical split');
   assert.equal(await separator.getAttribute('aria-orientation'),'horizontal');
-  await page.evaluate(() => StudioEnhancements.toggleLinked());
+  await page.evaluate(() => setWorkspaceLayout("3d"));
   for (const size of [
     { width: 390, height: 740 },
     { width: 320, height: 740 },

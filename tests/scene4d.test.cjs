@@ -78,6 +78,32 @@ test("slabs follow occupied footprints, omit empty storeys and avoid duplicated 
   assert.equal(box.max.z, 210);
   assert.equal(box.max.y, 120);
 });
+test("asynchronous scene preparation yields and cancellation disposes only staged resources", async () => {
+  const source=new T.Group(), original=new T.BoxGeometry(10,10,10), material=new T.MeshStandardMaterial();
+  for(let i=0;i<80;i++) source.add(new T.Mesh(original,material));
+  const e=engine(), before=e.materials;
+  let disposed=0, checkpoints=0;
+  const decorate=e.material;
+  e.material=function(m,n) {
+    const copy=decorate.call(this,m,n);
+    copy.addEventListener("dispose",()=>disposed++);
+    const started=performance.now();
+    while(performance.now()-started<.3) {} // A deterministic workload forces a yield.
+    return copy;
+  };
+  await assert.rejects(S.stageAsync(e,source,project(),async()=>{
+    checkpoints++;
+    assert.equal(e.materials,before);
+    throw new Error("cancelled");
+  }),/cancelled/);
+  assert.ok(checkpoints>0 && disposed>0);
+  assert.equal(e.materials,before);
+  assert.equal(source.children.length,80);
+  const stage=await S.stageAsync(e,source,project(),async()=>checkpoints++);
+  assert.equal(stage.pairs.filter(([s])=>s.geometry===original).length,80);
+  S.dispose({model:stage.model,materials:stage.materials,sceneResources:stage.resources});
+  original.dispose();material.dispose();
+});
 test("all pitched roof profiles use the building footprint and include their ridge height", () => {
   for (const type of ["gable", "hip", "shed"]) {
     const e = engine(),

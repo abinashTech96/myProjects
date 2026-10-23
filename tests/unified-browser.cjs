@@ -182,6 +182,7 @@ module.exports = async ({ page, assert }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   console.log("Unified panels: desktop and responsive panel checks passed");
   await page.evaluate(() => setWorkspaceLayout("4d"));
+  await page.locator("#fourd-start").click();
   await page
     .waitForFunction(() => Engine4D.ready && Engine4D.frames > 0)
     .catch(async (error) => {

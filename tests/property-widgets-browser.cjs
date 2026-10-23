@@ -35,9 +35,11 @@ module.exports = async ({page,assert}) => {
   const consoleHandler=message=>{if(message.type()==='error'){shaderErrors.push(message.text());console.log('4D console',message.text());}};
   page.on('pageerror',errorHandler);page.on('console',consoleHandler);
   await page.locator('[data-mode="4d"]').click();
+  await page.locator('#fourd-start').click();
   await page.waitForFunction(()=>StudioUI.mode==='4d' && Engine4D.ready && Engine4D.frames>0);
   assert.equal(await page.locator('#canvas-wrapper').isVisible(),false,'4D uses the full visualization viewport');
-  assert.equal(await page.locator('#advanced-view-panel').isVisible(),true);
+  assert.equal(await page.locator('#advanced-view-panel').isVisible(),false);
+  assert.equal(await page.locator('#fourd-toolbar').isVisible(),true);
   assert.equal(await page.locator('#planning-navigation').isVisible(),false,'Plan navigation does not occupy the 4D viewport');
   assert.equal(await page.locator('#viewport-toolbar').isVisible(),false,'4D consolidates the duplicate top controls');
   assert.equal(await page.evaluate(()=>Engine4D.renderer!==Engine3D.renderer && Engine4D.scene!==Engine3D.scene && Engine4D.camera!==Engine3D.camera),true,'4D owns an independent renderer, camera and presentation scene');
@@ -51,40 +53,42 @@ module.exports = async ({page,assert}) => {
   assert.equal(await page.evaluate(()=>[...Engine4D.materials].some(m=>m.transmission>.8)),true,'Physical glass remains available as an explicit quality option');
   await page.evaluate(()=>Engine4D.setGlass(false));
   assert.equal(await page.evaluate(()=>Engine3D.elementObjects.get('legacy-bedroom').children[0].material.isMeshPhysicalMaterial || false),false,'4D never mutates the editable 3D materials');
-  await page.locator('#advanced-view-panel summary').click();
+
   for(const preset of ['interior','studio','daylight']) {
-    await page.locator('#four-d-engine-preset').selectOption(preset);
+    await page.evaluate(preset=>Engine4D.setPreset(preset),preset);
     assert.equal(await page.evaluate(()=>Engine4D.preset),preset);
   }
   await page.evaluate(()=>StudioUI.edit(0,'material','grass'));
   await page.waitForFunction(()=>Engine4D.pairs.find(([source])=>source===Engine3D.elementObjects.get('legacy-bedroom')?.children[0])?.[1]?.material.roughness===1);
   await page.evaluate(()=>StudioUI.edit(0,'material','shingle'));
   await page.waitForFunction(()=>Engine4D.pairs.find(([source])=>source===Engine3D.elementObjects.get('legacy-bedroom')?.children[0])?.[1]?.material.roughness===.9);
-  const [capture] = await Promise.all([page.waitForEvent('download'),page.getByRole('button',{name:'Capture render',exact:true}).click()]);
+  const [capture] = await Promise.all([page.waitForEvent('download'),page.evaluate(()=>Engine4D.capture())]);
   assert.equal(capture.suggestedFilename(),'ArchCAD_4D_Render.png');
   assert.ok(require('fs').statSync(await capture.path()).size>1000,'The independent renderer exports a real PNG');
   await page.evaluate(()=>{PlanningUI.toggleWidget('checks',true);PlanningUI.toggleWidget('area',true);});
-  const railBox=await page.locator('#planning-dock').boundingBox(),panelBox=await page.locator('#advanced-view-panel').boundingBox();
-  assert.ok(panelBox.x>=railBox.x+railBox.width+4,'4D controls clear the widget rail');
-  await page.locator('input[aria-label="Cutaway height"]').fill('45');
-  assert.equal(await page.evaluate(()=>Engine3D.renderer.clippingPlanes.length),1,'Cutaway clips the actual renderer');
-  await page.getByLabel('Inspect floor',{exact:true}).selectOption('2');
-  assert.equal(await page.evaluate(()=>Engine3D.renderer.clippingPlanes.length),2,'Floor inspection clips above and below the chosen level');
+  assert.equal(await page.locator('#planning-dock').isVisible(),false,'Unrelated widgets stay hidden in 4D');
+  await page.evaluate(()=>FourDWorkspace.viewPanel());
+  await page.getByLabel('4D cutaway',{exact:true}).fill('45');
+  assert.equal(await page.evaluate(()=>Engine3D.renderer.clippingPlanes.length),1);
+  await page.getByLabel('4D floor',{exact:true}).selectOption('2');
+  assert.equal(await page.evaluate(()=>Engine3D.renderer.clippingPlanes.length),2);
+  await page.getByRole('button',{name:'Close dialog',exact:true}).click();
   await page.evaluate(()=>ProjectModel.normalize(ProjectState.capture()));
-  await page.locator('#advanced-view-panel summary').click();
-  await page.locator('#advanced-view-panel summary').click();
+
+
   await page.waitForTimeout(200);
   await page.screenshot({path:'/tmp/archcad-advanced-floor-inspection.png'});
   await page.setViewportSize({width:320,height:560});
   await page.evaluate(()=>StudioUI.closeProperties());
   await page.waitForTimeout(300);
-  const advancedBox = await page.locator('#advanced-view-panel').boundingBox();
+  const advancedBox = await page.locator('#fourd-toolbar').boundingBox();
   assert.ok(advancedBox.x>=0 && advancedBox.x+advancedBox.width<=320 && advancedBox.y+advancedBox.height<=560,'Advanced controls fit a small viewport');
   const canvasBox = await page.locator('#four-d-canvas').boundingBox();
   assert.ok(canvasBox.width<=320,'Renderer canvas follows the resized viewport, rather than its initial inline width');
   await page.screenshot({path:'/tmp/archcad-advanced-mobile.png'});
   await page.setViewportSize(viewport);
   await page.evaluate(()=>StudioUI.select(0));
+  await page.locator('[data-mode="3d"]').click();
   const appearance = panel.locator('details').filter({has:page.getByText('Appearance',{exact:true})});
   if (await appearance.getAttribute('open') === null) await appearance.locator('summary').click();
   await page.locator('[data-mode="3d"]').click();

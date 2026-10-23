@@ -200,11 +200,10 @@ module.exports = async ({ page, assert }) => {
   });
   const project = await page.evaluate(() => JSON.stringify(elements));
   await page.evaluate(() => setWorkspaceLayout("4d"));
+  await page.locator("#fourd-start").click();
   await page.waitForFunction(() => Engine4D.ready && Engine4D.landscape);
-  assert.ok(
-    (await page.locator("#advanced-view-panel").boundingBox()).width <= 60,
-    "Collapsed 4D launcher must not keep the panel width",
-  );
+  assert.equal(await page.locator("#advanced-view-panel").isVisible(),false);
+  assert.equal(await page.locator("#fourd-toolbar").isVisible(),true);
   assert.equal(
     await page.evaluate(
       () => Engine3D.scene.getObjectByName("4D exterior garden") !== undefined,
@@ -221,9 +220,7 @@ module.exports = async ({ page, assert }) => {
       return mesh.geometry.attributes.normal.getY(0) > 0.9;
     }),
   );
-  const widgetBox = await page.locator("#planning-dock").boundingBox(),
-    advanced = await page.locator("#advanced-view-panel").boundingBox();
-  assert.ok(advanced.x >= widgetBox.x + widgetBox.width + 4);
+  assert.equal(await page.locator("#planning-dock").isVisible(),false);
   await page.evaluate(() => {
     WorkspaceLayout.hideCatalog();
     StudioUI.closeProperties();

@@ -264,7 +264,7 @@ const ProjectState = {
     const item = this.history.stack.pop();
     if (!item) return false;
     this.history.redoStack.push(item);
-    this.apply(item.before, { selection });
+    this.apply({ ...item.before, view: { ...item.before.view, mode: this.meta.view.mode } }, { selection });
     StorageEngine.markDirty();
     return true;
   },
@@ -273,7 +273,7 @@ const ProjectState = {
     const item = this.history.redoStack.pop();
     if (!item) return false;
     this.history.stack.push(item);
-    this.apply(item.after, { selection });
+    this.apply({ ...item.after, view: { ...item.after.view, mode: this.meta.view.mode } }, { selection });
     StorageEngine.markDirty();
     return true;
   },

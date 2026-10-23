@@ -630,6 +630,15 @@ window.WorkspaceLayout = {
       const r = p.getBoundingClientRect();
       left = Math.max(left, r.right - canvas.left + 16);
     }
+    if (StudioUI.mode === "4d") {
+      top=Math.max(top,64);
+      for (const selector of ["#fourd-inspection:not([hidden])", "#studio-dialog[open].workspace-docked-dialog"]) {
+        const panel=document.querySelector(selector);
+        if (panel?.getClientRects().length) left=Math.max(left,panel.getBoundingClientRect().right-canvas.left+16);
+      }
+      const toolbar=document.getElementById("fourd-toolbar");
+      if (toolbar?.getClientRects().length) top=Math.max(top,toolbar.getBoundingClientRect().bottom-canvas.top+14);
+    }
     for (const popup of document.querySelectorAll(
       ".footer-settings:popover-open",
     )) {

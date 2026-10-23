@@ -102,11 +102,11 @@ reduce known failure paths; device-specific GPU limits still apply.
 
 All controls share one six-tab 4D Studio dock. Practical rendering, comparison and stage-sequence limits are documented in [4D Studio](FOURD_STUDIO.md).
 
-## 4D workspace, performance and visual quality — pending
+## 4D workspace, performance and visual quality — implementation tracking
 
 Added on 23 October 2026 following the overlapping-label screenshot and reports
 of freezing on entry and when moving between building and element views. These
-items are backlog requirements, not a claim that the fixes are implemented.
+items define the accepted requirements; the delivery status below distinguishes implementation from remaining work.
 Preserve the original plot, element dimensions, positions, floors and saved
 project content throughout this work.
 
@@ -154,3 +154,26 @@ Delivery order: explicit startup gate and workspace isolation; profiling and vie
 reuse; clean selection/annotations; architectural rendering corrections; advanced
 presentation polish. The implementation must retain existing features through
 their relevant workspaces rather than delete them to improve performance.
+
+### Delivery status — 23 October 2026
+
+The dedicated workspace implements the explicit startup gate, cancellation,
+relevant controls/background suspension, scene reuse for viewing, quality profiles,
+idle/pause/stop lifecycle, diagnostics, clean selection, bounded annotations,
+usable-area framing and clean capture. Exterior/interior/floor/section/photo tools
+reuse the existing presentation features. Opening animation now preserves source
+transforms, and exterior room-light/shader costs are reduced. The screenshot's
+roof projection was traced to saved parapet geometry; intentional test materials
+and site objects remain intact.
+
+**4D-022 is partially implemented:** finishes update only affected owners without
+rebuilding geometry. Structural geometry edits still rebuild the editor source
+and replace its presentation scene atomically. Fully incremental structural
+geometry remains pending. Geometry-specific operations and driver shader
+compilation can still produce long tasks on complex projects; profiling and the
+explicit loading card expose that work rather than promise universal frame rates.
+Further artistic refinement under 4D-034–038 remains open as actual visual defects
+are reproduced; valid architectural content will not be removed to mask them.
+
+See [4D workspace lifecycle and validation](FOURD_WORKSPACE.md) for implemented
+behavior, profile budgets, architectural audit findings and verification commands.

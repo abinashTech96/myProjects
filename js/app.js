@@ -16,6 +16,7 @@ window.deleteElementAI = function(id) {return ProjectState.deleteElement(typeof 
 // BACKGROUND MATH WORKER
 // -----------------------------------------
 window.requestBackgroundMath = debounce(() => {
+    if (typeof StudioUI !== 'undefined' && StudioUI.mode === '4d') return;
     if (typeof elements === 'undefined' || !elements) return;
     const areaResult = typeof _calcArea === 'function' ? _calcArea(elements, currentFloor) : null;
     if (areaResult && typeof renderAreaUI === 'function') {

@@ -39,7 +39,8 @@ window.StudioEnhancements = {
     }
   },
   invalidate() {
-    if (typeof Engine4D !== "undefined") Engine4D.modelVersion = null;
+    if (StudioUI.mode === "4d" && window.FourDWorkspace?.running) FourDWorkspace.scheduleUpdate();
+    else if (typeof Engine4D !== "undefined") Engine4D.modelVersion = null;
     if (Engine3D.scene) Engine3D.needsRender = true;
   },
   commit(label, fn) {
@@ -89,8 +90,8 @@ window.StudioEnhancements = {
   },
   async enter() {
     if (StudioUI.mode !== "4d") setWorkspaceLayout("4d");
-    if (!Engine4D.ready) await Engine4D.enable();
-    if (!Engine4D.ready) throw Error("The 4D renderer is unavailable");
+    if (!Engine4D.ready) throw Error("Click Render 4D to start the renderer first.");
+    if (window.FourDWorkspace?.paused) throw Error("Resume 4D to use this tool.");
     this.bindCanvas();
   },
   init() {
@@ -203,7 +204,11 @@ window.StudioEnhancements = {
       try {
         StudioEnhancements.beforeRender();
         const started=performance.now(),result=oldRender.apply(this,args);
-        if(result)StudioEnhancements.afterRender(performance.now()-started);
+        if(result) {
+          const duration = performance.now()-started;
+          StudioEnhancements.afterRender(duration);
+          window.FourDWorkspace?.sample(duration);
+        }
         return result;
       } catch(error) {this.fail(error);return false;}
     };
@@ -287,17 +292,6 @@ window.StudioEnhancements = {
     );
     AppEvents.onSelectionChange(() => {
       this.preview = null;
-      const selected = elements[selectedElIndex],
-        changed = selected?.id !== this.lastSelected;
-      this.lastSelected = selected?.id;
-      if (
-        changed &&
-        StudioUI.mode === "4d" &&
-        selected &&
-        !selected.isFurniture &&
-        !document.querySelector("dialog[open]")
-      )
-        this.run(() => this.focusSelection());
       this.updateFocusReadout();
       if (Engine3D.scene) Engine3D.needsRender = true;
     });
@@ -399,6 +393,7 @@ window.StudioEnhancements = {
     if (window.Engine3D?.scene) Engine3D.needsRender = true;
   },
   themeDialog() {
+    if (StudioUI.mode === "4d") return window.FourDWorkspace?.appearance();
     if (window.WorkspaceLayout?.ready) return WorkspaceLayout.openFooter("appearance");
     this.show(
       "Workspace themes",
@@ -414,7 +409,8 @@ window.StudioEnhancements = {
     const e = this.selected();
     this.focusRoom = e.id;
     this.close();
-    this.labels = "rooms";
+    if (window.FourDWorkspace?.annotationPreference !== "off")
+      FourDWorkspace.setAnnotations(FourDWorkspace.annotationPreference, false);
     const p = this.p(),
       { SCALE, I } = get3DEnvironmentParams(),
       base = WorkbenchModel.roomBase(p, e) * SCALE,
@@ -429,26 +425,33 @@ window.StudioEnhancements = {
         I.z + (b.y + b.h / 2) * SCALE,
       ),
       radius = Math.max(b.w, b.h) * SCALE;
-    Engine3D.cameraTween = null;
-    Engine3D.camera.position
-      .copy(center)
-      .add(new THREE.Vector3(radius, radius * 0.9, radius));
-    Engine3D.controls.target.copy(center);
-    Engine3D.camera.lookAt(center);
-    Engine3D.controls.update();
+    const position=center.clone().add(new THREE.Vector3(radius,radius*.9,radius));
+    if (!matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      Engine3D.cameraTween={start:performance.now(),duration:240,from:Engine3D.camera.position.clone(),to:position,fromTarget:Engine3D.controls.target.clone(),toTarget:center};
+    } else {
+      Engine3D.cameraTween=null;
+      Engine3D.camera.position.copy(position);
+      Engine3D.controls.target.copy(center);
+      Engine3D.camera.lookAt(center);
+      Engine3D.controls.update();
+    }
     Engine3D.needsRender = true;
     this.updateFocusReadout();
   },
   clearRoom() {
     this.focusRoom = null;
-    this.invalidate();
+    Engine3D.needsRender = true;
     this.updateFocusReadout();
   },
   fullView() {
+    if (!Engine4D.ready) return;
     this.cancelPreview();
     this.stopWalk();
     this.setFocus(false);
     this.clearRoom();
+    this.labels = "none";
+    window.FourDWorkspace?.clearSelection();
+    document.getElementById("enhancement-labels")?.replaceChildren();
     Workbench3D.clearIsolation();
     this.clearSection();
     ViewportUI.inspectFloor("all");
@@ -749,7 +752,7 @@ window.StudioEnhancements = {
     await this.enter();
     this.show(
       "Measurement overlays",
-      `<div class="enhancement-quick">${this.b("Measure two points", "Workbench3D.startMeasure()")}${this.b("Room dimensions", 'StudioEnhancements.labels="rooms";StudioEnhancements.close();Engine3D.needsRender=true')}${this.b("Opening dimensions", 'StudioEnhancements.labels="openings";StudioEnhancements.close();Engine3D.needsRender=true')}${this.b("Hide overlays", 'StudioEnhancements.labels="none";StudioEnhancements.close();Engine3D.needsRender=true')}</div><p>Room overlays include width, depth and ceiling height. Two-point measurements are saved with the project.</p>`,
+      `<div class="enhancement-quick">${this.b("Measure two points", "Workbench3D.startMeasure()")}${this.b("Room dimensions", 'FourDWorkspace.showDimensions(true);FourDWorkspace.setAnnotations("all");StudioEnhancements.labels="rooms";StudioEnhancements.close();Engine3D.needsRender=true')}${this.b("Opening dimensions", 'FourDWorkspace.showDimensions(true);FourDWorkspace.setAnnotations("all");StudioEnhancements.labels="openings";StudioEnhancements.close();Engine3D.needsRender=true')}${this.b("Hide overlays", 'FourDWorkspace.showDimensions(false);FourDWorkspace.setAnnotations("off");StudioEnhancements.close();Engine3D.needsRender=true')}</div><p>Room overlays include width, depth and ceiling height. Two-point measurements are saved with the project.</p>`,
     );
   },
   async startEyedropper() {
@@ -1133,8 +1136,9 @@ window.StudioEnhancements = {
   resizeQuality() {
     if (!Engine4D.ready) return;
     const fast = this.adaptive && this.navigating;
-    Engine4D.dynamicScale = fast ? 0.65 : 1;
-    Engine4D.ao.enabled = Engine4D.supportsAO && !fast && !Engine4D.aoFault;
+    const scale = window.FourDWorkspace?.resolutionScale || 1;
+    Engine4D.dynamicScale = fast ? Math.min(0.7,scale) : scale;
+    Engine4D.ao.enabled = Engine4D.supportsAO && !fast && !Engine4D.aoFault && window.FourDWorkspace?.quality !== "eco";
     Engine4D.beautyPass.enabled = !Engine4D.ao.enabled;
     Engine4D.resize();
   },
@@ -1406,11 +1410,7 @@ window.StudioEnhancements = {
         copy,
         f,
         width: box.max.x - box.min.x,
-        baseX: 0,
-        pivot:
-          f.type === "door" && !source.parent.userData.isOpening
-            ? Engine4D.pairs.find(([s]) => s === source.parent)?.[1]
-            : null,
+        axis: new THREE.Vector3(1,0,0).applyQuaternion(source.quaternion),
       });
       if (f.type === "window") {
         const fixed = new THREE.Mesh(copy.geometry, copy.material);
@@ -1418,9 +1418,10 @@ window.StudioEnhancements = {
         fixed.quaternion.copy(source.quaternion);
         fixed.scale.copy(source.scale);
         fixed.scale.x *= 0.5;
-        fixed.position.x = -(box.max.x - box.min.x) * 0.25;
+        fixed.position.addScaledVector(new THREE.Vector3(1,0,0).applyQuaternion(source.quaternion), -(box.max.x-box.min.x)*source.scale.x*0.25);
         fixed.userData = { ...copy.userData };
         copy.parent.add(fixed);
+        this.leaves[this.leaves.length-1].fixed = fixed;
       }
     }
     const { I, SCALE } = get3DEnvironmentParams(),
@@ -1564,23 +1565,17 @@ window.StudioEnhancements = {
           angle =
             (sign * (leaf.f.swing === "out" ? -1 : 1) * fraction * Math.PI) / 2;
         if (leaf.f.style === "sliding") {
-          copy.rotation.y = 0;
-          copy.position.x = sign * fraction * leaf.width * 0.8;
-        } else if (leaf.pivot) {
-          leaf.pivot.rotation.y = angle;
-          copy.rotation.y = 0;
-          copy.position.x = (sign * leaf.width) / 2;
+          copy.position.copy(source.position).addScaledVector(leaf.axis, sign*fraction*leaf.width*source.scale.x*0.8);
         } else {
-          copy.rotation.y = angle;
-          copy.position.x =
-            (-sign * leaf.width) / 2 +
-            (Math.cos(angle) * sign * leaf.width) / 2;
-          copy.position.z =
-            source.position.z - (Math.sin(angle) * sign * leaf.width) / 2;
+          const rotation = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),angle),
+            offset = new THREE.Vector3(sign*leaf.width*source.scale.x/2,0,0),
+            shift = offset.clone().applyQuaternion(rotation).sub(offset).applyQuaternion(source.quaternion);
+          copy.quaternion.copy(source.quaternion).multiply(rotation);
+          copy.position.copy(source.position).add(shift);
         }
       } else {
         copy.scale.x = source.scale.x * 0.5;
-        copy.position.x = leaf.width * 0.25 - fraction * leaf.width * 0.5;
+        copy.position.copy(source.position).addScaledVector(leaf.axis,source.scale.x*(leaf.width*0.25-fraction*leaf.width*0.5));
       }
     }
     for (const mesh of this.ceilings || []) {
@@ -1607,9 +1602,11 @@ window.StudioEnhancements = {
         Math.min(1, 0.55 + (warm - 2000) / 6000),
         Math.min(1, 0.28 + (warm - 2000) / 5000),
       );
+    if (this.lightGroup) this.lightGroup.visible = !!(this.data.lights.enabled && (this.walking || focused || this.preview?.channel === "ceiling"));
+    const lightLimit = window.FourDWorkspace?.quality === "eco" ? 1 : window.FourDWorkspace?.quality === "high" ? 8 : 4;
     this.lightGroup?.children.forEach((light, i) => {
       const room = active[i];
-      light.visible = !!(room && this.data.lights.enabled);
+      light.visible = !!(room && this.data.lights.enabled && i < lightLimit);
       if (!room) return;
       light.color.copy(color);
       light.intensity = 3000 * this.data.lights.intensity;
@@ -1692,18 +1689,23 @@ window.StudioEnhancements = {
       p = this.modelProject;
     if (!p) return;
     const items = [];
+    if (this.labels === "none" || window.FourDWorkspace?.annotations === "off") {
+      layer.replaceChildren();
+      return;
+    }
     if (this.labels === "rooms")
       for (const [i, e] of elements.entries()) {
         if (
           e.isFurniture ||
-          (e.floor !== currentFloor && !this.explosion) ||
+          (window.FourDWorkspace?.annotations === "selected" && i !== selectedElIndex) ||
+          (ViewportUI.advancedFloor != null && e.floor !== ViewportUI.advancedFloor && !this.explosion) ||
           (this.focusRoom && e.id !== this.focusRoom)
         )
           continue;
         const height = WorkbenchModel.floorHeight(p, e.floor);
         items.push({
           index: i,
-          text: `F${e.floor} · ${e.customName || e.type} · ${ProjectModel.display(e.w, StudioUI.unit)} × ${ProjectModel.display(e.h, StudioUI.unit)} · H ${ProjectModel.display(height, StudioUI.unit)}`,
+          text: `F${e.floor} · ${(e.customName || e.type).slice(0,60)}${window.FourDWorkspace?.dimensions ? " · "+ProjectModel.display(e.w,StudioUI.unit)+" × "+ProjectModel.display(e.h,StudioUI.unit)+" · H "+ProjectModel.display(height,StudioUI.unit) : ""}`,
           point: {
             x: e.x + e.w / 2,
             y: e.y + e.h / 2,
@@ -1735,22 +1737,53 @@ window.StudioEnhancements = {
           },
         });
       }
+    const camera = Engine4D.camera, placed = [],
+      obstacles = ["#fourd-toolbar", "#fourd-inspection:not([hidden])", ".viewport-orientation", "#studio-dialog[open]"]
+        .flatMap(selector => [...document.querySelectorAll(selector)])
+        .filter(n => n.getClientRects().length && getComputedStyle(n).display !== "none")
+        .map(n => n.getBoundingClientRect()),
+      overlaps = (a,b) => a.left < b.right+5 && a.right > b.left-5 && a.top < b.bottom+5 && a.bottom > b.top-5;
+    items.sort((a,b) => Number(b.index === selectedElIndex)-Number(a.index === selectedElIndex));
+    const ray = new THREE.Raycaster(), meshes = [];
+    Engine4D.model?.traverse(n => {
+      if (!n.isMesh || n.material?.transparent) return;
+      let parent=n;
+      while (parent && parent.visible) parent=parent.parent;
+      if (!parent) meshes.push(n);
+    });
+    let grouped = 0;
     layer.innerHTML = items
-      .slice(0, 100)
+      .slice(0, 16)
       .map((item) => {
         const world = Workbench3D.coordinates(item.point),
           v = world.clone().project(Engine4D.camera);
         if (v.z > 1 || v.z < -1 || Math.abs(v.x) > 0.95 || Math.abs(v.y) > 0.95)
           return "";
+        ray.setFromCamera(new THREE.Vector2(v.x,v.y),camera);
+        const distance = ray.ray.origin.distanceTo(world), hit = ray.intersectObjects(meshes,false)
+          .find(h => !Engine4D.renderer.clippingPlanes.some(plane=>plane.distanceToPoint(h.point)<0));
+        if (hit && hit.distance < distance-2*get3DEnvironmentParams().SCALE) return "";
+        const width = Math.min(window.FourDWorkspace?.dimensions ? 220 : 180, Math.max(70, item.text.length*6+16)), height=Math.max(26,Math.ceil(item.text.length*6/(width-12))*13+10);
+        let rect;
+        for (const offset of [0,-32,32,-64,64]) {
+          const x=Math.max(width/2+8,Math.min(box.width-width/2-8,(v.x+1)*box.width/2)),
+            y=Math.max(76,Math.min(box.height-52,(1-v.y)*box.height/2+offset)),
+            candidate={left:box.left+x-width/2,right:box.left+x+width/2,top:box.top+y-height/2,bottom:box.top+y+height/2,x,y};
+          if (!obstacles.some(b=>overlaps(candidate,b)) && !placed.some(b=>overlaps(candidate,b))) {rect=candidate;break;}
+        }
+        if (!rect) {grouped++;return "";}
+        placed.push(rect);
         const action =
           item.opening !== undefined
             ? `PlanningUI.editOpeningDialog(${item.opening})`
             : `StudioUI.select(${item.index})`;
-        return `<button class="enhancement-dimension" style="left:${((v.x + 1) * box.width) / 2}px;top:${((1 - v.y) * box.height) / 2}px" onclick="${action}">${this.e(item.text)}</button>`;
+        return `<button class="enhancement-dimension" data-label-id="${item.index ?? item.opening}" style="left:${rect.x}px;top:${rect.y}px;width:${width}px" onclick="${action}">${this.e(item.text)}</button>`;
       })
       .join("");
+    if (grouped) layer.insertAdjacentHTML("beforeend", `<span class="fourd-label-summary">${grouped} crowded labels hidden · inspect an element for details</span>`);
   },
   clearRuntime() {
+    this.ceilingPreviewPose = null;
     this.explodedBounds = null;
     this.openingPreview = {};
     this.focusRoom = null;

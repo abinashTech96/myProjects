@@ -4,6 +4,12 @@ window.FourDRender = {
   init(engine) {
     this.engine = engine;
     this.environmentKey = null;
+    this.bokeh = null;
+    this.initPhotoResources();
+  },
+  ensureBokeh() {
+    if (this.bokeh) return;
+    const engine=this.engine;
     this.bokeh = new THREE.BokehPass(engine.scene, Engine3D.camera, {
       width: 1,
       height: 1,
@@ -19,6 +25,8 @@ window.FourDRender = {
         this.bokeh.enabled ? h : 1,
       );
     engine.composer.insertPass(this.bokeh, 2);
+  },
+  initPhotoResources() {
     this.average = new THREE.ShaderMaterial({
       depthTest: false,
       depthWrite: false,
@@ -411,6 +419,7 @@ window.FourDRender = {
         StudioEnhancements.walking
       )
         return;
+      if (FourDStudio.settings.dof) this.ensureBokeh();
       this.active = true;
       this.sample = 0;
       this.photoStamp = FourDStudio.visualStamp();
@@ -466,8 +475,11 @@ window.FourDRender = {
     const e = this.engine;
     e.composer.renderToScreen = !this.active;
     const bokeh = !!(this.active && settings.dof && camera.isPerspectiveCamera);
-    this.bokeh.enabled = bokeh;
-    this.bokeh.camera = camera;
+    if (bokeh) this.ensureBokeh();
+    if (this.bokeh) {
+      this.bokeh.enabled = bokeh;
+      this.bokeh.camera = camera;
+    }
     if (bokeh) {
       this.bokeh.renderTargetDepth.setSize(
         e.renderer.domElement.width,

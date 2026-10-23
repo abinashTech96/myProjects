@@ -39,8 +39,8 @@ window.Engine3D = {
         this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
         const quality = typeof PlanningUI !== 'undefined' ? PlanningUI.preferences.quality || PlanningUI.readPrefs().quality || 'balanced' : 'balanced';
         this.renderer.setPixelRatio(quality === 'high' ? Math.min(window.devicePixelRatio, 2) : 1);
-        this.renderer.setSize(container.clientWidth, container.clientHeight, false);
-        this.renderer.shadowMap.enabled = quality !== 'low';
+        this.renderer.setSize(StudioUI.mode === '4d' ? 1 : container.clientWidth, StudioUI.mode === '4d' ? 1 : container.clientHeight, false);
+        this.renderer.shadowMap.enabled = quality !== 'low' && StudioUI.mode !== '4d';
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         this.renderer.shadowMap.autoUpdate = false; // Shadow optimization
         this.renderer.outputEncoding = THREE.sRGBEncoding;
@@ -201,9 +201,12 @@ window.Engine3D = {
             
             const continuous = this.isWalkthrough || window.isPlayingTour || this.controls.autoRotate || !!this.cameraTween;
             if (continuous || controlsChanged || this.needsRender) {
-                if (!(typeof Engine4D !== "undefined" && Engine4D.render(this.camera))) this.renderer.render(this.scene, this.camera);
+                // Invalidation raised during a render belongs to the next frame.
+                this._needsRender = false;
+                if (typeof StudioUI !== 'undefined' && StudioUI.mode === '4d') {
+                    if (window.FourDWorkspace?.running && !FourDWorkspace.paused) Engine4D.render(this.camera);
+                } else this.renderer.render(this.scene, this.camera);
                 this.renderFrames = (this.renderFrames || 0) + 1;
-                this.needsRender = false;
                 this.afterRender?.(time, !continuous && !controlsChanged);
             }
             prevTime = time;
@@ -225,7 +228,7 @@ window.Engine3D = {
             this.camera.right = half * this.camera.aspect;
         }
         this.camera.updateProjectionMatrix();
-        this.renderer.setSize(width, height, false);
+        this.renderer.setSize(StudioUI.mode === '4d' ? 1 : width, StudioUI.mode === '4d' ? 1 : height, false);
         this.needsRender = true;
     },
 

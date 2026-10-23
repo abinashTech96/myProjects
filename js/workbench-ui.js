@@ -122,7 +122,7 @@ const WorkbenchUI = {
     AppEvents.onSelectionChange(() => this.context());
     AppEvents.onStateChange(() => {
       this.context();
-      WorkbenchDrawing?.render();
+      if (StudioUI.mode !== "4d") WorkbenchDrawing?.render();
     });
     this.context();
     this.loadPreferences();
@@ -142,6 +142,7 @@ const WorkbenchUI = {
   context() {
     const bar = document.getElementById("wb-context-toolbar");
     if (!bar) return;
+    if (StudioUI.mode === "4d") { bar.hidden=true; return; }
     const e = elements[selectedElIndex],
       target = typeof Workbench3D !== "undefined" ? Workbench3D.target : null;
     if (!e && !target) {

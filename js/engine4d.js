@@ -14,37 +14,35 @@ window.Engine4D = {
   async dependencies() {
     if (!this.loading)
       this.loading = (async () => {
-        for (const name of [
-          "CopyShader",
-          "SSAOShader",
-          "GammaCorrectionShader",
-          "FXAAShader",
-          "SimplexNoise",
-          "Pass",
-          "ShaderPass",
-          "EffectComposer",
-          "SSAOPass",
-          "RGBELoader",
-          "Reflector",
-          "BokehShader",
-          "BokehPass",
-        ]) {
-          if (THREE[name]) continue;
-          await new Promise((resolve, reject) => {
+        this.libraryLoads ||= new Map();
+        const load = name => {
+          if (THREE[name]) return Promise.resolve();
+          if (this.libraryLoads.has(name)) return this.libraryLoads.get(name);
+          const pending = new Promise((resolve, reject) => {
             const script = document.createElement("script");
             script.src = `vendor/three/${name}.js`;
             script.onload = resolve;
-            script.onerror = () => reject(Error(`Cannot load ${name}`));
+            script.onerror = () => { this.libraryLoads.delete(name); script.remove(); reject(Error(`Cannot load ${name}`)); };
             document.head.append(script);
           });
-        }
+          this.libraryLoads.set(name,pending);
+          return pending;
+        };
+        // Each batch is independent; only class inheritance needs ordering.
+        for (const batch of [
+          ["CopyShader","SSAOShader","GammaCorrectionShader","FXAAShader","SimplexNoise","Pass","RGBELoader","Reflector","BokehShader"],
+          ["ShaderPass","EffectComposer","BokehPass"],
+          ["SSAOPass"],
+        ]) await Promise.all(batch.map(load));
       })().catch((error) => {
         this.loading = null;
         throw error;
       });
     return this.loading;
   },
-  async enable() {
+  async enable(workspaceToken) {
+    if (!window.FourDWorkspace?.starting || workspaceToken !== FourDWorkspace.token)
+      return this.status("Click Render 4D to start");
     const token = ++this.generation;
     if (
       this.ready &&
@@ -63,14 +61,20 @@ window.Engine4D = {
       if (!this.active || token !== this.generation) return;
       if (this.renderer?.getContext().isContextLost()) this.releaseRenderer();
       if (!this.renderer) this.init();
-      this.ready = true;
-      this.state = "ready";
       this.lastError = null;
-      this.renderer.domElement.hidden = false;
       Engine3D.renderer.domElement.classList.add("presentation-input-surface");
       this.resize();
       this.setPreset(this.preset);
-      this.syncModel(true);
+      const stage = await Scene4D.stageAsync(this, Engine3D.buildingGroup, ProjectState.capture(),
+        () => FourDWorkspace.checkpoint(null, workspaceToken));
+      if (!this.active || token !== this.generation || workspaceToken !== FourDWorkspace.token) {
+        Scene4D.dispose({model:stage.model,materials:stage.materials,sceneResources:stage.resources});
+        return;
+      }
+      this.ready = true;
+      this.state = "ready";
+      this.renderer.domElement.hidden = false;
+      this.syncModel(true, stage);
       Engine3D.needsRender = true;
     } catch (error) {
       if (token !== this.generation) return;
@@ -116,6 +120,8 @@ window.Engine4D = {
     );
     this.status("3D fallback · 4D recovery available");
     Engine3D.needsRender = true;
+    if (window.FourDWorkspace?.running && !FourDWorkspace.starting)
+      FourDWorkspace.failed(this.lastError);
   },
   releaseRenderer() {
     FourDStudio.leave();
@@ -153,14 +159,9 @@ window.Engine4D = {
     this.lastSize = null;
   },
   async recover() {
-    const exposure = this.exposure;
-    this.releaseRenderer();
-    this.ready = false;
-    this.active = false;
     this.recoveries++;
-    await this.enable();
-    if (this.ready && exposure) this.setExposure(exposure);
-    if (Engine3D.scene) request3DUpdate();
+    FourDWorkspace.stop();
+    return FourDWorkspace.start();
   },
   healthDialog() {
     const issues = this.geometryIssues || [];
@@ -215,7 +216,6 @@ window.Engine4D = {
     this.fill = new THREE.HemisphereLight(0xdceaff, 0xb2a08b, 1.2);
     this.rim = new THREE.DirectionalLight(0xd6e7ff, 0.8);
     this.scene.add(this.key, this.key.target, this.fill, this.rim);
-    this.makeEnvironment();
     this.composer = new THREE.EffectComposer(this.renderer);
     this.ao = new THREE.SSAOPass(this.scene, Engine3D.camera, 1, 1);
     this.ao.kernelRadius = 12;
@@ -344,7 +344,14 @@ window.Engine4D = {
         String(this.physicalGlass),
       );
     } catch {}
-    if (this.ready) this.syncModel(true);
+    if (this.ready) for (const material of this.materials) {
+      if (!material.userData.glazing) continue;
+      material.transmission = this.physicalGlass ? 0.88 : 0;
+      material.opacity = this.physicalGlass ? 1 : 0.3;
+      material.transparent = !this.physicalGlass;
+      material.depthWrite = !!this.physicalGlass;
+      material.needsUpdate = true;
+    }
     Engine3D.needsRender = true;
   },
   toggleLandscape(value) {
@@ -364,7 +371,7 @@ window.Engine4D = {
       return StudioUI.message("The 4D renderer is still loading.");
     StudioUI.dialog(
       "4D lighting",
-      `<p>Dedicated presentation renderer · physical materials and ambient occlusion</p><label>Exposure<input aria-label="4D exposure" type="range" min="0.5" max="1.8" step="0.05" value="${this.exposure}" oninput="Engine4D.setExposure(this.value)"></label><label>Sun position<input aria-label="4D sun position" type="range" min="6" max="18" step="0.25" value="${Widget3DEngine.sunHour || 12}" oninput="updateSunlight(Number(this.value));Engine4D.renderer.shadowMap.needsUpdate=true;Engine3D.needsRender=true"></label><label><input type="checkbox" ${this.ao.output === THREE.SSAOPass.OUTPUT.Default ? "checked" : ""} onchange="Engine4D.ao.output=this.checked?THREE.SSAOPass.OUTPUT.Default:THREE.SSAOPass.OUTPUT.Beauty;Engine3D.needsRender=true">Ambient occlusion</label><label><input type="checkbox" ${this.renderer.shadowMap.enabled ? "checked" : ""} onchange="Engine4D.renderer.shadowMap.enabled=this.checked;Engine4D.renderer.shadowMap.needsUpdate=true;Engine3D.needsRender=true">Soft shadows</label><label><input type="checkbox" ${this.landscapeEnabled !== false ? "checked" : ""} onchange="Engine4D.toggleLandscape(this.checked)">Exterior garden · 4D only</label><label><input type="checkbox" ${this.physicalGlass ? "checked" : ""} onchange="Engine4D.setGlass(this.checked)">Physical glass · higher GPU use</label><p>Interactive visualization; lighting is not a daylight compliance calculation.</p>`,
+      `<p>Physical materials · quality and effects adapt to device load.</p><label>Rendering style<select aria-label="4D rendering style" onchange="Engine4D.setPreset(this.value)">${["daylight","interior","studio"].map(value=>`<option value="${value}" ${this.preset===value ? "selected" : ""}>${value}</option>`).join("")}</select></label><label>Exposure<input aria-label="4D exposure" type="range" min="0.5" max="1.8" step="0.05" value="${this.exposure}" oninput="Engine4D.setExposure(this.value)"></label><label>Sun position<input aria-label="4D sun position" type="range" min="6" max="18" step="0.25" value="${Widget3DEngine.sunHour || 12}" oninput="updateSunlight(Number(this.value));Engine4D.renderer.shadowMap.needsUpdate=true;Engine3D.needsRender=true"></label><label><input type="checkbox" ${this.ao.output === THREE.SSAOPass.OUTPUT.Default ? "checked" : ""} onchange="Engine4D.ao.output=this.checked?THREE.SSAOPass.OUTPUT.Default:THREE.SSAOPass.OUTPUT.Beauty;Engine3D.needsRender=true">Ambient occlusion</label><label><input type="checkbox" ${this.renderer.shadowMap.enabled ? "checked" : ""} onchange="Engine4D.renderer.shadowMap.enabled=this.checked;Engine4D.renderer.shadowMap.needsUpdate=true;Engine3D.needsRender=true">Soft shadows</label><label><input type="checkbox" ${this.landscapeEnabled !== false ? "checked" : ""} onchange="Engine4D.toggleLandscape(this.checked)">Exterior garden · 4D only</label><label><input type="checkbox" ${this.physicalGlass ? "checked" : ""} onchange="Engine4D.setGlass(this.checked)">Physical glass · higher GPU use</label><p>Interactive visualization; lighting is not a daylight compliance calculation.</p>`,
     );
   },
   resize() {
@@ -374,8 +381,8 @@ window.Engine4D = {
     const ratio =
       Math.min(
         devicePixelRatio || 1,
-        1.25,
-        Math.sqrt(1100000 / (box.clientWidth * box.clientHeight)),
+        this.maxPixelRatio || 1.25,
+        Math.sqrt((this.pixelBudget || 1100000) / (box.clientWidth * box.clientHeight)),
       ) * (this.dynamicScale || 1);
     const size = [box.clientWidth, box.clientHeight, ratio].join("|");
     if (this.lastSize === size) return;
@@ -550,6 +557,7 @@ window.Engine4D = {
       material.clearcoatRoughness = 0.35;
       material.userData.ownedMaps = true;
     } else if (glass) {
+      material.userData.glazing = true;
       material.transmission = this.physicalGlass ? 0.88 : 0;
       material.ior = 1.5;
       material.opacity = this.physicalGlass ? 1 : 0.3;
@@ -591,6 +599,11 @@ window.Engine4D = {
     this.overlayMaterials = [];
   },
   syncOverlay() {
+    // Editor measurements, axes and transform gizmos do not belong in presentation.
+    if ((!window.FourDWorkspace?.dimensions && !Workbench3D.measurePoints) || window.FourDWorkspace?.exporting) {
+      if (this.overlay) this.overlay.visible = false;
+      return;
+    }
     const roots = Engine3D.scene.children.filter(
       (object) =>
         object !== Engine3D.buildingGroup &&
@@ -666,15 +679,16 @@ window.Engine4D = {
       copy.visible = source.visible;
       if (source.matrixAutoUpdate === false) copy.matrix.copy(source.matrix);
     }
+    if (this.overlay) this.overlay.visible = true;
   },
-  syncModel(force = false) {
+  syncModel(force = false, prepared = null) {
     const source = Engine3D.buildingGroup;
     if (!this.ready || !source) return;
     const version = Engine3D.modelSignature + "|" + Workbench3D.generation;
     if (!force && this.modelVersion === version) return;
     let stage;
     try {
-      stage = Scene4D.stage(this, source, ProjectState.capture());
+      stage = prepared || Scene4D.stage(this, source, ProjectState.capture());
     } catch (error) {
       this.fail(error);
       return false;
@@ -687,6 +701,7 @@ window.Engine4D = {
     this.sceneResources = stage.resources;
     this.geometryIssues = stage.issues;
     this.modelTriangles = stage.triangles;
+    if (window.FourDWorkspace) FourDWorkspace.metrics.builds++;
     this.scene.add(this.model);
     const box = new THREE.Box3().setFromObject(this.model);
     this.modelBounds = box;
@@ -843,16 +858,26 @@ window.Engine4D = {
     return true;
   },
   async capture() {
-    if (!this.ready)
+    if (!this.ready || window.FourDWorkspace?.paused)
       return StudioUI.message("The 4D renderer is still loading.");
+    const stamp=this.generation;
+    if (FourDWorkspace.includeAnnotations) FourDRender.cancelPhoto();
+    FourDWorkspace.exporting = !FourDWorkspace.includeAnnotations;
+    let blob;
+    try {
     if (!FourDRender.presentPhoto() && !this.render())
       return StudioUI.message(
         "Recover the 4D renderer before exporting.",
         "error",
       );
-    const blob = await new Promise((resolve) =>
+    blob = await new Promise((resolve) =>
       this.renderer.domElement.toBlob(resolve, "image/png"),
     );
+    } finally {
+      FourDWorkspace.exporting=false;
+      Engine3D.needsRender=true;
+    }
+    if (stamp !== this.generation) return;
     if (!blob)
       return StudioUI.message("The render could not be captured.", "error");
     const url = URL.createObjectURL(blob),

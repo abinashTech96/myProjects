@@ -5,6 +5,7 @@ window.WorkspacePanels = {
   dialog: null,
   pinned: false,
   shouldDock(title) {
+    if (StudioUI.mode === "4d") return true;
     if (this.external) return false;
     return (
       !!this.intent ||
@@ -50,6 +51,7 @@ window.WorkspacePanels = {
     window.dispatchEvent(new Event("resize"));
   },
   properties() {
+    if (StudioUI.mode === "4d") return window.FourDWorkspace?.inspect();
     if (!elements[selectedElIndex]) return;
     this.closeDialog();
     WorkspaceLayout.hideCatalog();

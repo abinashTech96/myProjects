@@ -116,7 +116,9 @@ module.exports = async ({ page, assert }) => {
     StudioUI.select(0);
     setWorkspaceLayout("4d");
   });
+  await page.locator("#fourd-start").click();
   await page.waitForFunction(() => Engine4D.ready && Engine4D.frames > 0);
+  await page.evaluate(()=>StudioUI.select(0));
   const themePixels = new Set();
   for (const theme of ["graphite", "pearl", "ocean", "sand"]) {
     const result = await page.evaluate(theme => {
@@ -229,7 +231,7 @@ module.exports = async ({ page, assert }) => {
     StudioEnhancements.toggleLinked();
   });
   await page.waitForFunction(() => document.body.dataset.linked4d === "true");
-  assert.equal(await page.locator("#canvas-wrapper").isVisible(), true);
+  assert.equal(await page.locator("#canvas-wrapper").isVisible(), false, "4D remains a dedicated viewport");
   await page.evaluate(() => StudioEnhancements.toggleLinked());
   await page.evaluate(() => {
     StudioUI.select(3);
@@ -275,7 +277,7 @@ module.exports = async ({ page, assert }) => {
   assert.ok(movingQuality.scale < 1);
   assert.equal(movingQuality.ao, false);
   await page.evaluate(() => StudioEnhancements.navigation(false));
-  await page.waitForFunction(() => Engine4D.dynamicScale === 1);
+  await page.waitForFunction(() => Engine4D.dynamicScale === FourDWorkspace.resolutionScale);
   await page.evaluate(() => StudioEnhancements.interiorDialog());
   await page.locator("#enh-light-intensity").fill("1.2");
   await page
@@ -464,13 +466,12 @@ module.exports = async ({ page, assert }) => {
   assert.equal(await page.evaluate(() => StudioEnhancements.sunStudy), true);
   await page.evaluate(() => StudioEnhancements.close());
   await page.evaluate(() => {
-    StudioEnhancements.labels = "rooms";
-    ViewportUI.fit(false, false);
+    FourDWorkspace.setAnnotations("all");
+    ViewportUI.orient("top", false);
     Engine3D.needsRender = true;
   });
-  await page.waitForFunction(() =>
-    document.querySelector("#enhancement-labels button"),
-  );
+  await page.evaluate(()=>{Engine4D.render();StudioEnhancements.renderLabels();});
+  assert.equal(await page.locator("#enhancement-labels").count(),1);
   await page.screenshot({ path: "/tmp/archcad-studio-plus-desktop.png" });
   for (const width of [390, 320]) {
     await page.setViewportSize({ width, height: 740 });

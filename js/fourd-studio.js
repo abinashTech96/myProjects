@@ -106,7 +106,7 @@ window.FourDStudio = {
         )
         .join(
           "",
-        )}</select></label>${check("Keep vertical lines straight", "verticals")}<label>Camera height above floor (in)<input aria-label="4D camera height" id="fourd-camera-height" type="number" min="12" max="300" value="64"></label>${button("Set camera height", "FourDStudio.cameraHeight()")}<hr>${check("Refine stills after navigation", "progressive")}<label>Refinement samples<select aria-label="4D refinement samples" onchange="FourDStudio.change('samples',Number(this.value))">${[4, 8, 16, 32, 64].map((n) => `<option ${s.samples === n ? "selected" : ""}>${n}</option>`).join("")}</select></label>${check("Depth of field in refined photos", "dof")}<div class="studio-field-grid">${field("Focus distance (in)", "focusDistance", 1, 100000, 1)}${field("Aperture f-number", "fstop", 1, 22, 0.5)}</div><div class="studio-action-grid">${button("Refine current view", "FourDRender.requestPhoto()")}${button("Capture PNG", "Engine4D.capture()")}</div><p id="fourd-photo-status" role="status">Interactive view · raster rendering</p><p class="studio-hint">Still refinement averages jittered raster samples. It improves antialiasing and supports photographic depth of field; it is not path tracing. Navigation cancels refinement immediately.</p>`;
+        )}</select></label>${check("Keep vertical lines straight", "verticals")}<label>Camera height above floor (in)<input aria-label="4D camera height" id="fourd-camera-height" type="number" min="12" max="300" value="64"></label>${button("Set camera height", "FourDStudio.cameraHeight()")}<hr>${check("Refine stills after navigation", "progressive")}<label>Refinement samples<select aria-label="4D refinement samples" onchange="FourDStudio.change('samples',Number(this.value))">${[4, 8, 16, 32, 64].map((n) => `<option ${s.samples === n ? "selected" : ""}>${n}</option>`).join("")}</select></label>${check("Depth of field in refined photos", "dof")}<div class="studio-field-grid">${field("Focus distance (in)", "focusDistance", 1, 100000, 1)}${field("Aperture f-number", "fstop", 1, 22, 0.5)}</div><div class="studio-action-grid">${button("Refine current view", "FourDRender.requestPhoto()")}${button("Capture PNG", "Engine4D.capture()")}</div><label class="fourd-check"><input type="checkbox" ${FourDWorkspace.includeAnnotations ? "checked" : ""} onchange="FourDWorkspace.includeAnnotations=this.checked">Include inspection overlays in PNG</label><p id="fourd-photo-status" role="status">Interactive view · raster rendering</p><p class="studio-hint">Still refinement averages jittered raster samples. It improves antialiasing and supports photographic depth of field; it is not path tracing. Navigation cancels refinement immediately.</p>`;
     if (tab === "compare") {
       const options = WorkbenchModel.data(ProjectState.capture()).options;
       html = `<p>Compare the current building with a saved alternative. Both views share the camera, environment and lens. The right preview is read-only.</p><label>Saved alternative<select id="fourd-compare-option" aria-label="4D comparison alternative">${options.map((o) => `<option value="${e(o.id)}">${e(o.name)}</option>`).join("")}</select></label><div class="studio-action-grid">${button("Start comparison", "FourDStudio.startComparison()")}${button("Close comparison", "FourDStudio.stopComparison()")}</div>${button("Save current alternative", "WorkbenchUI.optionDialog()")}<p id="fourd-compare-status" role="status">${this.comparison ? "Comparing · " + e(this.comparison.name) : "Choose an alternative, then start comparison."}</p><p class="studio-hint">Rooms, openings, furniture, levels, slabs, roofs, structural members, fitouts and service routes are rebuilt from the saved snapshot. Uncached imported models, ramps and shafts use dimensioned proxies reported below.</p>`;
@@ -556,7 +556,7 @@ window.FourDStudio = {
       Engine4D.scene.add(this.outlines);
     }
     Engine4D.model.updateMatrixWorld(true);
-    this.outlines.visible = this.settings.cleanSelection && !FourDRender.active;
+    this.outlines.visible = this.settings.cleanSelection && !FourDRender.active && !window.FourDWorkspace?.exporting;
     for (const [mesh, line] of this.outlinePairs) {
       line.matrix.copy(mesh.matrixWorld);
       let n = mesh,
@@ -776,8 +776,8 @@ window.FourDStudio = {
     this.applyLOD(camera);
     this.updateOutlines();
     if (this.clearances && !this.clearanceGroup) this.rebuildClearances();
-    if (this.clearanceGroup) this.clearanceGroup.visible = !FourDRender.active;
-    FourDRender.updateProbe(this.settings);
+    if (this.clearanceGroup) this.clearanceGroup.visible = !FourDRender.active && !window.FourDWorkspace?.exporting;
+    FourDRender.updateProbe(window.FourDWorkspace?.quality === "eco" ? {...this.settings,reflections:"environment"} : this.settings);
     FourDRender.before(camera, this.settings);
   },
   listenCamera() {

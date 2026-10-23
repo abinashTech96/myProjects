@@ -1,0 +1,41 @@
+/* A dedicated presentation surface, with no drafting dock or widget computations. */
+#fourd-workspace { display: none; }
+body[data-workspace="4d"] #fourd-workspace { display: block; position: absolute; inset: 0; pointer-events: none; z-index: 300; }
+body[data-workspace="4d"] :is(#workspace-rail,#planning-dock,.studio-inspector,.studio-catalog,#planning-navigation,#advanced-view-panel,#viewport-toolbar,#wb-context-toolbar,.studio-status,.studio-header .studio-floor-control,.studio-plus-entry,#enhancement-fps,#focus-exit,#four-d-full-view) { display: none !important; }
+body.studio-shell[data-workspace="4d"] #main-workspace { left: 0 !important; right: 0 !important; bottom: 0 !important; padding: 0 !important; }
+body[data-workspace="4d"] #right-canvas-wrapper { flex: 1 1 100% !important; width: 100% !important; margin: 0 !important; }
+body.studio-shell[data-workspace="4d"][data-linked4d] #canvas-wrapper,
+body.studio-shell[data-workspace="4d"] #canvas-wrapper { display: none !important; }
+body[data-workspace="4d"] .viewport-orientation { top: 96px !important; }
+body[data-workspace="4d"] .viewport-topline, body[data-workspace="4d"] .viewport-bottomline { display: none; }
+#fourd-start-card { pointer-events: auto; position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); box-sizing: border-box; width: min(380px,calc(100% - 32px)); padding: 24px; border-radius: 18px; color: var(--enh-text); background: var(--enh-panel); border: 1px solid var(--enh-border); box-shadow: 8px 8px 24px #0003,inset 1px 1px 0 #ffffff0a; }
+#fourd-start-card h2 { margin: 10px 0; font: 650 23px system-ui; }
+#fourd-start-card p { line-height: 1.6; min-height: 44px; font-size: 13px; }
+#fourd-start-card label { display: grid; gap: 6px; margin: 14px 0; font-size: 12px; }
+#fourd-start-card small { display: block; line-height: 1.6; margin-top: 14px; opacity: .75; }
+.fourd-eyebrow { font: 600 10px system-ui; letter-spacing: .12em; color: var(--enh-accent); }
+#fourd-toolbar { display: none; pointer-events: auto; position: absolute; left: 50%; top: 10px; transform: translateX(-50%); max-width: calc(100% - 20px); align-items: center; gap: 5px; padding: 6px; border-radius: 12px; background: var(--enh-panel); border: 1px solid var(--enh-border); box-shadow: 3px 5px 14px #0002; overflow-x: auto; white-space: nowrap; }
+#fourd-workspace .studio-button { min-height: 32px; margin: 0; font-size: 11px; padding: 6px 9px; }
+#fourd-workspace select { min-height: 32px; border: 1px solid var(--enh-border); border-radius: 7px; background: var(--enh-bg); color: var(--enh-text); padding: 4px 7px; font: 11px system-ui; }
+#fourd-inspection { pointer-events: auto; position: absolute; top: 66px; left: 12px; width: min(250px,calc(100% - 24px)); max-height: calc(100% - 120px); overflow-y: auto; box-sizing: border-box; padding: 12px; border-radius: 12px; background: var(--enh-panel); color: var(--enh-text); border: 1px solid var(--enh-border); font-size: 12px; box-shadow: 3px 5px 14px #0002; }
+#fourd-inspection p { line-height: 1.6; }
+.fourd-label-summary { position: absolute; bottom: 38px; left: 12px; padding: 5px 8px; background: var(--enh-panel); color: var(--enh-text); border-radius: 6px; font: 10px system-ui; }
+body[data-workspace="4d"] .enhancement-dimension { box-sizing: border-box; white-space: normal; overflow-wrap: anywhere; }
+.fourd-inspect-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+#fourd-session-status { position: absolute; bottom: 10px; left: 12px; max-width: calc(100% - 24px); color: var(--enh-text); background: var(--enh-panel); padding: 5px 8px; border-radius: 6px; font: 10px system-ui; }
+body[data-workspace="4d"][data-fourd-state="ready"] #fourd-start-card, body[data-workspace="4d"][data-fourd-state="paused"] #fourd-start-card { display: none; }
+body[data-workspace="4d"][data-fourd-state="ready"] #fourd-toolbar, body[data-workspace="4d"][data-fourd-state="paused"] #fourd-toolbar { display: flex; }
+body[data-workspace="4d"]:not([data-fourd-state="ready"]):not([data-fourd-state="paused"]) :is(#three-container > canvas,#enhancement-labels,#section-handles,#viewport-ui) { visibility: hidden; }
+body[data-workspace="4d"][data-fourd-state="paused"] #three-container { pointer-events: none; }
+body[data-workspace="4d"]:not([data-fourd-dimensions="true"]) #wb-3d-labels { display: none !important; }
+body[data-workspace="4d"] .studio-header .studio-floor-controls { display: none !important; }
+body[data-workspace="4d"] .workspace-docked-dialog { left: 12px !important; top: 118px !important; max-height: calc(100vh - 160px) !important; }
+body[data-workspace="4d"].presentation-focus #main-workspace { top: 0 !important; }
+@media(max-width:600px) { #fourd-toolbar { left: 10px; right: 10px; transform: none; max-width: none; } #fourd-inspection { top: 64px; } body[data-workspace="4d"] .studio-file-actions, body[data-workspace="4d"] .studio-header > .studio-floor { display: none; } }
+/* Linked plan/model review belongs to Split, including on narrow screens. */
+@media(max-width:700px) {
+  body.studio-shell[data-workspace="split"] #main-workspace { flex-direction: column; }
+  body.studio-shell[data-workspace="split"] #canvas-wrapper,
+  body.studio-shell[data-workspace="split"] #right-canvas-wrapper { display: block !important; width: 100% !important; min-height: 0; }
+  body.studio-shell[data-workspace="split"] #split-resizer { display: block !important; width: 100%; height: 8px; flex: 0 0 8px; cursor: row-resize; }
+}

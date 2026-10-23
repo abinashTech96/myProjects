@@ -108,7 +108,6 @@ const ViewportUI = {
     if (enabled) {
       this.previousProfile = this.profile;
       this.previousSection = Workbench3D.section;
-      Engine4D.enable();
       let panel = document.getElementById('advanced-view-panel');
       if (!panel) {
         panel = document.createElement('details');
@@ -166,7 +165,7 @@ const ViewportUI = {
   engineReady() {
     this.profile = PlanningUI.preferences.quality || PlanningUI.readPrefs().quality || 'balanced';
     this.exposure = Number(PlanningUI.preferences.exposure) || 1.05;
-    this.applyProfile(this.advancedActive ? 'high' : this.profile, false);
+    if (StudioUI.mode !== '4d') this.applyProfile(this.profile, false);
     if (!this.renderHooked) {
       const previous = Engine3D.afterRender;
       Engine3D.afterRender = (now, settled) => { previous?.(now, settled); if (settled || now - (this.lastInfo||0)>150) {this.lastInfo=now;this.updateInfo();} };
@@ -186,9 +185,9 @@ const ViewportUI = {
     document.querySelectorAll('#viewport-toolbar .viewport-button').forEach((button,index) => { if(index<2){ const active=index === (Engine3D.isWalkthrough?1:0); button.classList.toggle('active',active);button.setAttribute('aria-pressed',String(active)); } });
     document.querySelectorAll('.viewport-orientation button').forEach(button => button.setAttribute('aria-pressed', String(button.getAttribute('onclick')?.includes(`'${this.view}'`))));
   },
-  ensure() { if (!Engine3D.scene || StudioUI.mode === '2d') setWorkspaceLayout('3d'); },
+  ensure() { if (StudioUI.mode === '4d' && !Engine4D.ready) return false; if (!Engine3D.scene || StudioUI.mode === '2d') setWorkspaceLayout('3d'); return true; },
   orbit() {
-    this.ensure();
+    if (!this.ensure()) return;
     if (Engine3D.fpsControls.isLocked) Engine3D.fpsControls.unlock();
     Engine3D.isWalkthrough = false; Engine3D.controls.enabled = true; Engine3D.needsRender = true;
   },
@@ -202,7 +201,7 @@ const ViewportUI = {
   },
   fit(selectionOnly = false, animated = true) { this.ensure(); this.orient(this.view || 'iso', animated, selectionOnly); },
   orient(view, animated = true, selectionOnly = false) {
-    this.ensure();
+    if (!this.ensure()) return;
     const box = this.bounds(selectionOnly);
     if (box.isEmpty()) return;
     this.orbit(); this.view = view;

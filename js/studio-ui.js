@@ -225,6 +225,7 @@ const StudioUI = {
     this.updateStatus();
   },
   projectMenu() {
+    if (this.mode === "4d") return this.dialog("Project", `<div class="studio-action-grid">${this.button("Open project", "StudioUI.openFile()")}${this.button("Save JSON", "exportJSON()")}${this.button("Capture 4D PNG", "Engine4D.capture()")}</div><p>Use 2D or 3D to edit the plot, floors and architectural geometry.</p>`);
     this.dialog("Project", `<div class="studio-action-grid">${this.button("Plot & units", "StudioUI.projectDialog()")}${this.button("Open project", "StudioUI.openFile()")}${this.button("Save JSON", "exportJSON()")}${this.button("Export drawings / model", "StudioUI.exportDialog()")}${this.button("Versions & recovery", "StudioUI.versionsDialog()")}${this.button("Project library", "PlanningUI.libraryDialog()")}</div>`);
   },
   floorMenu() {
@@ -398,6 +399,7 @@ const StudioUI = {
     });
   },
   renderInspector() {
+    if (this.mode === "4d") return;
     const panel = document.getElementById("studio-properties");
     if (!panel) return;
     Selection.ids = new Set(
@@ -1206,6 +1208,21 @@ const StudioUI = {
       return;
     }
     if (input) return;
+    if (this.mode === "4d") {
+      const editKey = ["Delete","Backspace","ArrowUp","ArrowDown","ArrowLeft","ArrowRight","r","R"].includes(event.key),
+        editShortcut = (event.ctrlKey || event.metaKey) && ["d","l","x","v"].includes(event.key.toLowerCase());
+      if ((editKey && !StudioEnhancements.walking) || editShortcut) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        return;
+      }
+      if (event.key === "Escape") {
+        event.preventDefault();event.stopImmediatePropagation();
+        if (StudioEnhancements.focusRoom) StudioEnhancements.fullView();
+        else FourDWorkspace.clearSelection();
+        return;
+      }
+    }
     if (event.target?.closest?.("#planning-dock") && ["ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) return;
     const modifier = event.ctrlKey || event.metaKey,
       key = event.key.toLowerCase();
@@ -1271,6 +1288,10 @@ const StudioUI = {
 document.addEventListener("keydown", (event) => StudioUI.keyboard(event), true);
 const legacyUpdateCanvas = updateCanvas;
 updateCanvas = function (force3D = true) {
+  if (StudioUI.mode === "4d") {
+    if (force3D && window.FourDWorkspace?.running) request3DUpdate();
+    return;
+  }
   const unit = document.getElementById("unitSelect")?.value || "in";
   for (const id of Object.keys(ProjectModel.PLOT_DEFAULTS).filter(
     (k) => k !== "roadSide",
@@ -1299,7 +1320,7 @@ window.setWorkspaceLayout = function (mode) {
   if (!["2d", "split", "3d", "4d"].includes(mode)) mode = "split";
   StudioUI.mode = mode;
   ProjectState.meta.view.mode = mode;
-  window.is3DMode = mode !== "2d";
+  window.is3DMode = mode !== "2d" && (mode !== "4d" || (!!window.FourDWorkspace?.running && !FourDWorkspace.paused));
   document.body.dataset.workspace = mode;
   document.querySelectorAll("[data-mode]").forEach((b) => {
     b.classList.toggle("active", b.dataset.mode === mode);
@@ -1308,9 +1329,9 @@ window.setWorkspaceLayout = function (mode) {
   if (StudioUI.ready && !ProjectState.applying) StorageEngine.markDirty();
   const pad = document.getElementById("nav-pad");
   if (pad) pad.style.display = mode === "2d" ? "none" : "flex";
-  if (mode !== "2d" && !Engine3D.scene) Engine3D.init();
+  if (window.is3DMode && !Engine3D.scene) Engine3D.init();
   Engine3D.syncVisibility?.();
-  if (Engine3D.scene && mode !== "2d") {
+  if (Engine3D.scene && window.is3DMode) {
     Engine3D.needsRender = true;
     request3DUpdate();
     const box = document.getElementById("three-container");

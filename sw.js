@@ -1,5 +1,5 @@
 /* Same-origin application assets only. Project data and AI requests never enter this cache. */
-const CACHE = "archcad-4d-studio-v22";
+const CACHE = "archcad-4d-workspace-v23";
 async function cacheApp() {
   const response = await fetch(
     new URL("offline-assets.json", self.registration.scope),
@@ -8,8 +8,9 @@ async function cacheApp() {
   if (!response.ok) throw Error("Cannot load offline asset manifest");
   const assets = await response.json();
   const cache = await caches.open(CACHE);
+  const renderingLibraries = /\/vendor\/three\/(CopyShader|SSAOShader|GammaCorrectionShader|FXAAShader|SimplexNoise|Pass|ShaderPass|EffectComposer|SSAOPass|RGBELoader|Reflector|BokehShader|BokehPass)\.js$/;
   await cache.addAll(
-    assets.map((path) => new URL(path, self.registration.scope).href),
+    assets.filter(path => !renderingLibraries.test(path)).map((path) => new URL(path, self.registration.scope).href),
   );
 }
 self.addEventListener("install", (event) =>

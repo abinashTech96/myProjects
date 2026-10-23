@@ -49,6 +49,8 @@
   "./js/fourd-render.js",
   "./js/fourd-scene.js",
   "./js/fourd-studio.js",
+  "./js/fourd-workspace.js",
+  "./css/fourd-workspace.css",
   "./js/fourd-textures.js",
   "./js/furniture3d.js",
   "./js/geometry.js",

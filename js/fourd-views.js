@@ -123,7 +123,7 @@ window.FourDViews = {
       route:crosses&&from.distanceTo(position)>80?Math.max(roof,from.y,position.y):null,complete};
     Engine3D.cameraTween={managed4d:true};
     Engine3D.controls.autoRotate=false;
-    StudioEnhancements.navigation(true);FourDRender.cancelPhoto();Engine3D.needsRender=true;this.breadcrumbs();
+    StudioEnhancements.navigation(true);window.FourDRender?.cancelPhoto();Engine3D.needsRender=true;this.breadcrumbs();
   },
   tick(now) {
     const t=this.transition;if(!t)return;
@@ -232,7 +232,7 @@ window.FourDViews = {
   previewDay(hour) {
     if(!FourDWorkspace.running||FourDWorkspace.paused||!Number.isFinite(hour))return;
     this.dayBaseline||={fill:Engine4D.fill.intensity};
-    this.dayHour=Math.max(0,Math.min(24,hour));FourDRender.cancelPhoto();
+    this.dayHour=Math.max(0,Math.min(24,hour));window.FourDRender?.cancelPhoto();
     const label=document.getElementById('fourd-day-value');if(label)label.textContent=this.dayHour.toFixed(1)+' h';
     Engine3D.needsRender=true;
   },
@@ -281,7 +281,7 @@ window.FourDViews = {
     this.faded=new Map();
   },
   effects(camera) {
-    for(const mirror of FourDRender.mirrors||[]) {
+    for(const mirror of window.FourDRender?.mirrors||[]) {
       const owner=(StudioEnhancements.modelProject?.elements||elements).find(e=>e.id===mirror.userData.elementId);
       if((['element','material'].includes(this.kind)&&owner?.id!==this.elementId)||(this.kind==='floor'&&owner?.floor!==this.floorIndex))FourDStudio.hide(mirror);
     }

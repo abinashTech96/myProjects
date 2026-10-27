@@ -70,6 +70,19 @@ function getProceduralTexture(type) {
                 ctx.fillRect(i, j, 64, 64);
             }
         }
+    } else if (type === 'brick' || type === 'tile') {
+        ctx.fillStyle = type === 'brick' ? '#b8ada0' : '#59473b';
+        ctx.fillRect(0, 0, 256, 256);
+        const brick = type === 'brick', width = brick ? 64 : 64, height = brick ? 32 : 64;
+        for (let y = 0; y < 256; y += height) {
+            const offset = brick && (y / height) % 2 ? width / 2 : 0;
+            for (let x = -width; x < 256; x += width) {
+                ctx.fillStyle = brick ? ['#a96146','#b77453','#99583f'][(x / width + y / height + 12) % 3] : '#ad6548';
+                ctx.fillRect(x + offset + 2, y + 2, width - 4, height - 4);
+                ctx.fillStyle = brick ? 'rgba(62,35,20,.12)' : 'rgba(255,213,170,.18)';
+                ctx.fillRect(x + offset + 4, y + 4, width - 8, 2);
+            }
+        }
     } else if (type === 'grass') {
         // Lawn / Balcony Turf Pattern
         ctx.fillStyle = '#22c55e';

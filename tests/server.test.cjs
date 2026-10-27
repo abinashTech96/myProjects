@@ -175,3 +175,16 @@ test("authenticated sync enforces ownership, leases, revisions, review comments 
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test("malformed request targets cannot terminate the service", async () => {
+  const dir=fs.mkdtempSync(path.join(os.tmpdir(),"archcad-url-")), service=createService({dataDir:dir,users:{["z".repeat(32)]:{id:"test"}}});
+  await new Promise(r=>service.server.listen(0,"127.0.0.1",r));
+  try {
+    const http=require("node:http"), port=service.server.address().port;
+    const status=await new Promise((resolve,reject)=>{
+      const req=http.request({host:"127.0.0.1",port,path:"http://["},res=>{res.resume();res.on("end",()=>resolve(res.statusCode));});req.on("error",reject);req.end();
+    });
+    assert.equal(status,400);
+    assert.equal((await fetch(`http://127.0.0.1:${port}/api/health`)).status,200);
+  }finally{await new Promise(r=>service.server.close(r));fs.rmSync(dir,{recursive:true,force:true});}
+});

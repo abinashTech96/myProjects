@@ -109,7 +109,7 @@
     for(let j=1;j<=rows;j++)for(const x of xs)if(clear(x,pitch-1))box(parent,x,j*h/(rows+1),-.3,pitch-1,o.style==='brick-heritage'?1.2:.35,.6,cap);
    }
    if(o.style==='folded-metal')for(const x of xs)if(clear(x,pitch-2)){
-    const mesh=box(parent,x,h/2,-1,pitch-2,h-4,1.2,metal);mesh.rotation.y=(Math.floor(x/pitch)%2?1:-1)*.18;
+    const mesh=box(parent,x,h/2,-1,pitch-2,h-4,1.2,metal);if(mesh)mesh.rotation.y=(Math.floor(x/pitch)%2?1:-1)*.18;
    }
    if(o.style==='gabion-accents')for(const x of xs)if(clear(x,pitch-4)){
     const w=Math.max(2,pitch-4);for(const y of [4,h-4])box(parent,x,y,-1,w,.7,1,metal);for(const sign of [-1,1])box(parent,x+sign*w/2,h/2,-1,.7,h-8,1,metal);

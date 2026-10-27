@@ -33,7 +33,7 @@
     lights: { enabled: true, intensity: 0.7, temperature: 3000 },
   });
   function validate(raw, p) {
-    const d = { ...defaults(), ...structuredClone(raw || {}) };
+    const d = { ...defaults(), ...P.clone(raw || {}) };
     if (
       !d.surfaces ||
       Array.isArray(d.surfaces) ||

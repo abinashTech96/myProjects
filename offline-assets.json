@@ -136,5 +136,7 @@
   "js/parapet-renderer.js",
   "js/parapet-studio.js",
   "css/parapet-studio.css",
-  "css/realism-themes.css"
+  "css/realism-themes.css",
+  "./js/roof-model.js",
+  "./js/fourd-runtime.js"
 ]

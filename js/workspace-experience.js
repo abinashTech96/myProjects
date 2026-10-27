@@ -319,14 +319,13 @@ const ViewportUI = {
     this.updateInfo();
   },
 };
-const experienceDialog = StudioUI.dialog;
-StudioUI.dialog = function(title, html) {
-  const previous = document.querySelector('#studio-dialog[open]');
-  const widget = PlanningUI.openingWidget || (previous?.dataset.widget && previous.querySelector('.studio-dialog-header strong')?.textContent === title ? previous.dataset.widget : null);
-  const dialog=experienceDialog.call(this,title,html);
-  WorkspaceExperience.decorate(dialog,title,widget);
-  return dialog;
-};
+StudioUI.dialogHooks.set('experience', {
+ before(title,context) {
+  const previous=document.querySelector('#studio-dialog[open]');
+  context.widget=PlanningUI.openingWidget || (previous?.dataset.widget && previous.querySelector('.studio-dialog-header strong')?.textContent===title ? previous.dataset.widget : null);
+ },
+ after(dialog,title,context) {WorkspaceExperience.decorate(dialog,title,context.widget);},
+});
 const experienceQuality = PlanningUI.quality;
 PlanningUI.quality = function() { experienceQuality.call(this);ViewportUI.applyProfile(this.preferences.quality,false); };
 const experienceFit3D = PlanningUI.fit3D;

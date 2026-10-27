@@ -1611,9 +1611,7 @@ PlanningUI.num = function (id) {
     : designOriginalNum.call(this, id);
 };
 DesignUI.num = (id) => PlanningUI.num(id);
-const designBaseDialog = StudioUI.dialog;
-StudioUI.dialog = function (title, html) {
-  const dialog = designBaseDialog.call(this, title, html);
+StudioUI.dialogHooks.set("units", { after(dialog) {
   for (const input of dialog.querySelectorAll('input[type="number"]')) {
     const label = input.closest("label");
     if (
@@ -1646,8 +1644,7 @@ StudioUI.dialog = function (title, html) {
         }
       };
   }
-  return dialog;
-};
+} });
 // Consumers bind dialog methods dynamically so the unit adapter remains centralized.
 DesignUI.dialog = (...args) => StudioUI.dialog(...args);
 const designGuideSnap = PlanningModel.snap;

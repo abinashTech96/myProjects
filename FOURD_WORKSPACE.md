@@ -9,7 +9,7 @@
 
 Moving to another mode stops and releases 4D. The editor's source scene is a bounded reusable cache; its hidden framebuffer shrinks to 1×1. The next editor mode restores its viewport size and tools. While 4D is running, the source canvas carries camera input and coordinates but its renderer does not draw a second hidden view. Hidden tabs stop the animation loop and cancel photo/stage work; unfinished startup is cancelled. A graphics-context restoration can recover an already requested rendering session. Failed startup/rendering reveals the retry card rather than trapping the user on an empty canvas.
 
-The controller and lightweight API definitions remain available to navigation and existing tools. Rendering libraries are not eagerly precached by the service worker. Libraries requested by an online rendering session are subsequently available in its ordinary application cache; an uncached first rendering session needs network access.
+The controller and lightweight API definitions remain available to navigation and existing tools. Seven runtime implementation modules load only after Render 4D; the service worker excludes them and rendering libraries from initial precaching. Failed runtime loads can be retried without executing successful modules twice. Libraries requested by an online rendering session are subsequently available in its ordinary application cache; an uncached first rendering session needs network access.
 
 ## Device quality
 
@@ -94,12 +94,12 @@ plot or building view. Existing Present, Studio and inspector controls remain.
   nearest 1/4/8 eligible fixtures are active in Eco/Balanced/High. Extra shadow maps
   are disabled. Explicit fixtures replace automatic room fill when active.
 - **Worker preparation:** workers start only after Render 4D. Wall/dependency
-  descriptions, footprint unions, slab triangulation/extrusion, roof shells,
+  descriptions, footprint unions, slab triangulation/extrusion,
   furniture bevels and section contour triangulation run off the UI thread.
-  Project snapshots and typed buffers cross the boundary; workers own no DOM,
+  Geometry snapshots omit embedded GLB/image/HDR payloads. Typed buffers cross the boundary; workers own no DOM,
   renderer or scene. Revision checks reject stale results. Pause/Stop/exit terminate
   pending worker jobs. If workers are unavailable, the verified synchronous kernel
-  is used. Source builders, imported-model parsing and shader compilation can still
+  is used. Source builders, shared roof triangulation, imported-model parsing and shader compilation can still
   pause the main thread; global edits retain the full-rebuild fallback.
 - **Texture budgets:** owned image textures start at up to 256 px, refine in
   two-texture batches after navigation and are capped at 512/1024/2048 px in the
@@ -173,3 +173,5 @@ the environment selector offers both. Materials and plan dimensions are preserve
 Run `npm test`, `npm run check`, and `npm run test:parapet` to validate this
 workflow. The focused browser suite is also included in the normal regression
 suite. A local browser can be selected with `BROWSER_EXECUTABLE`.
+
+See [AUDIT_FIXES.md](AUDIT_FIXES.md) for the reliability changes, ownership rules and regression commands.

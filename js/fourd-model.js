@@ -64,6 +64,7 @@
     detailing: true, fixtures: [], bookmarks: [],
     guidedStops: [],
     tourSpeed: 1,
+    preset: "daylight",
     environment: "studio",
     environmentIntensity: 1,
     environmentRotation: 0,
@@ -99,9 +100,11 @@
     return { width: +match[2], height: +match[1] };
   }
   function validate(raw, p) {
-    const d = { ...defaults(), ...structuredClone(raw || {}) };
+    const d = { ...defaults(), ...P.clone(raw || {}) };
+    if (!raw?.preset && ["golden-hour", "courtyard"].includes(d.environment)) d.preset=d.environment;
     if (d.version !== 1) throw Error("Unsupported 4D settings version");
     for (const [k, allowed] of Object.entries({
+      preset: ["daylight", "interior", "studio", "golden-hour", "courtyard"],
       environment: ["studio", "overcast", "sunset", "night", "custom", "golden-hour", "courtyard"],
       lod: ["full", "auto", "economy"],
       reflections: ["environment", "local"],

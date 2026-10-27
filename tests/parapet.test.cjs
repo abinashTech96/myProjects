@@ -14,3 +14,10 @@ test('new realism environments round-trip with saved projects',()=>{for(const en
 test('jaali contains actual triangulated panel holes and quality does not shift module spacing',()=>{const p=project(),c=M.config({},'geometric-jaali');for(const pattern of ['square','diamond','hexagon']){c.defaults.pattern=pattern;const g=R.build(p,c);let holes=0;g.traverse(n=>{holes+=n.geometry?.parameters?.shapes?.holes?.length||0;});assert.ok(holes>0,pattern);dispose(g);}const a=R.build(p,c,{quality:'eco'}),b=R.build(p,c,{quality:'high'});assert.equal(a.userData.partCount,b.userData.partCount);dispose(a);dispose(b);});
 
 test('imports reject a parapet opening that is valid numerically but outside its real roof segment',()=>{const p=project(),edge=M.edges(p)[0],c=M.config();c.edges[edge.key]=M.options({gate:{enabled:true,offset:edge.length-10,width:36}});p.view.parapetConfig=c;assert.throws(()=>P.normalize(p),/opening must fit/);});
+
+test('every parapet design handles narrow roof segments without non-finite geometry',()=>{
+  for(const width of [12,13,14])for(const style of M.styles){
+    const p=project();p.elements[0].w=width;
+    const g=R.build(p,M.config({},style.id));g.traverse(n=>{if(n.geometry)assert.ok(n.geometry.attributes.position.array.every(Number.isFinite),style.id);});dispose(g);
+  }
+});

@@ -20,8 +20,9 @@ window.FourDStudio = {
   },
   invalidate() {
     this.revision++;
-    FourDRender.cancelPhoto();
-    FourDRender.probeDirty = true;
+    if (Engine4D.preset !== this.settings.preset) Engine4D.setPreset(this.settings.preset, false);
+    window.FourDRender?.cancelPhoto();
+    if(window.FourDRender)FourDRender.probeDirty=true;
     if (Engine4D.renderer) Engine4D.renderer.shadowMap.needsUpdate = true;
     if (Engine3D.scene) Engine3D.needsRender = true;
   },
@@ -71,7 +72,7 @@ window.FourDStudio = {
         )
         .join(
           "",
-        )}</select></label><div class="studio-field-grid">${field("Environment intensity", "environmentIntensity", 0, 3, 0.1)}${field("Environment rotation", "environmentRotation", 0, 360, 5)}</div>${check("Show environment sky", "showSky")}<label>Import Radiance HDR<input aria-label="HDR environment file" type="file" accept=".hdr" onchange="FourDStudio.run(()=>FourDStudio.importHDR(this.files[0]))"></label><p class="studio-hint">Embedded HDR: max 4 MB, 2048 × 1024. Built-in environments use linear high-dynamic-range lighting.</p><hr><label>Surface reflections<select aria-label="4D reflections" onchange="FourDStudio.change('reflections',this.value)"><option value="environment" ${s.reflections === "environment" ? "selected" : ""}>Environment · efficient</option><option value="local" ${s.reflections === "local" ? "selected" : ""}>Local room probe · 128px</option></select></label>${button("Refresh local reflections", "FourDRender.probeDirty=true;FourDStudio.invalidate()")}<h4>Wall mirrors</h4>${this.roomSelect("mirror-room", rooms, selected?.id)}<label>Wall<select id="mirror-edge" aria-label="Mirror wall"><option>top</option><option>bottom</option><option>left</option><option>right</option></select></label><div class="studio-field-grid"><label>Width (in)<input id="mirror-width" aria-label="Mirror width" type="number" min="6" max="240" value="36"></label><label>Height (in)<input id="mirror-height" aria-label="Mirror height" type="number" min="6" max="120" value="60"></label></div>${button("Add wall mirror", "FourDStudio.addMirror()")}${s.mirrors.map((m, i) => `<div class="fourd-row"><span>${e(elements.find((el) => el.id === m.room)?.customName || elements.find((el) => el.id === m.room)?.type || "Room")} · ${e(m.edge)}</span>${button("Remove", `FourDStudio.removeMirror(${i})`)}</div>`).join("")}<p class="studio-hint">Up to four planar mirrors. Local probes refresh after navigation; they approximate surrounding reflections for glazing and metals.</p><hr><label>Scene detail<select aria-label="4D detail level" onchange="FourDStudio.change('lod',this.value)">${[
+        )}</select></label><div class="studio-field-grid">${field("Environment intensity", "environmentIntensity", 0, 3, 0.1)}${field("Environment rotation", "environmentRotation", 0, 360, 5)}</div>${check("Show environment sky", "showSky")}<label>Import Radiance HDR<input aria-label="HDR environment file" type="file" accept=".hdr" onchange="FourDStudio.run(()=>FourDStudio.importHDR(this.files[0]))"></label><p class="studio-hint">Embedded HDR: max 4 MB, 2048 × 1024. Built-in environments use linear high-dynamic-range lighting.</p><hr><label>Surface reflections<select aria-label="4D reflections" onchange="FourDStudio.change('reflections',this.value)"><option value="environment" ${s.reflections === "environment" ? "selected" : ""}>Environment · efficient</option><option value="local" ${s.reflections === "local" ? "selected" : ""}>Local room probe · 128px</option></select></label>${button("Refresh local reflections", "if(window.FourDRender)FourDRender.probeDirty=true;FourDStudio.invalidate()")}<h4>Wall mirrors</h4>${this.roomSelect("mirror-room", rooms, selected?.id)}<label>Wall<select id="mirror-edge" aria-label="Mirror wall"><option>top</option><option>bottom</option><option>left</option><option>right</option></select></label><div class="studio-field-grid"><label>Width (in)<input id="mirror-width" aria-label="Mirror width" type="number" min="6" max="240" value="36"></label><label>Height (in)<input id="mirror-height" aria-label="Mirror height" type="number" min="6" max="120" value="60"></label></div>${button("Add wall mirror", "FourDStudio.addMirror()")}${s.mirrors.map((m, i) => `<div class="fourd-row"><span>${e(elements.find((el) => el.id === m.room)?.customName || elements.find((el) => el.id === m.room)?.type || "Room")} · ${e(m.edge)}</span>${button("Remove", `FourDStudio.removeMirror(${i})`)}</div>`).join("")}<p class="studio-hint">Up to four planar mirrors. Local probes refresh after navigation; they approximate surrounding reflections for glazing and metals.</p><hr><label>Scene detail<select aria-label="4D detail level" onchange="FourDStudio.change('lod',this.value)">${[
         ["full", "Full detail"],
         ["auto", "Automatic distance detail"],
         ["economy", "Economy distance detail"],
@@ -282,7 +283,7 @@ window.FourDStudio = {
       return this.open("stages");
     }
     this.stopComparison();
-    FourDRender.cancelPhoto();
+    window.FourDRender?.cancelPhoto();
     this.playing = true;
     const start = performance.now(),
       initial =
@@ -349,9 +350,9 @@ window.FourDStudio = {
     for (const entry of this.lods || []) this.disposeGroup(entry.proxy);
     this.lods = [];
     this.lodVersion = null;
-    FourDRender.cancelPhoto();
-    FourDRender.clearMirrors();
-    FourDRender.probeDirty = true;
+    window.FourDRender?.cancelPhoto();
+    window.FourDRender?.clearMirrors();
+    if(window.FourDRender)FourDRender.probeDirty=true;
   },
   materialDecorate(material, object) {
     const data = object.userData || {},
@@ -417,7 +418,7 @@ window.FourDStudio = {
       for (const child of node.children) visit(child, data);
     };
     visit(Engine4D.model);
-    for (const mirror of FourDRender.mirrors || [])
+    for (const mirror of window.FourDRender?.mirrors || [])
       if (this.phaseValue < Math.min(3, settings.phases.length - 1))
         this.hide(mirror);
   },
@@ -627,7 +628,7 @@ window.FourDStudio = {
     if (!option) throw Error("Save a named alternative first");
     this.stopComparison();
     this.finishStages();
-    FourDRender.cancelPhoto();
+    window.FourDRender?.cancelPhoto();
     const stage = FourDScene.build(option.project),
       scene = new THREE.Scene();
     scene.add(stage.model);
@@ -811,9 +812,9 @@ window.FourDStudio = {
     if (!controls || this.controls === controls) return;
     this.controls = controls;
     controls.addEventListener("change", () => {
-      FourDRender.cancelPhoto();
-      FourDRender.probeDirty = true;
-      FourDRender.cameraChangedAt = performance.now();
+      window.FourDRender?.cancelPhoto();
+      if(window.FourDRender)FourDRender.probeDirty=true;
+      if(window.FourDRender)FourDRender.cameraChangedAt = performance.now();
       clearTimeout(this.probeTimer);
       this.probeTimer = setTimeout(() => {
         if (Engine4D.ready) Engine3D.needsRender = true;
@@ -857,8 +858,8 @@ window.FourDStudio = {
     });
     AppEvents.onSelectionChange(() => {
       this.outlineKey = null;
-      FourDRender.probeDirty = true;
-      FourDRender.cancelPhoto();
+      if(window.FourDRender)FourDRender.probeDirty=true;
+      window.FourDRender?.cancelPhoto();
     });
     const advanced = WorkspaceLayout.advanced;
     WorkspaceLayout.advanced = function () {

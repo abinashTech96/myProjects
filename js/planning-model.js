@@ -220,7 +220,7 @@
       v = raw || {};
     const p = {
       ...d,
-      ...structuredClone(v),
+      ...P.clone(v),
       layers: { ...d.layers, ...v.layers },
       snap: { ...d.snap, ...v.snap },
       overlays: { ...d.overlays, ...v.overlays },
@@ -348,7 +348,7 @@
   }
   const originalNormalize = P.normalize;
   P.normalize = function (raw) {
-    const source = structuredClone(raw); // Base validator handles rectangular openings; polygon openings use their measured edge.
+    const source = P.clone(raw); // Base validator handles rectangular openings; polygon openings use their measured edge.
     const polygonFixtures = [];
     (source.fixtures || []).forEach((f, i) => {
       if (String(f.edge).startsWith("segment:")) {

@@ -392,3 +392,12 @@ openings, unchanged finish geometry, L-shaped edge identity, portable validation
 quantities and two added environments. Browser tests cover keyboard numeric
 arrows, preview/cancel, incremental wall preservation, undo/redo, mixed edge
 openings, presets, SVG export, themes, mobile layout and renderer cleanup.
+
+## Reliability audit release
+
+The eleven reproduced defects and three supporting architecture improvements are
+implemented in [AUDIT_FIXES.md](AUDIT_FIXES.md). Dialog presentation now has one
+policy and lifecycle registry; Floors exposes Parapet studio directly. Seven 4D
+implementation modules wait for Render, geometry workers omit embedded payloads,
+and project clones share immutable asset strings while isolating mutable data.
+Global structural edits retain the documented full-rebuild fallback.

@@ -28,7 +28,7 @@ const ProjectState = {
   applying: false,
   batchDepth: 0,
   _clone(value) {
-    return structuredClone(value);
+    return ProjectModel.clone(value);
   },
   capture() {
     const value = (id, fallback) =>
@@ -122,6 +122,8 @@ const ProjectState = {
         if(dialog?.dataset?.parapet==="true" && dialog.open)dialog.close();
         ParapetModule.config = this._clone(project.view.parapetConfig || ParapetModule.legacyDefaults);
       }
+      if (typeof Engine4D !== "undefined" && Engine4D.preset !== project.design.presentation.studio.preset)
+        Engine4D.setPreset(project.design.presentation.studio.preset, false);
       if (typeof tourWaypoints !== "undefined" && project.view.tour)
         window.tourWaypoints = this._clone(project.view.tour);
       if (document.body && project.view.theme)
@@ -438,19 +440,20 @@ const StorageEngine = {
   },
   async loadFromMemory() {
     try {
-      let data;
-      try {
-        data = await this.read("latest_session");
-      } catch {}
-      const fallback = localStorage.getItem("ArchCAD_AutoSave");
-      if (fallback) {
-        const local = JSON.parse(fallback);
-        if (
-          !data ||
-          (Date.parse(local.savedAt) || 0) > (Date.parse(data.savedAt) || 0)
-        )
-          data = local;
-      }
+      const candidates = [], failures = [];
+      // Recovery stores fail independently. Validate before comparing timestamps:
+      // a newer broken copy must never mask an older usable design.
+      const accept = raw => {
+        if (!raw) return;
+        const value = typeof raw === "string" ? JSON.parse(raw) : raw;
+        const project = ProjectModel.normalize(value);
+        candidates.push({ project, savedAt: Date.parse(value.savedAt) || 0 });
+      };
+      try { accept(await this.read("latest_session")); } catch (e) { failures.push(e.message); }
+      try { accept(localStorage.getItem("ArchCAD_AutoSave")); } catch (e) { failures.push(e.message); }
+      candidates.sort((a, b) => b.savedAt - a.savedAt);
+      const data = candidates[0]?.project;
+      this.error = !data && failures.length ? `Recovery failed: ${failures.join("; ")}` : "";
       if (data && confirm("Restore your last saved design?"))
         ProjectState.apply(data, { rebase: true });
     } catch (error) {

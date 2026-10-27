@@ -238,6 +238,17 @@ const DesignSync = {
           throw Error("Both sessions changed " + key + ". Resolve explicitly.");
         if (left !== before) merged[key] = local[key];
       }
+      merged.view ||= {};
+      for (const key of ["parapet", "parapetConfig"]) {
+        const before = JSON.stringify(base.view?.[key]),
+          left = JSON.stringify(local.view?.[key]), right = JSON.stringify(remote.view?.[key]);
+        if (left !== before && right !== before && left !== right)
+          throw Error("Both sessions changed " + key + ". Resolve explicitly.");
+        if (left !== before) {
+          if (local.view?.[key] === undefined) delete merged.view[key];
+          else merged.view[key] = ProjectModel.clone(local.view[key]);
+        }
+      }
       merged.fixtures = merged.fixtures.map((f) => ({
         ...f,
         roomId: merged.elements.findIndex((e) => e.id === f.roomUid),

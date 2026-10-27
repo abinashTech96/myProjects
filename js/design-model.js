@@ -15,7 +15,7 @@
         ? require("../vendor/geometry/clipper.js")
         : null),
     EPS = 1e-5;
-  const clone = (x) => structuredClone(x),
+  const clone = (x) => P.clone(x),
     dist = M.distance,
     cross = (a, b, c) => (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x),
     point = (x, y) => ({ x, y });

@@ -138,6 +138,10 @@ if (!["chromium", "firefox", "webkit"].includes(browserEngine))
       errors,
     );
     assert.equal(errors.length, 0, "Startup must have no uncaught errors");
+    if (process.env.RELIABILITY_ONLY) {
+      await require("./reliability-browser.cjs")({page,context,assert});
+      assert.equal(errors.length,0,errors.join("\n"));return;
+    }
     if (process.env.PARAPET_ONLY) {
       await require("./parapet-browser.cjs")({page,context,assert});
       assert.equal(errors.length,0,errors.join("\n"));return;
@@ -233,7 +237,7 @@ if (!["chromium", "firefox", "webkit"].includes(browserEngine))
       return;
     }
     // Each module owns its fixture; release its WebGL contexts before the next.
-    if (!process.env.CORE_ONLY) for (const suite of ["parapet", "fourd-lifecycle", "fourd-presentation", "fourd-review", "workspace", "inspector", "property-widgets", "enhancements", "polish", "layout", "refinement", "unified", "controls", "fourd"]) {
+    if (!process.env.CORE_ONLY) for (const suite of ["reliability", "parapet", "fourd-lifecycle", "fourd-presentation", "fourd-review", "workspace", "inspector", "property-widgets", "enhancements", "polish", "layout", "refinement", "unified", "controls", "fourd"]) {
       await require(`./${suite}-browser.cjs`)({page,context,assert});
       assert.equal(errors.length,0,errors.join("\n"));
       await page.reload({waitUntil:"networkidle"});

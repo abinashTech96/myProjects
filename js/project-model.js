@@ -17,7 +17,18 @@
   const uid = () =>
     root.crypto?.randomUUID?.() ||
     `el-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
-  const clone = (value) => structuredClone(value);
+  function clone(value, seen = new WeakMap()) {
+    if (typeof value === "function" || typeof value === "symbol") return structuredClone(value);
+    if (!value || typeof value !== "object") return value;
+    if (seen.has(value)) return seen.get(value);
+    if (!Array.isArray(value) && Object.getPrototypeOf(value) !== Object.prototype && Object.getPrototypeOf(value) !== null)
+      return structuredClone(value);
+    const result = Array.isArray(value) ? new Array(value.length) : {};
+    seen.set(value, result);
+    for (const key of Object.keys(value))
+      Object.defineProperty(result, key, { value: clone(value[key], seen), enumerable: true, writable: true, configurable: true });
+    return result;
+  }
   const escapeHTML = (value) =>
     String(value ?? "").replace(
       /[&<>"']/g,

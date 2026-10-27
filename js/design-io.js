@@ -346,13 +346,15 @@ const DesignIO = {
           svg += `<rect x="${x}" y="${top - base - o.sill - o.height}" width="${hi - lo}" height="${o.height}" fill="${o.type === "window" ? "#bae6fd" : "#fff"}" stroke="#334155" stroke-width=".5"/>`;
       }
     }
-    const y = 0;
-    if (roof.type === "gable" || roof.type === "hip")
-      svg += `<path d="M ${-roof.overhang} ${y} L ${span / 2} ${-roof.rise} L ${span + roof.overhang} ${y} Z" fill="#94a3b8" stroke="#334155"/>`;
-    else if (roof.type === "shed")
-      svg += `<path d="M ${-roof.overhang} 0 L ${-roof.overhang} ${-roof.rise} L ${span + roof.overhang} 0 Z" fill="#94a3b8" stroke="#334155"/>`;
-    else
-      svg += `<rect x="${-roof.overhang}" y="-4" width="${span + 2 * roof.overhang}" height="4" fill="#64748b"/>`;
+    const surface=RoofModel.describe(p);
+    if(surface)for(const polygon of surface.patches){
+      const {vertices,faces}=RoofModel.solid(surface,polygon);
+      for(const face of faces){
+        const projected=face.map(i=>{const q=vertices[i],u=q[axis];return [reverse?span-u:u,top-q.z];});
+        const area=projected.reduce((sum,q,i)=>{const n=projected[(i+1)%projected.length];return sum+q[0]*n[1]-n[0]*q[1];},0);
+        if(Math.abs(area)>.001)svg+=`<polygon data-roof="true" points="${projected.map(q=>q.join(',')).join(' ')}" fill="#94a3b8" stroke="#334155" stroke-width=".4"/>`;
+      }
+    }
     return (
       svg +
       `<text x="0" y="${total + 20}" font-size="8">${side} · external wall projection · drainage ${roof.drain}</text></svg>`
@@ -501,66 +503,11 @@ const DesignIO = {
       group = new THREE.Group();
     group.name = "Design overlays";
     group.userData = { designObject: true, floor: p.floorCount - 1 };
-    const w = ProjectModel.inches(p.plot.inW, p.unit),
-      h = ProjectModel.inches(p.plot.inH, p.unit),
-      r = p.design.roof,
-      o = r.overhang,
-      rise = r.rise;
-    const vertices =
-      r.type === "gable"
-        ? [
-            [-o, -o, 0],
-            [w / 2, -o, rise],
-            [w + o, -o, 0],
-            [-o, h + o, 0],
-            [w / 2, h + o, rise],
-            [w + o, h + o, 0],
-          ]
-        : r.type === "hip"
-          ? [
-              [-o, -o, 0],
-              [w + o, -o, 0],
-              [w + o, h + o, 0],
-              [-o, h + o, 0],
-              [w / 2, h / 2, rise],
-            ]
-          : [
-              [-o, -o, r.type === "shed" ? rise : 0],
-              [w + o, -o, 0],
-              [w + o, h + o, 0],
-              [-o, h + o, r.type === "shed" ? rise : 0],
-            ];
-    const indices =
-        r.type === "gable"
-          ? [0, 1, 3, 1, 4, 3, 1, 2, 4, 2, 5, 4]
-          : r.type === "hip"
-            ? [0, 1, 4, 1, 2, 4, 2, 3, 4, 3, 0, 4]
-            : [0, 1, 2, 0, 2, 3],
-      geometry = new THREE.BufferGeometry();
-    geometry.setAttribute(
-      "position",
-      new THREE.Float32BufferAttribute(
-        indices.flatMap((i) => {
-          const [x, z, y] = vertices[i];
-          return [
-            I.x + x * SCALE,
-            p.floorCount * WALL_HEIGHT + y * SCALE,
-            I.z + z * SCALE,
-          ];
-        }),
-        3,
-      ),
-    );
-    geometry.computeVertexNormals();
-    const roof = new THREE.Mesh(
-      geometry,
-      new THREE.MeshStandardMaterial({
-        color: 0x64748b,
-        side: THREE.DoubleSide,
-      }),
-    );
-    roof.userData = { isRoof: true, floor: p.floorCount - 1 };
-    group.add(roof);
+    const surface=RoofModel.describe(p);
+    if(surface)for(const polygon of surface.patches){
+      const roof=new THREE.Mesh(RoofModel.geometry(surface,polygon,SCALE,I,true),new THREE.MeshStandardMaterial({color:0x64748b,side:THREE.DoubleSide}));
+      roof.userData={isRoof:true,floor:surface.floor,datumResolved:true};roof.castShadow=roof.receiveShadow=true;group.add(roof);
+    }
     for (const c of p.design.ceilings) {
       const mesh = new THREE.Mesh(
         new THREE.BoxGeometry(c.w * SCALE, 2 * SCALE, c.h * SCALE),
@@ -639,10 +586,7 @@ generate3DModel = function () {
 };
 // Keep roof selection a single source: the design roof replaces the generic roof only when configured.
 const designBuildRoof = build3DRoof;
-build3DRoof = function (...args) {
-  if (ProjectState.meta.design?.roof?.type !== "flat") return;
-  return designBuildRoof(...args);
-};
+build3DRoof = function () { /* DesignIO owns every roof profile. */ };
 const designExportDialog = StudioUI.exportDialog;
 document.addEventListener("DOMContentLoaded", () => {
   const previous = StudioUI.exportDialog;

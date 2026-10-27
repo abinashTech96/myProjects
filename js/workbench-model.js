@@ -9,7 +9,7 @@
       (typeof require === "function"
         ? require("../vendor/geometry/polygon-clipping.js")
         : null);
-  const clone = (v) => structuredClone(v),
+  const clone = (v) => P.clone(v),
     uid = () => P.uid(),
     finite = (v, label, min = -100000, max = 100000) =>
       P.finite(v, label, min, max),

@@ -764,12 +764,10 @@ window.WorkspaceLayout = {
       else this.update();
       return result;
     };
-    const dialog = StudioUI.dialog;
-    StudioUI.dialog = function (...args) {
+    StudioUI.dialogHooks.set("layout", { before() {
       WorkspaceLayout.closeFooter(false);
       WorkspaceLayout.closeAdvanced();
-      return dialog.apply(this, args);
-    };
+    } });
     const lighting = Workbench3D.lighting;
     Workbench3D.lighting = function (...args) {
       const record = WorkspaceLayout.sunRecords.get(Engine3D.sunLight);

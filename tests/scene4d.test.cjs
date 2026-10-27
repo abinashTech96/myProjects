@@ -186,7 +186,9 @@ test("rendered slabs preserve shaft openings and entered floor elevations", () =
     ).intersectObject(stage.model, true);
   assert.equal(ray(65, 75).length, 0, "Shaft remains open through the cap");
   assert.ok(ray(30, 40).length > 0, "Solid floor remains around the shaft");
-  assert.equal(new T.Box3().setFromObject(stage.model).max.y, 0);
+  const cap=stage.model.children.find(n=>n.userData.isSlab), roof=stage.model.children.find(n=>n.userData.isRoof);
+  assert.equal(new T.Box3().setFromObject(cap).max.y, 0);
+  assert.equal(new T.Box3().setFromObject(roof).max.y, 4, "Flat roof thickness sits above the structural cap");
 });
 
 test('partial staging generates requested floor caps and skips unrelated roofs',()=>{
@@ -205,4 +207,35 @@ test('resource reconciliation retains live resources and disposes replaced buffe
  assert.equal(disposed,1);assert.equal(kept,0);assert.equal(e.sceneResources.geometries.size,1);
  S.dispose(e);
  assert.equal(kept,1);
+});
+
+test('reconciliation releases removed instance buffers exactly once and retains shared geometry',()=>{
+  const model=new T.Group(), geometry=new T.BoxGeometry(1,1,1),material=new T.MeshStandardMaterial(),old=new T.InstancedMesh(geometry,material,4),keep=new T.InstancedMesh(geometry,material,2);
+  model.add(old,keep);const e={model,materials:new Set([material])};S.reconcile(e);
+  let released=0,kept=0,buffers=0;old.addEventListener('dispose',()=>released++);keep.addEventListener('dispose',()=>kept++);geometry.addEventListener('dispose',()=>buffers++);
+  model.remove(old);S.reconcile(e);S.reconcile(e);assert.equal(released,1);assert.equal(kept,0);assert.equal(buffers,0);
+  S.dispose(e);assert.equal(released,1);assert.equal(kept,1);assert.equal(buffers,1);
+});
+test('roof surfaces are watertight, follow occupied storeys, preserve islands and courtyard voids',()=>{
+  const Roof=require('../js/roof-model.js');
+  const p=project({floorCount:3,design:{roof:{type:'gable',rise:24,overhang:0}}});
+  const surface=Roof.describe(p);assert.equal(surface.floor,0);assert.equal(surface.base,120);
+  const prepared={0:{union:[[[[20,20],[220,20],[220,220],[20,220],[20,20]],[[80,80],[80,160],[160,160],[160,80],[80,80]]],[[[320,20],[380,20],[380,80],[320,80],[320,20]]]]}};
+  const s=Roof.describe(p,prepared);let area=0;
+  for(const polygon of s.patches){const solid=Roof.solid(s,polygon),edges=new Map();for(const face of solid.faces)for(let i=0;i<3;i++){const a=face[i],b=face[(i+1)%3],key=[a,b].sort((a,b)=>a-b).join(':');edges.set(key,(edges.get(key)||0)+1);}assert.ok([...edges.values()].every(n=>n===2));
+    const outer=polygon[0];area+=Math.abs(outer.reduce((sum,q,i)=>{const n=outer[(i+1)%outer.length];return sum+q[0]*n[1]-n[0]*q[1];},0))/2;
+    for(const h of polygon.slice(1))area-=Math.abs(h.reduce((sum,q,i)=>{const n=h[(i+1)%h.length];return sum+q[0]*n[1]-n[0]*q[1];},0))/2;
+  }
+  assert.equal(area,200*200-80*80+60*60);
+});
+
+test('renderer roof faces have outward winding after conversion to Y-up',()=>{
+  const Roof=require('../js/roof-model.js');
+  for(const type of ['flat','gable','hip','shed']){
+    const surface=Roof.describe(project({design:{roof:{type,rise:24,overhang:12}}}));
+    for(const polygon of surface.patches){const g=Roof.geometry(surface,polygon),a=g.attributes.position;let volume=0;
+      for(let i=0;i<a.count;i+=3){const u=new T.Vector3().fromBufferAttribute(a,i),v=new T.Vector3().fromBufferAttribute(a,i+1),w=new T.Vector3().fromBufferAttribute(a,i+2);volume+=u.dot(v.cross(w))/6;}
+      assert.ok(volume>0,type+' closed shell has outward faces');g.dispose();
+    }
+  }
 });

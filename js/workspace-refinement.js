@@ -372,7 +372,7 @@ window.WorkspaceRefinement = {
         )
         .join(
           "",
-        )}</div><input class="floor-search" type="search" aria-label="Search floors" placeholder="Find a floor"><div class="refine-floor-list" aria-label="Project floors">${Array.from({ length: count }, (_, i) => `<button class="studio-button refine-floor" data-floor="${i}" aria-current="${i === currentFloor ? "true" : "false"}" onclick="WorkspaceRefinement.switchFloor(${i})"><span class="floor-number">${String(i).padStart(2, "0")}</span><span>${this.escape(this.floorName(i))}<small>${elements.filter((e) => e.floor === i).length} objects</small></span>${i === currentFloor ? '<span aria-hidden="true">✓</span>' : ""}</button>`).join("")}</div><p class="floor-empty" hidden>No matching floors.</p><details class="floor-more"><summary>Manage current floor</summary><label>Floor name<input aria-label="Floor name" maxlength="60" value="${this.escape(this.floorName(currentFloor))}" onchange="WorkspaceRefinement.renameFloor(this.value)"></label><div class="floor-quick-actions"><button class="studio-button" aria-label="Move floor down" ${currentFloor === 0 ? "disabled" : ""} onclick="WorkspaceRefinement.moveFloor(-1)">↓ Down</button><button class="studio-button" aria-label="Move floor up" ${currentFloor === count - 1 ? "disabled" : ""} onclick="WorkspaceRefinement.moveFloor(1)">↑ Up</button></div>${StudioUI.button("Storeys & levels", "WorkbenchUI.levelDialog()")}${StudioUI.button("Rooms & objects", "StudioUI.objectsDialog()")}</details>`,
+        )}</div><input class="floor-search" type="search" aria-label="Search floors" placeholder="Find a floor"><div class="refine-floor-list" aria-label="Project floors">${Array.from({ length: count }, (_, i) => `<button class="studio-button refine-floor" data-floor="${i}" aria-current="${i === currentFloor ? "true" : "false"}" onclick="WorkspaceRefinement.switchFloor(${i})"><span class="floor-number">${String(i).padStart(2, "0")}</span><span>${this.escape(this.floorName(i))}<small>${elements.filter((e) => e.floor === i).length} objects</small></span>${i === currentFloor ? '<span aria-hidden="true">✓</span>' : ""}</button>`).join("")}</div><p class="floor-empty" hidden>No matching floors.</p>${StudioUI.button("Parapet studio", "ParapetStudio.open()")}<details class="floor-more"><summary>Manage current floor</summary><label>Floor name<input aria-label="Floor name" maxlength="60" value="${this.escape(this.floorName(currentFloor))}" onchange="WorkspaceRefinement.renameFloor(this.value)"></label><div class="floor-quick-actions"><button class="studio-button" aria-label="Move floor down" ${currentFloor === 0 ? "disabled" : ""} onclick="WorkspaceRefinement.moveFloor(-1)">↓ Down</button><button class="studio-button" aria-label="Move floor up" ${currentFloor === count - 1 ? "disabled" : ""} onclick="WorkspaceRefinement.moveFloor(1)">↑ Up</button></div>${StudioUI.button("Storeys & levels", "WorkbenchUI.levelDialog()")}${StudioUI.button("Rooms & objects", "StudioUI.objectsDialog()")}</details>`,
     );
     d.classList.add("refined-floors");
     d.querySelector(".floor-search").oninput = (e) => {
@@ -408,12 +408,9 @@ window.WorkspaceRefinement = {
   init() {
     this.brand();
     this.dock();
-    const dialog = StudioUI.dialog;
-    StudioUI.dialog = function (title, html) {
-      const d = dialog.call(this, title, html);
-      WorkspaceRefinement.decorate(d, title);
-      return d;
-    };
+    StudioUI.dialogHooks.set("refinement", { after(d,title) {
+      WorkspaceRefinement.decorate(d,title);
+    } });
   },
 };
 document.addEventListener("DOMContentLoaded", () => WorkspaceRefinement.init());

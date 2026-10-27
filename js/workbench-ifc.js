@@ -339,106 +339,13 @@
         shell = add(`IFCCLOSEDSHELL((${fs.join(",")}))`);
       return add(`IFCFACETEDBREP(${shell})`);
     }
-    const roof = p.design.roof,
-      topFloor = p.floorCount - 1,
-      base = W.floorBase(p, topFloor) + W.floorHeight(p, topFloor),
-      roofPoints =
-        roof.type === "flat"
-          ? D.paths(D.floorUnion(p, topFloor)).flat()
-          : [
-              { x: 0, y: 0 },
-              {
-                x: P.inches(p.plot.inW, p.unit),
-                y: P.inches(p.plot.inH, p.unit),
-              },
-            ];
-    if (roofPoints.length) {
-      const xmin = Math.min(...roofPoints.map((q) => q.x)) - roof.overhang,
-        xmax = Math.max(...roofPoints.map((q) => q.x)) + roof.overhang,
-        ymin = Math.min(...roofPoints.map((q) => q.y)) - roof.overhang,
-        ymax = Math.max(...roofPoints.map((q) => q.y)) + roof.overhang,
-        mid = (xmin + xmax) / 2,
-        vertices = [
-          { x: xmin, y: ymin, z: base },
-          { x: xmax, y: ymin, z: base },
-          { x: xmax, y: ymax, z: base },
-          { x: xmin, y: ymax, z: base },
-        ],
-        top =
-          roof.type === "flat"
-            ? [
-                { x: xmin, y: ymin, z: base + 4 },
-                { x: xmax, y: ymin, z: base + 4 },
-                { x: xmax, y: ymax, z: base + 4 },
-                { x: xmin, y: ymax, z: base + 4 },
-              ]
-            : roof.type === "shed"
-              ? [
-                  { x: xmin, y: ymin, z: base + roof.rise + 4 },
-                  { x: xmax, y: ymin, z: base + 4 },
-                  { x: xmax, y: ymax, z: base + 4 },
-                  { x: xmin, y: ymax, z: base + roof.rise + 4 },
-                ]
-              : [
-                  { x: xmin, y: ymin, z: base + 4 },
-                  { x: mid, y: ymin, z: base + roof.rise + 4 },
-                  { x: xmax, y: ymin, z: base + 4 },
-                  { x: xmax, y: ymax, z: base + 4 },
-                  { x: mid, y: ymax, z: base + roof.rise + 4 },
-                  { x: xmin, y: ymax, z: base + 4 },
-                ];
-      let faces;
-      if (roof.type === "hip") {
-        vertices.push(
-          { x: xmin, y: ymin, z: base + 4 },
-          { x: xmax, y: ymin, z: base + 4 },
-          { x: xmax, y: ymax, z: base + 4 },
-          { x: xmin, y: ymax, z: base + 4 },
-          { x: mid, y: (ymin + ymax) / 2, z: base + roof.rise + 4 },
-        );
-        faces = [
-          [0, 3, 2, 1],
-          [0, 1, 5, 4],
-          [1, 2, 6, 5],
-          [2, 3, 7, 6],
-          [3, 0, 4, 7],
-          [4, 5, 8],
-          [5, 6, 8],
-          [6, 7, 8],
-          [7, 4, 8],
-        ];
-      } else if (top.length === 4) {
-        vertices.push(...top);
-        faces = [
-          [0, 3, 2, 1],
-          [4, 5, 6, 7],
-          [0, 1, 5, 4],
-          [1, 2, 6, 5],
-          [2, 3, 7, 6],
-          [3, 0, 4, 7],
-        ];
-      } else {
-        vertices.push(...top);
-        faces = [
-          [0, 3, 2, 1],
-          [4, 5, 8, 9],
-          [5, 6, 7, 8],
-          [0, 1, 6, 5, 4],
-          [1, 2, 7, 6],
-          [2, 3, 9, 8, 7],
-          [3, 0, 4, 9],
-        ];
-      }
-      const rep = representation([brep(vertices, faces)], "Brep"),
-        product = add(
-          `IFCROOF(${guid("roof")},${owner},${str(roof.type + " roof")},$,$,${placement()},${rep},$,.${{ flat: "FLAT_ROOF", gable: "GABLE_ROOF", shed: "SHED_ROOF", hip: "HIP_ROOF" }[roof.type]}.)`,
-        );
-      contained[topFloor].push(product);
-      material(product, "roof", "Roof");
-      properties(product, "roof", {
-        Drainage: roof.drain,
-        OverhangIn: roof.overhang,
-      });
+    const roof=p.design.roof, Roof=root.RoofModel || (typeof require==='function'?require('./roof-model.js'):null), surface=Roof.describe(p);
+    if(surface){
+      const solids=surface.patches.map(polygon=>{const {vertices,faces}=Roof.solid(surface,polygon);return brep(vertices,faces);}),
+        rep=representation(solids,"Brep"),
+        product=add(`IFCROOF(${guid("roof")},${owner},${str(roof.type+" roof")},$,$,${placement()},${rep},$,.${{flat:"FLAT_ROOF",gable:"GABLE_ROOF",shed:"SHED_ROOF",hip:"HIP_ROOF"}[roof.type]}.)`);
+      contained[surface.floor].push(product);material(product,"roof","Roof");
+      properties(product,"roof",{Drainage:roof.drain,OverhangIn:roof.overhang});
     }
     for (let f = 0; f < p.floorCount; f++) {
       aggregate("storey-spaces:" + f, floors[f], spaces[f]);

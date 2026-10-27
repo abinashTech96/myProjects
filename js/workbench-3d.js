@@ -114,7 +114,7 @@ const Workbench3D = {
           SCALE;
       if (data.designObject)
         for (const mesh of child.children) {
-          if (mesh.userData.isRoof)
+          if (mesh.userData.isRoof && !mesh.userData.datumResolved)
             mesh.position.y +=
               (W.floorBase(p, p.floorCount - 1) +
                 W.floorHeight(p, p.floorCount - 1) -
@@ -560,10 +560,11 @@ const Workbench3D = {
         ((e.customHeight || asset.h) * SCALE) / size.y,
         (e.h * SCALE) / size.z,
       );
+      const footprint = PresentationModel.bounds(e);
       holder.position.set(
-        I.x + (e.x + e.w / 2) * SCALE,
+        I.x + (footprint.x + footprint.w / 2) * SCALE,
         WorkbenchModel.roomBase(ProjectState.capture(), e) * SCALE,
-        I.z + (e.y + e.h / 2) * SCALE,
+        I.z + (footprint.y + footprint.h / 2) * SCALE,
       );
       holder.rotation.y = (-e.rot * Math.PI) / 180;
       holder.userData = {
@@ -594,7 +595,8 @@ const Workbench3D = {
       ]),
       disposed = new Set();
     object.traverse((c) => {
-      c.geometry?.dispose();
+      if (c.isInstancedMesh) c.dispose();
+      if (c.geometry && !disposed.has(c.geometry)) { c.geometry.dispose(); disposed.add(c.geometry); }
       for (const m of c.material
         ? Array.isArray(c.material)
           ? c.material

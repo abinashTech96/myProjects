@@ -128,7 +128,7 @@ window.FourDWorkspace = {
     if (value) {
       FourDStudio.playing = false;
       cancelAnimationFrame(FourDStudio.stageRAF);
-      FourDRender.cancelPhoto();
+      window.FourDRender?.cancelPhoto();
       StudioEnhancements.stopWalk();
       clearTimeout(StudioEnhancements.navigationTimer);
       clearTimeout(FourDStudio.probeTimer);
@@ -349,9 +349,9 @@ window.FourDWorkspace = {
     if (changed.size) {
       Scene4D.reconcile(e);
       e.renderer.shadowMap.needsUpdate=true;
-      FourDRender.probeDirty=true;
+      if(window.FourDRender)FourDRender.probeDirty=true;
       FourDStudio.outlineKey=null;
-      FourDRender.cancelPhoto();
+      window.FourDRender?.cancelPhoto();
     }
   },
   sample(ms) {
@@ -429,11 +429,9 @@ window.FourDWorkspace = {
   },
   init() {
     this.mount();
-    const dialog=StudioUI.dialog;
-    StudioUI.dialog=(...args)=>{
+    StudioUI.dialogHooks.set("4d-inspection", { before() {
       if (StudioUI.mode === "4d") document.getElementById("fourd-inspection").hidden=true;
-      return dialog.apply(StudioUI,args);
-    };
+    } });
     const request = window.request3DUpdate;
     window.request3DUpdate = () => {
       if (StudioUI.mode === "4d") return this.scheduleUpdate();
@@ -465,7 +463,7 @@ window.FourDWorkspace = {
         FourDViews.suspend();
         FourDIncremental.revision++;
         this.pendingUpdate=true;
-        FourDRender.cancelPhoto();
+        window.FourDRender?.cancelPhoto();
         FourDStudio.playing = false;
         cancelAnimationFrame(FourDStudio.stageRAF);
         clearTimeout(FourDStudio.probeTimer);

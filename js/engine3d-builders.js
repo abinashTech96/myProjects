@@ -693,6 +693,7 @@ function disposeScene() {
     if(!Engine3D?.buildingGroup)return;
     const shared=new Set([...Object.values(SOLID_MAT_CACHE), ...Object.values(HD_TEXTURES), ...Object.values(FAST_COLORS),...Object.values(FurnitureFactory.mats)]),disposed=new Set();
     Engine3D.buildingGroup.traverse(child=>{
+        if(child.isInstancedMesh)child.dispose();
         if(child.geometry&&!disposed.has(child.geometry)){child.geometry.dispose();disposed.add(child.geometry)}
         for(const mat of child.material?(Array.isArray(child.material)?child.material:[child.material]):[]){
             if(shared.has(mat)||disposed.has(mat))continue;

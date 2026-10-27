@@ -150,6 +150,7 @@ const Selection = {
   },
 };
 const StudioUI = {
+  dialogHooks: new Map(),
   mode: "2d",
   warnings: [],
   lastPlot: null,
@@ -655,8 +656,10 @@ const StudioUI = {
     document.addEventListener("pointermove", move);
     document.addEventListener("pointerup", up, { once: true });
   },
-  dialog(title, html) {
-    const docked=window.WorkspacePanels?.shouldDock(title) || false;
+  dialog(title, html, options = {}) {
+    const context = { options };
+    for (const hook of this.dialogHooks.values()) hook.before?.(title, context);
+    const docked=window.WorkspacePanels?.shouldDock(title, options) || false;
     document.querySelector("#studio-dialog")?.close();
     document.querySelector("#studio-dialog")?.remove();
     const dialog = document.createElement("dialog");
@@ -680,6 +683,7 @@ const StudioUI = {
     this.lastFocus = document.activeElement;
     dialog.dataset.docked=String(docked);
     if(docked) dialog.show();else dialog.showModal();
+    for (const hook of this.dialogHooks.values()) hook.after?.(dialog, title, context);
     return dialog;
   },
   rename(value) {

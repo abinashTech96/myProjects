@@ -4,17 +4,13 @@ window.WorkspacePanels = {
   active: null,
   dialog: null,
   pinned: false,
-  shouldDock(title) {
-    if (StudioUI.mode === "4d") return true;
-    if (this.external) return false;
-    return (
-      !!this.intent ||
-      !!this.dialog ||
-      ["Build", "Properties"].includes(this.active) ||
-      /^(Tools|Workspace widgets|Canvas settings|Rooms & objects|Find a tool or room|Studio\+|4D rendering|4D lighting)/.test(
-        title,
-      )
-    );
+  presentations: {
+    "Project": "modal", "Project & plot": "modal", "Versions & recovery": "modal", "Project versions": "modal", "Keyboard & touch": "modal",
+    "Export": "modal", "Export drawings & model": "modal", "Keyboard shortcuts": "modal",
+    "Resolve remote revision conflict": "modal", "Create a read-only review link": "modal",
+  },
+  shouldDock(title, options = {}) {
+    return (options.presentation || this.presentations[title] || "dock") === "dock";
   },
   compactDock() {
     if (innerWidth < 620 && WorkspaceRefinement.pinned)
@@ -216,12 +212,9 @@ window.WorkspacePanels = {
       },
       true,
     );
-    const dialog = StudioUI.dialog;
-    StudioUI.dialog = function (title, html) {
-      const d = dialog.call(this, title, html);
-      WorkspacePanels.mountDialog(d, title);
-      return d;
-    };
+    StudioUI.dialogHooks.set("workspace-panel", { after(d,title) {
+      WorkspacePanels.mountDialog(d,title);
+    } });
     const show = WorkspaceLayout.showProperties;
     WorkspaceLayout.showProperties = () => {
       show.call(WorkspaceLayout);

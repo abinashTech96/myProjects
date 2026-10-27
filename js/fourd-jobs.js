@@ -8,7 +8,15 @@ window.FourDJobs={
       this.worker.onerror=(event)=>{event.preventDefault();this.unavailable=true;this.stop();};
     }catch{this.unavailable=true;}
   },
+  geometrySnapshot(project) {
+    const p=ProjectModel.clone(project);
+    for(const asset of p.design?.workbench?.assets || []) delete asset.data;
+    for(const underlay of p.planning?.underlays || []) delete underlay.data;
+    if(p.design?.presentation?.studio)delete p.design.presentation.studio.hdr;
+    return p;
+  },
   async run(task,valid=()=>true){
+    if(task.project)task={...task,project:this.geometrySnapshot(task.project)};
     if(!valid())throw new DOMException('Cancelled geometry','AbortError');
     this.start();let result;
     if(this.worker){

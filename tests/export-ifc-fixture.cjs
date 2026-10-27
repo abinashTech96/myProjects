@@ -105,4 +105,13 @@ for (const roof of ["flat", "gable", "hip", "shed"]) {
   });
   p = W.assignAssembly(p, [P.walls(p)[0].id], "brick");
   fs.writeFileSync(path.join(out, roof + ".ifc"), W.ifc(p));
+  // An L-shaped occupied storey plus a disconnected island and empty upper
+  // floor catches plot-sized roofs and incorrect top-floor containment.
+  p.floorCount=3;
+  p.elements.push(
+    {id:"wing",type:"bedroom",x:220,y:20,w:100,h:80,floor:1},
+    {id:"island",type:"bedroom",x:400,y:20,w:80,h:80,floor:1},
+  );
+  p=P.normalize(p);
+  fs.writeFileSync(path.join(out, "irregular-" + roof + ".ifc"), W.ifc(p));
 }

@@ -14,6 +14,7 @@ window.Engine4D = {
   async dependencies() {
     if (!this.loading)
       this.loading = (async () => {
+        await FourDRuntime.load();
         this.libraryLoads ||= new Map();
         const load = name => {
           if (THREE[name]) return Promise.resolve();
@@ -64,11 +65,11 @@ window.Engine4D = {
       this.lastError = null;
       Engine3D.renderer.domElement.classList.add("presentation-input-surface");
       this.resize();
-      this.setPreset(this.preset);
+      this.setPreset(ProjectState.meta.design.presentation.studio.preset, false);
       const stage = await Scene4D.stageAsync(this, Engine3D.buildingGroup, ProjectState.capture(),
         () => FourDWorkspace.checkpoint(null, workspaceToken));
       if (!this.active || token !== this.generation || workspaceToken !== FourDWorkspace.token) {
-        Scene4D.dispose({model:stage.model,materials:stage.materials,sceneResources:stage.resources});
+        window.Scene4D?.dispose({model:stage.model,materials:stage.materials,sceneResources:stage.resources});
         return;
       }
       this.ready = true;
@@ -88,7 +89,7 @@ window.Engine4D = {
   },
   disable() {
     FourDStudio.leave();
-    FourDRender.resize();
+    window.FourDRender?.resize();
     this.active = false;
     this.ready = false;
     this.state = "idle";
@@ -109,7 +110,7 @@ window.Engine4D = {
   },
   fail(error) {
     FourDStudio.leave();
-    FourDRender.cancelPhoto();
+    window.FourDRender?.cancelPhoto();
     this.ready = false;
     this.state = "fallback";
     this.lastError = String(error?.message || error);
@@ -126,8 +127,8 @@ window.Engine4D = {
   releaseRenderer() {
     FourDStudio.leave();
     this.clearModel();
-    FourDRender.dispose();
-    FourDTextures.dispose();
+    window.FourDRender?.dispose();
+    window.FourDTextures?.dispose();
     this.observer?.disconnect();
     const canvas = this.renderer?.domElement;
     if (canvas) {
@@ -292,7 +293,7 @@ window.Engine4D = {
     if (quality && StudioUI.mode === "4d" && quality.textContent !== value)
       quality.textContent = value;
   },
-  setPreset(value) {
+  setPreset(value, persist = true) {
     const presets = {
       "golden-hour": {background:0xb6a48d,key:0xffcc8c,intensity:2.6,fill:.8,rim:.55,exposure:1.0},
       courtyard: {background:0x98aaa0,key:0xf2f5e9,intensity:2.5,fill:1.35,rim:.65,exposure:1.08},
@@ -323,6 +324,8 @@ window.Engine4D = {
     };
     if (!presets[value]) return;
     this.preset = value;
+    if (persist && ProjectState.meta.design.presentation.studio.preset !== value)
+      ProjectState.commit("Changed 4D rendering style", () => { ProjectState.meta.design.presentation.studio.preset = value; });
     if (!this.renderer) return;
     const p = presets[value];
     this.scene.background = new THREE.Color(
@@ -412,7 +415,7 @@ window.Engine4D = {
       1 / (box.clientWidth * ratio),
       1 / (box.clientHeight * ratio),
     );
-    FourDRender.resize();
+    window.FourDRender?.resize();
     Engine3D.needsRender = true;
   },
   finish(type) {
@@ -594,9 +597,9 @@ window.Engine4D = {
   clearModel() {
     window.FourDViews?.restoreReveal();
     FourDStudio.clearScene();
-    Landscape4D.dispose(this);
+    window.Landscape4D?.dispose(this);
     if (this.model) this.scene.remove(this.model);
-    Scene4D.dispose(this);
+    window.Scene4D?.dispose(this);
     this.model = null;
     this.pairs = [];
     this.modelVersion = null;
@@ -605,7 +608,7 @@ window.Engine4D = {
   },
   clearOverlay() {
     if (this.overlay) this.scene.remove(this.overlay);
-    Scene4D.dispose({
+    window.Scene4D?.dispose({
       model: this.overlay,
       materials: new Set(this.overlayMaterials || []),
       sceneResources: this.overlayResources,
@@ -725,7 +728,7 @@ window.Engine4D = {
     try {
       Landscape4D.build(this);
     } catch (error) {
-      Landscape4D.dispose(this);
+      window.Landscape4D?.dispose(this);
       this.geometryIssues.push({ element: "Garden", reason: error.message });
     }
     this.renderer.shadowMap.needsUpdate = true;
@@ -895,7 +898,7 @@ window.Engine4D = {
     if (!this.ready || window.FourDWorkspace?.paused)
       return StudioUI.message("The 4D renderer is still loading.");
     const stamp=this.generation;
-    if (FourDWorkspace.includeAnnotations) FourDRender.cancelPhoto();
+    if (FourDWorkspace.includeAnnotations) window.FourDRender?.cancelPhoto();
     FourDWorkspace.exporting = !FourDWorkspace.includeAnnotations;
     let blob;
     try {

@@ -152,149 +152,18 @@
         model.add(group);
         yield;
       }
-      const top = Math.max(
-          -1,
-          ...project.elements
-            .filter((e) => !e.isFurniture && e.type !== "staircase")
-            .map((e) => e.floor),
-        ),
-        roof = project.design.roof;
-      if (
-        options.roof !== false && roof.type !== "flat" &&
-        (options.prepared?.[top]?.union || root.DesignModel.floorUnion(project, top)).length
-      ) {
-        const clipping = root.polygonClipping,
-          base =
-            root.WorkbenchModel.floorBase(project, top) +
-            root.WorkbenchModel.floorHeight(project, top);
-        const footprint = options.prepared?.[top]?.union || root.DesignModel.floorUnion(project, top),
-          expanded = [];
-        for (const polygon of footprint) {
-          const outlines = root.DesignModel.offsetPath(
-            polygon[0].slice(0, -1).map(([x, y]) => ({ x, y })),
-            roof.overhang,
-            true,
-          );
-          for (const outline of outlines)
-            expanded.push([outline.map((q) => [q.x, q.y])]);
+      const Roof = root.RoofModel || (typeof require==='function'?require('./roof-model.js'):null),
+        surface = options.roof !== false ? Roof.describe(project,options.prepared) : null;
+      if(surface) {
+        const group=new T.Group();
+        group.userData={isRoof:true,floor:surface.floor,presentationGenerated:true,datumResolved:true};
+        group.position.set(I.x,surface.base*SCALE,I.z);
+        const mat=new T.MeshStandardMaterial({color:0x7d8785,roughness:.85,side:T.DoubleSide});materials.add(mat);
+        for(const polygon of surface.patches){
+          const geometry=Roof.geometry(surface,polygon,SCALE);geometries.set(geometry,geometry);
+          const mesh=new T.Mesh(geometry,mat);mesh.castShadow=mesh.receiveShadow=true;mesh.userData={...group.userData};group.add(mesh);
         }
-        const polygons = expanded.length
-            ? clipping.union(...expanded)
-            : footprint,
-          group = new T.Group();
-        group.userData = {
-          isRoof: true,
-          floor: top,
-          presentationGenerated: true,
-        };
-        group.position.set(I.x, base * SCALE, I.z);
-        const all = polygons.flatMap((p) => p[0]),
-          xs = all.map((p) => p[0]),
-          ys = all.map((p) => p[1]);
-        const minX = Math.min(...xs),
-          maxX = Math.max(...xs),
-          minY = Math.min(...ys),
-          maxY = Math.max(...ys),
-          cx = (minX + maxX) / 2,
-          cy = (minY + maxY) / 2;
-        const cells =
-          roof.type === "gable"
-            ? [
-                [
-                  [minX, minY],
-                  [cx, minY],
-                  [cx, maxY],
-                  [minX, maxY],
-                ],
-                [
-                  [cx, minY],
-                  [maxX, minY],
-                  [maxX, maxY],
-                  [cx, maxY],
-                ],
-              ]
-            : roof.type === "hip"
-              ? [
-                  [
-                    [minX, minY],
-                    [maxX, minY],
-                    [cx, cy],
-                  ],
-                  [
-                    [maxX, minY],
-                    [maxX, maxY],
-                    [cx, cy],
-                  ],
-                  [
-                    [maxX, maxY],
-                    [minX, maxY],
-                    [cx, cy],
-                  ],
-                  [
-                    [minX, maxY],
-                    [minX, minY],
-                    [cx, cy],
-                  ],
-                ]
-              : [
-                  [
-                    [minX, minY],
-                    [maxX, minY],
-                    [maxX, maxY],
-                    [minX, maxY],
-                  ],
-                ];
-        const mat = new T.MeshStandardMaterial({
-          color: 0x7d8785,
-          roughness: 0.85,
-          side: T.DoubleSide,
-        });
-        materials.add(mat);
-        for (const cell of cells)
-          for (const polygon of clipping.intersection(polygons, [cell])) {
-            const shape = new T.Shape(
-              polygon[0].map(([x, y]) => new T.Vector2(x, y)),
-            );
-            shape.holes = polygon
-              .slice(1)
-              .map((h) => new T.Path(h.map(([x, y]) => new T.Vector2(x, y))));
-            const geometry = new T.ShapeGeometry(shape),
-              positions = geometry.attributes.position;
-            for (let i = 0; i < positions.count; i++) {
-              const x = positions.getX(i),
-                z = positions.getY(i),
-                rx = 1 - Math.abs(x - cx) / Math.max(1, (maxX - minX) / 2),
-                rz = 1 - Math.abs(z - cy) / Math.max(1, (maxY - minY) / 2);
-              const rise =
-                roof.rise *
-                Math.max(
-                  0,
-                  roof.type === "shed"
-                    ? (maxX - x) / Math.max(1, maxX - minX)
-                    : roof.type === "gable"
-                      ? rx
-                      : Math.min(rx, rz),
-                );
-              positions.setXYZ(i, x * SCALE, rise * SCALE, z * SCALE);
-            }
-            const index = geometry.index;
-            for (let i = 0; i < index.count; i += 3) {
-              const a = index.getX(i);
-              index.setX(i, index.getX(i + 2));
-              index.setX(i + 2, a);
-            }
-            geometry.computeVertexNormals();
-            geometries.set(geometry, geometry);
-            const mesh = new T.Mesh(geometry, mat);
-            mesh.castShadow = mesh.receiveShadow = true;
-            mesh.userData = { ...group.userData };
-            group.add(mesh);
-          }
-        const anchor = new T.Group();
-        anchor.position.copy(group.position);
-        anchor.userData = { ...group.userData };
-        pairs.push([anchor, group]);
-        model.add(group);
+        const anchor=new T.Group();anchor.position.copy(group.position);anchor.userData={...group.userData};pairs.push([anchor,group]);model.add(group);
       }
       let triangles = 0;
       model.traverse((node) => {
@@ -313,6 +182,7 @@
         pairs,
         materials,
         resources: {
+          instances: instancesIn(model),
           geometries: new Set(geometries.values()),
           textures: new Set(textures.values()),
           textureLinks: textures,
@@ -328,6 +198,7 @@
         model,
         materials,
         sceneResources: {
+          instances: instancesIn(model),
           geometries: new Set(geometries.values()),
           textures: new Set(textures.values()),
         },
@@ -386,12 +257,13 @@
       }
     } catch (error) { iterator.return(); throw error; }
   }
+  function instancesIn(model) {
+    const instances=new Set();model?.traverse(n=>{if(n.isInstancedMesh)instances.add(n);});return instances;
+  }
   function dispose(engine) {
     const resources = engine.sceneResources || {},
       textures = new Set(resources.textures || []);
-    engine.model?.traverse((node) => {
-      if (node.isInstancedMesh) node.dispose();
-    });
+    for(const node of new Set([...instancesIn(engine.model),...(resources.instances||[])]))node.dispose();
     for (const material of engine.materials || []) {
       for (const slot of textureSlots)
         if (material[slot]) textures.add(material[slot]);
@@ -430,13 +302,14 @@
     });
     for(const t of textures) if(!root.FourDAssets?.entries.has(t)) root.FourDAssets?.prepareTexture(t,t);
     root.FourDAssets?.enforce();
-    const old=engine.sceneResources||{};
+    const old=engine.sceneResources||{}, instances=instancesIn(engine.model);
+    for(const node of new Set([...(old.instances||[]),...(added.instances||[])]))if(!instances.has(node))node.dispose();
     for(const g of new Set([...(old.geometries||[]),...(added.geometries||[])])) if(!geometries.has(g))g.dispose();
     for(const m of engine.materials||[]) if(!materials.has(m))m.dispose();
     for(const t of new Set([...(old.textures||[]),...(added.textures||[])])) if(!textures.has(t))t.dispose();
     const textureLinks=new Map([...(old.textureLinks||[])].filter(([,t])=>textures.has(t)));
     engine.materials=materials;
-    engine.sceneResources={geometries,textures,textureLinks,textureVersions:new Map([...textureLinks.keys()].map(t=>[t,t.version]))};
+    engine.sceneResources={instances,geometries,textures,textureLinks,textureVersions:new Map([...textureLinks.keys()].map(t=>[t,t.version]))};
   }
   root.Scene4D = { stage, stageAsync, dispose, textureSlots, updateTextures, reconcile, triangles };
   if (typeof module === "object") module.exports = root.Scene4D;

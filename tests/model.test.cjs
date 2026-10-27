@@ -244,3 +244,21 @@ test("explicit save waits for an older autosave and flushes newer edits", async 
 });
 
 test("undo and redo retain a surviving selected element",()=>{const {run}=stateHarness();run(`ProjectState.apply({elements:[{id:'selected',type:'bedroom',x:0,y:0,w:120,h:120,floor:0}],fixtures:[]},{rebase:true});selectedElIndex=0;ProjectState.updateElement(0,{material:'wood'});ProjectState.undo()`);assert.equal(run('selectedElIndex'),0);run('ProjectState.redo()');assert.equal(run('selectedElIndex'),0);});
+
+test("recovery validates both stores independently before selecting the newest usable design", async () => {
+  for(const fallback of ['{bad',JSON.stringify({savedAt:"2099-01-01",elements:"invalid"})]) {
+    const {run,c}=stateHarness();c.confirm=()=>true;c.saved=project({name:"Usable IndexedDB",elements:[room("recovered",20,20)]});
+    c.localStorage.getItem=()=>fallback;
+    run('StorageEngine.read=async()=>saved');await run('StorageEngine.loadFromMemory()');
+    assert.equal(run('ProjectState.meta.name'),"Usable IndexedDB");assert.equal(run('elements[0].id'),"recovered");
+  }
+  const {run,c}=stateHarness();c.confirm=()=>true;
+  c.localStorage.getItem=()=>JSON.stringify(project({name:"Usable fallback",elements:[]}));
+  run('StorageEngine.read=async()=>{throw Error("blocked")}');await run('StorageEngine.loadFromMemory()');
+  assert.equal(run('ProjectState.meta.name'),"Usable fallback");
+});
+test("project snapshot clones isolate mutable data while preserving embedded payloads",()=>{
+  const source={assets:[{data:'data:payload;base64,'+'A'.repeat(1000000),meta:{w:30}}]};
+  const copy=M.clone(source);copy.assets[0].meta.w=60;
+  assert.equal(source.assets[0].meta.w,30);assert.equal(copy.assets[0].data,source.assets[0].data);
+});

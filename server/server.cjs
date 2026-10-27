@@ -129,8 +129,10 @@ function createService(options = {}) {
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("Referrer-Policy", "no-referrer");
     res.setHeader("Cache-Control", "no-store");
-    const url = new URL(req.url, "http://localhost");
     try {
+      let url;
+      try { url = new URL(req.url, "http://localhost"); }
+      catch { throw fail(400, "Malformed request URL"); }
       const origin = req.headers.origin;
       if (origin) {
         const own = "http://" + req.headers.host,

@@ -372,8 +372,9 @@ window.StudioEnhancements = {
     this.canvasPalette = Object.fromEntries(["2d", "3d", "4d"].map(mode => [mode, style.getPropertyValue("--canvas-" + mode).trim() || this.canvasBackground]));
     if (persist && ["limestone", "courtyard"].includes(value)) {
       const warm = value === "limestone";
-      Engine4D.setPreset(warm ? "golden-hour" : "courtyard");
+      Engine4D.setPreset(warm ? "golden-hour" : "courtyard", false);
       ProjectState.commit("Changed realism lighting theme", () => {
+        ProjectState.meta.design.presentation.studio.preset = warm ? "golden-hour" : "courtyard";
         ProjectState.meta.design.presentation.studio.environment = warm ? "golden-hour" : "courtyard";
         ProjectState.meta.design.presentation.studio.environmentIntensity = warm ? .85 : 1.1;
       });

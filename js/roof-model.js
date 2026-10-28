@@ -47,7 +47,7 @@
       [[minX, maxY], [minX, minY], [cx, cy]],
     ] : [[[minX, minY], [maxX, minY], [maxX, maxY], [minX, maxY]]];
     function riseAt(x, y) {
-      if (roof.type === 'flat') return 4;
+      if (roof.type === 'flat') return roof.thickness ?? 4;
       const rx = 1 - Math.abs(x - cx) / Math.max(.001, (maxX - minX) / 2),
         ry = 1 - Math.abs(y - cy) / Math.max(.001, (maxY - minY) / 2);
       return roof.rise * Math.max(0, roof.type === 'shed'
@@ -55,7 +55,7 @@
         : roof.type === 'gable' ? rx : Math.min(rx, ry));
     }
     return {
-      floor, base: W.floorBase(p, floor) + W.floorHeight(p, floor), thickness: 4,
+      floor, base: W.floorBase(p, floor) + W.floorHeight(p, floor), thickness: roof.thickness ?? 4,
       polygons, patches: cells.flatMap(cell => clipping.intersection(polygons, [cell])),
       riseAt, bounds: { minX, maxX, minY, maxY },
     };

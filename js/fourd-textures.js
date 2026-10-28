@@ -41,11 +41,17 @@ window.FourDTextures = {
           h =
             0.5 + Math.sin(x * 0.06 + Math.sin(y * 0.04) * 3) * 0.1 + q * 0.12;
           tint = (h - 0.5) * 0.5;
-        } else if (type === "timber") {
+        } else if (type === "timber" || type === "wood") {
           const seam=x%64<1 || (y+(Math.floor(x/64)%2)*128)%256<1;
           const grain=Math.sin(y*Math.PI/8+Math.sin(x*Math.PI/128)*3);
           h=seam?.18:.5+grain*.06+q*.02;
           tint=seam?-.18:grain*.06+(noise(Math.floor(x/64),0)-.5)*.09;
+        } else if (type === 'bathroom-tile' || type === 'kitchen-tile') {
+          const seam=x%128<3||y%128<3;h=seam?.25:.55;tint=seam?-.22:(q-.5)*.025;
+        } else if(type==='grass'){
+          h=.4+q*.15+Math.sin(x*.9+y*.3)*.05;tint=(q-.5)*.18;
+        } else if(type==='shingle'){
+          const seam=y%32<3||(x+(Math.floor(y/32)%2)*32)%64<2;h=seam?.2:.55+q*.08;tint=seam?-.2:(q-.5)*.12;
         } else if (type === "fabric") {
           h = 0.4 + (x % 4 < 2 === y % 4 < 2 ? 0.2 : 0) + q * 0.05;
           tint = (h - 0.5) * 0.3;
@@ -129,11 +135,15 @@ window.FourDTextures = {
     material.color.set(color || spec.color).convertSRGBToLinear();
     material.roughness = spec.roughness;
     material.metalness = spec.metalness;
-    material.transparent = type === "glass";
-    material.opacity = type === "glass" ? 0.28 : 1;
-    material.depthWrite = type !== "glass";
-    material.transmission = 0;
-    material.normalScale?.set(0.45, 0.45);
+    const physicalGlass=type==='glass'&&!!window.Engine4D?.physicalGlass;
+    material.transparent = type === "glass" && !physicalGlass;
+    material.opacity = type === "glass" ? (physicalGlass ? 1 : .28) : 1;
+    material.depthWrite = type !== "glass" || physicalGlass;
+    material.transmission = physicalGlass ? .88 : 0;
+    material.userData.glazing = type === 'glass';
+    if(material.isMeshPhysicalMaterial){material.clearcoat=0;material.clearcoatRoughness=0;material.ior=1.5;}
+    if(type==='glass')material.side=THREE.DoubleSide;
+    material.normalScale?.set(spec.normalStrength, spec.normalStrength);
     material.userData.fourDMaterial = type;
     material.needsUpdate = true;
     return true;

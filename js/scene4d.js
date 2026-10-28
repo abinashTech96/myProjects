@@ -21,6 +21,7 @@
       geometries = new Map(),
       textures = new Map(),
       materials = new Set(),
+      instances = new Set(),
       pairs = [],
       issues = [];
     const ownedTexture = (texture) => {
@@ -44,7 +45,7 @@
       for (const slot of textureSlots) if(copy[slot] && !root.FourDAssets?.entries.has(copy[slot])) root.FourDAssets?.prepareTexture(copy[slot],copy[slot]);
       return copy;
     };
-    const cloneNode = (node, inDesign = false) => {
+    function* cloneNode(node, inDesign = false) {
       const data = node.userData || {},
         design = inDesign || data.designObject;
       if (data.isSlab || data.isRoof) return null;
@@ -59,6 +60,7 @@
           });
       }
       const copy = valid ? node.clone(false) : new T.Group().copy(node, false);
+      if(copy.isInstancedMesh)instances.add(copy);
       if (valid && node.geometry) {
         if (!geometries.has(node.geometry))
           {
@@ -91,8 +93,9 @@
         copy.receiveShadow = true;
       }
       pairs.push([node, copy]);
+      yield;
       for (const child of node.children) {
-        const clone = cloneNode(child, design);
+        const clone = yield* cloneNode(child, design);
         if (clone) copy.add(clone);
       }
       return copy;
@@ -102,7 +105,7 @@
       model = source.clone(false);
       pairs.push([source,model]);
       for (const child of source.children) {
-        const copy = cloneNode(child);
+        const copy = yield* cloneNode(child);
         if (copy) model.add(copy);
         yield;
       }
@@ -153,14 +156,14 @@
         yield;
       }
       const Roof = root.RoofModel || (typeof require==='function'?require('./roof-model.js'):null),
-        surface = options.roof !== false ? Roof.describe(project,options.prepared) : null;
+        surface = options.roof !== false ? (options.roofPrepared ? options.roofData : Roof.describe(project,options.prepared)) : null;
       if(surface) {
         const group=new T.Group();
         group.userData={isRoof:true,floor:surface.floor,presentationGenerated:true,datumResolved:true};
         group.position.set(I.x,surface.base*SCALE,I.z);
         const mat=new T.MeshStandardMaterial({color:0x7d8785,roughness:.85,side:T.DoubleSide});materials.add(mat);
         for(const polygon of surface.patches){
-          const geometry=Roof.geometry(surface,polygon,SCALE);geometries.set(geometry,geometry);
+          const geometry=options.roofPrepared ? root.FourDJobs.unpack(polygon) : Roof.geometry(surface,polygon,SCALE);geometries.set(geometry,geometry);
           const mesh=new T.Mesh(geometry,mat);mesh.castShadow=mesh.receiveShadow=true;mesh.userData={...group.userData};group.add(mesh);
         }
         const anchor=new T.Group();anchor.position.copy(group.position);anchor.userData={...group.userData};pairs.push([anchor,group]);model.add(group);
@@ -182,7 +185,7 @@
         pairs,
         materials,
         resources: {
-          instances: instancesIn(model),
+          instances: new Set([...instancesIn(model),...instances]),
           geometries: new Set(geometries.values()),
           textures: new Set(textures.values()),
           textureLinks: textures,
@@ -198,7 +201,7 @@
         model,
         materials,
         sceneResources: {
-          instances: instancesIn(model),
+          instances: new Set([...instancesIn(model),...instances]),
           geometries: new Set(geometries.values()),
           textures: new Set(textures.values()),
         },
@@ -220,7 +223,9 @@
         slabBuffers[f]=await root.FourDJobs.run({kind:'extrude',polygons:prepared[f].slab,depth:6,scale});
         await checkpoint();
       }
-      options={...options,prepared,slabBuffers};
+      let roofData=null;
+      if(options.roof!==false){roofData=await root.FourDJobs.run({kind:'roof',project,prepared,scale});await checkpoint();}
+      options={...options,prepared,slabBuffers,roofPrepared:true,roofData};
     }
     const iterator = stages(engine,source,project,options);
     let began = performance.now();

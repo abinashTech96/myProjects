@@ -239,3 +239,13 @@ test('renderer roof faces have outward winding after conversion to Y-up',()=>{
     }
   }
 });
+
+test('nested imported hierarchies yield before all meshes are cloned and release partial instances',async()=>{
+ const source=new T.Group(),dense=new T.Group(),geometry=new T.BoxGeometry(1,1,1),material=new T.MeshStandardMaterial();source.add(dense);
+ for(let i=0;i<80;i++)dense.add(new T.InstancedMesh(geometry,material,2));
+ let copies=0,disposed=0,sourceDisposed=0;const oldClone=T.InstancedMesh.prototype.clone;
+ T.InstancedMesh.prototype.clone=function(...args){const copy=oldClone.apply(this,args);copy.addEventListener('dispose',()=>disposed++);return copy;};
+ source.traverse(n=>{if(n.isInstancedMesh)n.addEventListener('dispose',()=>sourceDisposed++);});
+ const e=engine();e.material=m=>{copies++;const start=performance.now();while(performance.now()-start<.5){}return m.clone();};
+ try{await assert.rejects(S.stageAsync(e,source,project(),async()=>{throw new DOMException('Cancelled','AbortError');}),/Cancelled/);assert.ok(copies>0&&copies<80);assert.equal(disposed,copies);assert.equal(sourceDisposed,0);}finally{T.InstancedMesh.prototype.clone=oldClone;geometry.dispose();material.dispose();}
+});

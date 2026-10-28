@@ -1,5 +1,5 @@
 /* Same-origin application assets only. Project data and AI requests never enter this cache. */
-const CACHE = "archcad-reliability-v28";
+const CACHE = "archcad-performance-v29";
 async function cacheApp() {
   const response = await fetch(
     new URL("offline-assets.json", self.registration.scope),
@@ -10,7 +10,7 @@ async function cacheApp() {
   const cache = await caches.open(CACHE);
   const renderingLibraries = /(?:^|\/)vendor\/three\/(CopyShader|SSAOShader|GammaCorrectionShader|FXAAShader|SimplexNoise|Pass|ShaderPass|EffectComposer|SSAOPass|RGBELoader|Reflector|BokehShader|BokehPass)\.js$/;
   await cache.addAll(
-    assets.filter(path => !renderingLibraries.test(path) && !/(?:^|\/)js\/(landscape4d|fourd-geometry|scene4d|fourd-textures|fourd-scene|fourd-render|fourd-details)\.js$/.test(path)).map((path) => new URL(path, self.registration.scope).href),
+    assets.filter(path => !renderingLibraries.test(path) && !/(?:^|\/)js\/(landscape4d|fourd-geometry|fourd-source|scene4d|fourd-textures|fourd-scene|fourd-render|fourd-details|fourd-performance)\.js$/.test(path)).map((path) => new URL(path, self.registration.scope).href),
   );
 }
 self.addEventListener("install", (event) =>

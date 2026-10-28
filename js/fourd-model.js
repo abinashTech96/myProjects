@@ -59,6 +59,15 @@
       tile: 48,
     },
   };
+  Object.assign(materials, {
+    wood:{...materials.timber,label:'Wood flooring',color:'#a98055',tile:48},
+    'bathroom-tile':{label:'Bathroom ceramic',color:'#bed6dd',roughness:.28,metalness:0,tile:24},
+    'kitchen-tile':{label:'Porcelain tile',color:'#ddd8cc',roughness:.32,metalness:0,tile:24},
+    grass:{label:'Grass',color:'#75874e',roughness:1,metalness:0,tile:48},
+    shingle:{label:'Roof shingle',color:'#855b4d',roughness:.9,metalness:0,tile:48},
+    paint:{label:'Paint',color:'#dddcd5',roughness:.78,metalness:0,tile:48},
+  });
+  for(const [type,spec]of Object.entries(materials))spec.normalStrength=({brick:.28,stone:.18,timber:.14,wood:.14,fabric:.22,concrete:.08,grass:.25,shingle:.2,'bathroom-tile':.16,'kitchen-tile':.12})[type]||0;
   const defaults = () => ({
     version: 1,
     detailing: true, fixtures: [], bookmarks: [],

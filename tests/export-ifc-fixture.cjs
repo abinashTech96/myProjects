@@ -108,6 +108,7 @@ for (const roof of ["flat", "gable", "hip", "shed"]) {
   // An L-shaped occupied storey plus a disconnected island and empty upper
   // floor catches plot-sized roofs and incorrect top-floor containment.
   p.floorCount=3;
+  p.design.roof.thickness=roof==='flat'?8:6;
   p.elements.push(
     {id:"wing",type:"bedroom",x:220,y:20,w:100,h:80,floor:1},
     {id:"island",type:"bedroom",x:400,y:20,w:80,h:80,floor:1},

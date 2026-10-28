@@ -9,7 +9,7 @@
 
 Moving to another mode stops and releases 4D. The editor's source scene is a bounded reusable cache; its hidden framebuffer shrinks to 1×1. The next editor mode restores its viewport size and tools. While 4D is running, the source canvas carries camera input and coordinates but its renderer does not draw a second hidden view. Hidden tabs stop the animation loop and cancel photo/stage work; unfinished startup is cancelled. A graphics-context restoration can recover an already requested rendering session. Failed startup/rendering reveals the retry card rather than trapping the user on an empty canvas.
 
-The controller and lightweight API definitions remain available to navigation and existing tools. Seven runtime implementation modules load only after Render 4D; the service worker excludes them and rendering libraries from initial precaching. Failed runtime loads can be retried without executing successful modules twice. Libraries requested by an online rendering session are subsequently available in its ordinary application cache; an uncached first rendering session needs network access.
+The controller and lightweight API definitions remain available to navigation and existing tools. Nine runtime implementation modules load only after Render 4D; the service worker excludes them and rendering libraries from initial precaching. Failed runtime loads can be retried without executing successful modules twice. Libraries requested by an online rendering session are subsequently available in its ordinary application cache; an uncached first rendering session needs network access.
 
 ## Device quality
 
@@ -31,7 +31,7 @@ Undo/redo preserves the active workspace instead of restoring a historical mode 
 
 Local structural updates now compare stable room, wall, opening, floor/roof and professional-object dependency records. Changed source objects and owned presentation buffers are prepared off-scene, yielding between jobs, and published together after checking the current session/project revision. Unaffected meshes and GPU resources remain in place. Rapid input is coalesced; obsolete jobs dispose their staged resources. Room deletion updates ID/index metadata and ceiling ownership. The displayed scene reads its matching project snapshot until the next scene commits, so a partially edited project cannot invalidate the visible scene's old room indices.
 
-Global coordinate and builder changes—plot, scale/unit, floor count, level datums and other shared settings—retain an explicit full-source rebuild fallback, followed by asynchronous owned presentation staging. Source-only legacy roof data is regenerated on return to the editor. The bounded cache retains the current source, current presented snapshot and in-flight patch; replaced GPU resources are disposed rather than accumulating historical scene versions. Some source-builder geometry operations and driver shader compilation remain synchronous and cannot be interrupted mid-call; worker-delivered calculations are described below. This release does not promise that all large-project main-thread stalls have been eliminated.
+Floor count, level datums/heights and shared wall settings now participate in local dependency updates. Coordinate and builder changes such as plot, scale/unit, facade and site retain a full-source fallback, prepared in cancellable batches before owned presentation staging. Source-only legacy roof data is regenerated on return to the editor. The bounded cache retains the current source, current presented snapshot and in-flight patch; replaced GPU resources are disposed rather than accumulating historical scene versions. Some source-builder geometry operations and driver shader compilation remain synchronous and cannot be interrupted mid-call; worker-delivered calculations are described below. This release does not promise that all large-project main-thread stalls have been eliminated.
 
 Labels default to Off. Selected shows a short name for the selected room; All shows up to 16 prioritized, visible room labels. Bounded ray checks respect geometry visibility and clipping. Labels avoid the toolbar, inspector, dialogs, orientation controls, edges and previously placed labels; a crowded-label summary replaces labels that cannot fit. Full configurations stay in the inspector. Dimensions have their own explicit toggle in Views; legacy editor measurement captions are hidden otherwise. Text labels are HTML overlays and are not part of the PNG canvas.
 
@@ -99,7 +99,7 @@ plot or building view. Existing Present, Studio and inspector controls remain.
   Geometry snapshots omit embedded GLB/image/HDR payloads. Typed buffers cross the boundary; workers own no DOM,
   renderer or scene. Revision checks reject stale results. Pause/Stop/exit terminate
   pending worker jobs. If workers are unavailable, the verified synchronous kernel
-  is used. Source builders, shared roof triangulation, imported-model parsing and shader compilation can still
+  is used. Individual source-builder operations, GLTF object construction and driver shader linking can still
   pause the main thread; global edits retain the full-rebuild fallback.
 - **Texture budgets:** owned image textures start at up to 256 px, refine in
   two-texture batches after navigation and are capped at 512/1024/2048 px in the
@@ -175,3 +175,5 @@ workflow. The focused browser suite is also included in the normal regression
 suite. A local browser can be selected with `BROWSER_EXECUTABLE`.
 
 See [AUDIT_FIXES.md](AUDIT_FIXES.md) for the reliability changes, ownership rules and regression commands.
+
+See [PERFORMANCE_ARCHITECTURE.md](PERFORMANCE_ARCHITECTURE.md) for device profiling, staged preparation, roof controls, expanded PBR profiles and visual regression checks.

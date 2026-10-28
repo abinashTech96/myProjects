@@ -18,7 +18,7 @@ This release fixes the reproduced defects without resizing plot or room geometry
 
 ## Loading and ownership
 
-- Seven implementation modules (geometry, scene compilation, landscapes, textures,
+- The original seven implementation modules (geometry, scene compilation, landscapes, textures,
   comparison scenes, render services and details) load after **Render 4D**. The
   controller, navigation APIs and project validators remain available at startup.
   Failed module loads can retry without re-executing completed modules.
@@ -34,7 +34,7 @@ This release fixes the reproduced defects without resizing plot or room geometry
   widget decoration, footer dismissal, docking, compact layout and 4D inspection
   still participate in one shared lifecycle. Presentation options reach that owner.
 
-The shared roof is a closed four-inch shell. Flat roofs sit above their structural
+The shared roof was introduced as a closed four-inch shell; the next release makes thickness configurable. Flat roofs sit above their structural
 cap and retain shaft penetrations; pitched roofs extend downward from their pitch
 surface. Overhang follows the occupied building, including disconnected islands,
 rather than the plot rectangle. These are architectural visualization/export
@@ -70,3 +70,5 @@ leave the heavy runtime, worker and GPU asleep until **Render 4D**. Apply a para
 finish/height, return with **Full view**, then Stop. Check Floors → Parapet studio,
 rotate an imported furnishing, and save/reload a realism style. Test recovery using
 a disposable browser profile rather than editing your only saved project.
+
+The follow-up performance and architectural changes are documented in [PERFORMANCE_ARCHITECTURE.md](PERFORMANCE_ARCHITECTURE.md).

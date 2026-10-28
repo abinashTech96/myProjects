@@ -1,7 +1,7 @@
 /* Regression coverage for the reproduced audit defects and the manual 4D gate. */
 module.exports=async({page,assert})=>{
  const original=await page.evaluate(()=>ProjectState.capture()), quality=await page.evaluate(()=>FourDWorkspace.quality);
- const deferred=['landscape4d','fourd-geometry','scene4d','fourd-textures','fourd-scene','fourd-render','fourd-details'];
+ const deferred=['landscape4d','fourd-geometry','fourd-source','scene4d','fourd-textures','fourd-scene','fourd-render','fourd-details','fourd-performance'];
  assert.deepEqual(await page.evaluate(names=>names.filter(name=>performance.getEntriesByType('resource').some(e=>e.name.endsWith('/js/'+name+'.js'))),deferred),[],'No heavy 4D source downloads at startup');
  const cached=await page.evaluate(async names=>{
   if(!navigator.serviceWorker)return [];

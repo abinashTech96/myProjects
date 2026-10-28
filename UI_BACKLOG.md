@@ -401,3 +401,15 @@ policy and lifecycle registry; Floors exposes Parapet studio directly. Seven 4D
 implementation modules wait for Render, geometry workers omit embedded payloads,
 and project clones share immutable asset strings while isolating mutable data.
 Global structural edits retain the documented full-rebuild fallback.
+
+## Performance and architectural accuracy — six accepted follow-ups implemented
+
+1. Opt-in current-design device profiling with scoped JSON reports and cancellation.
+2. Local dependency updates for floor count, level datums/heights and wall settings.
+3. Staged source building, worker roof/GLB preparation and batched shader warm-up.
+4. Portable roof thickness and locatable geometric junction/penetration warnings.
+5. Additional calibrated PBR finish profiles and deterministic texture generation.
+6. Reviewed exterior/floor/element visual references and incremental/full comparisons.
+
+See [PERFORMANCE_ARCHITECTURE.md](PERFORMANCE_ARCHITECTURE.md) for verification,
+actual device profiling steps and remaining single-operation/driver limitations.

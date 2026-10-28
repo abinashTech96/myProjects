@@ -52,7 +52,7 @@
     const key=`edge:${top}:${endpoints.join(':')}`,dx=b.x-a.x,dy=b.y-a.y;
     // Cardinal labels describe drawing orientation. Every segment also has an ID/preview.
     const direction=Math.abs(dx)>=Math.abs(dy)?(dx>0?'Rear':'Front'):(dy>0?'Right':'Left');
-    result.push({key,a,b,length,floor:top,island,hole:ringIndex>0,direction,base:W.floorBase(p,top)+W.floorHeight(p,top)+2,index:result.length});
+    result.push({key,a,b,length,floor:top,island,hole:ringIndex>0,direction,base:W.floorBase(p,top)+W.floorHeight(p,top)+(p.design.roof.type==='flat'?(p.design.roof.thickness??4):2),index:result.length});
    }
   }if(result.length>256)throw Error('Parapet outline exceeds 256 segments');return result;
  }

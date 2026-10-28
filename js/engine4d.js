@@ -76,6 +76,9 @@ window.Engine4D = {
       this.state = "ready";
       this.renderer.domElement.hidden = false;
       this.syncModel(true, stage);
+      FourDRender.environment(FourDStudio.settings);
+      await this.warmPrograms(()=>FourDWorkspace.checkpoint("Preparing surface shaders…",workspaceToken));
+      if (!this.active || token !== this.generation || workspaceToken !== FourDWorkspace.token) return;
       Engine3D.needsRender = true;
     } catch (error) {
       if (token !== this.generation) return;
@@ -292,6 +295,20 @@ window.Engine4D = {
     const quality = document.getElementById("viewport-quality");
     if (quality && StudioUI.mode === "4d" && quality.textContent !== value)
       quality.textContent = value;
+  },
+  async warmPrograms(checkpoint) {
+    const started=performance.now(),seen=new Set(),nodes=[],scene=new THREE.Scene();
+    scene.environment=this.scene.environment;scene.fog=this.scene.fog;
+    this.scene.traverse(n=>{if(n.isLight)scene.add(n.clone());});
+    this.scene.traverse(n=>{if(!n.isMesh||!n.material)return;const key=[...[].concat(n.material).map(m=>m.uuid),n.isInstancedMesh,n.isSkinnedMesh,!!n.geometry?.attributes.uv,!!n.geometry?.attributes.normal].join(':');if(!seen.has(key)&&nodes.length<256){seen.add(key);nodes.push(n);}});
+    let worst=0,yieldedAt=performance.now();
+    for(const node of nodes){
+      const copy=node.clone(false);scene.add(copy);
+      try{const began=performance.now();this.renderer.compile(scene,Engine3D.camera);worst=Math.max(worst,performance.now()-began);}finally{scene.remove(copy);if(copy.isInstancedMesh)copy.dispose();}
+      if(performance.now()-yieldedAt>=8){await checkpoint();yieldedAt=performance.now();}
+    }
+    await checkpoint();
+    FourDWorkspace.metrics.shaders={variants:nodes.length,totalMs:performance.now()-started,maxChunkMs:worst};
   },
   setPreset(value, persist = true) {
     const presets = {

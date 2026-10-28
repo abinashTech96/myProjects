@@ -1044,7 +1044,7 @@ const DesignUI = {
     const r = this.data.roof;
     this.dialog(
       "Roof designer",
-      `${this.select("roof-type", "Roof", ["flat", "gable", "shed", "hip"], r.type)}${this.field("roof-rise", "Rise", ProjectModel.display(r.rise, StudioUI.unit))}${this.field("roof-overhang", "Overhang", ProjectModel.display(r.overhang, StudioUI.unit))}${this.select("roof-drain", "Drainage", ["north", "south", "east", "west"], r.drain)}${this.b("Apply roof", "DesignUI.saveRoof()", "primary")}<p>Roof geometry and drainage direction are included in 3D and drawing views.</p>`,
+      `${this.select("roof-type", "Roof", ["flat", "gable", "shed", "hip"], r.type)}${this.field("roof-rise", "Rise", ProjectModel.display(r.rise, StudioUI.unit))}${this.field("roof-overhang", "Overhang", ProjectModel.display(r.overhang, StudioUI.unit))}${this.field("roof-thickness", "Vertical thickness ("+StudioUI.unit+")", ProjectModel.display(r.thickness ?? 4, StudioUI.unit))}${this.select("roof-drain", "Drainage", ["north", "south", "east", "west"], r.drain)}${this.b("Apply roof", "DesignUI.saveRoof()", "primary")}<p>Roof geometry and drainage direction are included in 3D and drawing views.</p>`,
     );
   },
   saveRoof() {
@@ -1056,6 +1056,7 @@ const DesignUI = {
             type: this.val("roof-type"),
             rise: PlanningUI.parse(this.val("roof-rise")),
             overhang: PlanningUI.parse(this.val("roof-overhang")),
+            thickness: PlanningUI.parse(this.val("roof-thickness")),
             drain: this.val("roof-drain"),
           }),
       ),

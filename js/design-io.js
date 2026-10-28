@@ -496,14 +496,14 @@ const DesignIO = {
       PlanningDrawing.openSheets(p, out);
     });
   },
-  add3D() {
+  add3D(options = {}) {
     if (!Engine3D.buildingGroup) return;
     const p = ProjectState.capture(),
       { SCALE, I, WALL_HEIGHT } = get3DEnvironmentParams(),
       group = new THREE.Group();
     group.name = "Design overlays";
     group.userData = { designObject: true, floor: p.floorCount - 1 };
-    const surface=RoofModel.describe(p);
+    const surface=options.roof === false ? null : RoofModel.describe(p);
     if(surface)for(const polygon of surface.patches){
       const roof=new THREE.Mesh(RoofModel.geometry(surface,polygon,SCALE,I,true),new THREE.MeshStandardMaterial({color:0x64748b,side:THREE.DoubleSide}));
       roof.userData={isRoof:true,floor:surface.floor,datumResolved:true};roof.castShadow=roof.receiveShadow=true;group.add(roof);
@@ -519,10 +519,10 @@ const DesignIO = {
       );
       mesh.position.set(
         I.x + (c.x + c.w / 2) * SCALE,
-        c.floor * WALL_HEIGHT + c.height * SCALE,
+        (WorkbenchModel.floorBase(p,c.floor) + c.height) * SCALE,
         I.z + (c.y + c.h / 2) * SCALE,
       );
-      mesh.userData = { floor: c.floor, isCeiling: true };
+      mesh.userData = { floor: c.floor, isCeiling: true, datumResolved: true };
       group.add(mesh);
     }
     for (const n of p.design.neighbours) {

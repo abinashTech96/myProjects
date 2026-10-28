@@ -56,14 +56,16 @@
     const { presentation, roof, roomProperties, workbench, site, ...design } = p.design;
     const w=WorkbenchModel.data(p);
     const { walls, ...planning } = p.planning;
-    const global = JSON.stringify({plot:p.plot,unit:p.unit,scale:p.scale,floors:p.floorCount,
-      wallSettings:p.wallSettings,planning,design,levels:w.levels,facade:w.facade,site:w.site,
-      assets});
+    const {height,external,internal,...otherWallSettings}=p.wallSettings;
+    const global = JSON.stringify({plot:p.plot,unit:p.unit,scale:p.scale,
+      wallSettings:otherWallSettings,planning,design,facade:w.facade,site:w.site,assets});
+    const datums=object=>object.floor!==undefined?[WorkbenchModel.floorBase(p,object.floor),WorkbenchModel.floorHeight(p,object.floor)]
+      :[object.from,object.to,Array.from({length:p.floorCount},(_,f)=>[WorkbenchModel.floorBase(p,f),WorkbenchModel.floorHeight(p,f)])];
     const rows = ProjectModel.walls(p), records = new Map();
     records.set('parapet',JSON.stringify([p.view.parapet,p.view.parapetConfig]));
     for (const e of p.elements) {
       const {material,customColor,...geometry}=e;
-      records.set('room:'+e.id,JSON.stringify([geometry,roomProperties?.[e.id],WorkbenchModel.roomBase(p,e),
+      records.set('room:'+e.id,JSON.stringify([geometry,roomProperties?.[e.id],WorkbenchModel.roomBase(p,e),WorkbenchModel.floorHeight(p,e.floor),
         w.stairs[e.id],w.voids.filter(v=>e.floor>v.from&&e.floor<=v.to),w.shafts.filter(v=>e.floor>=v.from&&e.floor<=v.to)]));
     }
     for (const w of rows) records.set('wall:'+w.id,JSON.stringify(w));
@@ -72,14 +74,15 @@
       records.set('opening:'+f.id,JSON.stringify([f,owner,WorkbenchModel.roomBase(p,owner)]));
     }
     for(const kind of ['structure','ramps','shafts','outdoors','services3d']) for(const object of w[kind])
-      records.set('professional:'+object.id,JSON.stringify([kind,object]));
+      records.set('professional:'+object.id,JSON.stringify([kind,object,datums(object)]));
     for(const layout of w.interiors) for(const item of layout.items) {
       const owner=p.elements.find(e=>e.id===layout.room);
-      records.set('professional:'+item.id,JSON.stringify([item,owner?.floor,owner&&WorkbenchModel.roomBase(p,owner)]));
+      records.set('professional:'+item.id,JSON.stringify([item,owner?.floor,owner&&WorkbenchModel.roomBase(p,owner),owner&&WorkbenchModel.floorHeight(p,owner.floor)]));
     }
     records.set('professional:terrain',JSON.stringify(w.terrain));
-    records.set('professional:solar',JSON.stringify([w.solar,w.solar.enabled?[roof,p.elements.filter(e=>!e.isFurniture)]:null]));
-    records.set('professional:rain',JSON.stringify([w.rain,roof]));
+    records.set('professional:solar',JSON.stringify([w.solar,p.floorCount,w.levels,p.wallSettings.height,w.solar.enabled?[roof,p.elements.filter(e=>!e.isFurniture)]:null]));
+    records.set('professional:rain',JSON.stringify([w.rain,roof,p.floorCount,w.levels,p.wallSettings.height]));
+    records.set('design:overlays',JSON.stringify([roof,p.design.ceilings,p.design.neighbours,w.levels,p.wallSettings.height]));
     const floors=new Map();
     for(let f=0;f<p.floorCount;f++) floors.set(f,JSON.stringify([
       p.elements.filter(e=>e.floor===f&&!e.isFurniture).map(({material,customColor,...e})=>e),
@@ -88,6 +91,12 @@
     return {project:p,global,records,rows,floors,roof:JSON.stringify([roof,top,floors.get(top)])};
   }
   function run(task){
+    if(task.kind==='glb')return (root.GLBModel || require('./glb-model.js')).decode(task.data);
+    if(task.kind==='roof') {
+      const R=root.RoofModel || (typeof require==='function'?require('./roof-model.js'):null),surface=R.describe(task.project,task.prepared);
+      if(!surface)return null;
+      return {floor:surface.floor,base:surface.base,patches:surface.patches.map(poly=>pack(R.geometry(surface,poly,task.scale)))};
+    }
     if(task.kind==='describe')return describe(task.project,task.assets);
     if(task.kind==='rounded')return task.boxes.map(({w,h,d,r})=>{
       const shape=new T.Shape(),x=-w/2+r,y=-h/2+r,width=w-2*r,height=h-2*r;

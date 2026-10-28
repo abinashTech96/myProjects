@@ -37,6 +37,7 @@ window.FourDViews = {
   },
   remember() {this.history.push(this.pose());if(this.history.length>24)this.history.shift();},
   cancel(reason='navigation') {
+    if(['input','suspend','model-update','pause','stop'].includes(reason)&&window.FourDPerformance?.active)FourDPerformance.cancel(reason);
     if(window.FourDReview?.queueActive&&!FourDReview.queueMoving&&['input','suspend','model-update','navigation','pause','stop'].includes(reason))FourDReview.cancelQueue();
     Engine3D.cameraTween=null;this.transition=null;this.transitionPlanes=null;
     clearTimeout(this.tourTimer);this.tourTimer=null;
@@ -59,6 +60,7 @@ window.FourDViews = {
     return {position:frame.center.clone().addScaledVector(direction,frame.distance),target:frame.center};
   },
   reframe() {
+    if(window.FourDPerformance?.profileRunning)return;
     if(!FourDWorkspace.running||FourDWorkspace.paused||document.hidden||StudioEnhancements.walking||this.materialMode||FourDReview.queueActive)return;
     let box=this.modelBox(this.kind==='floor'?this.floorIndex:null);const p=StudioEnhancements.modelProject||ProjectState.capture(),{SCALE:S,I}=get3DEnvironmentParams();
     if(['element','material'].includes(this.kind)) {

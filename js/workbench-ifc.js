@@ -345,7 +345,7 @@
         rep=representation(solids,"Brep"),
         product=add(`IFCROOF(${guid("roof")},${owner},${str(roof.type+" roof")},$,$,${placement()},${rep},$,.${{flat:"FLAT_ROOF",gable:"GABLE_ROOF",shed:"SHED_ROOF",hip:"HIP_ROOF"}[roof.type]}.)`);
       contained[surface.floor].push(product);material(product,"roof","Roof");
-      properties(product,"roof",{Drainage:roof.drain,OverhangIn:roof.overhang});
+      properties(product,"roof",{Drainage:roof.drain,OverhangIn:roof.overhang,ThicknessIn:roof.thickness,ThicknessDirection:"vertical"});
     }
     for (let f = 0; f < p.floorCount; f++) {
       aggregate("storey-spaces:" + f, floors[f], spaces[f]);

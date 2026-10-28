@@ -597,56 +597,7 @@ const WorkbenchFiles = {
       WorkbenchUI.apply(next, "Imported reviewed document geometry");
     });
   },
-  validateGLB(buffer) {
-    const view = new DataView(buffer);
-    if (
-      buffer.byteLength > 3 * 1024 * 1024 ||
-      buffer.byteLength < 20 ||
-      view.getUint32(0, true) !== 0x46546c67 ||
-      view.getUint32(4, true) !== 2 ||
-      view.getUint32(8, true) !== buffer.byteLength
-    )
-      throw Error("Use a valid embedded GLB 2 file below 3 MB");
-    let json;
-    for (let offset = 12; offset + 8 <= buffer.byteLength; ) {
-      const length = view.getUint32(offset, true),
-        kind = view.getUint32(offset + 4, true);
-      if (offset + 8 + length > buffer.byteLength)
-        throw Error("Truncated GLB chunk");
-      if (kind === 0x4e4f534a)
-        json = JSON.parse(
-          new TextDecoder()
-            .decode(new Uint8Array(buffer, offset + 8, length))
-            .trim(),
-        );
-      offset += 8 + length;
-    }
-    if (!json) throw Error("GLB has no model description");
-    if (
-      (json.extensionsRequired || []).some(
-        (x) =>
-          ![
-            "KHR_materials_unlit",
-            "KHR_texture_transform",
-            "KHR_mesh_quantization",
-          ].includes(x),
-      )
-    )
-      throw Error(
-        "This model requires an unsupported compression/material extension",
-      );
-    for (const r of [...(json.buffers || []), ...(json.images || [])])
-      if (r.uri && !/^data:[\w/+.-]+;base64,[A-Za-z0-9+/=]+$/.test(r.uri))
-        throw Error(
-          "External model resources are not accepted; export a self-contained GLB",
-        );
-    const vertices = (json.accessors || []).reduce(
-      (s, a) => s + (a.type === "VEC3" ? a.count || 0 : 0),
-      0,
-    );
-    if (vertices > 500000) throw Error("Reduce the model mesh complexity");
-    return json;
-  },
+  validateGLB(buffer) { return GLBModel.validate(buffer); },
   async importAsset(file) {
     if (!file) return;
     await WorkbenchUI.asyncRun(async () => {
@@ -696,10 +647,9 @@ const WorkbenchFiles = {
     });
   },
   async assetScene(asset) {
-    const bytes = Uint8Array.from(atob(asset.data.split(",")[1]), (c) =>
-      c.charCodeAt(0),
-    ).buffer;
-    this.validateGLB(bytes);
+    const prepared=window.FourDJobs && (window.FourDWorkspace?.starting||window.FourDWorkspace?.running)
+      ? await FourDJobs.run({kind:'glb',data:asset.data}) : GLBModel.decode(asset.data),bytes=prepared.buffer;
+    await new Promise(resolve=>setTimeout(resolve,0));
     const gltf = await new Promise((resolve, reject) =>
       new THREE.GLTFLoader().parse(bytes, "", resolve, reject),
     );

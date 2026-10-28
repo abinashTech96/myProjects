@@ -120,7 +120,7 @@ const Workbench3D = {
                 W.floorHeight(p, p.floorCount - 1) -
                 p.floorCount * p.wallSettings.height) *
               SCALE;
-          if (mesh.userData.isCeiling)
+          if (mesh.userData.isCeiling && !mesh.userData.datumResolved)
             mesh.position.y +=
               (W.floorBase(p, mesh.userData.floor) -
                 mesh.userData.floor * p.wallSettings.height) *
@@ -502,7 +502,7 @@ const Workbench3D = {
         group.add(mesh);
       }
     }
-    for (const e of p.elements.filter((e) => e.assetId && !options.partial)) {
+    for (const e of p.elements.filter((e) => e.assetId && !options.partial && !options.deferAssets)) {
       const a = w.assets.find((a) => a.id === e.assetId);
       if (a) this.placeAsset(a, e, generation);
     }
@@ -585,6 +585,7 @@ const Workbench3D = {
       }
       Engine3D.needsRender = true;
     } catch (error) {
+      if(error.name === "AbortError")return;
       StudioUI.message("Model " + asset.name + ": " + error.message, "error");
     }
   },

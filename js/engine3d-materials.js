@@ -35,6 +35,8 @@ const textureCache = {};
 
 function getProceduralTexture(type) {
     if (textureCache[type]) return textureCache[type];
+    let seed=2166136261;for(const c of type)seed=Math.imul(seed^c.charCodeAt(0),16777619);
+    const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
 
     const canvas = document.createElement('canvas');
     canvas.width = 256; 
@@ -49,7 +51,7 @@ function getProceduralTexture(type) {
         for(let i=0; i<256; i+=32) {
             ctx.fillRect(0, i, 256, 2); // Planks
             for(let j=0; j<5; j++) {
-                ctx.fillRect(Math.random()*256, i+Math.random()*32, Math.random()*40+20, 1); // Wood grain
+                ctx.fillRect(random()*256, i+random()*32, random()*40+20, 1); // Wood grain
             }
         }
     } else if (type === 'bathroom-tile') {
@@ -89,7 +91,7 @@ function getProceduralTexture(type) {
         ctx.fillRect(0, 0, 256, 256);
         ctx.fillStyle = '#16a34a';
         for(let i=0; i<2000; i++) {
-            ctx.fillRect(Math.random()*256, Math.random()*256, 2, 6); // Grass blades
+            ctx.fillRect(random()*256, random()*256, 2, 6); // Grass blades
         }
     } else if (type === 'shingle') {
         const colors = ['#8f4236', '#7b3e34', '#5c2e26', '#6d4c4a', '#8a4b43', '#4a2c2a'];
@@ -105,13 +107,13 @@ function getProceduralTexture(type) {
             
             for (let x = -sW; x < 256; x += sW) {
                 // Pick a random terracotta/brown color
-                ctx.fillStyle = colors[Math.floor(Math.random() * colors.length)];
+                ctx.fillStyle = colors[Math.floor(random() * colors.length)];
                 ctx.fillRect(x + offset, y, sW - 2, sH - 2); // 2px gap for shadows
 
                 // Add grit/noise for the asphalt texture
                 ctx.fillStyle = 'rgba(0,0,0,0.15)';
                 for(let k = 0; k < 30; k++) {
-                    ctx.fillRect(x + offset + Math.random()*(sW-2), y + Math.random()*(sH-2), 2, 2);
+                    ctx.fillRect(x + offset + random()*(sW-2), y + random()*(sH-2), 2, 2);
                 }
                 ctx.fillStyle = 'rgba(0,0,0,0.3)';
                 ctx.fillRect(x + offset, y + sH - 6, sW - 2, 4);
@@ -123,7 +125,7 @@ function getProceduralTexture(type) {
         ctx.fillRect(0, 0, 256, 256);
         ctx.fillStyle = '#cbd5e1';
         for(let i=0; i<1000; i++) {
-            ctx.fillRect(Math.random()*256, Math.random()*256, 2, 2); // Concrete speckles
+            ctx.fillRect(random()*256, random()*256, 2, 2); // Concrete speckles
         }
     }
 

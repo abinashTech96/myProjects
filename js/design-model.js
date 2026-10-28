@@ -51,7 +51,7 @@
       constraints: [],
       requirements: [],
       neighbours: [],
-      roof: { type: "flat", rise: 36, overhang: 12, drain: "south" },
+      roof: { type: "flat", rise: 36, overhang: 12, thickness: 4, drain: "south" },
       ceilings: [],
       finishes: {},
       tiles: {},
@@ -148,6 +148,7 @@
       throw Error("Invalid roof");
     f(d.roof.rise, "Roof rise", 0, 240);
     f(d.roof.overhang, "Overhang", 0, 120);
+    f(d.roof.thickness, "Roof thickness", 0.5, 24);
     if (!["north", "south", "east", "west"].includes(d.roof.drain))
       throw Error("Invalid drainage direction");
     d.site = { ...defaults().site, ...d.site };

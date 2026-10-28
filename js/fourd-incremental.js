@@ -8,7 +8,7 @@ window.FourDIncremental = {
   async remember(p,valid=()=>true) { this.snapshot=await this.prepare(p,valid); },
   sourceKey(node) {
     const d=node.userData;
-    return d.parapetCollection ? 'parapet' : d.fourdReplacement ? 'replacement:'+d.elementId : d.objectId ? 'professional:'+d.objectId : d.isTerrain ? 'professional:terrain' :
+    return d.designObject ? 'design:overlays' : d.parapetCollection ? 'parapet' : d.fourdReplacement ? 'replacement:'+d.elementId : d.objectId ? 'professional:'+d.objectId : d.isTerrain ? 'professional:terrain' :
       d.isSlab ? 'slab:'+d.floor : d.isSolar ? 'professional:solar' : d.isGutter||d.isDownpipe ? 'professional:rain' :
       d.isWall ? 'wall:'+d.wallId : d.openingId ? 'opening:'+d.openingId :
       d.elementId&&!d.workbench ? 'room:'+d.elementId : null;
@@ -32,7 +32,7 @@ window.FourDIncremental = {
     const w=WorkbenchModel.data(p);
     if(!before||FourDWorkspace.sourceInvalid||before.global!==next.global) return {fallback:true,next};
     const changed=new Set([...before.records.keys(),...next.records.keys()].filter(k=>before.records.get(k)!==next.records.get(k)));
-    const floors=new Set([...next.floors.keys()].filter(f=>before.floors.get(f)!==next.floors.get(f))), roof=before.roof!==next.roof;
+    const floors=new Set([...new Set([...before.floors.keys(),...next.floors.keys()])].filter(f=>before.floors.get(f)!==next.floors.get(f))), roof=before.roof!==next.roof;
     if(!changed.size&&!floors.size&&!roof) {this.snapshot=next;return {changed:0};}
     const source=new THREE.Group(), {SCALE,I,WALL_HEIGHT}=get3DEnvironmentParams(), real=CanvasControlsEngine.isReal3D();
     let stage,committed=false;
@@ -49,6 +49,7 @@ window.FourDIncremental = {
           }
           if(kind==='wall') PlanningDrawing.wall3D(SCALE,I,WALL_HEIGHT,next.rows.filter(w=>w.id===id));
           if(kind==='opening') build3DFixtures(SCALE,I,WALL_HEIGHT,real,{ids:new Set([id])});
+          if(kind==='design') DesignIO.add3D({roof:false});
           if(kind==='professional') Workbench3D.rebuild({partial:true,ids:new Set([id]),rooms:new Set()});
         });
         for(const wrapper of [...part.children]) if(wrapper.userData.workbench) {

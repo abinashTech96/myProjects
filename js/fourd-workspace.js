@@ -73,7 +73,7 @@ window.FourDWorkspace = {
         window.is3DMode = false;
         Engine3D.syncVisibility();
         if(this.sourceInvalid)Engine3D.modelSignature=null;
-        generate3DModel();
+        await FourDSource.build(this.renderProject(),()=>this.checkpoint(null,token),()=>token===this.token&&StudioUI.mode==='4d'&&!document.hidden);
         this.sourceInvalid=false;
         await this.checkpoint("Preparing physical materials and geometry…", token);
         await Engine4D.enable(token);
@@ -124,6 +124,7 @@ window.FourDWorkspace = {
   pause(value = !this.paused) {
     if (!this.running) return;
     this.paused = value;
+    if(value)window.FourDPerformance?.cancel();
     if (value) {FourDViews.suspend();FourDReview.cancelQueue();FourDJobs.stop();clearTimeout(FourDAssets.timer);FourDDetails.capRevision++;clearTimeout(FourDDetails.capTimer);this.pendingUpdate=true;}
     if (value) {
       FourDStudio.playing = false;
@@ -148,6 +149,8 @@ window.FourDWorkspace = {
   },
   stop(update = true) {
     ++this.token;
+    window.FourDSource?.cancel();
+    window.FourDPerformance?.cancel();
     window.FourDReview?.stop();
     window.FourDDetails?.stop();
     FourDJobs.stop();
@@ -273,7 +276,7 @@ window.FourDWorkspace = {
           if(result.fallback) {
             // Global dependencies retain the proven full builder.
             this.sourceInvalid=true;
-            generate3DModel();
+            await FourDSource.build(p,async()=>{await new Promise(r=>setTimeout(r,0));if(!valid())throw new DOMException('Superseded source','AbortError');},valid);
             const stage=await Scene4D.stageAsync(Engine4D,Engine3D.buildingGroup,p,async()=>{
               await new Promise(r=>setTimeout(r,0));if(!valid())throw new DOMException('Superseded rebuild','AbortError');
             });
@@ -357,6 +360,7 @@ window.FourDWorkspace = {
   sample(ms) {
     if (!this.running || document.hidden || this.paused) return;
     const samples = this.metrics.samples;
+    window.FourDPerformance?.frame(ms);
     samples.push(ms);
     if (samples.length > 60) samples.shift();
     if (samples.length >= 20 && StudioEnhancements.navigating && !this.adaptTimer) {

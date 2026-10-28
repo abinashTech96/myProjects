@@ -113,7 +113,7 @@ if (!["chromium", "firefox", "webkit"].includes(browserEngine))
       ),
     }),
   );
-  page.on("pageerror", (e) => errors.push(e.stack));
+  page.on("pageerror", (e) => errors.push(e.stack || `${e.name}: ${e.message}`));
   page.on("console", (m) => {
     if (m.type() === "error" && !m.text().includes("Failed to load resource"))
       console.log("BROWSER:", m.text());
@@ -138,6 +138,10 @@ if (!["chromium", "firefox", "webkit"].includes(browserEngine))
       errors,
     );
     assert.equal(errors.length, 0, "Startup must have no uncaught errors");
+    if (process.env.ARCHITECTURE_ONLY) {
+      await require("./architecture-browser.cjs")({page,context,assert});
+      assert.equal(errors.length,0,errors.join("\n"));return;
+    }
     if (process.env.RELIABILITY_ONLY) {
       await require("./reliability-browser.cjs")({page,context,assert});
       assert.equal(errors.length,0,errors.join("\n"));return;
@@ -237,7 +241,7 @@ if (!["chromium", "firefox", "webkit"].includes(browserEngine))
       return;
     }
     // Each module owns its fixture; release its WebGL contexts before the next.
-    if (!process.env.CORE_ONLY) for (const suite of ["reliability", "parapet", "fourd-lifecycle", "fourd-presentation", "fourd-review", "workspace", "inspector", "property-widgets", "enhancements", "polish", "layout", "refinement", "unified", "controls", "fourd"]) {
+    if (!process.env.CORE_ONLY) for (const suite of ["reliability", "architecture", "parapet", "fourd-lifecycle", "fourd-presentation", "fourd-review", "workspace", "inspector", "property-widgets", "enhancements", "polish", "layout", "refinement", "unified", "controls", "fourd"]) {
       await require(`./${suite}-browser.cjs`)({page,context,assert});
       assert.equal(errors.length,0,errors.join("\n"));
       await page.reload({waitUntil:"networkidle"});

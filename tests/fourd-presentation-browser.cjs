@@ -117,9 +117,10 @@ module.exports=async({page,assert})=>{
  await page.waitForFunction(()=>Engine4D.model.children.some(n=>n.userData.isRoof&&n.userData.presentationGenerated));
  assert.equal(await page.evaluate(()=>FourDWorkspace.metrics.builds),1,'Roof edits are incremental');
  await page.evaluate(()=>ProjectState.commit('Add floor',()=>{document.getElementById('b-floors').value='3';}));
- await page.waitForFunction(()=>FourDWorkspace.metrics.fallbacks===1);
+ await page.waitForFunction(()=>FourDIncremental.snapshot?.project.floorCount===3&&!FourDWorkspace.structuralPending);
+ assert.equal(await page.evaluate(()=>FourDWorkspace.metrics.fallbacks||0),0,'Empty floor addition uses dependency updates');
  assert.equal(await page.evaluate(()=>FourDWorkspace.running),true);
- console.log('Presentation: stale work cancelled; roof update and global floor fallback passed');
+ console.log('Presentation: stale work cancelled; roof update and incremental floor-count update passed');
  await page.evaluate(()=>{
    const template=new THREE.Group();template.add(new THREE.Mesh(new THREE.BoxGeometry(10,10,10),new THREE.MeshStandardMaterial()));
    Workbench3D.templates.set('test-cached-asset',template);

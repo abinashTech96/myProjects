@@ -59,7 +59,7 @@ module.exports=async({page,assert})=>{
  await page.evaluate(()=>{FourDViews.building();window.reviewDuplicated=Engine4D.model.children.find(n=>n.userData.isWall).clone(true);Engine4D.model.add(reviewDuplicated);FourDReview.panel('audit');FourDReview.audit();});
  assert.ok(await page.evaluate(()=>FourDReview.findings.some(f=>f.reason.includes('Coincident'))));
  await page.evaluate(()=>{Engine4D.model.remove(reviewDuplicated);FourDReview.clearAudit();FourDReview.clearChanges();FourDReview.panel('performance');FourDReview.baseline();});
- assert.ok((await page.locator('[data-review-tab="performance"]').textContent()).includes('workerJobs'));
+ assert.ok((await page.locator('[data-review-tab="performance"]').textContent()).includes('Worker jobs'));
  assert.equal(await page.evaluate(()=>JSON.stringify(ProjectState.capture().elements)),saved,'Review tools never alter element dimensions or placement');
  // Worker-backed edit latency and resource stability are deployment regression checks.
  await page.evaluate(()=>{document.getElementById('studio-dialog')?.close();FourDViews.building();});

@@ -28,7 +28,7 @@ module.exports=async({page,assert})=>{
  const measured=await page.evaluate(async()=>{const pose=FourDViews.pose(),report=await FourDPerformance.run();return {report,pose,restored:FourDViews.pose()};});
  assert.equal(measured.report.steps.length,5);assert.ok(measured.report.steps.every(s=>s.samples>=1));assert.equal(await page.evaluate(()=>FourDPerformance.active),false);
  for(const key of ['position','target'])for(let i=0;i<3;i++)assert.ok(Math.abs(measured.restored[key][i]-measured.pose[key][i])<1e-6,'Profiler restores '+key);
- await page.evaluate(()=>{window.archCancelled=FourDPerformance.run();});await page.getByRole('button',{name:'Cancel profile',exact:true}).click();await page.evaluate(()=>archCancelled);assert.equal(await page.evaluate(()=>FourDPerformance.profileRunning),false);
+ await page.evaluate(()=>{FourDViews.motion='normal';window.archCancelled=FourDPerformance.run();});await page.getByRole('button',{name:'Cancel profile',exact:true}).click();await page.evaluate(()=>archCancelled);assert.equal(await page.evaluate(()=>FourDPerformance.profileRunning),false);await page.evaluate(()=>FourDViews.motion='off');
  const actual={version:1,views:{}};
  async function capture(kind,preset,omit=false){
   return page.evaluate(({kind,preset,omit})=>{

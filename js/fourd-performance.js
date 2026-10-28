@@ -4,9 +4,12 @@ window.FourDPerformance = {
   revision:0,active:false,
   status(message) {
     let node=document.getElementById('fourd-profile-status');
-    if(!node){node=document.createElement('div');node.id='fourd-profile-status';node.className='fourd-profile-status';node.setAttribute('role','status');document.getElementById('fourd-workspace').append(node);}
-    node.hidden=!this.active;node.replaceChildren(document.createTextNode(message+' '));
-    if(this.active){const b=document.createElement('button');b.className='studio-button';b.textContent='Cancel profile';b.onclick=()=>this.cancel();node.append(b);}
+    if(!node){
+      node=document.createElement('div');node.id='fourd-profile-status';node.className='fourd-profile-status';node.setAttribute('role','status');
+      const label=document.createElement('span'),button=document.createElement('button');label.dataset.profileMessage='';button.className='studio-button';button.textContent='Cancel profile';button.onclick=()=>this.cancel();
+      node.append(label,button);document.getElementById('fourd-workspace').append(node);
+    }
+    node.hidden=!this.active;node.querySelector('[data-profile-message]').textContent=message;
   },
   cancel(reason='cancel'){this.cancelReason=reason;this.revision++;this.active=false;this.status('Profile cancelled');},
   frame(ms){if(this.active&&this.current)this.current.renderMs.push(ms);},

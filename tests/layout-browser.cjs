@@ -266,7 +266,7 @@ module.exports = async ({ page, assert }) => {
     .click();
   await page.locator('[data-mode="4d"]').click();
   await page.locator("#fourd-start").click();
-  await page.waitForFunction(() => Engine4D.ready && Engine4D.frames > 0);
+  await page.waitForFunction(() => Engine4D.ready && !FourDWorkspace.starting && Engine4D.frames > 0);
   assert.equal(await page.locator('#fourd-toolbar').isVisible(),true);
   assert.equal(await page.locator('#advanced-view-panel').isVisible(),false);
   await page.evaluate(()=>{ViewportUI.fit(false,false);WorkspaceLayout.setSun(50);});

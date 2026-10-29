@@ -117,7 +117,7 @@ module.exports = async ({ page, assert }) => {
     setWorkspaceLayout("4d");
   });
   await page.locator("#fourd-start").click();
-  await page.waitForFunction(() => Engine4D.ready && Engine4D.frames > 0);
+  await page.waitForFunction(() => Engine4D.ready && !FourDWorkspace.starting && Engine4D.frames > 0);
   await page.evaluate(()=>StudioUI.select(0));
   const themePixels = new Set();
   for (const theme of ["graphite", "pearl", "ocean", "sand"]) {

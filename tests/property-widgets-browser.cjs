@@ -36,7 +36,7 @@ module.exports = async ({page,assert}) => {
   page.on('pageerror',errorHandler);page.on('console',consoleHandler);
   await page.locator('[data-mode="4d"]').click();
   await page.locator('#fourd-start').click();
-  await page.waitForFunction(()=>StudioUI.mode==='4d' && Engine4D.ready && Engine4D.frames>0);
+  await page.waitForFunction(()=>StudioUI.mode==='4d' && !FourDWorkspace.starting && Engine4D.ready && Engine4D.frames>0);
   assert.equal(await page.locator('#canvas-wrapper').isVisible(),false,'4D uses the full visualization viewport');
   assert.equal(await page.locator('#advanced-view-panel').isVisible(),false);
   assert.equal(await page.locator('#fourd-toolbar').isVisible(),true);

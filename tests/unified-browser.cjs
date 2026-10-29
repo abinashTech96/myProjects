@@ -184,7 +184,7 @@ module.exports = async ({ page, assert }) => {
   await page.evaluate(() => setWorkspaceLayout("4d"));
   await page.locator("#fourd-start").click();
   await page
-    .waitForFunction(() => Engine4D.ready && Engine4D.frames > 0)
+    .waitForFunction(() => Engine4D.ready && !FourDWorkspace.starting && Engine4D.frames > 0)
     .catch(async (error) => {
       console.log(
         "4D startup diagnostics",

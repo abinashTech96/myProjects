@@ -33,3 +33,14 @@ test('flat-roof parapets follow the configured finished roof elevation',()=>{
  assert.equal(Parapet.edges(p)[0].base,250);
  const normalized=P.normalize(p);assert.equal(normalized.design.roof.thickness,10);
 });
+test('close-up review flags jamb, wall datum and stair landing observations without a roof or model edits',()=>{
+ const p=project();p.design.roof.type='none';p.fixtures=[{id:'near-corner',roomId:0,type:'door',edge:'top',offset:1,size:36,sill:0,height:84}];
+ p.elements.push({id:'steps',type:'staircase',x:300,y:20,w:40,h:80,floor:0,dir:'up'});p.design.workbench.stairs.steps={style:'straight',width:36,rise:100,riser:7,tread:10,landing:24};
+ const before=JSON.stringify(p),rows=Review.inspect(p);for(const code of ['opening-jamb','stair-footprint','stair-level','stair-landing'])assert.ok(rows.some(r=>r.code===code),code);
+ assert.ok(rows.every(r=>Number.isFinite(r.elevation)&&Number.isFinite(r.point.x)));assert.equal(JSON.stringify(p),before);p.fixtures[0].offset=60;assert.equal(Review.closeups(p).some(r=>r.code==='opening-jamb'),false);
+});
+test('reviewed fixtures retain courtyard holes, irregular edges, three datums and sixty furniture placements',()=>{
+ const fixtures=require('./presentation-fixtures.cjs');for(const kind of ['irregular','courtyard','multistorey','furnished']){const p=P.normalize(fixtures.design(kind)),before=JSON.stringify(p);Review.inspect(p);assert.equal(JSON.stringify(p),before);
+  if(kind==='courtyard')assert.ok(global.DesignModel.floorUnion(p,0).some(poly=>poly.length>1));if(kind==='irregular')assert.equal(p.elements[0].points.length,5);if(kind==='multistorey')assert.equal(global.WorkbenchModel.floorBase(p,2),282);if(kind==='furnished')assert.equal(p.elements.filter(e=>e.isFurniture).length,60);
+ }
+});

@@ -56,6 +56,13 @@ test("4D scene owns geometry, materials and texture snapshots independently of t
   });
   assert.equal(sourceDisposed, 0);
 });
+test('progressive appends retain texture update links and own both resource batches',()=>{
+ const e=engine(),p=project(),sources=[new T.Group(),new T.Group()],textures=[new T.Texture(),new T.Texture()];
+ sources.forEach((source,i)=>source.add(new T.Mesh(new T.BoxGeometry(2,2,2),new T.MeshStandardMaterial({map:textures[i]}))));
+ const first=S.stage(e,sources[0],p,{floors:new Set(),roof:false}),second=S.stage(e,sources[1],p,{floors:new Set(),roof:false});e.model=first.model;e.materials=first.materials;e.sceneResources=first.resources;
+ for(const child of [...second.model.children])e.model.add(child);for(const material of second.materials)e.materials.add(material);S.reconcile(e,second.resources);assert.equal(e.sceneResources.textureLinks.size,2);
+ let disposed=0;for(const t of e.sceneResources.textures)t.addEventListener('dispose',()=>disposed++);textures[1].image={width:2,height:3};textures[1].needsUpdate=true;S.updateTextures(e);assert.equal(e.sceneResources.textureLinks.get(textures[1]).image.height,3);S.dispose(e);assert.equal(disposed,2);
+});
 test("slabs follow occupied footprints, omit empty storeys and avoid duplicated legacy roofs", () => {
   const source = new T.Group(),
     legacy = new T.Mesh(

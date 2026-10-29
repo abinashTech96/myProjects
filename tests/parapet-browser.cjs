@@ -15,7 +15,7 @@ module.exports=async({page,assert})=>{
  assert.equal(await page.evaluate(()=>ProjectState.capture().view.parapetConfig.defaults.height),39);
  await page.evaluate(()=>ProjectState.undo());assert.equal(await page.evaluate(()=>ParapetModule.config.version),undefined,'Undo restores legacy state without leaking version/edges');
  await page.evaluate(()=>ProjectState.redo());assert.equal(await page.evaluate(()=>ParapetModule.config.defaults.style),'lotus-crown');
- await page.locator('#fourd-start').click();await page.waitForFunction(()=>FourDWorkspace.running||document.body.dataset.fourdState==='error');assert.equal(await page.evaluate(()=>FourDWorkspace.running),true,await page.locator('#fourd-start-message').textContent());
+ await page.locator('#fourd-start').click();await page.waitForFunction(()=>(FourDWorkspace.running&&!FourDWorkspace.starting)||document.body.dataset.fourdState==='error');assert.equal(await page.evaluate(()=>FourDWorkspace.running),true,await page.locator('#fourd-start-message').textContent());
  await page.waitForFunction(()=>FourDIncremental.snapshot);
  assert.ok(await page.evaluate(()=>{let count=0;Engine4D.model.traverse(n=>{if(n.userData.isParapet&&n.isMesh)count++;});return count;})>0);
  await page.evaluate(()=>{ParapetStudio.open();ParapetStudio.open();});await page.waitForTimeout(50);assert.equal(await page.evaluate(()=>ParapetStudio.active),true,'Reopening the studio keeps the current editing session active');

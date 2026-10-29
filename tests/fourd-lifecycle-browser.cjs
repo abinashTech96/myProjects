@@ -22,7 +22,7 @@ module.exports = async ({page,assert}) => {
   await page.waitForTimeout(80);
   assert.equal(await page.evaluate(()=>!!Engine4D.renderer),false);
   await page.locator("#fourd-start").click();
-  await page.waitForFunction(()=>FourDWorkspace.running&&Engine4D.frames>0);
+  await page.waitForFunction(()=>FourDWorkspace.running&&!FourDWorkspace.starting&&Engine4D.frames>0);
   await page.waitForFunction(()=>!Engine3D.cameraTween&&!StudioEnhancements.navigating);
   const initial=await page.evaluate(()=>({project:ProjectState.capture(),builds:FourDWorkspace.metrics.builds,first:FourDWorkspace.metrics.firstFrameMs}));
   assert.ok(initial.first>0);
@@ -77,7 +77,7 @@ module.exports = async ({page,assert}) => {
   assert.equal(await page.locator("#fourd-start").isVisible(),true);
   assert.equal(await page.evaluate(()=>FourDWorkspace.running),false);
   await page.locator("#fourd-start").click();
-  await page.waitForFunction(()=>FourDWorkspace.running&&Engine4D.ready);
+  await page.waitForFunction(()=>FourDWorkspace.running&&!FourDWorkspace.starting&&Engine4D.ready);
   const loss=await page.evaluate(()=>!!Engine4D.renderer.getContext().getExtension("WEBGL_lose_context"));
   if(loss) {
     await page.evaluate(()=>{window.lifecycleLoss=Engine4D.renderer.getContext().getExtension("WEBGL_lose_context");lifecycleLoss.loseContext();});
@@ -85,7 +85,7 @@ module.exports = async ({page,assert}) => {
     assert.equal(await page.locator("#fourd-start").isVisible(),true);
     await page.waitForTimeout(150);
     await page.evaluate(()=>lifecycleLoss.restoreContext());
-    await page.waitForFunction(()=>FourDWorkspace.running&&Engine4D.ready);
+    await page.waitForFunction(()=>FourDWorkspace.running&&!FourDWorkspace.starting&&Engine4D.ready);
   }
   await page.setViewportSize({width:390,height:844});
   assert.equal(await page.locator("#fourd-toolbar").isVisible(),true);
@@ -96,7 +96,7 @@ module.exports = async ({page,assert}) => {
   await page.evaluate(()=>setWorkspaceLayout("4d"));
   assert.equal(await page.evaluate(()=>Engine4D.active),false,"Reentry stays gated");
   await page.locator("#fourd-start").click();
-  await page.waitForFunction(()=>FourDWorkspace.running);
+  await page.waitForFunction(()=>FourDWorkspace.running&&!FourDWorkspace.starting);
   await page.evaluate(()=>setWorkspaceLayout("3d"));
   assert.equal(await page.evaluate(()=>!!Engine4D.renderer),false);
   const geometry=await page.evaluate(()=>elements.map(({id,x,y,w,h,floor})=>({id,x,y,w,h,floor})));

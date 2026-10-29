@@ -201,7 +201,7 @@ module.exports = async ({ page, assert }) => {
   const project = await page.evaluate(() => JSON.stringify(elements));
   await page.evaluate(() => setWorkspaceLayout("4d"));
   await page.locator("#fourd-start").click();
-  await page.waitForFunction(() => (FourDWorkspace.running && Engine4D.ready && Engine4D.landscape) || document.body.dataset.fourdState === "error");
+  await page.waitForFunction(() => (FourDWorkspace.running && !FourDWorkspace.starting && Engine4D.ready && Engine4D.landscape) || document.body.dataset.fourdState === "error");
   assert.equal(await page.evaluate(()=>FourDWorkspace.running&&!!Engine4D.ready&&!!Engine4D.landscape),true,await page.locator("#fourd-start-message").textContent());
   assert.equal(await page.locator("#advanced-view-panel").isVisible(),false);
   assert.equal(await page.locator("#fourd-toolbar").isVisible(),true);

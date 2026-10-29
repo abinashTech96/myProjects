@@ -1,5 +1,9 @@
 # 4D workspace lifecycle and performance
 
+The progressive-rendering and in-session view-recovery extension is documented in
+[PROGRESSIVE_4D.md](PROGRESSIVE_4D.md). A valid core can be visible while furniture,
+garden and trim are still preparing; await the start promise for a complete scene.
+
 ## Starting and leaving
 
 1. Choose 4D. The lightweight shell displays Render 4D and a device-quality choice. No new 3D prerequisite scene, 4D WebGL renderer, render loop, HDR environment or building compilation starts on this action.

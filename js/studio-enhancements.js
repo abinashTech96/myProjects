@@ -799,7 +799,7 @@ window.StudioEnhancements = {
       camera,
     );
     return (
-      ray.intersectObject(Engine4D.model, true).find((hit) => {
+      ray.intersectObjects([Engine4D.model,...(FourDStudio.lods||[]).filter(item=>item.proxy.visible).map(item=>item.proxy)],true).find((hit) => {
         let node = hit.object;
         while (node && node !== Engine4D.scene) {
           if (!node.visible) return false;

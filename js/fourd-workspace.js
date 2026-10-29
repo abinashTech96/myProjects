@@ -9,6 +9,7 @@ window.FourDWorkspace = {
   annotationPreference: "off",
   dimensions: false,
   resolutionScale: 1,
+  navigationDetail: true,
   updateRevision: 0,
   metrics: { samples: [], longTasks: 0, builds: 0 },
   profiles: {
@@ -34,8 +35,11 @@ window.FourDWorkspace = {
         <button class="studio-button" onclick="FourDWorkspace.stop()">Stop</button>
       </div><div id="fourd-inspection" hidden></div><div id="fourd-session-status" role="status"></div>`;
     document.getElementById("right-canvas-wrapper").append(root);
+    const preparation=document.createElement('div');preparation.id='fourd-preparation-status';preparation.className='fourd-profile-status';preparation.hidden=true;preparation.setAttribute('role','status');
+    const text=document.createElement('span'),cancel=document.createElement('button');text.dataset.preparationMessage='';cancel.className='studio-button';cancel.textContent='Cancel loading';cancel.onclick=()=>this.stop();preparation.append(text,cancel);root.append(preparation);
     root.querySelectorAll("[data-quality]").forEach(select => select.addEventListener("change", () => this.setQuality(select.value)));
     try { this.quality = localStorage.getItem("ArchCAD_4D_Quality") || "balanced"; } catch {}
+    try { this.navigationDetail=localStorage.getItem('ArchCAD_4D_Navigation_Detail')!=='false'; } catch {}
     this.setQuality(this.quality);
     this.state("waiting");
   },
@@ -50,10 +54,18 @@ window.FourDWorkspace = {
     if (cancel) cancel.hidden = !starting;
   },
   async checkpoint(message, token) {
-    if (message) this.state("loading", message);
+    if(message){if(this.corePresented)this.preparation(message);else this.state('loading',message);}
     await new Promise(resolve => setTimeout(resolve, 20));
     if (token !== this.token || StudioUI.mode !== "4d" || document.hidden)
       throw new DOMException("4D preparation cancelled", "AbortError");
+  },
+  preparation(message='') {
+    const node=document.getElementById('fourd-preparation-status');if(!node)return;
+    node.hidden=!message;node.querySelector('[data-preparation-message]').textContent=message;
+  },
+  setNavigationDetail(value) {
+    this.navigationDetail=!!value;try{localStorage.setItem('ArchCAD_4D_Navigation_Detail',String(this.navigationDetail));}catch{}
+    Engine3D.needsRender=true;
   },
   start() {
     if (StudioUI.mode !== "4d" || document.hidden) return;
@@ -61,6 +73,7 @@ window.FourDWorkspace = {
     if (this.running) return this.paused ? this.pause(false) : undefined;
     const token = ++this.token;
     this.starting = true;
+    this.corePresented=false;this.progressivePending=true;
     this.metrics = { started: performance.now(), samples: [], longTasks: 0, builds: 0 };
     this.startPromise = (async () => {
       try {
@@ -73,7 +86,7 @@ window.FourDWorkspace = {
         window.is3DMode = false;
         Engine3D.syncVisibility();
         if(this.sourceInvalid)Engine3D.modelSignature=null;
-        await FourDSource.build(this.renderProject(),()=>this.checkpoint(null,token),()=>token===this.token&&StudioUI.mode==='4d'&&!document.hidden);
+        await FourDSource.build(this.renderProject(),()=>this.checkpoint(null,token),()=>token===this.token&&StudioUI.mode==='4d'&&!document.hidden,{deferFurniture:true});
         this.sourceInvalid=false;
         await this.checkpoint("Preparing physical materials and geometry…", token);
         await Engine4D.enable(token);
@@ -92,8 +105,6 @@ window.FourDWorkspace = {
         StudioEnhancements.clearSection();
         ViewportUI.inspectFloor("all");
         this.setQuality(this.quality);
-        this.modelKey = this.geometryKey(this.renderProject());
-        await FourDIncremental.remember(this.renderProject(),()=>token===this.token&&StudioUI.mode==='4d'&&!document.hidden);
         FourDViews.reset();
         this.materialKeys = new Map();
         this.updateMaterials();
@@ -101,13 +112,27 @@ window.FourDWorkspace = {
         window.is3DMode = true;
         StudioEnhancements.bindCanvas();
         ViewportUI.orient("iso", false);
+        if(this.recovery)FourDSession.restore(this.recovery);
         Engine4D.render();
         if (!Engine4D.ready) throw Error(Engine4D.lastError || "The first frame failed");
         this.state("ready");
+        this.corePresented=true;document.getElementById('fourd-pause').disabled=true;
         this.metrics.firstFrameMs = performance.now() - this.metrics.started;
         Engine3D.needsRender = true;
         Engine3D.syncVisibility();
         this.status();
+        await this.checkpoint('Adding furniture…',token);
+        const valid=()=>token===this.token&&StudioUI.mode==='4d'&&!document.hidden;
+        await FourDSource.furniture(this.renderProject(),()=>this.checkpoint(null,token),valid);Engine4D.render();
+        await this.checkpoint('Preparing the garden…',token);let began=performance.now();
+        await Landscape4D.buildAsync(Engine4D,()=>this.checkpoint(null,token),valid);this.metrics.gardenMs=performance.now()-began;
+        await this.checkpoint('Adding architectural detail…',token);began=performance.now();
+        await FourDDetails.buildAsync(()=>this.checkpoint(null,token),valid);this.metrics.detailMs=performance.now()-began;
+        await Engine4D.warmPrograms(()=>this.checkpoint('Preparing finishing shaders…',token),{traverse:visit=>{Engine4D.landscape?.traverse(visit);FourDDetails.details?.traverse(visit);}});
+        this.progressivePending=false;this.modelKey=this.geometryKey(this.renderProject());await FourDIncremental.remember(this.renderProject(),valid);
+        this.metrics.fullReadyMs=performance.now()-this.metrics.started;this.recovery=null;this.preparation();
+        this.starting=false;document.getElementById('fourd-pause').disabled=false;
+        if(!Engine4D.render())throw Error(Engine4D.lastError||'The completed view failed');Engine3D.needsRender=true;this.status();
       } catch (error) {
         if (token !== this.token) return;
         this.stop(false);
@@ -116,7 +141,7 @@ window.FourDWorkspace = {
           console.warn("4D preparation", error);
         } else this.state("waiting", "Preparation cancelled. Click Render 4D when you are ready.");
       } finally {
-        if (token === this.token) this.starting = false;
+        if(token===this.token){this.starting=false;document.getElementById('fourd-pause').disabled=false;}
       }
     })();
     return this.startPromise;
@@ -158,6 +183,9 @@ window.FourDWorkspace = {
     FourDIncremental.reset();
     FourDViews.stop();
     this.starting = this.running = this.paused = false;
+    this.progressivePending=false;this.corePresented=false;this.preparation();if(update)this.recovery=null;
+    if(window.FourDSource&&!FourDSource.complete)this.sourceInvalid=true;
+    const pause=document.getElementById('fourd-pause');if(pause)pause.disabled=false;
     this.structuralPending=false;
     this.startPromise = null;
     clearTimeout(this.adaptTimer);
@@ -216,6 +244,8 @@ window.FourDWorkspace = {
   },
   failed(reason) {
     FourDViews.suspend();
+    FourDJobs.stop();window.FourDSource?.cancel();FourDIncremental.revision++;this.updateRevision++;
+    window.FourDDetails?.stop();clearTimeout(this.updateTimer);clearTimeout(this.adaptTimer);
     this.running = false;
     window.is3DMode = false;
     Engine3D.syncVisibility();

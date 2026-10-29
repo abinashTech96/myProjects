@@ -139,6 +139,7 @@
   "css/realism-themes.css",
   "./js/roof-model.js",
   "./js/fourd-runtime.js",
+  "./js/fourd-session.js",
   "./js/fourd-source.js",
   "./js/glb-model.js",
   "./js/architectural-review-model.js",

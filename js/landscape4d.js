@@ -228,7 +228,7 @@
     texture.minFilter = THREE.LinearFilter;
     return texture;
   }
-  function build(engine) {
+  function* buildSteps(engine) {
     dispose(engine);
     if (engine.landscapeEnabled === false) return;
     const THREE = root.THREE,
@@ -241,6 +241,7 @@
     engine.landscape = group;
     engine.landscapePlan = data;
     engine.scene.add(group);
+    yield;
     const texture = engine.finish("grass").map.clone();
     texture.repeat.set(1, 1);
     texture.needsUpdate = true;
@@ -292,6 +293,7 @@
       const lawn = new THREE.Mesh(geometry, groundMat);
       lawn.receiveShadow = true;
       group.add(lawn);
+      yield;
     }
     if (!data.lawn.length) {
       groundMat.dispose();
@@ -346,6 +348,7 @@
           ry: rand() * Math.PI,
           rz: rand() * Math.PI,
         });
+        if(i%64===0)yield;
       }
     }
     if (trunks.length) {
@@ -354,13 +357,13 @@
         new THREE.MeshStandardMaterial({ color: 0x6a5944, roughness: 1 }),
         trunks.length,
       );
-      trunks.forEach((t, i) => {
+      for(const [i,t]of trunks.entries()) {
         dummy.position.set(t.x, t.y, t.z);
         dummy.rotation.set(t.rx || 0, 0, t.rz || 0);
         dummy.scale.set(t.sx, t.sy, t.sz);
         dummy.updateMatrix();
         mesh.setMatrixAt(i, dummy.matrix);
-      });
+      }
       mesh.castShadow = true;
       group.add(mesh);
     }
@@ -376,8 +379,9 @@
         }),
         leaves.length,
       );
+      group.add(mesh);
       leaves.sort((a,b)=>Math.sin(a.x*12.9898+a.y*78.233+a.z*2.321)-Math.sin(b.x*12.9898+b.y*78.233+b.z*2.321));
-      leaves.forEach((l, i) => {
+      for(const [i,l]of leaves.entries()) {
         dummy.position.set(l.x, l.y, l.z);
         dummy.rotation.set(l.rx, l.ry, l.rz);
         dummy.scale.setScalar(l.size);
@@ -391,7 +395,8 @@
             0.72 + rand() * 0.12,
           ),
         );
-      });
+        if(i%128===0)yield;
+      }
       mesh.castShadow = mesh.receiveShadow = true;
       mesh.userData.foliageCapacity=leaves.length;
       group.add(mesh);
@@ -401,7 +406,17 @@
       if (o.isInstancedMesh) o.frustumCulled = false;
     });
   }
-  function quality(engine){const q=root.FourDWorkspace?.quality||'balanced',ratio=q==='eco'?.36:q==='high'?1:.8;engine.landscape?.traverse(n=>{if(n.userData.foliageCapacity)n.count=Math.max(1,Math.floor(n.userData.foliageCapacity*ratio));});}
-  root.Landscape4D = { plan, build, dispose, quality };
+  function build(engine){for(const step of buildSteps(engine)){};}
+  async function buildAsync(engine,checkpoint,valid=()=>true){
+    const staging=Object.create(engine);staging.scene=new root.THREE.Scene();staging.landscape=null;staging.landscapePlan=null;
+    const iterator=buildSteps(staging);let committed=false;
+    try{let began=performance.now();for(;;){if(!valid())throw new DOMException('Garden preparation cancelled','AbortError');const result=iterator.next();if(result.done)break;if(performance.now()-began>=8){await checkpoint();began=performance.now();}}
+      await checkpoint();if(!valid())throw new DOMException('Garden preparation cancelled','AbortError');
+      dispose(engine);engine.landscape=staging.landscape;engine.landscapePlan=staging.landscapePlan;
+      if(engine.landscape)engine.scene.add(engine.landscape);engine.renderer.shadowMap.needsUpdate=true;committed=true;
+    }finally{iterator.return();if(!committed)dispose(staging);}
+  }
+  function quality(engine,moving=false){const q=root.FourDWorkspace?.quality||'balanced',ratio=(q==='eco'?.36:q==='high'?1:.8)*(moving?.3:1);engine.landscape?.traverse(n=>{if(n.userData.foliageCapacity)n.count=Math.max(1,Math.floor(n.userData.foliageCapacity*ratio));});}
+  root.Landscape4D = { plan, build, buildAsync, dispose, quality };
   if (typeof module === "object") module.exports = root.Landscape4D;
 })(globalThis);

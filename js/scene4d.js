@@ -312,7 +312,7 @@
     for(const g of new Set([...(old.geometries||[]),...(added.geometries||[])])) if(!geometries.has(g))g.dispose();
     for(const m of engine.materials||[]) if(!materials.has(m))m.dispose();
     for(const t of new Set([...(old.textures||[]),...(added.textures||[])])) if(!textures.has(t))t.dispose();
-    const textureLinks=new Map([...(old.textureLinks||[])].filter(([,t])=>textures.has(t)));
+    const textureLinks=new Map([...(old.textureLinks||[]),...(added.textureLinks||[])].filter(([,t])=>textures.has(t)));
     engine.materials=materials;
     engine.sceneResources={instances,geometries,textures,textureLinks,textureVersions:new Map([...textureLinks.keys()].map(t=>[t,t.version]))};
   }

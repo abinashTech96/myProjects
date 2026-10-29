@@ -427,22 +427,24 @@ window.FourDStudio = {
     for (const item of this.lods || []) this.disposeGroup(item.proxy);
     this.lods = [];
     this.lodVersion = Engine4D.modelVersion;
+    const dense=elements.filter(e=>e.isFurniture).length>=24;
     this.parapetDetails = Engine4D.pairs.filter(([,copy])=>copy.isMesh&&copy.userData.parapetDetail&&!copy.isInstancedMesh).map(([,copy])=>copy);
     for (const [source, copy] of Engine4D.pairs) {
       const room =
         elements[source.userData.roomIndex] ||
         elements.find((e) => e.id === source.userData.elementId);
-      if (!room?.isFurniture || source.parent !== Engine3D.buildingGroup)
+      if (!room?.isFurniture || (source.parent !== Engine3D.buildingGroup&&!source.parent?.userData.workbench))
         continue;
-      let triangles = 0;
+      let triangles = 0,meshes=0;
       copy.traverse((n) => {
-        if (n.isMesh)
+        if(n.isMesh){meshes++;
           triangles +=
             (n.geometry.index?.count ||
               n.geometry.attributes.position?.count ||
               0) / 3;
+        }
       });
-      if (triangles < 250) continue;
+      if(triangles<250&&meshes<(dense?2:4))continue;
       const box = new THREE.Box3().setFromObject(copy);
       if (box.isEmpty()) continue;
       const center = box.getCenter(new THREE.Vector3()),
@@ -455,7 +457,7 @@ window.FourDStudio = {
         new THREE.MeshStandardMaterial({ color, roughness: 0.8 }),
       );
       proxy.position.copy(center);
-      proxy.userData = { fourDAuxiliary: true };
+      proxy.userData={fourDAuxiliary:true,navigationProxy:true,elementId:room.id,roomIndex:elements.findIndex(e=>e.id===room.id),isFurniture:true,presentationSurface:'floor'};
       proxy.visible = false;
       Engine4D.scene.add(proxy);
       this.lods.push({
@@ -472,6 +474,8 @@ window.FourDStudio = {
   applyLOD(camera) {
     this.setupLOD();
     let simplified = 0;
+    const moving=FourDWorkspace.navigationDetail&&StudioEnhancements.adaptive&&(StudioEnhancements.navigating||!!FourDViews.transition||StudioEnhancements.walking)&&!FourDWorkspace.exporting&&!StudioEnhancements.pickMode;
+    Landscape4D.quality(Engine4D,!!moving);
     const h = Engine4D.renderer.domElement.clientHeight || 600;
     for (const item of this.lods) {
       item.copy.updateMatrixWorld(true);
@@ -494,9 +498,8 @@ window.FourDStudio = {
             )
           : Infinity,
         threshold = this.settings.lod === "economy" ? 36 : 18;
-      item.low =
-        this.settings.lod !== "full" &&
-        pixels < (item.low ? threshold * 1.25 : threshold);
+      const focused=StudioEnhancements.focusRoom===item.proxy.userData.elementId||FourDViews.elementId===item.proxy.userData.elementId;
+      item.low=!focused&&(moving||(this.settings.lod!=='full'&&pixels<(item.low?threshold*1.25:threshold)));
       const visible =
         item.copy.visible &&
         (() => {
@@ -521,11 +524,12 @@ window.FourDStudio = {
       if(pixels<(this.settings.lod==="economy"?12:6)){this.hide(detail);simplified++;}
     }
     this.lodCount = simplified;
+    this.navigationCount=moving?simplified:0;
     const status = document.getElementById("fourd-lod-status");
     if (status)
       status.textContent =
         simplified +
-        " distant objects simplified · originals retained for close views";
+        (moving?' objects simplified while moving · detail returns on settling':' distant objects simplified · originals retained for close views');
   },
   updateOutlines() {
     const ids = [...Selection.ids],

@@ -7,7 +7,7 @@ module.exports=async({page,assert})=>{
   setWorkspaceLayout('4d');FourDWorkspace.setQuality('eco');FourDViews.setMotion('off');
  });
  assert.equal(await page.evaluate(()=>!!FourDJobs.worker),false,'Opening portal does not start CPU worker');
- await page.locator('#fourd-start').click();await page.waitForFunction(()=>FourDWorkspace.running||document.body.dataset.fourdState==='error');
+ await page.locator('#fourd-start').click();await page.waitForFunction(()=>(FourDWorkspace.running&&!FourDWorkspace.starting)||document.body.dataset.fourdState==='error');
  assert.equal(await page.evaluate(()=>FourDWorkspace.running),true,await page.locator('#fourd-start-message').textContent());
  assert.equal(await page.evaluate(()=>Engine4D.ao.normalRenderTarget.depthTexture.type!==THREE.UnsignedShortType),true,'Architectural AO uses sufficient depth precision');
  await page.waitForFunction(()=>!!FourDIncremental.snapshot);
@@ -84,7 +84,7 @@ module.exports=async({page,assert})=>{
  assert.ok((await page.locator('#review-linked-tools').textContent()).includes('bedroom'));
  assert.equal(await page.evaluate(()=>!!FourDJobs.worker),false,'Leaving 4D terminates worker');
  await page.evaluate(()=>FourDReview.closeLinked());
- await page.evaluate(()=>setWorkspaceLayout('4d'));await page.locator('#fourd-start').click();await page.waitForFunction(()=>FourDWorkspace.running);await page.waitForFunction(()=>FourDIncremental.snapshot);
+ await page.evaluate(()=>setWorkspaceLayout('4d'));await page.locator('#fourd-start').click();await page.waitForFunction(()=>FourDWorkspace.running&&!FourDWorkspace.starting);await page.waitForFunction(()=>FourDIncremental.snapshot);
  await page.evaluate(()=>{FourDReview.renderQueue(false);FourDWorkspace.pause(true);});
  assert.equal(await page.evaluate(()=>FourDReview.queueActive||!!FourDJobs.worker),false,'Pause cancels queue and worker');
  await page.evaluate(()=>FourDWorkspace.pause(false));await page.waitForTimeout(180);

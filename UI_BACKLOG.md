@@ -413,3 +413,20 @@ Global structural edits retain the documented full-rebuild fallback.
 
 See [PERFORMANCE_ARCHITECTURE.md](PERFORMANCE_ARCHITECTURE.md) for verification,
 actual device profiling steps and remaining single-operation/driver limitations.
+
+## Progressive rendering and recovery — six follow-ups implemented
+
+1. Expanded device reports with scene counts, stage timings, motion samples and
+   complete-frame draw calls; matching-run comparisons and JSON export.
+2. A visible architectural core before furniture, imported placements, professional
+   fitouts, garden and trim; checked staging and cancellation.
+3. Selectable furniture substitutions, reduced foliage and deferred trim/caps
+   during movement, with restored settled/capture detail.
+4. Renderer recovery preserves camera, floor, selection, view filters, unsaved
+   project edits and undo history.
+5. Categorized architectural observations with exact-location close-ups for
+   jambs/reveals, wall elevation joints, stair footprints and landings.
+6. Four additional reviewed scenes: irregular plot, courtyard, custom multistorey
+   datums and sixty furniture placements with a professional fitout.
+
+See [PROGRESSIVE_4D.md](PROGRESSIVE_4D.md) for controls, verification and limits.

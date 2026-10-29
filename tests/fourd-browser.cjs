@@ -62,7 +62,7 @@ module.exports = async ({ page, assert }) => {
     setWorkspaceLayout("4d");
   });
   await page.locator("#fourd-start").click();
-  await page.waitForFunction(() => FourDWorkspace.running && Engine4D.frames > 0);
+  await page.waitForFunction(() => FourDWorkspace.running && !FourDWorkspace.starting && Engine4D.frames > 0);
   // Room focus must have a visible exit even while advanced controls are closed.
   const beforeFocus = await page.evaluate(() => ProjectState.capture());
   await page.evaluate(async () => {
@@ -119,7 +119,7 @@ module.exports = async ({ page, assert }) => {
   assert.equal(await page.locator("#fourd-toolbar").isVisible(), false);
   await page.evaluate(() => setWorkspaceLayout("4d"));
   await page.locator("#fourd-start").click();
-  await page.waitForFunction(()=>FourDWorkspace.running);
+  await page.waitForFunction(()=>FourDWorkspace.running&&!FourDWorkspace.starting);
   await page.evaluate(()=>StudioUI.select(0));
   await page.setViewportSize({ width: 1440, height: 1000 });
   console.log("4D full-view exit, view filters, mobile and clean-view recovery passed");

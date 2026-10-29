@@ -73,6 +73,16 @@ module.exports = async ({ page, assert }) => {
   await page.waitForTimeout(300);
   for (const theme of ["graphite", "pearl", "ocean", "sand"]) {
     await page.evaluate((theme) => StudioEnhancements.theme(theme), theme);
+    // A loaded software renderer can delay the first animation frame. Assert
+    // the settled visible state instead of sampling a partly expanded dock.
+    await page.waitForFunction(()=>{
+      const rail=document.getElementById('workspace-rail').getBoundingClientRect();
+      const labels=[...document.querySelectorAll('#workspace-primary-tools button>span')].filter(n=>n.parentElement.getClientRects().length);
+      return labels.length>=7&&labels.every(n=>{
+        const s=getComputedStyle(n),r=n.getBoundingClientRect();
+        return s.opacity==='1'&&s.visibility==='visible'&&s.display!=='none'&&s.clipPath==='none'&&r.width>40&&r.right<=rail.right+1;
+      });
+    },null,{timeout:10000});
     const labels = await page
       .locator("#workspace-primary-tools button>span")
       .evaluateAll((nodes) =>
@@ -184,7 +194,7 @@ module.exports = async ({ page, assert }) => {
   await page.evaluate(() => setWorkspaceLayout("4d"));
   await page.locator("#fourd-start").click();
   await page
-    .waitForFunction(() => Engine4D.ready && Engine4D.frames > 0)
+    .waitForFunction(() => Engine4D.ready && !FourDWorkspace.starting && Engine4D.frames > 0)
     .catch(async (error) => {
       console.log(
         "4D startup diagnostics",

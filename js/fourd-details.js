@@ -1,16 +1,18 @@
 /* Owned presentation detail, fixture rig and worker-generated section surfaces. */
 window.FourDDetails={
  generation:0,capRevision:0,
- disposeGroup(key){const group=this[key];if(!group)return;group.parent?.remove(group);const g=new Set(),m=new Set();group.traverse(n=>{if(n.geometry)g.add(n.geometry);for(const mat of [].concat(n.material||[]))m.add(mat);});g.forEach(x=>x.dispose());m.forEach(x=>x.dispose());this[key]=null;},
+ disposeGroup(key){const group=this[key];if(!group)return;group.parent?.remove(group);const g=new Set(),m=new Set();if(group.ownedMaterial)m.add(group.ownedMaterial);group.traverse(n=>{if(n.geometry)g.add(n.geometry);for(const mat of [].concat(n.material||[]))m.add(mat);});g.forEach(x=>x.dispose());m.forEach(x=>x.dispose());this[key]=null;},
  reset(){this.generation++;this.detailKey=null;this.fixtureKey=null;this.capKey=null;this.capRevision++;clearTimeout(this.capTimer);this.disposeGroup('details');this.disposeGroup('capGroup');this.disposeGroup('fixtureGroup');},
- build(){
+ *buildSteps(attach=true){
   this.disposeGroup('details');if(!FourDStudio.settings.detailing)return;
-  const p=StudioEnhancements.modelProject||ProjectState.capture(),{SCALE:S,I}=get3DEnvironmentParams(),group=new THREE.Group();group.name='Architectural trim';this.details=group;Engine4D.scene.add(group);
+  const p=StudioEnhancements.modelProject||ProjectState.capture(),{SCALE:S,I}=get3DEnvironmentParams(),group=new THREE.Group();group.name='Architectural trim';this.details=group;if(attach)Engine4D.scene.add(group);
   this.detailSkipped=0;const budget=FourDWorkspace.quality==='eco'?300:FourDWorkspace.quality==='high'?1600:900;
   const mat=new THREE.MeshStandardMaterial({color:0xd5d1c5,roughness:.7});
+  group.ownedMaterial=mat;
+  const walls=ProjectModel.walls(p),thicknessByOpening=new Map(walls.flatMap(w=>w.openings.map(o=>[o.id,w.thickness])));
   const strip=(a,b,base,height,width,data)=>{if(group.children.length>=budget){this.detailSkipped++;return;}const length=Math.hypot(b.x-a.x,b.y-a.y);if(length<.1)return;const mesh=new THREE.Mesh(new THREE.BoxGeometry(length*S,height*S,width*S),mat);mesh.position.set(I.x+(a.x+b.x)*S/2,(base+height/2)*S,I.z+(a.y+b.y)*S/2);mesh.rotation.y=-Math.atan2(b.y-a.y,b.x-a.x);mesh.userData={...data,detailBase:mesh.position.y};mesh.castShadow=mesh.receiveShadow=true;group.add(mesh);};
   // Offset short strips to the room side. Door spans remain clear down to the floor.
-  for(const wall of ProjectModel.walls(p)){
+  for(const wall of walls){
    const a=wall.a||{x:wall.horizontal?wall.start:wall.fixed,y:wall.horizontal?wall.fixed:wall.start},b=wall.b||{x:wall.horizontal?wall.end:wall.fixed,y:wall.horizontal?wall.fixed:wall.end},len=Math.hypot(b.x-a.x,b.y-a.y),dx=(b.x-a.x)/len,dy=(b.y-a.y)/len;
    if(!len)continue;
    for(const owner of wall.owners.filter(o=>o.index!=null)){
@@ -18,17 +20,27 @@ window.FourDDetails={
     const at=t=>({x:a.x+dx*t-dy*inset,y:a.y+dy*t+dx*inset}),cuts=[...new Set([0,len,...wall.openings.filter(o=>o.sill<5).flatMap(o=>[o.start,o.end])])].sort((a,b)=>a-b);
     for(let i=1;i<cuts.length;i++){const lo=cuts[i-1],hi=cuts[i],mid=(lo+hi)/2;if(wall.openings.some(o=>o.sill<5&&mid>o.start&&mid<o.end))continue;strip(at(lo+.05),at(hi-.05),WorkbenchModel.roomBase(p,room)+.2,4,.55,{elementId:room.id,floor:room.floor});}
    }
+   yield;
   }
   // Thin architraves follow the actual opening orientation, width, sill and height.
-  for(const opening of p.fixtures){const room=p.elements[opening.roomId],line=PlanningModel.openingSegment(p,opening);if(!room||!line)continue;const a=line.a,b=line.b,len=Math.hypot(b.x-a.x,b.y-a.y),dx=(b.x-a.x)/len,dy=(b.y-a.y)/len,thickness=(ProjectModel.walls(p).find(w=>w.openings.some(o=>o.id===opening.id))?.thickness||p.wallSettings.external),height=opening.height||(opening.type==='door'?80:40),base=WorkbenchModel.roomBase(p,room)+(opening.sill||0),data={elementId:room.id,floor:room.floor,openingId:opening.id};
+  for(const opening of p.fixtures){const room=p.elements[opening.roomId],line=PlanningModel.openingSegment(p,opening);if(!room||!line)continue;const a=line.a,b=line.b,len=Math.hypot(b.x-a.x,b.y-a.y),dx=(b.x-a.x)/len,dy=(b.y-a.y)/len,thickness=(thicknessByOpening.get(opening.id)||p.wallSettings.external),height=opening.height||(opening.type==='door'?80:40),base=WorkbenchModel.roomBase(p,room)+(opening.sill||0),data={elementId:room.id,floor:room.floor,openingId:opening.id};
    for(const sign of [-1,1]){const at=(t,offset)=>({x:a.x+dx*t-dy*offset,y:a.y+dy*t+dx*offset}),offset=(thickness/2+.35)*sign;
     strip(at(-1,offset),at(len+1,offset),base+height,1.4,.65,data);
     if(opening.type==='window')strip(at(-1,offset),at(len+1,offset),base-.8,.8,1.4,data);
     for(const t of [-.7,len+.7]){strip(at(t-.7,offset),at(t+.7,offset),base,height,.65,data);}
    }
+   yield;
   }
-  if(!group.children.length){mat.dispose();}
+  if(!group.children.length){mat.dispose();group.ownedMaterial=null;}
  },
+ build(){for(const step of this.buildSteps()){};},
+ async buildAsync(checkpoint,valid=()=>true){
+  const staging=Object.create(this);staging.details=null;const iterator=staging.buildSteps(false);let committed=false;
+  try{let began=performance.now();for(;;){if(!valid())throw new DOMException('Detail preparation cancelled','AbortError');const result=iterator.next();if(result.done)break;if(performance.now()-began>=8){await checkpoint();began=performance.now();}}
+   await checkpoint();if(!valid())throw new DOMException('Detail preparation cancelled','AbortError');this.disposeGroup('details');this.details=staging.details;this.detailSkipped=staging.detailSkipped;this.detailKey=this.key();if(this.details)Engine4D.scene.add(this.details);committed=true;
+  }finally{iterator.return();if(!committed)staging.disposeGroup('details');}
+ },
+ key(){return Engine4D.modelVersion+'|'+FourDStudio.settings.detailing+'|'+FourDWorkspace.quality;},
  lightColor(k){const t=k/100;let r,g,b;if(t<=66){r=255;g=99.4708*Math.log(t)-161.1196;b=t<=19?0:138.5177*Math.log(t-10)-305.0448;}else{r=329.6987*Math.pow(t-60,-.1332);g=288.1222*Math.pow(t-60,-.0755);b=255;}return new THREE.Color().setRGB(...[r,g,b].map(v=>Math.max(0,Math.min(255,v))/255)).convertSRGBToLinear();},
  fixtures(){
   const p=StudioEnhancements.modelProject||ProjectState.capture(),s=FourDStudio.settings,{SCALE:S,I}=get3DEnvironmentParams(),floor=FourDViews.floorIndex??currentFloor,limit=FourDWorkspace.quality==='eco'?1:FourDWorkspace.quality==='high'?8:4;
@@ -41,10 +53,12 @@ window.FourDDetails={
    light.target.position.copy(position).add(new THREE.Vector3(Math.sin(yaw)*tilt,-(f.type==='wall'?.3:1),Math.cos(yaw)*tilt).normalize().multiplyScalar(60*S));light.target.updateMatrixWorld();});
  },
  frame(){
-  if(!FourDWorkspace.running)return;const key=Engine4D.modelVersion+'|'+FourDStudio.settings.detailing+'|'+FourDWorkspace.quality+'|'+(FourDViews.floorIndex??'all')+'|'+(StudioEnhancements.focusRoom||'');
+  if(!FourDWorkspace.running||FourDWorkspace.progressivePending)return;const key=this.key();
   if(key!==this.detailKey){this.detailKey=key;this.build();}
   const kind=FourDViews.kind,focused=StudioEnhancements.focusRoom;
   this.details?.children.forEach(n=>{n.visible=(!focused||n.userData.elementId===focused)&&(FourDViews.floorIndex==null||n.userData.floor===FourDViews.floorIndex);n.position.y=n.userData.detailBase+n.userData.floor*StudioEnhancements.explosion*get3DEnvironmentParams().SCALE;});
+  const moving=FourDWorkspace.navigationDetail&&StudioEnhancements.adaptive&&(StudioEnhancements.navigating||!!FourDViews.transition||StudioEnhancements.walking)&&!FourDWorkspace.exporting;
+  if(this.details)this.details.visible=!moving;if(this.capGroup)this.capGroup.visible=!moving;
   this.fixtures();this.scheduleCaps();
  },
  scheduleCaps(){

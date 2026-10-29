@@ -10,7 +10,7 @@ module.exports=async({page,assert})=>{
  });
  console.log('Presentation: gate');
  await page.locator('#fourd-start').click();
- await page.waitForFunction(()=>FourDWorkspace.running||document.body.dataset.fourdState==='error');
+ await page.waitForFunction(()=>(FourDWorkspace.running&&!FourDWorkspace.starting)||document.body.dataset.fourdState==='error');
  assert.equal(await page.evaluate(()=>FourDWorkspace.running),true,await page.locator('#fourd-start-message').textContent());
  console.log('Presentation: renderer started');
  await page.evaluate(()=>{

@@ -290,7 +290,7 @@ const Workbench3D = {
           );
       }
     }
-    for (const l of w.interiors) {
+    for (const l of options.deferInteriors?[]:w.interiors) {
       const room = p.elements.find((e) => e.id === l.room);
       for (const item of l.items.filter(wanted)) {
         const base = W.roomBase(p, room) + (item.base || 0),

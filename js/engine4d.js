@@ -112,6 +112,7 @@ window.Engine4D = {
     Engine3D.needsRender = true;
   },
   fail(error) {
+    if(window.FourDWorkspace?.running&&!FourDWorkspace.recovery)FourDWorkspace.recovery=window.FourDSession?.capture();
     FourDStudio.leave();
     window.FourDRender?.cancelPhoto();
     this.ready = false;
@@ -164,7 +165,9 @@ window.Engine4D = {
   },
   async recover() {
     this.recoveries++;
+    const saved=FourDWorkspace.recovery||window.FourDSession?.capture();
     FourDWorkspace.stop();
+    FourDWorkspace.recovery=saved;
     return FourDWorkspace.start();
   },
   healthDialog() {
@@ -182,6 +185,8 @@ window.Engine4D = {
       powerPreference: "high-performance",
     });
     this.renderer.domElement.id = "four-d-canvas";
+    // Composer passes each call renderer.render; count the complete frame.
+    this.renderer.info.autoReset=false;
     this.onLost = (event) => {
       event.preventDefault();
       if (!this.active) return;
@@ -296,11 +301,11 @@ window.Engine4D = {
     if (quality && StudioUI.mode === "4d" && quality.textContent !== value)
       quality.textContent = value;
   },
-  async warmPrograms(checkpoint) {
+  async warmPrograms(checkpoint, root=this.scene) {
     const started=performance.now(),seen=new Set(),nodes=[],scene=new THREE.Scene();
     scene.environment=this.scene.environment;scene.fog=this.scene.fog;
     this.scene.traverse(n=>{if(n.isLight)scene.add(n.clone());});
-    this.scene.traverse(n=>{if(!n.isMesh||!n.material)return;const key=[...[].concat(n.material).map(m=>m.uuid),n.isInstancedMesh,n.isSkinnedMesh,!!n.geometry?.attributes.uv,!!n.geometry?.attributes.normal].join(':');if(!seen.has(key)&&nodes.length<256){seen.add(key);nodes.push(n);}});
+    root.traverse(n=>{if(!n.isMesh||!n.material)return;const key=[...[].concat(n.material).map(m=>m.uuid),n.isInstancedMesh,n.isSkinnedMesh,!!n.geometry?.attributes.uv,!!n.geometry?.attributes.normal].join(':');if(!seen.has(key)&&nodes.length<256){seen.add(key);nodes.push(n);}});
     let worst=0,yieldedAt=performance.now();
     for(const node of nodes){
       const copy=node.clone(false);scene.add(copy);
@@ -308,7 +313,8 @@ window.Engine4D = {
       if(performance.now()-yieldedAt>=8){await checkpoint();yieldedAt=performance.now();}
     }
     await checkpoint();
-    FourDWorkspace.metrics.shaders={variants:nodes.length,totalMs:performance.now()-started,maxChunkMs:worst};
+    const previous=FourDWorkspace.metrics.shaders;
+    FourDWorkspace.metrics.shaders={variants:(previous?.variants||0)+nodes.length,totalMs:(previous?.totalMs||0)+performance.now()-started,maxChunkMs:Math.max(previous?.maxChunkMs||0,worst)};
   },
   setPreset(value, persist = true) {
     const presets = {
@@ -743,7 +749,7 @@ window.Engine4D = {
     this.scene.add(this.model);
     this.frameLighting();
     try {
-      Landscape4D.build(this);
+      if(!FourDWorkspace.progressivePending)Landscape4D.build(this);
     } catch (error) {
       window.Landscape4D?.dispose(this);
       this.geometryIssues.push({ element: "Garden", reason: error.message });
@@ -816,6 +822,7 @@ window.Engine4D = {
     }
   },
   renderFrame(camera) {
+    this.renderer.info.reset();
     Engine3D.scene.updateMatrixWorld(true);
     this.syncModel();
     if (!this.ready) return false;
@@ -912,6 +919,7 @@ window.Engine4D = {
     return true;
   },
   async capture(options = {}) {
+    if(FourDWorkspace.starting)await FourDWorkspace.startPromise;
     if (!this.ready || window.FourDWorkspace?.paused)
       return StudioUI.message("The 4D renderer is still loading.");
     const stamp=this.generation;

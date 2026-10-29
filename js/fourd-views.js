@@ -33,7 +33,7 @@ window.FourDViews = {
       kind:this.kind,floor:this.floorIndex,element:this.elementId,focus:StudioEnhancements.focusRoom,
       planes:Engine3D.renderer.clippingPlanes.map(p=>[...p.normal.toArray(),p.constant]),
       projection:ViewportUI.projectionMode,zoom:Engine3D.camera.zoom,explosion:StudioEnhancements.explosion,
-      material:!!this.materialMode};
+      material:!!this.materialMode,inspection:this.inspectionPoint?structuredClone(this.inspectionPoint):null};
   },
   remember() {this.history.push(this.pose());if(this.history.length>24)this.history.shift();},
   cancel(reason='navigation') {
@@ -63,7 +63,8 @@ window.FourDViews = {
     if(window.FourDPerformance?.profileRunning)return;
     if(!FourDWorkspace.running||FourDWorkspace.paused||document.hidden||StudioEnhancements.walking||this.materialMode||FourDReview.queueActive)return;
     let box=this.modelBox(this.kind==='floor'?this.floorIndex:null);const p=StudioEnhancements.modelProject||ProjectState.capture(),{SCALE:S,I}=get3DEnvironmentParams();
-    if(['element','material'].includes(this.kind)) {
+    if(this.inspectionPoint){const q=this.inspectionPoint,point=new THREE.Vector3(I.x+q.x*S,q.z*S,I.z+q.y*S);box=new THREE.Box3(point.clone().addScalar(-30*S),point.clone().addScalar(30*S));}
+    else if(['element','material'].includes(this.kind)) {
       const el=p.elements.find(e=>e.id===this.elementId);if(!el)return;
       const b=PresentationModel.bounds(el),base=WorkbenchModel.roomBase(p,el),h=el.isFurniture?(el.customHeight||36):WorkbenchModel.floorHeight(p,el.floor)*.7;
       box=new THREE.Box3(new THREE.Vector3(I.x+b.x*S,base*S,I.z+b.y*S),new THREE.Vector3(I.x+(b.x+b.w)*S,(base+h)*S,I.z+(b.y+b.h)*S));
@@ -147,6 +148,7 @@ window.FourDViews = {
     Engine3D.needsRender=true;
   },
   clearFilters() {
+    this.inspectionPoint=null;
     window.FourDReview?.showNote('');
     StudioEnhancements.cancelPreview();StudioEnhancements.stopWalk();StudioEnhancements.setFocus(false);
     StudioEnhancements.focusRoom=null;StudioEnhancements.explosion=0;StudioEnhancements.explodedBounds=null;Workbench3D.clearIsolation();
@@ -205,6 +207,7 @@ window.FourDViews = {
     if(pose.floor!=null&&pose.floor>=ProjectState.capture().floorCount)return this.building(false);
     this.projection(pose.projection||'perspective');
     this.kind=pose.kind;this.floorIndex=pose.floor;this.elementId=pose.element;
+    this.inspectionPoint=pose.inspection?structuredClone(pose.inspection):null;
     StudioEnhancements.focusRoom=pose.focus;ViewportUI.advancedFloor=pose.floor;
     Engine3D.renderer.clippingPlanes=pose.planes.map(a=>new THREE.Plane(new THREE.Vector3(...a.slice(0,3)),a[3]));
     StudioEnhancements.explosion=pose.explosion||0;this.materialMode=pose.material?'floor':false;

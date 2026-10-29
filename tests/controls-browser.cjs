@@ -324,14 +324,13 @@ module.exports = async ({ page, assert }) => {
   for (const width of [320, 390, 768, 1440]) {
     await page.setViewportSize({ width, height: 844 });
     await page.waitForTimeout(100);
-    await page.evaluate(() =>
-      PlanContextMenu.open({
-        clientX: innerWidth - 2,
-        clientY: innerHeight - 2,
-        target: document.getElementById("blueprint"),
-      }),
-    );
-    const r = await menu.boundingBox();
+    // Measure in the same UI turn: a late viewport resize correctly closes an
+    // already open menu and must not race a separate bounding-box request.
+    const r = await page.evaluate(() => {
+      PlanContextMenu.open({clientX:innerWidth-2,clientY:innerHeight-2,target:document.getElementById('blueprint')});
+      const menu=document.getElementById('context-menu');return {...menu.getBoundingClientRect().toJSON(),visible:!!menu.getClientRects().length&&getComputedStyle(menu).visibility==='visible'};
+    });
+    assert.equal(r.visible,true);
     assert.ok(
       r.x >= 0 && r.y >= 0 && r.x + r.width <= width && r.y + r.height <= 844,
       "Context menu remains within viewport edges",

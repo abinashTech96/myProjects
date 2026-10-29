@@ -117,7 +117,7 @@ module.exports = async ({ page, assert }) => {
     setWorkspaceLayout("4d");
   });
   await page.locator("#fourd-start").click();
-  await page.waitForFunction(() => Engine4D.ready && Engine4D.frames > 0);
+  await page.waitForFunction(() => Engine4D.ready && !FourDWorkspace.starting && Engine4D.frames > 0);
   await page.evaluate(()=>StudioUI.select(0));
   const themePixels = new Set();
   for (const theme of ["graphite", "pearl", "ocean", "sand"]) {
@@ -378,44 +378,36 @@ module.exports = async ({ page, assert }) => {
     ViewportUI.inspectFloor("0");
     StudioEnhancements.startEyedropper();
   });
-  await page.waitForFunction(()=>!Engine3D.cameraTween && !FourDWorkspace.structuralPending);
-  await page.waitForTimeout(250);
-  const pickPixel = async (roomIndex) =>
-    page.evaluate((index) => {
-      const rect = Engine3D.renderer.domElement.getBoundingClientRect(),
-        panel = document
-          .getElementById("advanced-view-panel")
-          .getBoundingClientRect(),
-        candidates = [];
-      Engine4D.model.traverse((mesh) => {
-        if (
-          mesh.isMesh &&
-          mesh.userData.roomIndex === index &&
-          mesh.userData.presentationSurface &&
-          mesh.visible
-        ) {
-          const point = new THREE.Box3()
-            .setFromObject(mesh)
-            .getCenter(new THREE.Vector3())
-            .project(Engine4D.camera);
-          const pixel = {
-            clientX: rect.x + ((point.x + 1) * rect.width) / 2,
-            clientY: rect.y + ((1 - point.y) * rect.height) / 2,
-          };
-          const hit = StudioEnhancements.hit(pixel);
-          if (
-            hit?.object.userData.roomIndex === index &&
-            hit.object.userData.presentationSurface &&
-            pixel.clientX > panel.right + 8 &&
-            pixel.clientX < rect.right - 10 &&
-            pixel.clientY > rect.y + 20 &&
-            pixel.clientY < rect.bottom - 20
-          )
-            candidates.push({ x: pixel.clientX, y: pixel.clientY });
-        }
-      });
-      return candidates[0];
-    }, roomIndex);
+  // Mesh centres can be covered or clipped. Locate an actual visible surface
+  // after navigation has settled, then exercise the real two-click workflow.
+  const pickPixel = async (roomIndex) => {
+    try {
+      const handle=await page.waitForFunction(index=>{
+        if(Engine3D.cameraTween||FourDViews.transition||FourDWorkspace.structuralPending)return false;
+        const rect=Engine3D.renderer.domElement.getBoundingClientRect(),candidates=[];
+        Engine4D.model.updateMatrixWorld(true);Engine4D.camera.updateMatrixWorld(true);
+        Engine4D.model.traverse(mesh=>{
+          if(!mesh.isMesh||mesh.userData.roomIndex!==index||!mesh.userData.presentationSurface||!mesh.visible||candidates.length)return;
+          const box=new THREE.Box3().setFromObject(mesh),size=box.getSize(new THREE.Vector3());
+          for(const x of [.5,.25,.75])for(const y of [.5,.25,.75])for(const z of [.5,.25,.75]){
+            if(candidates.length)continue;
+            const point=new THREE.Vector3(box.min.x+size.x*x,box.min.y+size.y*y,box.min.z+size.z*z).project(Engine4D.camera);
+            if(point.z< -1||point.z>1)continue;
+            const pixel={clientX:rect.x+(point.x+1)*rect.width/2,clientY:rect.y+(1-point.y)*rect.height/2};
+            if(pixel.clientX<rect.left+10||pixel.clientX>rect.right-10||pixel.clientY<rect.top+20||pixel.clientY>rect.bottom-20)continue;
+            if(document.elementFromPoint(pixel.clientX,pixel.clientY)!==Engine3D.renderer.domElement)continue;
+            const hit=StudioEnhancements.hit(pixel);
+            if(hit?.object.userData.roomIndex===index&&hit.object.userData.presentationSurface)candidates.push({x:pixel.clientX,y:pixel.clientY});
+          }
+        });
+        return candidates[0]||false;
+      },roomIndex,{timeout:10000});
+      const point=await handle.jsonValue();await handle.dispose();return point;
+    }catch(error){
+      console.log('Eyedropper surface diagnostics',await page.evaluate(()=>({mode:StudioEnhancements.pickMode,view:FourDViews.kind,floor:FourDViews.floorIndex,camera:Engine3D.camera.position.toArray(),target:Engine3D.controls.target.toArray(),pending:FourDWorkspace.structuralPending})));
+      await page.screenshot({path:'/tmp/archcad-eyedropper-failure.png'});throw error;
+    }
+  };
   const samplePoint = await pickPixel(0);
   assert.ok(samplePoint, "A room surface must be available for sampling");
   await page.mouse.click(samplePoint.x, samplePoint.y);

@@ -78,6 +78,9 @@ window.FourDSource = {
       Scene4D.reconcile(Engine4D,stage.resources);
       Engine4D.geometryIssues.push(...stage.issues);Engine4D.modelTriangles=Scene4D.triangles(Engine4D.model);
       Engine4D.frameLighting();Engine4D.renderer.shadowMap.needsUpdate=true;
+      Engine3D.modelSignature='4d-source:'+this.serial+':furnished';
+      Engine4D.modelVersion=Engine3D.modelSignature+'|'+Workbench3D.generation;
+      FourDStudio.invalidate();
       FourDStudio.lodVersion=null;FourDStudio.outlineKey=null;FourDRender.probeDirty=true;
       this.deferred=[];this.deferredInteriors=[];this.complete=true;this.key=FourDWorkspace.geometryKey(p);
       FourDWorkspace.metrics.furnitureMs=performance.now()-started;committed=true;Engine3D.needsRender=true;

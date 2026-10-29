@@ -7,25 +7,30 @@ module.exports=async({page,assert})=>{
   await page.evaluate(()=>{
    const checkpoint=FourDWorkspace.checkpoint;window.progressiveCheckpoint=checkpoint;
    FourDWorkspace.checkpoint=async function(message,token){if(message==='Adding furniture…'){
-    window.coreObservation={running:this.running,starting:this.starting,furniture:Engine4D.pairs.filter(([s])=>elements[s.userData.roomIndex]?.isFurniture).length,interiors:Engine4D.pairs.filter(([s])=>s.userData.objectId==='fitout-counter').length,garden:!!Engine4D.landscape,details:!!window.FourDDetails?.details,frames:Engine4D.frames};await new Promise(resolve=>window.releaseFurniture=resolve);
+    window.coreObservation={running:this.running,starting:this.starting,furniture:Engine4D.pairs.filter(([s])=>elements[s.userData.roomIndex]?.isFurniture).length,interiors:Engine4D.pairs.filter(([s])=>s.userData.objectId==='fitout-counter').length,garden:!!Engine4D.landscape,details:!!window.FourDDetails?.details,frames:Engine4D.frames,version:Engine4D.modelVersion,builds:this.metrics.builds};await new Promise(resolve=>window.releaseFurniture=resolve);
    }return checkpoint.call(this,message,token);};window.progressiveStart=FourDWorkspace.start();
   });
   await page.waitForFunction(()=>window.coreObservation);const core=await page.evaluate(()=>coreObservation);
   assert.equal(core.running,true);assert.equal(core.starting,true);assert.equal(core.furniture,0);assert.equal(core.interiors,0);assert.equal(core.garden,false);assert.equal(core.details,false);assert.ok(core.frames>0);
   assert.equal(await page.locator('#fourd-start-card').isVisible(),false,'The visible core has no blocking loading card');
+  const pendingPhoto=await page.evaluate(()=>{FourDRender.requestPhoto();FourDRender.after(Engine4D.camera,{...FourDStudio.settings,progressive:true});return !!FourDRender.timer||FourDRender.active;});assert.equal(pendingPhoto,false,'Explicit and automatic refinement wait for complete geometry');
   await page.getByRole('button',{name:'Full view',exact:true}).click();await page.evaluate(()=>{FourDWorkspace.checkpoint=progressiveCheckpoint;releaseFurniture();});await page.evaluate(()=>progressiveStart);
   assert.equal(await page.evaluate(()=>FourDWorkspace.running&&!FourDWorkspace.starting),true,await page.locator('#fourd-start-message').textContent());
   assert.equal(await page.evaluate(()=>new Set(Engine4D.pairs.filter(([s])=>elements[s.userData.roomIndex]?.isFurniture).map(([s])=>s.userData.elementId)).size),60);
   assert.ok(await page.evaluate(()=>Engine4D.pairs.some(([s])=>s.userData.objectId==='fitout-counter')));
   assert.ok(await page.evaluate(()=>FourDWorkspace.metrics.fullReadyMs>FourDWorkspace.metrics.firstFrameMs));assert.equal(await page.locator('#fourd-preparation-status').isVisible(),false);
+  assert.notEqual(await page.evaluate(()=>Engine4D.modelVersion),core.version,'Furniture publication invalidates geometry-dependent caches');assert.equal(await page.evaluate(()=>FourDWorkspace.metrics.builds),core.builds,'Appending furnishings does not rebuild the core');
   const stable=await page.evaluate(()=>JSON.stringify(ProjectState.capture()));
   const navigation=await page.evaluate(()=>{
    FourDViews.motion='off';FourDViews.floor(0);StudioEnhancements.navigating=false;Engine4D.render();const settled={calls:Engine4D.renderer.info.render.calls,triangles:Engine4D.renderer.info.render.triangles};
+   const nested=Engine4D.pairs.find(([s])=>s.parent===Engine3D.buildingGroup&&elements[s.userData.roomIndex]?.isFurniture),professional=Engine3D.buildingGroup.children.find(n=>n.userData.workbench);
+   professional.add(nested[0]);FourDStudio.lodVersion=null;
    StudioEnhancements.navigating=true;Engine4D.render();const moving={calls:Engine4D.renderer.info.render.calls,triangles:Engine4D.renderer.info.render.triangles,count:FourDStudio.navigationCount};
+   const nestedSupported=FourDStudio.lods.some(item=>item.copy===nested[1]);Engine3D.buildingGroup.add(nested[0]);
    const proxy=FourDStudio.lods.find(l=>l.proxy.visible);let picked=false;if(proxy){const center=proxy.proxy.position.clone().project(Engine4D.camera),rect=Engine3D.renderer.domElement.getBoundingClientRect(),hit=StudioEnhancements.hit({clientX:rect.x+(center.x+1)*rect.width/2,clientY:rect.y+(1-center.y)*rect.height/2});picked=!!hit?.object.userData.elementId;}
-   StudioEnhancements.navigating=false;Engine4D.render();return {settled,moving,picked,restored:FourDStudio.lods.every(l=>!l.proxy.visible),after:Engine4D.renderer.info.render.calls};
+   StudioEnhancements.navigating=false;Engine4D.render();return {settled,moving,picked,nestedSupported,restored:FourDStudio.lods.every(l=>!l.proxy.visible),after:Engine4D.renderer.info.render.calls};
   });
-  assert.ok(navigation.moving.count>0);assert.ok(navigation.moving.calls<navigation.settled.calls,'Movement reduces actual draw calls');assert.ok(navigation.moving.triangles<navigation.settled.triangles);assert.equal(navigation.restored,true);assert.equal(navigation.after,navigation.settled.calls);assert.equal(navigation.picked,true,'Proxy remains selectable');assert.equal(await page.evaluate(()=>JSON.stringify(ProjectState.capture())),stable);
+  assert.ok(navigation.moving.count>0);assert.ok(navigation.moving.calls<navigation.settled.calls,'Movement reduces actual draw calls');assert.ok(navigation.moving.triangles<navigation.settled.triangles);assert.equal(navigation.nestedSupported,true,'Imported furniture containers receive navigation detail');assert.equal(navigation.restored,true);assert.equal(navigation.after,navigation.settled.calls);assert.equal(navigation.picked,true,'Proxy remains selectable');assert.equal(await page.evaluate(()=>JSON.stringify(ProjectState.capture())),stable);
   console.log('Progressive: visible core, sixty furnished placements, reduced movement draw calls and restored detail passed');
   await page.evaluate(()=>ProjectState.commit('Unsaved room name',()=>elements[0].customName='Keep my unsaved edit'));
   await page.waitForFunction(()=>!FourDWorkspace.structuralPending&&FourDIncremental.snapshot?.project.elements[0].customName==='Keep my unsaved edit');

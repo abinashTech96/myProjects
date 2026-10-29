@@ -433,7 +433,7 @@ window.FourDStudio = {
       const room =
         elements[source.userData.roomIndex] ||
         elements.find((e) => e.id === source.userData.elementId);
-      if (!room?.isFurniture || source.parent !== Engine3D.buildingGroup)
+      if (!room?.isFurniture || (source.parent !== Engine3D.buildingGroup&&!source.parent?.userData.workbench))
         continue;
       let triangles = 0,meshes=0;
       copy.traverse((n) => {

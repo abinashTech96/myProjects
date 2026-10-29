@@ -31,6 +31,8 @@ preparation for the added surfaces. A small status strip names the current stage
 and offers **Cancel loading**. It does not cover the model. Pause enables after
 preparation completes; Stop/exit/tab hiding and project changes cancel obsolete
 startup work. PNG capture waits for the complete scene.
+Still refinement also waits; publishing furnishings advances the scene version
+and clears cached refined frames, so an unfinished view cannot survive as a still.
 
 Each staged group is checked against the active session before publication.
 Cancelled resources are disposed, and reentry cannot mistake an incomplete source

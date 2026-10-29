@@ -414,6 +414,7 @@ window.FourDRender = {
     this.targets = null;
   },
   requestPhoto() {
+    if(FourDWorkspace.progressivePending){FourDStudio.photoStatus('Scene preparation in progress. Refinement becomes available when loading finishes.');return;}
     if (!this.engine?.ready || FourDStudio.comparison || FourDStudio.playing)
       return;
     clearTimeout(this.timer);

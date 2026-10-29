@@ -132,6 +132,7 @@ window.FourDWorkspace = {
         this.progressivePending=false;this.modelKey=this.geometryKey(this.renderProject());await FourDIncremental.remember(this.renderProject(),valid);
         this.metrics.fullReadyMs=performance.now()-this.metrics.started;this.recovery=null;this.preparation();
         this.starting=false;document.getElementById('fourd-pause').disabled=false;
+        FourDStudio.invalidate();
         if(!Engine4D.render())throw Error(Engine4D.lastError||'The completed view failed');Engine3D.needsRender=true;this.status();
       } catch (error) {
         if (token !== this.token) return;

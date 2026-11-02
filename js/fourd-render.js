@@ -4,6 +4,7 @@ window.FourDRender = {
   init(engine) {
     this.engine = engine;
     this.environmentKey = null;
+    this.probes=new Map();this.probeStats={hits:0,builds:0};
     this.bokeh = null;
     this.initPhotoResources();
   },
@@ -195,6 +196,7 @@ window.FourDRender = {
     } finally {
       generator.dispose();
     }
+    this.clearProbes();
     e.environment?.dispose();
     this.sky?.dispose();
     this.sky = source;
@@ -206,6 +208,7 @@ window.FourDRender = {
         StudioEnhancements.viewportBackground("4d"),
       ).convertSRGBToLinear();
     this.environmentKey = key;
+    this.environmentGeneration=(this.environmentGeneration||0)+1;
     this.probeDirty = true;
   },
   camera(camera, settings, targetOverride) {
@@ -327,81 +330,50 @@ window.FourDRender = {
       this.mirrors.push(mesh);
     }
   },
+  clearProbes() {
+    for(const entry of this.probes?.values()||[]){entry.cube.dispose();entry.environment.dispose();}
+    this.probes=new Map();this.probeEnvironment=null;this.probe=null;
+  },
+  refreshProbes(){this.clearProbes();this.probeDirty=true;Engine3D.needsRender=true;},
   updateProbe(settings) {
-    const e = this.engine;
-    if (settings.reflections !== "local") {
-      if (this.probe) {
-        e.scene.environment = e.environment.texture;
-        this.probe.dispose();
-        this.probe = null;
-        this.probeEnvironment?.dispose();
-        this.probeEnvironment = null;
-      }
-      return;
+    const e=this.engine;
+    if(settings.reflections!=="local"){
+      if(this.probes?.size)this.clearProbes();
+      e.scene.environment=e.environment.texture;return;
     }
-    if (
-      !this.probeDirty ||
-      StudioEnhancements.navigating ||
-      this.active ||
-      FourDStudio.comparison ||
-      performance.now() - (this.cameraChangedAt || 0) < 300
-    )
-      return;
-    this.probeDirty = false;
-    if (!this.probe)
-      this.probe = new THREE.WebGLCubeRenderTarget(128, {
-        generateMipmaps: true,
-        minFilter: THREE.LinearMipmapLinearFilter,
-      });
-    const camera = new THREE.CubeCamera(
-        0.5,
-        Math.max(3000, e.camera.far),
-        this.probe,
-      ),
-      p = ProjectState.capture(),
-      room =
-        elements[selectedElIndex] && !elements[selectedElIndex].isFurniture
-          ? elements[selectedElIndex]
-          : p.elements.find((e) => !e.isFurniture);
-    const { SCALE: S, I } = get3DEnvironmentParams();
-    camera.position.copy(
-      room
-        ? new THREE.Vector3(
-            I.x + (room.x + room.w / 2) * S,
-            (WorkbenchModel.roomBase(p, room) + 64) * S,
-            I.z + (room.y + room.h / 2) * S,
-          )
-        : Engine3D.controls.target,
-    );
-    const hidden = [
-      ...this.mirrors,
-      FourDStudio.outlines,
-      FourDStudio.clearanceGroup,
-    ]
-      .filter(Boolean)
-      .map((m) => [m, m.visible]);
-    hidden.forEach(([m]) => (m.visible = false));
-    const background = e.scene.background;
-    e.scene.environment = e.environment.texture;
-    e.scene.background = this.sky || background;
-    this.reflectionDrawing = true;
-    try {
-      camera.update(e.renderer, e.scene);
-      const generator = new THREE.PMREMGenerator(e.renderer);
-      let environment;
-      try {
-        environment = generator.fromCubemap(this.probe.texture);
-      } finally {
-        generator.dispose();
-      }
-      this.probeEnvironment?.dispose();
-      this.probeEnvironment = environment;
-      e.scene.environment = environment.texture;
-    } finally {
-      e.scene.background = background;
-      hidden.forEach(([m, v]) => (m.visible = v));
-      this.reflectionDrawing = false;
-    }
+    if(!this.probeDirty||StudioEnhancements.navigating||this.active||FourDStudio.comparison||
+      FourDWorkspace.progressivePending||window.FourDRealism?.queue?.length||performance.now()-(this.cameraChangedAt||0)<300)return;
+    const p=StudioEnhancements.modelProject||ProjectState.capture(),s=settings.realism,
+      useRooms=s?.enabled&&s.roomReflections,
+      room=(useRooms&&window.FourDRealism?.context())||p.elements.find(el=>el.id===FourDViews.elementId)||
+        (elements[selectedElIndex]&&!elements[selectedElIndex].isFurniture?elements[selectedElIndex]:p.elements.find(el=>!el.isFurniture));
+    if(!room)return;
+    const {SCALE:S,I}=get3DEnvironmentParams(),workbench=WorkbenchModel.data(p),key=useRooms?room.id:'local',
+      near=p.elements.filter(el=>el.floor===room.floor&&Math.hypot(el.x-room.x,el.y-room.y)<Math.max(room.w,room.h)+300),
+      ids=new Set(near.map(el=>el.id)),stamp=JSON.stringify([near,p.fixtures.filter(f=>ids.has(p.elements[f.roomId]?.id)),
+        [...ids].map(id=>p.design.presentation.surfaces[id]),p.design.roof,p.wallSettings,p.view,
+        workbench.levels,workbench.structure.filter(v=>v.floor===room.floor),workbench.interiors.filter(v=>ids.has(v.room)),workbench.ramps.filter(v=>v.floor===room.floor),workbench.shafts,workbench.services3d.filter(v=>v.floor===room.floor),[...Workbench3D.templates].map(([id,t])=>[id,t.uuid]),settings.environment,this.environmentGeneration,settings.environmentRotation,
+        settings.environmentIntensity,settings.preset,settings.realism,settings.fixtures,Engine4D.physicalGlass,
+        Engine4D.lastSun?.toArray(),WorkspaceLayout.sunValue(),FourDViews.kind,FourDViews.elementId,FourDViews.floorIndex,
+        StudioEnhancements.explosion,e.renderer.clippingPlanes.map(pl=>[...pl.normal.toArray(),pl.constant])]);
+    this.probes ||= new Map();const cached=this.probes.get(key);
+    if(cached?.stamp===stamp){this.probe=cached.cube;this.probeEnvironment=cached.environment;e.scene.environment=cached.environment.texture;cached.used=performance.now();this.probeDirty=false;this.probeStats.hits++;return;}
+    const cube=new THREE.WebGLCubeRenderTarget(128,{generateMipmaps:true,minFilter:THREE.LinearMipmapLinearFilter}),
+      camera=new THREE.CubeCamera(.5,Math.max(3000,e.camera.far),cube);
+    camera.position.set(I.x+(room.x+room.w/2)*S,(WorkbenchModel.roomBase(p,room)+64)*S,I.z+(room.y+room.h/2)*S);
+    const hidden=[...(this.mirrors||[]),FourDStudio.outlines,FourDStudio.clearanceGroup].filter(Boolean).map(m=>[m,m.visible]),background=e.scene.background,oldEnvironment=e.scene.environment;
+    hidden.forEach(([m])=>m.visible=false);e.scene.environment=e.environment.texture;e.scene.background=this.sky||background;
+    this.reflectionDrawing=true;let environment;
+    try{
+      camera.update(e.renderer,e.scene);const generator=new THREE.PMREMGenerator(e.renderer);
+      try{environment=generator.fromCubemap(cube.texture);}finally{generator.dispose();}
+    }catch(error){cube.dispose();e.scene.environment=oldEnvironment;throw error;}
+    finally{e.scene.background=background;hidden.forEach(([m,v])=>m.visible=v);this.reflectionDrawing=false;}
+    if(cached){cached.cube.dispose();cached.environment.dispose();}
+    this.probes.set(key,{cube,environment,stamp,used:performance.now()});
+    const limit=useRooms?(FourDWorkspace.quality==='high'?4:2):1;
+    while(this.probes.size>limit){const [oldId,old]=[...this.probes].filter(([id])=>id!==key).sort((a,b)=>a[1].used-b[1].used)[0];old.cube.dispose();old.environment.dispose();this.probes.delete(oldId);}
+    this.probe=cube;this.probeEnvironment=environment;e.scene.environment=environment.texture;this.probeDirty=false;this.probeStats.builds++;
   },
   resize() {
     this.cancelPhoto();
@@ -552,10 +524,7 @@ window.FourDRender = {
   dispose() {
     this.cancelPhoto();
     this.clearMirrors();
-    this.probe?.dispose();
-    this.probe = null;
-    this.probeEnvironment?.dispose();
-    this.probeEnvironment = null;
+    this.clearProbes();
     this.sky?.dispose();
     this.sky = null;
     this.targets?.forEach((t) => t.dispose());

@@ -186,9 +186,12 @@ window.FourDViews = {
     StudioEnhancements.close();
     if(FourDWorkspace.annotationPreference!=='off')FourDWorkspace.setAnnotations(FourDWorkspace.annotationPreference,false);
     const {SCALE:S,I}=get3DEnvironmentParams(),b=PresentationModel.bounds(e),base=WorkbenchModel.roomBase(ProjectState.capture(),e),
+      stair=FourDStudio.settings.realism.enabled&&e.type==='staircase'?WorkbenchModel.orientedStairs(ProjectState.capture(),e):null,
       height=e.isFurniture?(e.customHeight||36):WorkbenchModel.floorHeight(ProjectState.capture(),e.floor),box=new THREE.Box3(
-        new THREE.Vector3(I.x+b.x*S,base*S,I.z+b.y*S),new THREE.Vector3(I.x+(b.x+b.w)*S,(base+height*.7)*S,I.z+(b.y+b.h)*S));
-    const pose=this.fit(box,new THREE.Vector3(.7,1,.9));this.move(pose.position,pose.target,{fromPlanes:from});
+        new THREE.Vector3(I.x+b.x*S,base*S,I.z+b.y*S),new THREE.Vector3(I.x+(b.x+b.w)*S,(base+(stair?stair.rise||Math.max(...stair.treads.map(t=>t.top)):height*.7))*S,I.z+(b.y+b.h)*S));
+    let direction=new THREE.Vector3(.7,1,.9);
+    if(stair?.treads.length>1){const center=t=>t.points.reduce((p,q)=>({x:p.x+q.x/t.points.length,y:p.y+q.y/t.points.length}),{x:0,y:0}),a=center(stair.treads[0]),b=center(stair.treads[1]),run=new THREE.Vector2(b.x-a.x,b.y-a.y).normalize();direction.set(-run.x+.65*run.y,1.2,-run.y-.65*run.x);}
+    const pose=this.fit(box,direction);this.move(pose.position,pose.target,{fromPlanes:from});
     StudioEnhancements.updateFocusReadout();
   },
   back() {

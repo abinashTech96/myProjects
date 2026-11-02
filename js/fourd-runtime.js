@@ -2,7 +2,7 @@
  * project settings remain available without a worker, GPU context or scene. */
 window.FourDRuntime = {
   loaded: new Set(),
-  files: ['landscape4d','fourd-geometry','fourd-source','scene4d','fourd-textures','fourd-scene','fourd-render','fourd-details','fourd-performance','fourd-session'],
+  files: ['landscape4d','fourd-geometry','fourd-source','scene4d','fourd-textures','fourd-scene','fourd-render','fourd-details','fourd-performance','fourd-session','fourd-realism','fourd-still'],
   load() {
     if (!this.pending) this.pending=(async()=>{
       for (const name of this.files) {

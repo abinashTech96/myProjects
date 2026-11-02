@@ -1132,7 +1132,7 @@ window.StudioEnhancements = {
       if (this.wallBoxes.some((box) => box.containsPoint(next)))
         next[axis] -= direction[axis];
     }
-    Engine3D.camera.position.copy(next);
+    Engine3D.camera.position.copy(StudioUI.mode==='4d'&&window.FourDRealism?FourDRealism.walk(next,dt):next);
     Engine3D.needsRender = true;
   },
   navigation(moving) {

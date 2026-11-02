@@ -430,3 +430,19 @@ actual device profiling steps and remaining single-operation/driver limitations.
    datums and sixty furniture placements with a professional fitout.
 
 See [PROGRESSIVE_4D.md](PROGRESSIVE_4D.md) for controls, verification and limits.
+
+## Realism follow-up — implemented
+
+- [x] Room-aware ambient balance and gradual interior exposure.
+- [x] Physical tile/plank/brick dimensions and world-aligned architectural UVs.
+- [x] Fine painted-wall and native-floor material detail with strength controls.
+- [x] Beveled trim, thresholds, window seals, coping and clean parametric stair shells.
+- [x] Finer contact shading and reduced shadow detachment.
+- [x] Bounded room reflection cache with explicit refresh and Eco fallback.
+- [x] Clear/frosted/tinted glazing and motion preview.
+- [x] Room temperature presets/switches, visible fixtures and one-shadow budget.
+- [x] Clipped lawn borders, natural tree proportions and clustered planting.
+- [x] Floor/tread support, smooth stepping and shaft/void fall prevention.
+- [x] Separate on-demand, cancellable experimental bounced-light still renderer.
+
+Controls, limits and regression instructions: [REALISM_4D.md](REALISM_4D.md).

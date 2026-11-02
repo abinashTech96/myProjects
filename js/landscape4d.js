@@ -148,17 +148,18 @@
       }
       return true;
     };
+    const realistic=!!(p.design.presentation.studio.realism?.enabled&&p.design.presentation.studio.realism.naturalGarden);
     const plants = [],
       rand = random();
     // Bounded sampling and separated crowns keep small residential plots open.
     for (const [kind, radius, limit] of [
-      ["tree", 20, 5],
+      ["tree", realistic?30:20, 5],
       ["shrub", 7, 16],
     ]) {
       let added = 0;
       for (let i = 0; i < 800 && added < limit; i++) {
-        const x = minX + rand() * (maxX - minX),
-          y = minY + rand() * (maxY - minY);
+        let x = minX + rand() * (maxX - minX),y = minY + rand() * (maxY - minY);
+        if(realistic&&kind==='shrub'&&plants.length&&i%3!==0){const anchor=plants[Math.floor(rand()*plants.length)],a=rand()*Math.PI*2,d=anchor.radius+radius+15+rand()*25;x=anchor.x+Math.cos(a)*d;y=anchor.y+Math.sin(a)*d;}
         if (
           !contains(x, y, radius + 3) ||
           plants.some(
@@ -171,7 +172,8 @@
           x,
           y,
           radius,
-          height: kind === "tree" ? 95 + rand() * 25 : 12 + rand() * 8,
+          height: kind === "tree" ? (realistic?150+rand()*65:95+rand()*25) : 12 + rand() * 12,
+          species: plants.length%3,
         });
         added++;
       }
@@ -253,6 +255,8 @@
       color: 0xa0a78a,
       side: THREE.DoubleSide,
     });
+    const realistic=!!(p.design.presentation.studio.realism?.enabled&&p.design.presentation.studio.realism.naturalGarden);
+    if(realistic)groundMat.color.setHex(0x8d9871);
     const height = (x, y) =>
       p.design?.workbench?.terrain?.points?.length
         ? WorkbenchModel.terrainHeight(p, { x, y })
@@ -293,6 +297,11 @@
       const lawn = new THREE.Mesh(geometry, groundMat);
       lawn.receiveShadow = true;
       group.add(lawn);
+      if(realistic){
+       const borderMat=new THREE.MeshStandardMaterial({color:0xa69f8a,roughness:.95}),segments=[];
+       for(const ring of polygon)for(let i=1;i<ring.length&&segments.length<180;i++){const a=ring[i-1],b=ring[i],len=Math.hypot(b[0]-a[0],b[1]-a[1]);if(len<2)continue;const mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2,nx=-(b[1]-a[1])/len,ny=(b[0]-a[0])/len,sign=data.contains(mx+nx*1.2,my+ny*1.2)?1:-1;const x=mx+nx*sign,y=my+ny*sign;if(!data.contains(x,y))continue;segments.push({x,y,len,angle:-Math.atan2(b[1]-a[1],b[0]-a[0])});}
+       if(segments.length){const borders=new THREE.InstancedMesh(new THREE.BoxGeometry(1,1,1),borderMat,segments.length),o=new THREE.Object3D();for(const [i,v]of segments.entries()){o.position.set(I.x+v.x*SCALE,(height(v.x,v.y)+.3)*SCALE,I.z+v.y*SCALE);o.rotation.y=v.angle;o.scale.set(v.len*SCALE,.6*SCALE,2*SCALE);o.updateMatrix();borders.setMatrixAt(i,o.matrix);}borders.receiveShadow=true;borders.userData.lawnBorder=true;group.add(borders);}else borderMat.dispose();
+      }
       yield;
     }
     if (!data.lawn.length) {
@@ -341,7 +350,7 @@
           y:
             base +
             (plant.kind === "tree" ? h * 0.76 : h * 0.5) +
-            dy * (plant.kind === "tree" ? h * 0.22 : h * 0.32),
+            dy * (plant.kind === "tree" ? h * (realistic?(plant.species===0?.28:.2):.22) : h * .32),
           z: z + Math.sin(angle) * rad * Math.sqrt(1 - dy * dy),
           size: r * (0.24 + rand() * 0.12),
           rx: rand() * Math.PI,

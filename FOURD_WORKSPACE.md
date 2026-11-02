@@ -181,3 +181,7 @@ suite. A local browser can be selected with `BROWSER_EXECUTABLE`.
 See [AUDIT_FIXES.md](AUDIT_FIXES.md) for the reliability changes, ownership rules and regression commands.
 
 See [PERFORMANCE_ARCHITECTURE.md](PERFORMANCE_ARCHITECTURE.md) for device profiling, staged preparation, roof controls, expanded PBR profiles and visual regression checks.
+
+The optional realistic presentation and separate still-rendering task are described
+in [REALISM_4D.md](REALISM_4D.md). Existing presentations retain their appearance
+until Realism is enabled for that project.

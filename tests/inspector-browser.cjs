@@ -21,7 +21,7 @@ module.exports = async ({page,assert}) => {
   assert.equal(await page.evaluate(()=>fixtures[1].sill),39.75);
   await size.fill('29 1/2');await size.press('Enter');
   assert.equal(await page.evaluate(()=>fixtures[0].size),29.5,'Fractional inches remain editable');
-  await offset.fill('48');await door.locator('select').click();
+  await offset.fill('48');await door.locator('select').focus();
   assert.equal(await page.evaluate(()=>fixtures[0].offset),48,'Typing commits on leaving the field');
   assert.equal(await page.evaluate(()=>selectedElIndex),0,'Editing preserves the selected room');
   await door.locator('select').selectOption('right');
@@ -29,7 +29,7 @@ module.exports = async ({page,assert}) => {
   assert.equal(await page.locator('.studio-inspector').isVisible(),true);
   const windowLine=page.locator('#fixture-container line[stroke="#38bdf8"]').first();
   const xBefore=await windowLine.getAttribute('x1');
-  await win.locator('input').nth(1).fill('44');await win.locator('select').click();
+  await win.locator('input').nth(1).fill('44');await win.locator('select').focus();
   assert.equal(await page.evaluate(()=>fixtures[1].offset),44);
   assert.notEqual(await windowLine.getAttribute('x1'),xBefore,'Window position must update in the drawing');
   const yBefore=await windowLine.getAttribute('y1');
@@ -38,7 +38,7 @@ module.exports = async ({page,assert}) => {
   assert.equal(await page.evaluate(()=>fixtures[1].edge),'bottom');
   // An invalid fit rolls back without dismissing the inspector or consuming undo.
   const history=await page.evaluate(()=>ProjectState.history.stack.length);
-  await win.locator('input').nth(1).fill('9999');await win.locator('select').click();
+  await win.locator('input').nth(1).fill('9999');await win.locator('select').focus();
   assert.equal(await page.evaluate(()=>fixtures[1].offset),44);
   assert.equal(await page.evaluate(()=>ProjectState.history.stack.length),history);
   assert.equal(await page.evaluate(()=>selectedElIndex),0);
@@ -56,8 +56,11 @@ module.exports = async ({page,assert}) => {
   // The same interaction must keep the smaller-screen Properties drawer open.
   await page.setViewportSize({width:390,height:844});
   await page.evaluate(()=>{document.activeElement.blur();StudioUI.changeUnit('in');StudioUI.select(0);});
+  // Move real focus to commit the numeric field, then use the select API.
+  // Headful WebKit can block automation inside the operating-system popup.
   await door.locator('input').nth(1).fill('50');
-  await door.locator('select').click();
+  await door.locator('select').focus();
+  assert.equal(await door.locator('select').evaluate(select=>document.activeElement===select),true);
   await door.locator('select').selectOption('left');
   assert.equal(await page.evaluate(()=>fixtures[0].offset),50);
   assert.equal(await page.locator('.studio-inspector').isVisible(),true);

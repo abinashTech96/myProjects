@@ -124,7 +124,7 @@ module.exports = async ({ page, assert }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   console.log("4D full-view exit, view filters, mobile and clean-view recovery passed");
   await page.evaluate(() => FourDStudio.open());
-  assert.equal(await page.locator(".fourd-tabs button").count(), 6);
+  assert.equal(await page.locator(".fourd-tabs button").count(), 7);
   assert.equal(
     await page.locator(".workspace-docked-dialog .fourd-form").isVisible(),
     true,

@@ -70,6 +70,7 @@
   for(const [type,spec]of Object.entries(materials))spec.normalStrength=({brick:.28,stone:.18,timber:.14,wood:.14,fabric:.22,concrete:.08,grass:.25,shingle:.2,'bathroom-tile':.16,'kitchen-tile':.12})[type]||0;
   const defaults = () => ({
     version: 1,
+    realism: (root.FourDRealismModel || require("./fourd-realism-model.js")).defaults(),
     detailing: true, fixtures: [], bookmarks: [],
     guidedStops: [],
     tourSpeed: 1,
@@ -111,6 +112,7 @@
   function validate(raw, p) {
     const d = { ...defaults(), ...P.clone(raw || {}) };
     if (!raw?.preset && ["golden-hour", "courtyard"].includes(d.environment)) d.preset=d.environment;
+    d.realism = (root.FourDRealismModel || require("./fourd-realism-model.js")).validate(d.realism);
     if (d.version !== 1) throw Error("Unsupported 4D settings version");
     for (const [k, allowed] of Object.entries({
       preset: ["daylight", "interior", "studio", "golden-hour", "courtyard"],

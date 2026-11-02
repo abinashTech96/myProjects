@@ -91,6 +91,27 @@
     return {project:p,global,records,rows,floors,roof:JSON.stringify([roof,top,floors.get(top)])};
   }
   function run(task){
+    if(task.kind==='stairSolid'){
+      const clip=root.polygonClipping||(typeof require==='function'?require('../vendor/geometry/polygon-clipping.js'):null),
+        scale=task.scale||1,steps=task.treads,levels=[...new Set(steps.map(t=>t.top))].sort((a,b)=>a-b),positions=[];
+      const polygon=t=>[t.points.map(q=>[q.x,q.y]).concat([[t.points[0].x,t.points[0].y]])],
+        union=rows=>rows.length?clip.union(...rows.map(polygon)):[],at=(q,y)=>new T.Vector3(q[0]*scale,y*scale,q[1]*scale),
+        tri=(a,b,c)=>positions.push(...a.toArray(),...b.toArray(),...c.toArray());
+      const horizontal=(polys,height,up)=>{for(const poly of polys){const outer=poly[0].slice(0,-1).map(q=>new T.Vector2(...q)),holes=poly.slice(1).map(r=>r.slice(0,-1).map(q=>new T.Vector2(...q))),flat=[outer,...holes].flat(),faces=T.ShapeUtils.triangulateShape(outer,holes);
+        for(const face of faces){const vertices=face.map(i=>at([flat[i].x,flat[i].y],height)),normal=vertices[1].clone().sub(vertices[0]).cross(vertices[2].clone().sub(vertices[0]));if((normal.y>0)!==up)vertices.reverse();tri(...vertices);}
+      }};
+      let previous=0;
+      for(let i=0;i<levels.length;i++){
+        const height=levels[i],footprint=union(steps.filter(t=>t.top>=height)),above=union(steps.filter(t=>t.top>height));
+        horizontal(above.length?clip.difference(footprint,above):footprint,height,true);
+        if(i===0)horizontal(footprint,0,false);
+        for(const poly of footprint)for(const ring of poly)for(let j=1;j<ring.length;j++){
+          const a=at(ring[j-1],previous),b=at(ring[j],previous),c=at(ring[j],height),d=at(ring[j-1],height);tri(a,c,b);tri(a,d,c);
+        }
+        previous=height;
+      }
+      const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(positions,3));g.computeVertexNormals();return pack(g);
+    }
     if(task.kind==='glb')return (root.GLBModel || require('./glb-model.js')).decode(task.data);
     if(task.kind==='roof') {
       const R=root.RoofModel || (typeof require==='function'?require('./roof-model.js'):null),surface=R.describe(task.project,task.prepared);

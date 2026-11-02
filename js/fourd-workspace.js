@@ -156,6 +156,7 @@ window.FourDWorkspace = {
       FourDStudio.playing = false;
       cancelAnimationFrame(FourDStudio.stageRAF);
       window.FourDRender?.cancelPhoto();
+      window.FourDStill?.cancel();
       StudioEnhancements.stopWalk();
       clearTimeout(StudioEnhancements.navigationTimer);
       clearTimeout(FourDStudio.probeTimer);
@@ -179,6 +180,8 @@ window.FourDWorkspace = {
     window.FourDPerformance?.cancel();
     window.FourDReview?.stop();
     window.FourDDetails?.stop();
+    window.FourDRealism?.stop();
+    window.FourDStill?.cancel();
     FourDJobs.stop();
     FourDAssets.stop();
     FourDIncremental.reset();
@@ -246,7 +249,9 @@ window.FourDWorkspace = {
   failed(reason) {
     FourDViews.suspend();
     FourDJobs.stop();window.FourDSource?.cancel();FourDIncremental.revision++;this.updateRevision++;
-    window.FourDDetails?.stop();clearTimeout(this.updateTimer);clearTimeout(this.adaptTimer);
+    window.FourDDetails?.stop();
+    window.FourDRealism?.stop();
+    window.FourDStill?.cancel();clearTimeout(this.updateTimer);clearTimeout(this.adaptTimer);
     this.running = false;
     window.is3DMode = false;
     Engine3D.syncVisibility();
@@ -386,6 +391,7 @@ window.FourDWorkspace = {
       if(window.FourDRender)FourDRender.probeDirty=true;
       FourDStudio.outlineKey=null;
       window.FourDRender?.cancelPhoto();
+      window.FourDStill?.cancel();
     }
   },
   sample(ms) {
@@ -499,6 +505,7 @@ window.FourDWorkspace = {
         FourDIncremental.revision++;
         this.pendingUpdate=true;
         window.FourDRender?.cancelPhoto();
+      window.FourDStill?.cancel();
         FourDStudio.playing = false;
         cancelAnimationFrame(FourDStudio.stageRAF);
         clearTimeout(FourDStudio.probeTimer);

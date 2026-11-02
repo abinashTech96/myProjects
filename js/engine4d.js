@@ -628,6 +628,7 @@ window.Engine4D = {
     this.modelVersion = null;
     this.renderer?.renderLists.dispose();
     this.clearOverlay();
+    window.FourDRealism?.resetMaterials();
   },
   clearOverlay() {
     if (this.overlay) this.scene.remove(this.overlay);
@@ -849,10 +850,11 @@ window.Engine4D = {
       this.renderer.shadowMap.needsUpdate = true;
       this.lastSun = this.key.position.clone();
     }
+    window.FourDReview?.applyAlignment();
+    window.FourDRealism?.frame(camera);
     FourDStudio.frame(camera);
     window.FourDViews?.effects(camera);
     window.FourDDetails?.frame();
-    window.FourDReview?.applyAlignment();
     if (!StudioEnhancements.navigating && FourDAssets.pending.size && !FourDAssets.timer) FourDAssets.refine();
     if (FourDStudio.renderComparison(camera)) {
       this.frames = (this.frames || 0) + 1;
@@ -863,7 +865,7 @@ window.Engine4D = {
       perspective = camera.isPerspectiveCamera ? 1 : 0;
     ao.camera = camera;
     const worldScale=get3DEnvironmentParams().SCALE,depthSpan=Math.max(1,camera.far-camera.near);
-    ao.kernelRadius=6*worldScale;ao.minDistance=.35*worldScale/depthSpan;ao.maxDistance=12*worldScale/depthSpan;
+    ao.kernelRadius=(FourDStudio.settings.realism.enabled&&FourDStudio.settings.realism.contactShadows?3:6)*worldScale;ao.minDistance=.35*worldScale/depthSpan;ao.maxDistance=12*worldScale/depthSpan;
     if (ao.ssaoMaterial.defines.PERSPECTIVE_CAMERA !== perspective) {
       ao.ssaoMaterial.defines.PERSPECTIVE_CAMERA = perspective;
       ao.ssaoMaterial.needsUpdate = true;

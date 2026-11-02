@@ -143,5 +143,9 @@
   "./js/fourd-source.js",
   "./js/glb-model.js",
   "./js/architectural-review-model.js",
-  "./js/fourd-performance.js"
+  "./js/fourd-performance.js",
+  "js/fourd-realism-model.js",
+  "js/fourd-realism.js",
+  "js/fourd-still.js",
+  "js/fourd-still-worker.js"
 ]

@@ -1,7 +1,7 @@
 /* Reuse the dock's sizing, focus and theme system; only the studio's contents differ. */
 .fourd-tabs {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 4px;
   padding-bottom: 8px;
   margin-bottom: 8px;
@@ -186,3 +186,9 @@
     min-height: 38px;
   }
 }
+
+.fourd-form details { border: 1px solid var(--enh-border); border-radius: 10px; padding: 8px; }
+.fourd-form details[open] { display: grid; gap: 8px; }
+.fourd-form summary { cursor: pointer; font-weight: 600; padding: 3px; }
+#fourd-still-preview { width: 100%; height: auto; max-height: 55vh; object-fit: contain; border-radius: 10px; background: var(--enh-panel); }
+#fourd-still-status { display: block; font-size: 12px; padding: 8px 0; }

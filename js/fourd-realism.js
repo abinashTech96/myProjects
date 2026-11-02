@@ -88,6 +88,7 @@ window.FourDRealism={
     }
   },
   materials(){
+    if(this.settings.enabled)this.wasEnabled=true;
     if(!this.settings.enabled&&!this.wasEnabled){this.queue=null;return;}
     const p=this.project(),key=JSON.stringify([Engine4D.modelVersion,this.settings,p.design.presentation.surfaces,Engine4D.physicalGlass]);
     if(key!==this.materialKey){this.materialKey=key;this.queue=[];this.projectionVertices=0;Engine4D.model.updateMatrixWorld(true);Engine4D.model.traverse(n=>{if(n.isMesh&&n.material){this.queue.push(n);if(this.meshState.has(n))this.projectionVertices+=n.geometry.attributes.position.count;}});}

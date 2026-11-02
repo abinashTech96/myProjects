@@ -36,7 +36,8 @@ and exterior wall-head coping. New trim is prepared asynchronously and keeps the
 existing strip budget. Detailing can be switched off independently. Parametric
 stairs use a 4D-only stepped shell with internal shared faces removed, preserving
 the exact tread polygons and entered rise. Focusing a parameterized stair frames
-its full rise from the approach to the first flight. Older unparameterized stairs retain
+its full rise from the approach to the first flight. Stairs above 256 tread/landing polygons keep the original presentation geometry.
+Older unparameterized stairs retain
 their original geometry. Disabling realism restores the original owned meshes.
 
 Local reflections cache one probe per room: at most two on Balanced and four on

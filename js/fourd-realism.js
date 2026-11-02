@@ -124,7 +124,7 @@ window.FourDRealism={
         {SCALE:S,I}=get3DEnvironmentParams();
       (async()=>{const prepared=[];
         try{for(const room of p.elements.filter(e=>e.type==='staircase')){
-          const stair=WorkbenchModel.orientedStairs(p,room);if(!stair)continue;
+          const stair=WorkbenchModel.orientedStairs(p,room);if(!stair||stair.treads.length>256)continue;
           const originals=[];Engine4D.model.traverse(n=>{if(n.isMesh&&!n.userData.realismStair&&p.elements[n.userData.roomIndex]?.id===room.id)originals.push(n);});if(!originals.length)continue;
           const packed=await FourDJobs.run({kind:'stairSolid',treads:stair.treads,scale:S},valid);
           const geometry=FourDJobs.unpack(packed),pos=geometry.attributes.position,uv=[];for(let i=0;i<pos.count;i++)uv.push(pos.getX(i)/S,pos.getZ(i)/S);geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
